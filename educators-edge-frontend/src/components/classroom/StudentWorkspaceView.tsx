@@ -2,7 +2,7 @@ import React from 'react';
 import Editor from '@monaco-editor/react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Terminal as TerminalIcon, File as FileIcon } from 'lucide-react';
-import { StudentHomeworkState } from '../types';
+import { StudentHomeworkState, CodeFile } from '../types/index.ts';
 
 interface StudentWorkspaceViewProps {
     workspace: StudentHomeworkState | undefined;
@@ -23,7 +23,7 @@ export const StudentWorkspaceView: React.FC<StudentWorkspaceViewProps> = ({
         return <div className="p-4">Waiting for student's workspace data...</div>;
     }
 
-    const activeFile = workspace.files.find(f => f.name === workspace.activeFileName);
+    const activeFile = workspace.files.find((f: CodeFile) => f.filename === workspace.activeFileName);
 
     return (
         <PanelGroup direction="horizontal" className="w-full h-full">
@@ -32,14 +32,14 @@ export const StudentWorkspaceView: React.FC<StudentWorkspaceViewProps> = ({
                     <h2 className="font-semibold text-sm uppercase">Explorer</h2>
                 </div>
                 <div className="flex-grow overflow-y-auto py-1">
-                    {workspace.files.map(file => (
+                    {workspace.files.map((file: CodeFile) => (
                         <div 
-                            key={file.name} 
-                            onClick={() => onActiveFileChange(file.name)}
-                            className={`flex items-center px-3 py-1.5 mx-1 rounded-md text-sm ${isReadOnly ? 'cursor-not-allowed' : 'cursor-pointer'} ${workspace.activeFileName === file.name ? 'bg-blue-100 font-medium' : 'hover:bg-slate-100'}`}
+                            key={file.filename} 
+                            onClick={() => onActiveFileChange(file.filename)}
+                            className={`flex items-center px-3 py-1.5 mx-1 rounded-md text-sm ${isReadOnly ? 'cursor-not-allowed' : 'cursor-pointer'} ${workspace.activeFileName === file.filename ? 'bg-blue-100 font-medium' : 'hover:bg-slate-100'}`}
                         >
                             <FileIcon className="h-4 w-4 mr-2.5" />
-                            <span className="truncate">{file.name}</span>
+                            <span className="truncate">{file.filename}</span>
                         </div>
                     ))}
                 </div>
@@ -51,7 +51,7 @@ export const StudentWorkspaceView: React.FC<StudentWorkspaceViewProps> = ({
                         <Editor
                             height="100%"
                             theme="vs-dark"
-                            path={activeFile?.name}
+                            path={activeFile?.filename}
                             language={activeFile?.language}
                             value={activeFile?.content}
                             onChange={(value) => onCodeChange(value || '')}

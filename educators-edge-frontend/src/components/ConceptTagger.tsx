@@ -11,7 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty, CommandGroup } from '@/components/ui/command';
 import { Badge } from "@/components/ui/badge";
 import { X, Lightbulb } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 export interface Concept {

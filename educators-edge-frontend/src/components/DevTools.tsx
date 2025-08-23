@@ -6,7 +6,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import type { User } from '../types';
+import type { User } from '../types/index.ts';
 
 const DevTools: React.FC = () => {
     const [decodedToken, setDecodedToken] = useState<User | null>(null);

@@ -154,13 +154,15 @@ export interface StudentHomeworkState {
     studentId: string;
     files: CodeFile[];
     terminalOutput: string;
+    activeFileName?: string;
 }
 
 // Test result interface for code execution
 export interface TestResult {
     passed: number;
     failed: number;
-    details: string;
+    total: number;
+    results: string;
 }
 
 // /*
