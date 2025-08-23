@@ -429,31 +429,49 @@ exports.createSubmission = async (req, res) => {
 
         const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
 
-        // This is the corrected INSERT statement with performance metrics
-        const submissionResult = await db.query(
-            `INSERT INTO submissions (
-                lesson_id, 
-                student_id, 
-                submitted_code, 
-                time_to_solve_seconds, 
-                code_churn,
-                copy_paste_activity,
-                time_taken,
-                error_types,
-                is_correct
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-            [
-                lessonId, 
-                studentId, 
-                JSON.stringify(files), 
-                time_to_solve_seconds, 
-                code_churn,
-                copy_paste_activity || 0,
-                Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
-                JSON.stringify(errorTypes),
-                execution.success // This is the boolean value for is_correct
-            ]
-        );
+        // Try to insert with all new metrics columns, fallback to basic if fails
+        let submissionResult;
+        try {
+            submissionResult = await db.query(
+                `INSERT INTO submissions (
+                    lesson_id, 
+                    student_id, 
+                    submitted_code, 
+                    time_to_solve_seconds, 
+                    code_churn,
+                    copy_paste_activity,
+                    time_taken,
+                    error_types,
+                    is_correct
+                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+                [
+                    lessonId, 
+                    studentId, 
+                    JSON.stringify(files), 
+                    time_to_solve_seconds, 
+                    code_churn,
+                    copy_paste_activity || 0,
+                    Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
+                    JSON.stringify(errorTypes),
+                    execution.success // This is the boolean value for is_correct
+                ]
+            );
+        } catch (columnError) {
+            console.log('New columns not available in submissions table, using fallback insert:', columnError.message);
+            // Fallback to basic submission without metrics
+            submissionResult = await db.query(
+                `INSERT INTO submissions (
+                    lesson_id, 
+                    student_id, 
+                    submitted_code
+                 ) VALUES ($1, $2, $3) RETURNING id`,
+                [
+                    lessonId, 
+                    studentId, 
+                    JSON.stringify(files)
+                ]
+            );
+        }
         const newSubmissionId = submissionResult.rows[0].id;
         console.log(`[APE LOG] Submission ${newSubmissionId} created with analytics.`);
 
@@ -669,26 +687,45 @@ exports.getLessonSubmissions = async (req, res) => {
         if (lesson.rows.length === 0) return res.status(404).json({ error: 'Lesson not found' });
         if (lesson.rows[0].teacher_id !== req.user.id) return res.status(403).json({ error: 'You are not authorized to view submissions for this lesson.' });
         
-        const submissions = await db.query(
-            `SELECT 
-                s.id, 
-                s.submitted_code, 
-                s.feedback, 
-                s.grade, 
-                s.submitted_at, 
-                u.username,
-                cfl.feedback_message AS "ai_feedback",
-                s.mastery_level,
-                s.code_churn,
-                s.copy_paste_activity,
-                s.time_taken
-             FROM submissions s 
-             JOIN users u ON s.student_id = u.id
-             LEFT JOIN conceptual_feedback_log cfl ON cfl.submission_id = s.id
-             WHERE s.lesson_id = $1 
-             ORDER BY s.submitted_at DESC`,
-            [lessonId]
-        );
+        // First try the full query with all new columns, fallback to basic if fails
+        let submissions;
+        try {
+            submissions = await db.query(
+                `SELECT 
+                    s.id, 
+                    s.submitted_code, 
+                    s.feedback, 
+                    s.grade, 
+                    s.submitted_at, 
+                    u.username,
+                    COALESCE(s.mastery_level, 0) as mastery_level,
+                    COALESCE(s.code_churn, 0) as code_churn,
+                    COALESCE(s.copy_paste_activity, 0) as copy_paste_activity,
+                    COALESCE(s.time_taken, 0) as time_taken
+                 FROM submissions s 
+                 JOIN users u ON s.student_id = u.id
+                 WHERE s.lesson_id = $1 
+                 ORDER BY s.submitted_at DESC`,
+                [lessonId]
+            );
+        } catch (columnError) {
+            console.log('New columns not available, falling back to basic query:', columnError.message);
+            // Fallback query without new columns if they don't exist yet
+            submissions = await db.query(
+                `SELECT 
+                    s.id, 
+                    s.submitted_code, 
+                    s.feedback, 
+                    s.grade, 
+                    s.submitted_at, 
+                    u.username
+                 FROM submissions s 
+                 JOIN users u ON s.student_id = u.id
+                 WHERE s.lesson_id = $1 
+                 ORDER BY s.submitted_at DESC`,
+                [lessonId]
+            );
+        }
         res.json(submissions.rows);
     } catch (err) {
         console.error(err.message);
