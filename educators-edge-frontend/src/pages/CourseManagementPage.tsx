@@ -9,7 +9,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { Course, Lesson } from '../types';
+import type { Course, Lesson } from '../types/index.ts';
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";

@@ -14,7 +14,7 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 import type { LessonFile } from '../types';
-import { cn } from "@/lib/utils";
+// import { cn } from "@/lib/utils";
 
 // --- APE Component ---
 import { ConceptTagger, TaggedConcept } from '../components/ConceptTagger';
@@ -28,7 +28,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { FilePlus2, XCircle, Terminal as TerminalIcon, ChevronLeft, BeakerIcon, Lightbulb, Code, Play, X } from 'lucide-react';
+import { FilePlus2, XCircle, Terminal as TerminalIcon, ChevronLeft, BeakerIcon, Lightbulb, Play, X } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
 // --- Type Definitions ---

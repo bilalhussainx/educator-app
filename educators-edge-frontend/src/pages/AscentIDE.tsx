@@ -7,10 +7,10 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import type { AscentIdeData, LessonFile, Submission, TestResult, SubmissionHistory } from '../types/index.ts';
+import type { AscentIdeData, LessonFile, Submission, TestResult } from '../types/index.ts';
 import Editor, { OnMount } from '@monaco-editor/react';
 import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
+// import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
@@ -53,7 +53,7 @@ const HintModal = ({ hint, isLoading, onClose }: { hint: string, isLoading: bool
         <GlassAlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2 text-fuchsia-300"><BrainCircuit className="h-5 w-5" /> AI Oracle</AlertDialogTitle>
-                <AlertDialogDescription as="div" className="pt-3 text-slate-300">
+                <AlertDialogDescription className="pt-3 text-slate-300">
                     {isLoading ? "Consulting the Oracle..." : <div className="bg-fuchsia-950/40 border border-fuchsia-500/30 p-3 rounded-md whitespace-pre-wrap text-sm">{hint}</div>}
                 </AlertDialogDescription>
             </AlertDialogHeader>
@@ -120,7 +120,7 @@ const AscentIDE: React.FC = () => {
     const editorRef = useRef<any>(null);
     const ws = useRef<WebSocket | null>(null);
     const term = useRef<Terminal | null>(null);
-    const terminalRef = useRef<HTMLDivElement>(null);
+    // const terminalRef = useRef<HTMLDivElement>(null);
     const queryParams = new URLSearchParams(location.search);
     const teacherSessionId = queryParams.get('sessionId');
     const isLiveHomework = !!teacherSessionId;
@@ -279,21 +279,22 @@ const AscentIDE: React.FC = () => {
         if (!lessonId) return;
         setIsSaving(true);
         const token = localStorage.getItem('authToken');
-        toast.promise(
-            fetch(`http://localhost:5000/api/lessons/${lessonId}/save-progress`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ files })
-            }).then(res => {
-                if (!res.ok) throw new Error('Failed to save.');
-                return res.json();
-            }),
-            {
-                loading: 'Saving your progress...',
-                success: 'Progress saved!',
-                error: 'Could not save progress.',
-            }
-        ).finally(() => setIsSaving(false));
+        const savePromise = fetch(`http://localhost:5000/api/lessons/${lessonId}/save-progress`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ files })
+        }).then(res => {
+            if (!res.ok) throw new Error('Failed to save.');
+            return res.json();
+        });
+        
+        toast.promise(savePromise, {
+            loading: 'Saving your progress...',
+            success: 'Progress saved!',
+            error: 'Could not save progress.',
+        });
+        
+        savePromise.finally(() => setIsSaving(false));
     };
 
     const handleRunTests = async () => {

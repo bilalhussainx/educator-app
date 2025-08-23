@@ -95,6 +95,7 @@ export interface AscentIdeData {
     files: LessonFile[];
     testCases: TestCase[];
     submissionHistory: SubmissionHistory[];
+    gradedSubmission: Submission | null;
     officialSolution?: {
         code: LessonFile[];
         explanation: string;
@@ -153,6 +154,13 @@ export interface StudentHomeworkState {
     studentId: string;
     files: CodeFile[];
     terminalOutput: string;
+}
+
+// Test result interface for code execution
+export interface TestResult {
+    passed: number;
+    failed: number;
+    details: string;
 }
 
 // /*
