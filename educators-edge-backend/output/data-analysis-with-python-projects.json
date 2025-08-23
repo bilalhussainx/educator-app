@@ -1,0 +1,67 @@
+{
+  "title": "Data Analysis With Python Projects",
+  "description": "A project-based course on python imported from freeCodeCamp.",
+  "language": "python",
+  "lessons": [
+    {
+      "title": "Demographic Data Analyzer",
+      "description": "",
+      "files": [
+        {
+          "name": "main.py",
+          "language": "python",
+          "content": ""
+        }
+      ],
+      "testCode": ""
+    },
+    {
+      "title": "Mean-Variance-Standard Deviation Calculator",
+      "description": "",
+      "files": [
+        {
+          "name": "main.py",
+          "language": "python",
+          "content": ""
+        }
+      ],
+      "testCode": ""
+    },
+    {
+      "title": "Medical Data Visualizer",
+      "description": "",
+      "files": [
+        {
+          "name": "main.py",
+          "language": "python",
+          "content": ""
+        }
+      ],
+      "testCode": ""
+    },
+    {
+      "title": "Page View Time Series Visualizer",
+      "description": "",
+      "files": [
+        {
+          "name": "main.py",
+          "language": "python",
+          "content": ""
+        }
+      ],
+      "testCode": ""
+    },
+    {
+      "title": "Sea Level Predictor",
+      "description": "",
+      "files": [
+        {
+          "name": "main.py",
+          "language": "python",
+          "content": ""
+        }
+      ],
+      "testCode": ""
+    }
+  ]
+}

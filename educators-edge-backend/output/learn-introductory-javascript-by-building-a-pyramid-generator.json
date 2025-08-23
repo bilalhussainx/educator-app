@@ -1,0 +1,1423 @@
+{
+  "title": "Learn Introductory Javascript By Building A Pyramid Generator",
+  "description": "A project-based course on javascript imported from freeCodeCamp.",
+  "language": "javascript",
+  "lessons": [
+    {
+      "title": "Step 2",
+      "description": "One of the most important concepts in programming is variables. A <dfn>variable</dfn> points to a specific memory address that stores a value. Variables are given a name which can be used throughout your code to access that value.\n\nDeclaring a variable means giving it a name. In JavaScript, this is often done with the `let` keyword. For example, here is how you would declare a `hello` variable:\n\n```js\nlet hello;\n```\n\nVariable naming follows specific rules: names can include letters, numbers, dollar signs, and underscores, but cannot contain spaces and must not begin with a number.\n\nUse the `let` keyword to declare a variable called `character`.\n\n_Note_: It is common practice to end statements in JavaScript with a semicolon. `;`",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use `let` in your code.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let/);\n```\n\nYou should use `character` in your code.\n\n```js\nassert.match(__helpers.removeJSComments(code), /character/);\n```\n\nYou should use `let` to declare a `character` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+character/);\n```\n\nYour declaration should end with a semicolon.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+character;/);\n```"
+    },
+    {
+      "title": "Step 3",
+      "description": "Your `character` variable currently does not have a value. You can assign a value using the <dfn>assignment</dfn> operator `=`. For example:\n\n```js\nlet hello = \"Hello\";\n```\n\nAssigning a value to a variable at the moment of its declaration is known as <dfn>initialization</dfn>.\n\nInitialize your `character` variable by assigning it the value `\"Hello\"` during its declaration.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character;\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use the assignment operator `=`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+character\\s*=/);\n```\n\nYou should use the string `\"Hello\"`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /('|\")Hello\\1/);\n```\n\nYou should use double quotes for your `\"Hello\"` string.\n\n```js\nassert.match(__helpers.removeJSComments(code), /\"Hello\"/);\n```\n\nYou should assign `\"Hello\"` to your `character` variable.\n\n```js\nassert.equal(character, \"Hello\");\n```"
+    },
+    {
+      "title": "Step 4",
+      "description": "JavaScript has seven primitive data types, with String being one of them. In JavaScript, a <dfn>string</dfn> represents a sequence of characters and can be enclosed in either single (`'`) or double (`\"`) quotes.\n\nNote that strings are <dfn>immutable</dfn>, which means once they are created, they cannot be changed. The variable can still be reassigned another value.\n\nChange your `\"Hello\"` string to use single quotes.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = \"Hello\";\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should not have double quotes in your code.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /\"/);\n```\n\nYou should use single quotes for your `\"Hello\"` string.\n\n```js\nassert.match(__helpers.removeJSComments(code), /'Hello'/);\n```\n\nYou should still use `let` in your code.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let/);\n```\n\nYou should still declare a `character` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+character/);\n```\n\nYour `character` variable should still have the string `\"Hello\"` for its value.\n\n```js\nassert.equal(character, \"Hello\");\n```"
+    },
+    {
+      "title": "Step 5",
+      "description": "The <dfn>console</dfn> allows you to print and view JavaScript output. You can send information to the console using `console.log()`. For example, this code will print `\"Naomi\"` to the console:\n\n```js\nlet developer = \"Naomi\";\nconsole.log(developer);\n```\n\nThe code above accesses the `developer` variable with its name in the `console.log()`. Note that the value between the parentheses is the value that will be printed.\n\nPrint the value of the `character` variable to the console. Then, click the \"Console\" button to view the JavaScript console.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "The `character` variable initialization should not be changed.\n\n```js\nassert.strictEqual(character, 'Hello');\n```\n\nYou should access the `console` in your code.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console/);\n```\n\nYou should access the `log` property of the `console`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log/);\n```\n\nYou should use parentheses to call the `.log()` method.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(/);\n```\n\nYou should print the `character` variable to the console.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*character\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 6",
+      "description": "When a variable is declared with the `let` keyword, you can <dfn>reassign</dfn> (or change the value of) that variable later on. In this example, the value of `programmer` is changed from `\"Naomi\"` to `\"CamperChan\"`.\n\n```js\nlet programmer = \"Naomi\";\nprogrammer = \"CamperChan\";\n```\n\nNote that when reassigning a variable, you do **not** use the `let` keyword again.\n\nAfter your `console.log`, assign the value `\"World\"` to your `character` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nconsole.log(character);\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use `character` twice in your code.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/character/g), 3);\n```\n\nYou should use the assignment operator to reassign `character`.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/character\\s*\\=/g), 2);\n```\n\nYou should use the string `\"World\"` in your code.\n\n```js\nassert.match(__helpers.removeJSComments(code), /(\"|')World\\1/);\n```\n\nYour `character` variable should have the value `\"World\"`.\n\n```js\nassert.equal(character, \"World\");\n```\n\nYour reassignment should not use `let`.\n\n```js\nassert.isBelow(__helpers.removeJSComments(code).match(/let/g).length, 2);\n```"
+    },
+    {
+      "title": "Step 7",
+      "description": "Now log your `character` variable to the console again. You should see the string `\"Hello\"`, then the string `\"World\"`, in the console.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nconsole.log(character);\ncharacter = \"World\";\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use `console.log` a second time.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/console\\.log/g), 2);\n```\n\nYou should log `character` to the console a second time.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/console\\.log\\(\\s*character\\s*\\)/g), 2);\n```\n\n\nYour new `console.log()` should come after your reassignment.\n\n```js\nconst lines = __helpers.removeJSComments(code).split(/\\n+/)\nconst reassign = lines.findIndex(l => l.match(/character\\s+=\\s+(\"|')World\\1/));\nconst secondLog = lines.findLastIndex(l => l.match(/console\\.log/));\nassert.isBelow(reassign, secondLog);\n```"
+    },
+    {
+      "title": "Step 12",
+      "description": "You are now ready to declare your next variable. Remove both `console.log` statements, and the `character` reassignment.\n\nAlso remove your `secondCharacter` variable, but leave the `character` initialization unchanged.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nconsole.log(character);\ncharacter = \"World\";\nlet secondCharacter;\nsecondCharacter = character;\nconsole.log(secondCharacter);\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should not have any `console.log()` statements in your code.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /console/);\n```\n\nYou should not reassign the value of `character`.\n\n```js\nassert.isAtMost(__helpers.removeJSComments(code).match(/character\\s*=/g).length, 1);\n```\n\nYour `character` variable should have the value `\"Hello\"`.\n\n```js\nassert.equal(character, \"Hello\");\n```\n\nYou should not have a `secondCharacter` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /secondCharacter/);\n```"
+    },
+    {
+      "title": "Step 15",
+      "description": "Use `let` to declare a `count` variable. Assign it the <dfn>number</dfn> `8`. When using a number value, you do not use quotes. For example:\n\n```js\nlet money = 100;\n```",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should have a second `let` keyword in your code.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/let/g), 2);\n```\n\nYou should use `let` to declare a `count` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+count/);\n```\n\nYou should assign the number `8` to your `count` variable.\n\n```js\nassert.equal(count, 8);\n```"
+    },
+    {
+      "title": "Step 16",
+      "description": "With the `number` data type, you can perform mathematical operations, like addition. Try printing `count + 1` to the console.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nlet count = 8;\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should access the `console` in your code.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console/);\n```\n\nYou should access the `.log()` of the `console`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log/);\n```\n\nYou should log `count + 1` to the console.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*count\\s*\\+\\s*1\\s*\\);?/);\n```"
+    },
+    {
+      "title": "Step 17",
+      "description": "You can also perform subtraction (`-`), multiplication (`*`), and division (`/`). Feel free to experiment with the operators and numbers in your `console.log`. When you are ready to move on, remove the `console.log`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\n--fcc-editable-region--\nlet count = 8;\nconsole.log(count + 1);\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should not have a `console.log()` in your code.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /console/);\n```\n\nYour `character` variable should still have the value `\"Hello\"`.\n\n```js\nassert.equal(character, \"Hello\");\n```\n\nYour `count` variable should still have the value `8`.\n\n```js\nassert.equal(count, 8);\n```"
+    },
+    {
+      "title": "Step 18",
+      "description": "In programming, you will often need to work with lots of data. There are many data structures that can help you organize and manage your data. One of the most basic data structures is an <dfn>array</dfn>.\n\nAn <dfn>array</dfn> is a non-primitive data type that can hold a series of values. Non-primitive data types differ from primitive data types in that they can hold more complex data. Primitive data types like strings and numbers can only hold one value at a time.\n\nArrays are denoted using square brackets (`[]`). Here is an example of a variable with the value of an empty array:\n\n```js\nlet array = [];\n```\n\nDeclare a `rows` variable and assign it an empty array.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nlet count = 8;\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should have a `rows` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows/);\n```\n\nYou should use `let` to declare your `rows` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+rows/);\n```\n\nYou should assign an empty array to your `rows` variable.\n\n```js\nassert.deepEqual(rows, []);\n```"
+    },
+    {
+      "title": "Step 19",
+      "description": "When an array holds values, or <dfn>elements</dfn>, those values are separated by commas. Here is an array that holds two strings:\n\n```js\nlet array = [\"first\", \"second\"];\n```\n\nChange your `rows` declaration to be an array with the strings `\"Naomi\"`, `\"Quincy\"`, and `\"CamperChan\"`. The order of values in an array is important, so follow that order. Remember that strings are case-sensitive.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nlet count = 8;\nlet rows = [];\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "The first element in your array should be the string `\"Naomi\"`.\n\n```js\nassert.equal(rows[0], \"Naomi\");\n```\n\nThe second element in your array should be the string `\"Quincy\"`.\n\n```js\nassert.equal(rows[1], \"Quincy\");\n```\n\nThe third element in your array should be the string `\"CamperChan\"`.\n\n```js\nassert.equal(rows[2], \"CamperChan\");\n```"
+    },
+    {
+      "title": "Step 20",
+      "description": "You can access the values inside an array using the <dfn>index</dfn> of the value. An index is a number representing the position of the value in the array, starting from `0` for the first value.\n\nYou can access the value using <dfn>bracket notation</dfn>, such as `array[0]`.\n\nUse `console.log` and bracket notation to print the first value in your `rows` array.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should have a `console.log()` statement in your code.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log/);\n```\n\nYou should access your `rows` array.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/rows/g), 2);\n```\n\nYou should use bracket notation with your `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\[/);\n```\n\nYou should use bracket notation to access the first element of your `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\[\\s*0\\s*\\]/);\n```\n\nYou should log the first element of your `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*rows\\[\\s*0\\s*]\\s*\\);?/);\n```"
+    },
+    {
+      "title": "Step 21",
+      "description": "Arrays are special in that they are considered <dfn>mutable</dfn>. This means you can change the value at an index directly.\n\nFor example, this code would assign the number `25` to the second element in the array:\n\n```js\nlet array = [1, 2, 3];\narray[1] = 25;\nconsole.log(array); // prints [1, 25, 3]\n```\n\nUpdate the **third** element of your `rows` array to be the number `10`. Then print the `rows` array to your console.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\nconsole.log(rows[0]);\n--fcc-editable-region--\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use bracket notation on the `rows` array again.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/rows\\[/g), 2)\n```\n\nYou should access the third element of the `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\[\\s*2\\s*\\]/);\n```\n\nYou should use the assignment operator on the third element of the `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\[\\s*2\\s*\\]\\s*=/);\n```\n\nYou should assign the value `10` to the third element of your `rows` array.\n\n```js\nassert.equal(rows[2], 10);\n```\n\nYou should have a second `console.log` statement in your code.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/console\\.log/g), 2);\n```\n\nYou should log the `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*rows\\s*\\);?/);\n```"
+    },
+    {
+      "title": "Step 23",
+      "description": "For now, remove your first console log and your `rows[rows.length - 1]` assignment. Leave the second `rows` log statement for later.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\n--fcc-editable-region--\nconsole.log(rows[0]);\nrows[rows.length - 1] = 10;\n--fcc-editable-region--\nconsole.log(rows);"
+        }
+      ],
+      "testCode": "You should remove your `console.log(rows[0])` statement.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /console\\.log\\(\\s*rows\\[\\s*0\\s*\\]\\s*\\)/);\n```\n\nYou should remove your `rows[rows.length - 1]` reassignment.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /rows\\[\\s*rows\\.length\\s*-\\s*1\\s*\\]/);\n```\n\nYou should not remove your `console.log(rows)` statement.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*rows\\s*\\);/);\n```"
+    },
+    {
+      "title": "Step 26",
+      "description": "A <dfn>method</dfn> in JavaScript is a function that's associated with certain values or objects. An example you've already encountered is the `.log()` method, which is part of the `console` object.\n\nArrays have their own methods, and the first you will explore is the `.push()` method. This allows you to \"push\" a value to the end of an array. Here is an example to add the number `12` to the end of an array:\n\n```js\narray.push(12);\n```\n\nUse `.push()` to add the string `\"freeCodeCamp\"` to the end of your `rows` array. Add this code before your `console.log` so you can see the change you made to your array.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\n--fcc-editable-region--\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\n\nconsole.log(rows);\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use `.push()` in your code.\n\n```js\nassert.match(__helpers.removeJSComments(code), /\\.push\\(/);\n```\n\nYou should use the `.push()` method of your `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.push\\(/);\n```\n\nYou should pass the string `\"freeCodeCamp\"` to your `.push()` method. \n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.push\\(\\s*('|\")freeCodeCamp\\1\\s*\\);?/)\n```"
+    },
+    {
+      "title": "Step 27",
+      "description": "Another method essential for this project is the `.pop()` method. It removes the last element from an array and <dfn>returns</dfn> that element.\n\nWhen a method returns a value, you can think of it as giving the value back to you, making it available for use in other parts of your code.\n\nCreate a new variable called `popped` and assign it the result of `rows.pop()`. Then, log `popped` to the console.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\n--fcc-editable-region--\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\nrows.push(\"freeCodeCamp\");\n\nconsole.log(rows);\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should declare a variable called `popped`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /popped/);\n```\n\nYou should use `let` to declare your variable called `popped`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+popped/);\n```\n\nYou should call the `.pop()` method.\n\n```js\nassert.match(__helpers.removeJSComments(code), /\\.pop\\(\\s*\\)/);\n```\n\nYou should call the `.pop()` method on your `rows` array. \n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.pop\\(\\s*\\)/);\n```\n\nYou should log your `popped` variable. \n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*popped\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 28",
+      "description": "You should have seen `\"freeCodeCamp\"` printed to the console. This is because `.pop()` returns the value that was removed from the array - and you pushed `\"freeCodeCamp\"` to the end of the array earlier.\n\nBut what does `.push()` return? Assign your existing `rows.push()` to a new `pushed` variable, and log it.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\n--fcc-editable-region--\nrows.push(\"freeCodeCamp\");\n\n--fcc-editable-region--\nlet popped = rows.pop();\nconsole.log(popped);\nconsole.log(rows);"
+        }
+      ],
+      "testCode": "You should declare a `pushed` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /pushed/);\n```\n\nYou should use `let` to declare your `pushed` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+pushed/);\n```\n\nYou should assign `rows.push(\"freeCodeCamp\")` to your `pushed` variable.\n\n```js\nassert.equal(pushed, 4);\n```\n\nYou should log your `pushed` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*pushed\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 29",
+      "description": "Were you expecting to see `4` in the console? `.push()` returns the new length of the array, after adding the value you give it.\n\nIt is important to be aware of what values a method returns. Take some time to experiment with `.push()` and `.pop()`. When you are ready, remove all of your `.push()` and `.pop()` calls, and your `console.log` statements.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\n--fcc-editable-region--\nlet pushed = rows.push(\"freeCodeCamp\");\nconsole.log(pushed);\nlet popped = rows.pop();\nconsole.log(popped);\nconsole.log(rows);\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should not have a `.push()` call.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /\\.push\\(/);\n```\n\nYou should not have a `.pop()` call.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /\\.pop\\(/);\n```\n\nYou should not have any log statements.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /console\\.log/);\n```\n\nYou should not have a `popped` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /popped/);\n```\n\nYou should not have a `pushed` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /pushed/);\n```"
+    },
+    {
+      "title": "Step 30",
+      "description": "Change your `rows` declaration to be assigned an empty array again.\n\nAlso, change your `'Hello'` string to use double quotes again. Generally, it does not matter which of the two you prefer, but you will want to be consistent in that choice throughout your project.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "Your `rows` array should be empty.\n\n```js\nassert.empty(rows);\n```\n\nYour `\"Hello\"` string should use double quotes.\n\n```js\nassert.match(__helpers.removeJSComments(code), /\"Hello\"/);\n```"
+    },
+    {
+      "title": "Step 31",
+      "description": "Declaring a variable with the `let` keyword allows it to be reassigned. This means you could change `character` later to be a completely different value.\n\nFor this project, you will not want to change these variable values. So instead, you should use `const` to declare them. `const` variables are special.\n\nFirst, a `const` variable cannot be reassigned like a `let` variable. This code would throw an error:\n\n```js\nconst firstName = \"Naomi\";\nfirstName = \"Jessica\";\n```\n\nA `const` variable also cannot be uninitialized. This code would throw an error:\n\n```js\nconst firstName;\n```\n\nReplace your `let` keywords with `const`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = \"Hello\";\nlet count = 8;\nlet rows = [];\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use `const` to declare your `character` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+character/);\n```\n\nYou should use `const` to declare your `count` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+count/);\n```\n\nYou should use `const` to declare your `rows` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+rows/);\n```\n\nYou should not use `let` in your code.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /let/);\n```"
+    },
+    {
+      "title": "Step 32",
+      "description": "You are now ready to start building your pyramid generator. Your `character` variable will serve as the building block for the pyramid.\n\n`\"Hello\"` might not work very well for that. Change the value of `character` to be the hash character `\"#\"`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nconst character = \"Hello\";\nconst count = 8;\nconst rows = [];\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "Your `character` variable should be a hash symbol.\n\n```js\nassert.equal(character, \"#\");\n```"
+    },
+    {
+      "title": "Step 33",
+      "description": "To generate a pyramid, you will need to create multiple rows. When you have to perform a task repeatedly until a condition is met, you will use a <dfn>loop</dfn>. There are many ways to write a loop.\n\nYou are going to start with a basic `for` loop. `for` loops use the following syntax:\n\n```js\nfor (iterator; condition; iteration) {\n  logic;\n}\n```\n\nIn the upcoming steps, you'll explore each component of a loop in detail. For now, construct a `for` loop that includes the terms `\"iterator\"`, `\"condition\"`, and `\"iteration\"` for the three components. Keep the loop <dfn>body</dfn>, the section within the curly braces `{}`, empty.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should have a `for` loop.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for/);\n```\n\nThe first component of your `for` loop should be the string `\"iterator\"`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*('|\")iterator\\1/);\n```\n\nThe second component of your `for` loop should be the string `\"condition\"`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*('|\")iterator\\1\\s*;\\s*('|\")condition\\2/);\n```\n\nThe third component of your `for` loop should be the string `\"iteration\"`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*('|\")iterator\\1\\s*;\\s*('|\")condition\\2\\s*;\\s*('|\")iteration\\3\\s*\\)/);\n```\n\nThe body of your `for` loop should be empty.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*('|\")iterator\\1\\s*;\\s*('|\")condition\\2\\s*;\\s*('|\")iteration\\3\\s*\\)\\s*\\{\\s*\\}/);\n```"
+    },
+    {
+      "title": "Step 34",
+      "description": "Your loop now needs a proper iterator. The <dfn>iterator</dfn> is a variable you can declare specifically in your `for` loop to control how the loop iterates or goes through your logic.\n\nIt is a common convention to use `i` as your iterator variable in a loop. A `for` loop allows you to declare this in the parentheses `()`. For example, here is a `for` loop that declares an `index` variable and assigns it the value `100`.\n\n```js\nfor (let index = 100; \"second\"; \"third\") {\n\n}\n```\n\nReplace the string `\"iterator\"` with a `let` declaration for the variable `i`. Assign it the value `0` to start. This will give the `i` variable the value `0` the **first time** your loop runs.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfor (\"iterator\"; \"condition\"; \"iteration\") {\n\n}\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use `let` to declare an `i` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+i/);\n```\n\nYou should assign `0` to your `i` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+i\\s*=\\s*0/);\n```\n\nYour `for` loop should start an `i` iterator at `0`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*0/);\n```"
+    },
+    {
+      "title": "Step 35",
+      "description": "The <dfn>condition</dfn> of a `for` loop tells the loop how many times it should iterate. When the `condition` becomes false, the loop will stop.\n\nIn JavaScript, a Boolean value can be either `true` or `false`. These are not strings - you will learn more about the difference later on.\n\nFor now, you will use the <dfn>less than</dfn> operator (`<`). This allows you to check if the value on the left is less than the value on the right. For example, `count < 3` would evaluate to `true` if `count` is `2`, and `false` if `count` is `4`.\n\nReplace your `\"condition\"` string with a condition to check if `i` is less than `count`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfor (let i = 0; \"condition\"; \"iteration\") {\n\n}\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use the less than operator.\n\n```js\nassert.match(__helpers.removeJSComments(code), /</);\n```\n\nYou should use the less than operator to check if `i` is less than `count`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /i\\s*<\\s*count/);\n```\n\nYour `for` loop should use `i < count` as the condition.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*0\\s*;\\s*i\\s*<\\s*count\\s*;/);\n```"
+    },
+    {
+      "title": "Step 36",
+      "description": "Your <dfn>iteration</dfn> statement will tell your loop what to do with the iterator after each run.\n\nWhen you reassign a variable, you can use the variable to reference the previous value before the reassignment. This allows you to do things like add three to an existing number. For example, `bees = bees + 3` would increase the value of `bees` by three.\n\nUse that syntax to replace your `\"iteration\"` string with a reassignment statement that increases `i` by one.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfor (let i = 0; i < count; \"iteration\") {\n\n}\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should add one to your `i` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /i\\s*\\+\\s*1/);\n```\n\nYou should assign `i + 1` back to your `i` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /i\\s*=\\s*i\\s*\\+\\s*1/);\n```\n\nYour `for` loop should increase `i` by `1` on each iteration.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*0;\\s*i\\s*<\\s*count;\\s*i\\s*=\\s*i\\s*\\+\\s*1\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 37",
+      "description": "Your loop should now run eight times. Inside the body of the loop, print the value of the `i` iterator and see what happens.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i = i + 1) {\n\n}\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should use `console.log()`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log/)\n```\n\nYou should log the value of `i`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*i\\s*\\)/);\n```\n\nYou should log the value of `i` in your `for` loop.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*0;\\s*i\\s*<\\s*count;\\s*i\\s*=\\s*i\\s*\\+\\s*1\\s*\\)\\s*\\{\\s*console\\.log\\(\\s*i\\s*\\);?\\s*\\}/);\n```"
+    },
+    {
+      "title": "Step 38",
+      "description": "You should see the numbers zero through seven printed in your console, one per line. This will serve as the foundation for generating your pyramid.\n\nReplace your log statement with a statement to push `i` to your `rows` array.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i = i + 1) {\n  console.log(i);\n}\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should not have a `console.log` call.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /console/);\n```\n\nYou should call `.push()` on your `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.push\\(/);\n```\n\nYou should push `i` to your `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.push\\(\\s*i\\s*\\)/);\n```\n\nYour `.push()` should happen in your `for` loop. \n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*0;\\s*i\\s*<\\s*count;\\s*i\\s*=\\s*i\\s*\\+\\s*1\\s*\\)\\s*\\{\\s*rows\\.push\\(\\s*i\\s*\\);?\\s*\\}/)\n```"
+    },
+    {
+      "title": "Step 39",
+      "description": "Unfortunately, now you cannot see what your loop is doing.\n\nUse `let` to declare a `result` variable, and assign it an empty string. An empty string is represented by quotation marks with nothing between them, such as `\"\"`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(i);\n}\n\n--fcc-editable-region--\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should declare a `result` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /result/);\n```\n\nYou should use `let` to declare your `result` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+result/);\n```\n\nYour `result` variable should be an empty string.\n\n```js\nassert.equal(result, \"\");\n```"
+    },
+    {
+      "title": "Step 40",
+      "description": "Add a log statement to print the value of `result`. Depending on which console you use, you may not see anything printed.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(i);\n}\n\nlet result = \"\"\n\n--fcc-editable-region--\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should add a `console.log` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(/);\n```\n\nYou should log your `result` variable. \n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*result\\s*\\);?/);\n```"
+    },
+    {
+      "title": "Step 41",
+      "description": "To manipulate the `result` string, you will use a different type of loop. Specifically, a `for...of` loop, which iterates over each item in an iterable object and temporarily assigns it to a variable.\n\nThe syntax for a `for...of` loop looks like:\n\n```js\nfor (const value of iterable) {\n\n}\n```\n\nNote that you can use `const` because the variable only exists for a single iteration, not during the entire loop.\n\nCreate a `for...of` loop to iterate through your `rows` array, assigning each value to a `row` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(i);\n}\n\nlet result = \"\"\n\n--fcc-editable-region--\n\n--fcc-editable-region--\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use another `for` keyword.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/for/g), 2);\n```\n\nYou should declare a `row` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /\\s+row\\s+/);\n```\n\nYou should use `const` to declare your `row` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+row\\s+/);\n```\n\nYour `for...of` loop should declare your `row` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*const\\s+row\\s+/);\n```\n\nYour `row` variable should be extracted from `rows` using the `of` keyword.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*const\\s+row\\s+of\\s+rows\\s*\\)/);\n```\n\nYour `for...of` loop body should be empty.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*const\\s+row\\s+of\\s+rows\\s*\\)\\s*\\{\\s*\\}/);\n```"
+    },
+    {
+      "title": "Step 42",
+      "description": "Remember in your previous loop that you used the addition operator `+` to increase the value of `i` by `1`.\n\nYou can do a similar thing with a string value, by appending a new string to an existing string. For example, `hello = hello + \" World\";` would add the string `\" World\"` to the existing string stored in the `hello` variable. This is called <dfn>concatenation</dfn>.\n\nIn your `for...of` loop, use the addition operator to concatenate the `row` value to the `result` value.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(i);\n}\n\nlet result = \"\"\n\n--fcc-editable-region--\nfor (const row of rows) {\n\n}\n--fcc-editable-region--\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use the concatenation operator on your `result` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /(?:result\\s*\\+|\\+\\s*result)/);\n```\n\nYou should concatenate `row` to your `result` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /result\\s*\\+\\s*row|row\\s*\\+\\s*result/);\n```\n\nYou should assign the result of your concatenation back to the `result` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /result\\s*=\\s*(result\\s*\\+\\s*row|row\\s*\\+\\s*result);?/);\n```"
+    },
+    {
+      "title": "Step 43",
+      "description": "Now all of your numbers are appearing on the same line. This will not work for creating a pyramid.\n\nYou will need to add a new line to each row. However, pressing the return key to insert a line break between quotes in JavaScript will result in a parsing error. Instead, you need to use the special <dfn>escape sequence</dfn> `\\n`, which is interpreted as a new line when the string is logged. For example:\n\n```js\nlineOne = lineOne + \"\\n\" + lineTwo;\n```\n\nUse a second addition operator to append a new line after the `result` and `row` values.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(i);\n}\n\nlet result = \"\"\n\n--fcc-editable-region--\nfor (const row of rows) {\n  result = result + row;\n}\n--fcc-editable-region--\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use the `\\n` escape sequence. Remember that it needs to be a string, so it is wrapped in quotes.\n\n```js\nassert.match(__helpers.removeJSComments(code), /('|\")\\\\n\\1/);\n```\n\nYou should concatenate your `row` variable to your `result` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /result\\s*\\+\\s*row\\s*\\+\\s*('|\")\\\\n\\1/);\n```\n\nYou should concatenate the `\\n` escape sequence to your `row` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /row\\s*\\+\\s*('|\")\\\\n\\1/);\n```\n\nYou should assign the entire concatenation back to your `result` variable.\n\n```js\nassert.strictEqual(result, \"0\\n1\\n2\\n3\\n4\\n5\\n6\\n7\\n\");\n```"
+    },
+    {
+      "title": "Step 44",
+      "description": "Printing numbers won't result in a visually appealing pyramid. Now that you're outputting the formatted content of your `rows` array, it's time to update your original loop.\n\nInstead of pushing `i` to the array, push the value of your `character` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(i);\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should no longer push your `i` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /rows\\.push\\(\\s*i\\s*\\)/);\n```\n\nYou should push your `character` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.push\\(\\s*character\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 45",
+      "description": "Now you have a series of `#` characters, but the pyramid shape is still missing. Fortunately, the `i` variable represents the current \"row\" number in your loop, enabling you to use it for crafting a pyramid-like structure.\n\nTo achieve this, you will use the `.repeat()` method available to strings. This method accepts a number as an argument, specifying the number of times to repeat the target string. For example, using `.repeat()` to generate the string `\"Code! Code! Code!\"`:\n\n```js\nconst activity = \"Code! \";\nactivity.repeat(3);\n```\n\nUse the `.repeat()` method on your `character`, and give it `i` for the number.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character);\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use the `.repeat()` method.\n\n```js\nassert.match(__helpers.removeJSComments(code), /\\.repeat\\(/);\n```\n\nYou should use the `.repeat()` method on your `character` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /character\\.repeat\\(/);\n```\n\nYou should pass `i` to your `.repeat()` method.\n\n```js\nassert.match(__helpers.removeJSComments(code), /character\\.repeat\\(\\s*i\\s*\\)/)\n```\n\nYou should use the `.repeat()` method in the `.push()` method\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.push\\(\\s*character\\.repeat\\(\\s*i\\s*\\)\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 46",
+      "description": "You're getting closer! At this point, you're encountering what's known as an <dfn>off-by-one error</dfn>, a frequent problem in zero-based indexing languages like JavaScript.\n\nThe first index of your `rows` array is `0`, which is why you start your `for` loop with `i = 0`. But repeating a string zero times results in nothing to print.\n\nTo fix this, add `1` to the value of `i` in your `.repeat()` call. Do not assign it back to `i` like you did in your loop conditions.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i))\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should add `1` to `i` in your `.repeat()` method.\n\n```js\nassert.match(__helpers.removeJSComments(code), /character\\.repeat\\(\\s*i\\s*\\+\\s*1\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 47",
+      "description": "The logic for formatting this pyramid is likely going to get complicated, which means it's a great time to extract that code into a function.\n\nA <dfn>function</dfn> is a block of code that can be reused throughout your application. Functions are declared with the following syntax:\n\n```js\nfunction name(parameter) {\n\n}\n```\n\nThe `function` keyword tells JavaScript that the `name` variable is going to be a function. `parameter` is a variable that represents a value that is passed into the function when it is used. A function may have as many, or as few, <dfn>parameters</dfn> as you'd like. Like a `for` loop, the space between the curly braces is the <dfn>function body</dfn>.\n\nDeclare a `padRow` function. Do not create any parameter variables yet. The function body should be empty. Remember that you need to use camel case for your naming convention.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\n\n--fcc-editable-region--\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use the `function` keyword.\n\n```js\nassert.match(__helpers.removeJSComments(code), /function/);\n```\n\nYou should declare a `padRow` function.\n\n```js\nassert.isFunction(padRow);\n```\n\nYour `padRow()` function should not have any parameters.\n\n```js\nassert.match(__helpers.removeJSComments(code), /padRow\\s*\\(\\s*\\)/);\n```\n\nYour `padRow()` function should have an empty body.\n\n```js\nassert.match(__helpers.removeJSComments(code), /padRow\\s*\\(\\s*\\)\\s*\\{\\s*\\}/);\n```"
+    },
+    {
+      "title": "Step 64",
+      "description": "In order to know how to format a row, your `padRow` function will need to know which row number you are on, and how many rows in total are being generated.\n\nThe best way to do this is by creating function parameters for them. Give your `padRow` function a `rowNumber` and `rowCount` parameter. Multiple parameters are separated by a comma:\n\n```js\nfunction name(first, second) {\n\n}\n```",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow() {\n\n}\n--fcc-editable-region--\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should have a `rowNumber` parameter.\n\n```js\nassert.match(__helpers.removeJSComments(code), /function\\s+padRow\\s*\\(\\s*rowNumber/);\n```\n\nYou should add a comma after your `rowNumber` parameter.\n\n```js\nassert.match(__helpers.removeJSComments(code), /function\\s+padRow\\s*\\(\\s*rowNumber\\s*,\\s*/);\n```\n\nYour `padRow` function should have a `rowCount` parameter.\n\n```js\nassert.match(__helpers.removeJSComments(code), /function\\s+padRow\\s*\\(\\s*rowNumber\\s*,\\s*rowCount\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 65",
+      "description": "Remember in an earlier step, you learned about return values. A function can <dfn>return</dfn> a value for your application to consume separately.\n\nIn a function, the `return` keyword is used to specify a return value. For example, this function would return the value given to the first parameter:\n\n```js\nfunction name(parameter) {\n  return parameter;\n}\n```\n\nUse the `return` keyword to return the value of the `character` variable, repeated `rowNumber` times.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(rowNumber, rowCount) {\n\n}\n--fcc-editable-region--\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use the `.repeat()` method.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/\\.repeat\\(/g), 2);\n```\n\nYou should use the `.repeat()` method on your `character` variable.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/character\\.repeat\\(/g), 2);\n```\n\nYou should pass `rowNumber` to your `.repeat()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /character\\.repeat\\(\\s*rowNumber\\s*\\)/);\n```\n\nYou should use the `return` keyword.\n\n```js\nassert.match(__helpers.removeJSComments(code), /return/);\n```\n\nYou should return the result of your `.repeat()` call.\n\n```js\nassert.equal(padRow(3), \"###\");\n```"
+    },
+    {
+      "title": "Step 66",
+      "description": "A <dfn>function call</dfn> allows you to actually use a function. You may not have been aware of it, but the methods like `.push()` that you have been using have been function calls.\n\nA function is called by referencing the function's name, and adding `()`. Here's how to call a `test` function:\n\n```js\ntest();\n```\n\nReplace the `character.repeat(i + 1)` in your `.push()` call with a function call for your `padRow` function. Do not add any arguments to it yet.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return character.repeat(rowNumber);\n}\n\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should not use `i + 1` in your `push` call.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /repeat\\(\\s*i\\s*\\+\\s*1\\s*\\)/);\n```\n\nYou should not use `character.repeat` in your `.push()` call.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /push\\(\\s*character/);\n```\n\nYou should call `padRow` in your `.push()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /push\\(\\s*?padRow\\((.+?)?\\)\\)/);\n```\n\nYou should not have arguments in your `padRow` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /push\\(\\s*?padRow\\(\\s*?\\)/);\n```"
+    },
+    {
+      "title": "Step 67",
+      "description": "Your `padRow` function has two parameters which you defined. Values are provided to those parameters when a function is called.\n\nThe values you provide to a function call are referred to as <dfn>arguments</dfn>, and you <dfn>pass</dfn> arguments to a function call. Here's a function call with `\"Hello\"` passed as an argument:\n\n```js\ntest(\"Hello\");\n```\n\nPass `i + 1` and `count` as the arguments to your `padRow` call. Like parameters, arguments are separated by a comma.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return character.repeat(rowNumber);\n}\n\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(padRow())\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should pass `i + 1` to your `padRow()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /push\\(\\s*padRow\\(\\s*i\\s*\\+\\s*1/);\n```\n\nYou should have a comma after your `i + 1` argument.\n\n```js\nassert.match(__helpers.removeJSComments(code), /push\\(\\s*padRow\\(\\s*i\\s*\\+\\s*1\\s*,\\s*/);\n```\n\nYou should pass `count` as your second argument.\n\n```js\nassert.match(__helpers.removeJSComments(code), /push\\(\\s*padRow\\(\\s*i\\s*\\+\\s*1\\s*,\\s*count\\s*\\)\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 68",
+      "description": "You should now see the same bunch of characters in your console. Your `padRow` function is doing the exact same thing you were doing earlier, but now it's in a reusable section of its own.\n\nUse the addition operator to concatenate a single space `\" \"` to the beginning and end of your repeated `character` string.\n\nRemember that you can use the `+` operator to concatenate strings like this:\n\n```js\n\" \" + \"string\"\n```",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(rowNumber, rowCount) {\n  return character.repeat(rowNumber);\n}\n--fcc-editable-region--\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(padRow(i + 1, count));\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should concatenate a single space to the beginning of your returned value.\n\n```js\nassert.match(padRow(1, 1), /^\\s/);\n```\n\nYou should concatenate a single space to the end of your returned value.\n\n```js\nassert.match(padRow(1, 1), /\\s$/);\n```\n\nYour `padRow()` function should return the repeated `character` series with a space before and after the series.\n\n```js\nassert.equal(padRow(1, 1), \" # \");\n```"
+    },
+    {
+      "title": "Step 69",
+      "description": "Now it is time for a bit of math. Consider a three-row pyramid. If we want it centered, it would look something like:\n\n```md\n··#··\n·###·\n#####\n```\n\nEmpty spaces have been replaced with interpuncts, or middle dots, for readability. If you extrapolate the pattern, you can see that the spaces at the beginning and end of a row follow a pattern.\n\nUpdate your blank space strings to be repeated `rowCount - rowNumber` times.\n\nOpen up the console to see the result.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(rowNumber, rowCount) {\n  return \" \" + character.repeat(rowNumber) + \" \";\n}\n--fcc-editable-region--\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(padRow(i + 1, count));\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should call `.repeat()` on your `\" \"` strings to repeat them `rowCount - rowNumber` times.\n\n```js\nassert.equal(padRow(1, 3), \"  #  \");\n```"
+    },
+    {
+      "title": "Step 70",
+      "description": "You can pass full expressions as an argument. The function will receive the result of evaluating that expression. For example, these two function calls below would yield the same result. (Note that the order of operations rule PEMDAS—Parenthesis, Exponents, Multiplication, Division, Addition, Subtraction—applies):\n\n```js\ntest(2 * 3 + 1);\ntest(7);\n```\n\nLooking at the pattern again:\n\n```md\n··#··\n·###·\n#####\n```\n\nUpdate the `character` value to be repeated `2 * rowNumber - 1` times.\n\nOpen up the console again to see the updated result.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(rowNumber) + \" \".repeat(rowCount - rowNumber);\n}\n--fcc-editable-region--\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(padRow(i + 1, count));\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your function should pass `2 * rowNumber - 1` to your `.repeat()` call.\n\n```js\nassert.equal(padRow(4, 5), \" ####### \");\n```"
+    },
+    {
+      "title": "Step 71",
+      "description": "Your pyramid generator now functions as expected. But this is an excellent opportunity to further explore the code you have written.\n\nThe addition operator is not the only way to add values to a variable. The <dfn>addition assignment</dfn> operator can be used as shorthand to mean \"take the original value of the variable, add this value, and assign the result back to the variable.\" For example, these two statements would yield the same result:\n\n```js\ntest = test + 1;\ntest += 1;\n```\n\nUpdate your iteration statement in the `for` loop to use addition assignment.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i = i + 1) {\n--fcc-editable-region--\n  rows.push(padRow(i + 1, count));\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should not use `i = i + 1`;\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /i\\s*=\\s*i\\s*\\+\\s*1/);\n```\n\nYour `for` loop should use addition assignment with `i`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /i\\s*\\+=\\s*1/);\n```"
+    },
+    {
+      "title": "Step 72",
+      "description": "Because you are only increasing `i` by `1`, you can use the <dfn>increment operator</dfn> `++`. This operator increases the value of a variable by 1, updating the assignment for that variable. For example, `test` would become `8` here:\n\n```js\nlet test = 7;\ntest++;\n```\n\nReplace your addition assignment with the increment operator for your loop iteration.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i += 1) {\n--fcc-editable-region--\n  rows.push(padRow(i + 1, count));\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should not use addition assignment with `i`.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /i\\s*\\+=\\s*1/);\n```\n\nYour `for` loop should use the increment operator on `i`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /i\\s*\\+\\+/);\n```"
+    },
+    {
+      "title": "Step 73",
+      "description": "Rather than having to pass `i + 1` to your `padRow` call, you could instead start your loop at `1`. This would allow you to create a one-indexed loop.\n\nUpdate your iterator to start at `1` instead of `0`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n--fcc-editable-region--\nfor (let i = 0; i < count; i++) {\n  rows.push(padRow(i + 1, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should initialise `i` at `1`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*1/);\n```"
+    },
+    {
+      "title": "Step 74",
+      "description": "The pyramid looks a little funny now. Because you are starting the loop at `1` instead of `0`, you do not need to add one to `i` when you pass it to `padRow`.\n\nUpdate the first argument of your `padRow` call to be `i`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n--fcc-editable-region--\nfor (let i = 1; i < count; i++) {\n  rows.push(padRow(i + 1, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should not pass `i + 1` to `padRow`.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /padRow\\(\\s*i\\s*\\+\\s*1/);\n```\n\nYou should pass `i` to `padRow`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /padRow\\(\\s*i\\s*,/);\n```"
+    },
+    {
+      "title": "Step 75",
+      "description": "Unfortunately, now the bottom of the pyramid has disappeared. This is because you have created another <dfn>off-by-one error</dfn>.\n\nYour original loop went for `i` values from `0` to `7`, because `count` is `8` and your condition requires `i` to be less than `count`. Your loop is now running for `i` values from `1` to `7`.\n\nYour loop needs to be updated to run when `i` is `8`, too. Looking at your logic, this means your loop should run when `i` is <dfn>less than or equal to</dfn> `count`. You can use the less than or equal to operator `<=` for this.\n\nUpdate your loop condition to run while `i` is less than or equal to `count`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n--fcc-editable-region--\nfor (let i = 1; i < count; i++) {\n  rows.push(padRow(i, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should not check if `i` is less than `count`.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /i\\s*<\\s*count/);\n```\n\nYour `for` loop should check if `i` is less than or equal to `count`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /i\\s*<=\\s*count/);\n```"
+    },
+    {
+      "title": "Step 76",
+      "description": "Comments can be helpful for explaining why your code takes a certain approach, or leaving to-do notes for your future self.\n\nIn JavaScript, you can use `//` to leave a single-line comment in your code.\n\nAdd a single-line comment above your `for` loop to remind yourself to change the code to a different kind of loop.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n--fcc-editable-region--\n\nfor (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should start a single-line comment with `//`.\n\n```js\nassert.match(code, /\\/\\//);\n```\n\nYour single-line comment should be at least five characters long.\n\n```js\nassert.match(code, /\\/\\/.{5,}/);\n```"
+    },
+    {
+      "title": "Step 77",
+      "description": "JavaScript also has support for multi-line comments. A multi-line comment starts with `/*` and ends with `*/`.\n\nUnlike a single-line comment, a multi-line comment will encapsulate multiple lines.\n\nUse `/*` and `*/` to turn your current `for` loop, including the body, into a multi-line comment.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n--fcc-editable-region--\nfor (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should start a multi-line comment with `/*`.\n\n```js\nassert.match(code, /\\/\\*/);\n```\n\nYou should end a multi-line comment with `*/`.\n\n```js\nassert.match(code, /\\*\\//);\n```\n\nYour entire `for` loop should be commented out.\n\n```js\nconst stripped = __helpers.removeJSComments(code);\nassert.lengthOf(stripped.match(/for/g), 1);\nassert.notMatch(stripped, /rows\\.push/);\nassert.notMatch(stripped, /i <= count/);\n```"
+    },
+    {
+      "title": "Step 78",
+      "description": "Your pyramid has disappeared again. That's okay - that is to be expected.\n\nBefore you create your new loop, you need to learn about `if` statements. An <dfn>`if` statement</dfn> allows you to run a block of code only when a condition is met. They use the following syntax:\n\n```js\nif (condition) {\n  logic\n}\n```\n\nCreate an `if` statement with the boolean `true` as the condition. In the body, print the string `\"Condition is true\"`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\n\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should create an `if` statement.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if/);\n```\n\nYour `if` statement should have `true` as the condition.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*true\\s*\\)/);\n```\n\nYour `if` body should log `\"Condition is true\"`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*true\\s*\\)\\s*\\{\\s*console\\.log\\(\\s*(\"|')Condition is true\\1\\s*\\);?/);\n```"
+    },
+    {
+      "title": "Step 79",
+      "description": "You'll see the string printed in the console, because `true` is in fact true.\n\nChange the condition of your `if` statement to the boolean `false`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nif (true) {\n  console.log(\"Condition is true\");\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `if` condition should have `false` as the condition.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*false\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 80",
+      "description": "Now the string is no longer printing, because `false` is not `true`. But what about other values?\n\nTry changing the condition to the string `\"false\"`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nif (false) {\n  console.log(\"Condition is true\");\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `if` statement should have the string `\"false\"` as the condition.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*('|\")false\\1\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 81",
+      "description": "The text has appeared again! This is because `\"false\"` is a string, which when evaluated to a boolean becomes `true`. This means `\"false\"` is a truthy value.\n\nA <dfn>truthy value</dfn> is a value that is considered true when evaluated as a boolean. Most of the values you encounter in JavaScript will be truthy.\n\nA <dfn>falsy value</dfn> is the opposite - a value considered false when evaluated as a boolean. JavaScript has a defined list of falsy values. Some of them include `false`, `0`, `\"\"`, `null`, `undefined`, and `NaN`.\n\nTry changing your `if` condition to an empty string `\"\"`, which is a falsy value.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nif (\"false\") {\n  console.log(\"Condition is true\");\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `if` statement should have `\"\"` as the condition.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*(\"|')\\1\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 84",
+      "description": "Now that you have practiced working with `if...else if...else` statements, you can remove them from your code.\n\nOnce you complete that, use `let` to declare a `continueLoop` variable and assign it the boolean `false`. Then use `let` to declare a `done` variable and assign it the value `0`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nif (\"\") {\n  console.log(\"Condition is true\");\n} else if (5 < 10) {\n  console.log(\"5 is less than 10\");\n} else {\n  console.log(\"This is the else block\");\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should not have an `if` statement.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /if\\s*\\(/);\n```\n\nYou should not have an `else if` statement.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /else\\s+if\\s*\\(/);\n```\n\nYou should not have an `else` statement.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /else\\s*\\{/);\n```\n\nYou should use `let` to declare a `continueLoop` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+continueLoop/);\n```\n\nYour `continueLoop` variable should have the value `false`.\n\n```js\nassert.isFalse(continueLoop);\n```\n\nYou should use `let` to declare a `done` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+done/);\n```\n\nYour `done` variable should have the value `0`.\n\n```js\nassert.strictEqual(done, 0);\n```"
+    },
+    {
+      "title": "Step 85",
+      "description": "A <dfn>`while`</dfn> loop will run over and over again until the `condition` specified is no longer true. It has the following syntax:\n\n```js\nwhile (condition) {\n  logic;\n}\n```\n\nUse that syntax to declare a `while` loop with `continueLoop` as the condition. The body should be empty.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nlet continueLoop = false;\nlet done = 0;\n\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use a `while` loop.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while/);\n```\n\nYour `while` loop should use `continueLoop` as the condition.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 86",
+      "description": "Right now, if you change `continueLoop` to true, your `while` loop will run forever. This is called an <dfn>infinite loop</dfn>, and you should be careful to avoid these. An infinite loop can lock up your system, requiring a full restart to escape.\n\nTo avoid this, start by using the increment operator to increase the value of the `done` variable inside your loop.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\nlet continueLoop = false;\nlet done = 0;\n\n--fcc-editable-region--\nwhile (continueLoop) {\n\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `while` loop should increment the `done` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+/);\n```"
+    },
+    {
+      "title": "Step 88",
+      "description": "The equality operator can lead to some strange behavior in JavaScript. For example, `\"0\" == 0` is true, even though one is a string and one is a number.\n\nThe <dfn>strict equality</dfn> operator `===` is used to check if two values are equal and share the same type. As a general rule, this is the equality operator you should always use. With the strict equality operator, `\"0\" === 0` becomes false, because while they might have the same value of zero, they are not of the same type.\n\nUpdate your `done == count` condition to use the strict equality operator.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\nlet continueLoop = false;\nlet done = 0;\n\nwhile (continueLoop) {\n  done++;\n--fcc-editable-region--\n  if (done == count) {\n\n  }\n--fcc-editable-region--\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `if` condition should use strict equality.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+;\\s*if\\s*\\(\\s*(?:done\\s*===\\s*count|count\\s*===\\s*done)\\s*\\)\\s*\\{/);\n```"
+    },
+    {
+      "title": "Step 89",
+      "description": "When `done` has reached the value of `count`, we want the loop to stop executing.\n\nInside your `if` body, assign the boolean `false` to your `continueLoop` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\nlet continueLoop = false;\nlet done = 0;\n\nwhile (continueLoop) {\n  done++;\n--fcc-editable-region--\n  if (done === count) {\n\n  }\n--fcc-editable-region--\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `if` body should assign `false` to your `continueLoop` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+;\\s*if\\s*\\(\\s*(?:done\\s*===\\s*count|count\\s*===\\s*done)\\s*\\)\\s*\\{\\s*continueLoop\\s*=\\s*false;?/);\n```"
+    },
+    {
+      "title": "Step 90",
+      "description": "To make your pyramid generate again, push the result of calling `padRow` with `done` and `count` as the arguments to your `rows` array, similar to what you did in your first loop.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\nlet continueLoop = false;\nlet done = 0;\n\nwhile (continueLoop) {\n  done++;\n--fcc-editable-region--\n\n--fcc-editable-region--\n  if (done === count) {\n    continueLoop = false;\n  } \n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your loop should call the `.push()` method on your `rows`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+;\\s*rows\\.push\\(/);\n```\n\nYou should call your `padRow` function in your `.push()` method.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+;\\s*rows\\.push\\(\\s*padRow\\(/);\n```\n\nYou should pass `done` as the first argument to your `padRow` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+;\\s*rows\\.push\\(\\s*padRow\\(\\s*done/);\n```\n\nYou should pass `count` as the second argument to your `padRow` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+;\\s*rows\\.push\\(\\s*padRow\\(\\s*done\\s*,\\s*count\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 91",
+      "description": "The <dfn>strict inequality</dfn> operator `!==` allows you to check if two values are not equal, or do not have the same type. The syntax is similar to the equality operator: `value !== 4`.\n\nCurrently the `while` loop runs only if `continueLoop` is true. Update the `while` loop condition to check if `done` is not equal to `count`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\nlet continueLoop = false;\nlet done = 0;\n\n--fcc-editable-region--\nwhile (continueLoop) {\n  done++;\n  rows.push(padRow(done, count));\n  if (done === count) {\n    continueLoop = false;\n  } \n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `while` loop should check if `done` and `count` are not equal.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*(?:done\\s*!==\\s*count|count\\s*!==\\s*done)/);\n```"
+    },
+    {
+      "title": "Step 92",
+      "description": "Since you have moved the comparison into the `while` condition, you can remove your entire `if` statement.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\nlet continueLoop = false;\nlet done = 0;\n\n--fcc-editable-region--\nwhile (done !== count) {\n  done++;\n  rows.push(padRow(done, count));\n  if (done === count) {\n    continueLoop = false;\n  } \n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should no longer have an `if` statement.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /if\\s*\\(\\s*done\\s*===\\s*count\\s*\\)/);\n```\n\nYou should no longer set `continueLoop` to `false`.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/continueLoop\\s*=\\s*false/g), 1);\n```"
+    },
+    {
+      "title": "Step 93",
+      "description": "Your loop is no longer relying on the `continueLoop` variable. This makes the variable an <dfn>unused declaration</dfn>. Generally, you want to avoid unused declarations to prevent future confusion.\n\nRemove your `continueLoop` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nlet continueLoop = false;\nlet done = 0;\n\nwhile (done !== count) {\n  done++;\n  rows.push(padRow(done, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should no longer have a `continueLoop` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /continueLoop/);\n```"
+    },
+    {
+      "title": "Step 94",
+      "description": "Your pyramid generator is still working. However, it could be possible to end up with an infinite loop again.\n\nBecause you are only checking if `done` is not equal to `count`, if `done` were to be **larger** than `count` your loop would go on forever.\n\nUpdate your loop's condition to check if `done` is less than or equal to `count`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nlet done = 0;\n\nwhile (done !== count) {\n  done++;\n  rows.push(padRow(done, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `while` loop should check if `done` is less than or equal to `count`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*done\\s*<=\\s*count\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 95",
+      "description": "Using `done` to track the number of rows that have been generated is functional, but you can actually clean up the logic a bit further.\n\nArrays have a special `length` property that allows you to see how many values, or <dfn>elements</dfn>, are in the array. You would access this property using syntax like `myArray.length`.\n\nNote that `rows.length` in the `padRow` call would give you an off-by-one error, because `done` is incremented *before* the call.\n\nUpdate your condition to check if `rows.length` is less than `count`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nlet done = 0;\n\nwhile (done <= count) {\n  done++;\n  rows.push(padRow(done, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `while` loop should check if `rows.length` is less than `count`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*rows\\.length\\s*<\\s*count\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 97",
+      "description": "Now you no longer need your `done` variable. Remove the increment operation from your loop, and the variable declaration for `done`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nlet done = 0;\n\nwhile (rows.length < count) {\n  done++;\n  rows.push(padRow(rows.length + 1, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should not increment the `done` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /done\\+\\+/);\n```\n\nYou should no longer have a `done` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /done/);\n```"
+    },
+    {
+      "title": "Step 98",
+      "description": "That's a very clean and functional loop. Nice work! But there's still more to explore.\n\nUse a multi-line comment to comment out your `while` loop.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nwhile (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `while` loop should be commented out.\n\n```js\nconst stripped = __helpers.removeJSComments(code);\nassert.notMatch(stripped, /while/);\n```\n\nYour `while` loop body should be commented out.\n\n```js\nconst stripped = __helpers.removeJSComments(code);\nassert.notMatch(stripped, /rows\\.push/);\n```"
+    },
+    {
+      "title": "Step 99",
+      "description": "What if you made your pyramid upside-down, or <dfn>inverted</dfn>? Time to try it out!\n\nStart by creating a new `for` loop. Declare your iterator `i` and assign it the value of `count`, then use the boolean `false` for your condition and iteration statements.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n--fcc-editable-region--\n\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your code should have a `for` loop.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/for\\s*\\(/g), 2);\n```\n\nYour `for` loop should initialise `i` with the value of `count`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count/);\n```\n\nYour `for` loop should use `false` as the condition.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*false/);\n```\n\n\nYour `for` loop should use `false` as the iteration.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*false\\s*;\\s*false\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 100",
+      "description": "Because you are going to loop in the opposite direction, your loop needs to run while `i` is greater than `0`. You can use the <dfn>greater than</dfn> operator `>` for this.\n\nSet your loop's condition to run when `i` is greater than `0`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n--fcc-editable-region--\nfor (let i = count; false; false) {\n\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should run when `i` is greater than `0`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*i\\s*>\\s*0\\s*;\\s*false\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 101",
+      "description": "Your iteration statement is also going to be different. Instead of adding `1` to `i` with each loop, you need to subtract `1`.\n\nLike you did earlier with `i = i + 1`, update your iteration statement to give `i` the value of subtracting `1` from itself.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n--fcc-editable-region--\nfor (let i = count; i > 0; false) {\n\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should use `i = i - 1` as the iteration.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*i\\s*>\\s*0\\s*;\\s*i\\s*=\\s*i\\s*-\\s*1\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 102",
+      "description": "Again, push the result of calling `padRow` with your `i` and `count` variables to your `rows` array.\n\nOpen up the console to see the upside-down pyramid.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n--fcc-editable-region--\nfor (let i = count; i > 0; i = i - 1) {\n\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should call `rows.push()`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*i\\s*>\\s*0\\s*;\\s*i\\s*=\\s*i\\s*-\\s*1\\s*\\)\\s*\\{\\s*rows\\.push\\(/);\n```\n\nYou should call `padRow()` in your `.push()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*i\\s*>\\s*0\\s*;\\s*i\\s*=\\s*i\\s*-\\s*1\\s*\\)\\s*\\{\\s*rows\\.push\\(\\s*padRow\\s*\\(/);\n```\n\nYou should pass `i` as the first argument to your `padRow()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*i\\s*>\\s*0\\s*;\\s*i\\s*=\\s*i\\s*-\\s*1\\s*\\)\\s*\\{\\s*rows\\.push\\(\\s*padRow\\s*\\(\\s*i/);\n```\n\nYou should pass `count` as the second argument to your `padRow()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*i\\s*>\\s*0\\s*;\\s*i\\s*=\\s*i\\s*-\\s*1\\s*\\)\\s*\\{\\s*rows\\.push\\(\\s*padRow\\s*\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 103",
+      "description": "Just like addition, there are different operators you can use for subtraction. The <dfn>subtraction assignment</dfn> operator `-=` subtracts the given value from the current variable value, then assigns the result back to the variable.\n\nReplace your iteration statement with the correct statement using the subtraction assignment operator.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n--fcc-editable-region--\nfor (let i = count; i > 0; i = i - 1) {\n  rows.push(padRow(i, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should not use `i = i - 1`.\n\n```js\nassert.notMatch(__helpers.removeWhiteSpace(__helpers.removeJSComments(code)), /for\\(leti=count;i>0;i=i-1\\)\\{rows\\.push\\(padRow\\(i,count\\)\\);/);\n```\n\nYour `for` loop should use subtraction assignment to reduce `i` by `1`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*i\\s*>\\s*0\\s*;\\s*i\\s*-=\\s*1\\s*\\)\\s*\\{\\s*rows\\.push\\(\\s*padRow\\s*\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);/);\n```"
+    },
+    {
+      "title": "Step 104",
+      "description": "Because you are only subtracting one from `i`, you can use the <dfn>decrement operator</dfn> `--`.\n\nReplace your subtraction assignment with the decrement operator.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n--fcc-editable-region--\nfor (let i = count; i > 0; i -= 1) {\n  rows.push(padRow(i, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should not use subtraction assignment.\n\n```js\nassert.notMatch(__helpers.removeWhiteSpace(__helpers.removeJSComments(code)), /for\\(leti=count;i>0;i-=1\\)\\{rows\\.push\\(padRow\\(i,count\\)\\);/);\n```\n\nYour `for` loop should use the decrement operator.\n\n```js\nassert.match(__helpers.removeJSComments(code), /for\\s*\\(\\s*let\\s+i\\s*=\\s*count\\s*;\\s*i\\s*>\\s*0\\s*;\\s*i--\\s*\\)\\s*\\{\\s*rows\\.push\\(\\s*padRow\\s*\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);/);\n```"
+    },
+    {
+      "title": "Step 105",
+      "description": "Use a multi-line comment to comment out this loop as well, to prepare for the next approach.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n--fcc-editable-region--\nfor (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `for` loop should be commented out using multi-line comment.\n\n```js\nassert.lengthOf(code.match(/\\/\\*\\s*for\\s*\\(/g), 2);\nassert.lengthOf(__helpers.removeJSComments(code).match(/for\\s*\\(/g), 1);\n```\n\nYour `for` loop body should be commented out as part of multi-line comment.\n\n```js\nassert.notMatch(code, /\\/\\/\\s*rows\\.push/);\nassert.lengthOf(code.match(/rows\\.push/g), 3)\nassert.notMatch(__helpers.removeJSComments(code), /rows\\.push/);\n```"
+    },
+    {
+      "title": "Step 106",
+      "description": "You can actually build the inverted pyramid without needing to loop \"backwards\" like you did.\n\nTo do this, you'll need to learn a couple of new array methods. Start by using `const` to declare a `numbers` variable. Assign it an array with the elements `1`, `2`, and `3`. Then log the `numbers` array.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\n\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use `const` to declare a `numbers` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+numbers/);\n```\n\nYour `numbers` variable should be an array.\n\n```js\nassert.isArray(numbers);\n```\n\nYour `numbers` array should have the elements `1`, `2`, and `3` in that order.\n\n```js\nassert.deepEqual(numbers, [1,2,3]);\n```\n\nYou should log your `numbers` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*numbers\\s*\\);?/);\n```"
+    },
+    {
+      "title": "Step 107",
+      "description": "The `.unshift()` method of an array allows you to add a value to the **beginning** of the array, unlike `.push()` which adds the value at the end of the array. `.unshift()` returns the new length of the array it was called on.\n\n```js\nconst countDown = [2, 1, 0];\nconst newLength = countDown.unshift(3);\nconsole.log(countDown); // [3, 2, 1, 0]\nconsole.log(newLength); // 4\n```\n\nUse `const` to declare an `unshifted` variable, and assign it the result of calling `.unshift()` on your `numbers` array. Pass `5` as the argument. Then print your `unshifted` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nconst numbers = [1, 2, 3];\n\nconsole.log(numbers);\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should declare your `unshifted` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+unshifted/);\n```\n\nYou should call the `.unshift()` method on your `numbers` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /numbers\\.unshift\\(/);\n```\n\nYou should pass `5` as the argument to your `.unshift()` call.\n\n```js\nassert.deepEqual(numbers, [5,1,2,3]);\n```\n\nYou should assign the result of your `.unshift()` call to your `unshifted` variable.\n\n```js\nassert.equal(unshifted, 4);\n```\n\nYou should log your `unshifted` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*unshifted\\s*\\);?/);\n```"
+    },
+    {
+      "title": "Step 108",
+      "description": "Arrays also have a `.shift()` method. This will remove the **first** element of the array, unlike `.pop()` which removes the last element. Here is an example of the `.shift()` method:\n\n```js\nconst numbers = [1, 2, 3];\nnumbers.shift();\n```\n\nThe `numbers` array would be `[2, 3]`.\n\nDirectly below your `numbers` array, declare a `shifted` variable and assign it the result of calling `.shift()` on the `numbers` array. On the next line, log the `shifted` variable to the console.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nconst numbers = [1, 2, 3];\n\n\nconst unshifted = numbers.unshift(5);\nconsole.log(unshifted);\nconsole.log(numbers);\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use `const` to declare a `shifted` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+shifted/);\n```\n\nYou should call `.shift()` on your `numbers` array.\n\n```js\nassert.deepEqual(numbers, [5, 2, 3]);\n```\n\nYou should assign the result of your `.shift()` call to your `shifted` variable.\n\n```js\nassert.equal(shifted, 1);\n```\n\nYou should log your `shifted` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*shifted\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 109",
+      "description": "Now that you've tried these methods, you can do another inverted pyramid approach. But first you need to clean up your experimentation.\n\nRemove your `numbers` array, and the method calls and log calls.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nconst numbers = [1, 2, 3];\nconst shifted = numbers.shift();\nconsole.log(shifted);\nconst unshifted = numbers.unshift(5);\nconsole.log(unshifted);\nconsole.log(numbers);\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should not have a `numbers` array.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /numbers/);\n```\n\nYou should not have an `unshifted` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /unshifted/);\n```\n\nYou should not have a `shifted` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /shifted/);\n```\n\nYou should not have your `console.log` statements.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/console\\.log/g), 1);\n```"
+    },
+    {
+      "title": "Step 110",
+      "description": "Sometimes you may wish to bring back previous code that you commented out. You can do so by removing the `/*` and `*/` around that code. This is called <dfn>uncommenting</dfn>.\n\nUncomment only your first `for` loop. Leave the single line comment and the other two multi line comments in place.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n--fcc-editable-region--\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should uncomment your first `for` loop.\n\n```js\nconst stripped = __helpers.removeJSComments(code);\nassert.match(stripped, /for\\s*\\(\\s*let\\s+i\\s*=\\s*1;\\s*i\\s*<=\\s*count;\\s*i\\+\\+\\s*\\)/)\n```\n\nYou should not remove your single-line comment.\n\n```js\nassert.match(code, /\\/\\//);\n```\n\nYou should not uncomment your `while` loop.\n\n```js\nconst stripped = __helpers.removeJSComments(code);\nassert.notMatch(stripped, /while/);\n```\n\nYou should not uncomment your second `for` loop.\n\n```js\nconst stripped = __helpers.removeJSComments(code);\nassert.lengthOf(stripped.match(/for\\s*\\(/g), 2)\n```"
+    },
+    {
+      "title": "Step 111",
+      "description": "Your pyramid is no longer inverted. This is because you are adding new rows to the **end** of the array.\n\nUpdate your loop body to add new rows to the beginning of the array.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n--fcc-editable-region--\nfor (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}\n--fcc-editable-region--\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use the `unshift` method of `rows`.\n\n```js\nconst stripped = __helpers.removeJSComments(code);\nassert.match(stripped, /\\.unshift/);\n```\n\nYou should pass a `padRow()` call as the argument for your `.unshift()` method.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.unshift\\(\\s*padRow\\(/);\n```\n\nYou should pass `i` as the first argument to your `padRow()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.unshift\\(\\s*padRow\\(\\s*i/)\n```\n\nYou should pass `count` as the second argument to your `padRow()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.unshift\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 112",
+      "description": "What if you had a way to toggle between an inverted pyramid and a standard pyramid?\n\nStart by declaring an `inverted` variable, and assigning it the value `true`. You are not changing this variable in your code, but you will need to use `let` so our tests can modify it later.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n--fcc-editable-region--\n\n--fcc-editable-region--\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\nfor (let i = 1; i <= count; i++) {\n  rows.unshift(padRow(i, count));\n}\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should declare an `inverted` variable with `let`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+inverted/);\n```\n\nYou should initialise `inverted` with the value `true`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+inverted\\s*=\\s*true;?/);\n```"
+    },
+    {
+      "title": "Step 113",
+      "description": "Use an `if` statement to check if `inverted` is true. Remember that you do not need to use an equality operator here.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\nlet inverted = true;\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n--fcc-editable-region--\nfor (let i = 1; i <= count; i++) {\n\n  rows.unshift(padRow(i, count));\n}\n--fcc-editable-region--\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use an `if` statement.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(/);\n```\n\nYour `if` statement should check if `inverted` is `true`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted/);\n```\n\nYour `if` condition should not use any comparison operators.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 114",
+      "description": "Now move your `.unshift()` call into your `if` block.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\nlet inverted = true;\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n--fcc-editable-region--\nfor (let i = 1; i <= count; i++) {\n  if (inverted) {\n\n  }\n  rows.unshift(padRow(i, count));\n}\n--fcc-editable-region--\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `.unshift()` call should be in your `if` block.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted\\s*\\)\\s*\\{\\s*rows\\.unshift\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);\\s*\\}/);\n```"
+    },
+    {
+      "title": "Step 115",
+      "description": "If your pyramid is not inverted, then you will want to have an `else` block that builds the pyramid in the normal order.\n\nIn earlier steps, you learned how to work with `else` statement like this:\n\n```js\nif (condition) {\n  // if condition is true, run this code\n} else {\n  // if condition is false, run this code\n}\n```\n\nAdd an `else` block to your `if` block.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\nlet inverted = true;\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n--fcc-editable-region--\nfor (let i = 1; i <= count; i++) {\n  if (inverted) {\n    rows.unshift(padRow(i, count));\n  }\n\n}\n--fcc-editable-region--\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should add an `else` block.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted\\s*\\)\\s*\\{\\s*rows\\.unshift\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);\\s*\\}\\s*else\\s*\\{/);\n```\n\nYour `else` block should be empty.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted\\s*\\)\\s*\\{\\s*rows\\.unshift\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);\\s*\\}\\s*else\\s*\\{\\s*\\}/);\n```"
+    },
+    {
+      "title": "Step 116",
+      "description": "When `inverted` is false, you want to build a standard pyramid. Use `.push()` like you have in previous steps to achieve this.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\nlet inverted = true;\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n--fcc-editable-region--\nfor (let i = 1; i <= count; i++) {\n  if (inverted) {\n    rows.unshift(padRow(i, count));\n  } else {\n\n  }\n}\n--fcc-editable-region--\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should call the `.push()` method of `rows` in your `else` block.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted\\s*\\)\\s*\\{\\s*rows\\.unshift\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);\\s*\\}\\s*else\\s*\\{\\s*rows\\.push\\(\\s*/);\n```\n\nYou should pass a `padRow()` call as the argument for your `.push()` method.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted\\s*\\)\\s*\\{\\s*rows\\.unshift\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);\\s*\\}\\s*else\\s*\\{\\s*rows\\.push\\(\\s*padRow\\(/);\n```\n\nYou should pass `i` as the first argument to your `padRow()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted\\s*\\)\\s*\\{\\s*rows\\.unshift\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);\\s*\\}\\s*else\\s*\\{\\s*rows\\.push\\(\\s*padRow\\(\\s*i/);\n```\n\nYou should pass `count` as the second argument to your `padRow()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /if\\s*\\(\\s*inverted\\s*\\)\\s*\\{\\s*rows\\.unshift\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)\\s*\\);\\s*\\}\\s*else\\s*\\{\\s*rows\\.push\\(\\s*padRow\\(\\s*i\\s*,\\s*count\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 117",
+      "description": "Your pyramid generator is now in a finished state, with more functionality than you originally planned! The next step is to clean up your code.\n\nRemove all comments, both single- and multi-line, from your code.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\nlet inverted = true;\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n--fcc-editable-region--\n// TODO: use a different type of loop\nfor (let i = 1; i <= count; i++) {\n  if (inverted) {\n    rows.unshift(padRow(i, count));\n  } else {\n    rows.push(padRow(i, count));\n  }\n}\n\n/*while (rows.length < count) {\n  rows.push(padRow(rows.length + 1, count));\n}*/\n\n/*for (let i = count; i > 0; i--) {\n  rows.push(padRow(i, count));\n}*/\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should not have any single-line comments in your code.\n\n```js\nassert.notMatch(code, /\\/\\//);\n```\n\nYou should not have any multi-line comments in your code.\n\n```js\nassert.notMatch(code, /(?:\\*\\/|\\/\\*)/);\n```\n\nYou should not have any comments in your code.\n\n```js\nassert.equal(code, __helpers.removeJSComments(code));\n```\n\nYou should remove code that was commented out by multi-line comments.\n\n```js\nassert.notMatch(code, /while/);\nassert.lengthOf(code.match(/for\\s*\\(/g), 2)\nassert.lengthOf(code.match(/rows\\.push/g), 1);\n```"
+    },
+    {
+      "title": "Step 118",
+      "description": "Nice work! Experiment with different values for your `character`, `count`, and `inverted` variables.\n\nWhen you are ready to move on to your next project, set `character` to `\"!\"`, `count` to `10`, and `inverted` to `false` to continue.\n\nCongratulations on completing your first JavaScript project!",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nconst character = \"#\";\nconst count = 8;\nconst rows = [];\nlet inverted = true;\n--fcc-editable-region--\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\nfor (let i = 1; i <= count; i++) {\n  if (inverted) {\n    rows.unshift(padRow(i, count));\n  } else {\n    rows.push(padRow(i, count));\n  }\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should set `character` to `\"!\"`.\n\n```js\nassert.equal(character, \"!\");\n```\n\nYou should set `count` to `10`.\n\n```js\nassert.equal(count, 10);\n```\n\nYou should set `inverted` to `false`.\n\n```js\nassert.equal(inverted, false);\n```"
+    },
+    {
+      "title": "Step 8",
+      "description": "When variable names are more than one word, there are specific naming conventions for how you capitalize the words. In JavaScript, the convention to use is <dfn>camel case</dfn>.\n\nCamel case means that the first word in the name is entirely lowercase, but the following words are all title-cased. Here are some examples of camel case:\n\n```js\nlet variableOne;\nlet secondVariable;\nlet yetAnotherVariable;\nlet thisIsAnAbsurdlyLongName;\n```\n\nUse camel case to declare a new `secondCharacter` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nconsole.log(character);\ncharacter = \"World\";\nconsole.log(character);\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should declare a `secondCharacter` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /secondCharacter/);\n```\n\nYou should use `let` to declare your `secondCharacter` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+secondCharacter/);\n```\n\nYou should not assign a value to your `secondCharacter` variable. Do not forget your semicolon.\n\n```js\nassert.match(__helpers.removeJSComments(code), /let\\s+secondCharacter;/);\n```"
+    },
+    {
+      "title": "Step 9",
+      "description": "When you declare a variable without initializing it, it is considered <dfn>uninitialized</dfn>. Currently, your `secondCharacter` variable is uninitialized.\n\nAdd a `console.log()` to see what the value of your `secondCharacter` variable is.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nconsole.log(character);\ncharacter = \"World\";\nlet secondCharacter;\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should add a second `console.log`.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/console\\.log/g), 2);\n```\n\nYou should log your `secondCharacter` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*secondCharacter\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 10",
+      "description": "The default value of an uninitialized variable is `undefined`. This is a special data type that represents a value that does not have a definition yet.\n\nYou can still assign a value to an uninitialized variable. Here is an example:\n\n```js\nlet uninitialized;\nuninitialized = \"assigned\";\n```\n\nAssign the string `\"Test\"` to your `secondCharacter` variable below your declaration. Open the console to see how your log has changed.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "--fcc-editable-region--\nlet character = 'Hello';\nconsole.log(character);\ncharacter = \"World\";\nlet secondCharacter;\n\nconsole.log(secondCharacter);\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should not initialize `secondCharacter`. Remember that initialization means assigning a value when you declare the variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /let\\s+secondCharacter\\s*=/);\n```\n\nYou should use the assignment operator on `secondCharacter`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /secondCharacter\\s*=/);\n```\n\nYou should assign the string `\"Test\"` to your `secondCharacter` variable.\n\n```js\nassert.equal(secondCharacter, \"Test\");\n```"
+    },
+    {
+      "title": "Step 11",
+      "description": "You can also assign the value of a variable to another variable. For example:\n\n```js\nlet first = \"One\";\nlet second = \"Two\";\nsecond = first;\n```\n\nThe `second` variable would now have the value `\"One\"`.\n\nTo see this in action, change your `secondCharacter` assignment from `\"Test\"` to your `character` variable.\n\nThen open the console to see what gets logged.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nconsole.log(character);\ncharacter = \"World\";\nlet secondCharacter;\n--fcc-editable-region--\nsecondCharacter = \"Test\";\n--fcc-editable-region--\nconsole.log(secondCharacter);"
+        }
+      ],
+      "testCode": "You should not assign the value `\"Test\"` to your `secondCharacter` variable.\n\n```js\nassert.notEqual(secondCharacter, \"Test\");\n```\n\nYou should assign the value of the `character` variable to your `secondCharacter` variable. Don't forget your semicolon.\n\n```js\nassert.match(__helpers.removeJSComments(code), /secondCharacter\\s*=\\s*character;/);\n```\n\nYour `secondCharacter` variable should now have the value `\"World\"`.\n\n\n```js\nassert.equal(secondCharacter, \"World\");\n```"
+    },
+    {
+      "title": "Step 22",
+      "description": "Notice how the value inside your `rows` array has been changed directly? This is called <dfn>mutation</dfn>. As you learn more about arrays, you will learn when to mutate an array, and when you should not.\n\nBefore moving on, this is a great opportunity to learn a common array use. Currently, your code accesses the last element in the array with `rows[2]`. But you may not know how many elements are in an array when you want the last one.\n\nYou can make use of the `.length` property of an array - this returns the number of elements in the array. To get the last element of any array, you can use the following syntax:\n\n```js\narray[array.length - 1]\n```\n\n`array.length` returns the number of elements in the array. By subtracting `1`, you get the index of the last element in the array. You can apply this same concept to your `rows` array.\n\nUpdate your `rows[2]` to dynamically access the last element in the `rows` array. Refer to the example above to help you.\n\nYou should not see anything change in your console.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\nconsole.log(rows[0]);\n--fcc-editable-region--\nrows[2] = 10;\n--fcc-editable-region--\nconsole.log(rows);"
+        }
+      ],
+      "testCode": "You should use the `.length` property of your `rows` array.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.length/);\n```\n\nYou should use `rows.length` in your bracket notation.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\[\\s*rows\\.length/);\n```\n\nYou should subtract `1` from the length in your bracket notation.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\[\\s*rows\\.length\\s*-\\s*1\\s*\\]/)\n```"
+    },
+    {
+      "title": "Step 87",
+      "description": "The <dfn>equality</dfn> operator `==` is used to check if two values are equal. To compare two values, you'd use a statement like `value == 8`.\n\nBelow `done++` inside your loop, add an `if` statement. The statement should check if `done` is equal to `count` using the equality operator.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\nlet continueLoop = false;\nlet done = 0;\n\n--fcc-editable-region--\nwhile (continueLoop) {\n  done++;\n\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should use an `if` statement in your loop. It should be added after `done++`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+;\\s*if/);\n```\n\nYour `if` statement should use the equality operator to compare `done` and `count` in the condition.\n\n```js\nassert.match(__helpers.removeJSComments(code), /while\\s*\\(\\s*continueLoop\\s*\\)\\s*\\{\\s*done\\+\\+;\\s*if\\s*\\(\\s*(?:done\\s*==\\s*count|count\\s*==\\s*done)\\s*\\)\\s*\\{/);\n```"
+    },
+    {
+      "title": "Step 48",
+      "description": "In order to use a function, you need to call it. A <dfn>function call</dfn> tells your application to run the code from the function wherever you choose to call it. The syntax for a function call is the function name followed by parentheses. For example, this code defines and calls a `test` function.\n\n```js\nfunction test() {\n\n}\ntest();\n```\n\nCall your `padRow` function.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow() {\n\n}\n\n--fcc-editable-region--\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should call the `padRow` function.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/padRow\\(\\)/g), 2);\n```\n\nYour `padRow` function body should be empty.\n\n```js\nassert.match(padRow.toString(), /\\{\\s*\\}/);\n```"
+    },
+    {
+      "title": "Step 49",
+      "description": "You are calling your `padRow` function, but not doing anything with that function call. All functions in JavaScript <dfn>return</dfn> a value, meaning they provide the defined result of calling them for you to use elsewhere.\n\nTo see the result of calling your `padRow` function, declare a `call` variable and assign your existing `padRow` call to that variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow() {\n\n}\n--fcc-editable-region--\npadRow();\n--fcc-editable-region--\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should declare a `call` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /(const|let|var)\\s+call/);\n```\n\nYou should use `const` to declare your `call` variable.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+call/);\n```\n\nYou should assign `call` the result of your `padRow` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /const\\s+call\\s*=\\s*padRow\\(\\)/);\n```"
+    },
+    {
+      "title": "Step 50",
+      "description": "Now add a log statement to print the value of your `call` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow() {\n\n}\nconst call = padRow();\n\n--fcc-editable-region--\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should add a `console.log` call.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/console\\.log/g), 2)\n```\n\nYou should log your `call` variable. Don't forget the semicolon.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*call\\s*\\);/);\n```"
+    },
+    {
+      "title": "Step 51",
+      "description": "Your `call` variable has an `undefined` value, even though you defined it! This is because your `padRow` function does not currently return a value. By default, functions return `undefined` as their value.\n\nIn order to return something else, you need to use the `return` keyword. Here is an example of a function that returns the string `\"Functions are cool!\"`:\n\n```js\nfunction demo() {\n  return \"Functions are cool!\";\n}\n```\n\nUse the `return` keyword to have your function return the string `\"Hello!\"`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow() {\n\n}\n--fcc-editable-region--\nconst call = padRow();\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should use the `return` keyword.\n\n```js\nassert.match(padRow.toString(), /return/);\n```\n\nYour `padRow` function should return the string `\"Hello!\"`.\n\n```js\nassert.equal(padRow(), \"Hello!\");\n```"
+    },
+    {
+      "title": "Step 52",
+      "description": "When you have a value that is explicitly written in your code, like the `\"Hello!\"` string in your function, it is considered to be <dfn>hard-coded</dfn>. Hard-coding a value inside a function might not make it as reusable as you'd like.\n\nInstead, you can define <dfn>parameters</dfn> for the function. Parameters are special variables that are given a value when you call the function, and can be used in your function to dynamically change the result of the function's code.\n\nTo add a parameter to your function, you need to add a variable name inside the parentheses. For example, this `demo` function has a `name` parameter:\n\n```js\nfunction demo(name) {\n\n}\n```\n\n`name` sounds like a useful parameter, so go ahead and add it to your `padRow` function.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow() {\n  return \"Hello!\";\n}\n--fcc-editable-region--\nconst call = padRow();\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should have a `name` parameter.\n\n```js\nassert.match(padRow.toString(), /\\(name\\)/);\n```"
+    },
+    {
+      "title": "Step 53",
+      "description": "A function does not have to return a hard-coded value. It can return the value stored in a variable. Parameters are special variables for a function, so they can also be returned.\n\nChange your `padRow` function to `return` the `name` parameter directly.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(name) {\n  return \"Hello!\";\n}\n--fcc-editable-region--\nconst call = padRow();\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should return the value of the `name` parameter.\n\n```js\nassert.equal(padRow(\"Naomi\"), \"Naomi\");\n```"
+    },
+    {
+      "title": "Step 54",
+      "description": "If you open your console again, you'll see that your `padRow` function is returning `undefined`, even though you defined a return value! This is because parameters need to be given a value when you **call** the function.\n\nWhen you pass a value to a function call, that value is referred to as an <dfn>argument</dfn>. Here is an example of calling a `demo` function and passing `\"Naomi\"` as the argument for the `name` parameter.\n\n```js\nfunction demo(name) {\n  return name;\n}\ndemo(\"Naomi\");\n```\n\nPass your own name as the argument for the `name` parameter in your `padRow` call. Remember that your name is a string, so you'll need to use quotes.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(name) {\n  return name;\n}\n--fcc-editable-region--\nconst call = padRow();\n--fcc-editable-region--\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should pass a string to your `padRow()` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /padRow\\(\\s*(\"|').+\\1\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 57",
+      "description": "Variables in JavaScript are available in a specific <dfn>scope</dfn>. In other words, where a variable is declared determines where in your code it can be used.\n\nThe first scope is the global scope. Variables that are declared outside of any \"block\" like a function or `for` loop are in the <dfn>global scope</dfn>. Your `character`, `count`, and `rows` variables are all in the global scope.\n\nWhen a variable is in the global scope, a function can access it in its definition. Here is an example of a function using a global `title` variable:\n\n```js\nconst title = \"Professor \";\nfunction demo(name) {\n  return title + name;\n}\ndemo(\"Naomi\")\n```\n\nThis example would return `\"Professor Naomi\"`. Update your `padRow` function to return the value of concatenating your `character` variable to the beginning of the `name` parameter.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(name) {\n  return name;\n}\n--fcc-editable-region--\nconst call = padRow(\"CamperChan\");\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should concatenate `character` to the beginning of `name`.\n\n```js\nassert.match(padRow.toString(), /character\\s*\\+\\s*name/);\n```\n\nYour `padRow` function should return the result of `character + name`.\n\n```js\nassert.equal(padRow(\"Naomi\"), \"#Naomi\");\n```"
+    },
+    {
+      "title": "Step 58",
+      "description": "Variables can also be declared inside a function. These variables are considered to be in the <dfn>local scope</dfn>, or <dfn>block scope</dfn>. A variable declared inside a function can only be used inside that function. If you try to access it outside of the function, you get a reference error.\n\nTo see this in action, use `const` to declare a `test` variable in your `padRow` function. Initialise it with the value `\"Testing\"`.\n\nThen, below your function, try to log `test` to the console. You will see an error because it is not defined outside of the function's local scope. Remove that `console.log` to pass the tests and continue.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(name) {\n\n  return character + name;\n}\n\n--fcc-editable-region--\nconst call = padRow(\"CamperChan\");\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your function should declare a `test` variable.\n\n```js\nassert.match(padRow.toString(), /var\\s+test/);\n```\n\nYou should initialise `test` with the value `\"Testing\"`. Don't forget the semicolon.\n\n```js\nassert.match(padRow.toString(), /var\\s+test\\s*=\\s*('|\")Testing\\1;/)\n```\n\nYour `test` variable should come before your `return` keyword.\n\n```js\nconst str = padRow.toString();\nconst testIndex = str.indexOf(\"test\");\nconst returnLocation = str.indexOf(\"return\");\nconst testLocation = testIndex !== -1 ? testIndex : returnLocation\nassert.isBelow(testLocation, returnLocation);\n```"
+    },
+    {
+      "title": "Step 59",
+      "description": "Values returned out of a function are used by calling the function. You can use the function call directly as the value it returns, or capture the returned value in a variable. This way, you can use the value assigned to a locally scoped variable, outside the function it was created in.\n\n```js\nfunction getName() {\n  const name = \"Camper cat\";\n  return name;\n}\n\nconsole.log(getName()); // \"Camper cat\"\n\nconst capturedReturnValue = getName();\nconsole.log(capturedReturnValue); // \"Camper cat\"\n\nconsole.log(name); // reference error\n```\n\nTo use your `\"Testing\"` value, return it out of the `padRow` function by updating your `return` statement to return only the `test` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(name) {\n  const test = \"Testing\";  \n  return character + name;\n}\n\n--fcc-editable-region--\nconst call = padRow(\"CamperChan\");\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should return the `test` variable.\n\n```js\nassert.equal(padRow(\"Naomi\"), \"Testing\");\n```"
+    },
+    {
+      "title": "Step 60",
+      "description": "Below the `return` statement, log the string `\"This works!\"` to the console.\n\nAfter doing that, you will see that the string `\"This works!\"` does not display in the console, and the `console.log(\"This works!\")` line is greyed out.\n\nCopy the console log and paste it above the `return` statement. Now, the string `\"This works!\"` should appear in the console.\n\nAn important thing to know about the `return` keyword is that it does not just define a value to be returned from your function, it also stops the execution of your code inside a function or a block statement. This means any code after a `return` statement will not run.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(name) {\n  const test = \"Testing\";\n  \n  return test;\n\n}\n\n--fcc-editable-region--\nconst call = padRow(\"CamperChan\");\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should return the `test` variable.\n\n```js\nassert.equal(padRow(\"Naomi\"), \"Testing\");\n```\n\nYour first `console.log` should come after your `return` keyword.\n\n```js\nassert.match(padRow.toString(), /return\\s+test;\\s+console.log\\s*\\(\\s*('|\"|`)This\\s+works!\\1\\);/);\n```\n\nYour second `console.log` should come before your `return` keyword.\n\n```js\nassert.match(padRow.toString(), /console.log\\s*\\(\\s*('|\"|`)This\\s+works!\\1\\);\\s+return\\s+test;/);\n```"
+    },
+    {
+      "title": "Step 61",
+      "description": "Now your `call` variable has the value `\"Testing\"`. But your function is no longer using the `name` parameter.\n\nRemove the `name` parameter from your function declaration, then remove your `\"CamperChan\"` string from the `padRow` call.\n\nAlso, remove both `console.log` from the `padRow` function.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow(name) {\n  const test = \"Testing\";\n  console.log(\"This works!\");\n  return test;\n  console.log(\"This works!\");\n}\nconst call = padRow(\"CamperChan\");\nconsole.log(call);\n--fcc-editable-region--\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should not have a `name` parameter.\n\n```js\nassert.notMatch(padRow.toString(), /name/);\n```\n\nYou should not pass `\"CamperChan\"` to your `padRow` call.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /CamperChan/);\n```\n\nYou should still call your `padRow` function.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/padRow\\(\\)/g), 2);\n```\n\nYou should not have a `console.log` before your `return` keyword.\n\n```js\nassert.notMatch(padRow.toString(), /console.log\\s*\\(\\s*('|\"|`)This\\s+works!\\1\\);\\s+return\\s+test;/);\n```\n\nYou should not have a `console.log` after your `return` keyword.\n\n```js\nassert.notMatch(padRow.toString(), /return\\s+test;\\s+console.log\\s*\\(\\s*('|\"|`)This\\s+works!\\1\\);/);\n```"
+    },
+    {
+      "title": "Step 62",
+      "description": "Because your function was no longer using the parameter, changing the argument did not affect it.\n\nGo ahead and remove the `test` declaration and `return` statement from your `padRow` function, so the function is empty again.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow() {\n  const test = \"Testing\";\n  return test;\n}\nconst call = padRow();\nconsole.log(call);\n--fcc-editable-region--\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "Your `padRow` function should not have a `test` variable.\n\n```js\nassert.notMatch(padRow.toString(), /test/);\n```\n\nYour `padRow` function should not return a value.\n\n```js\nassert.notMatch(padRow.toString(), /return/);\n```"
+    },
+    {
+      "title": "Step 63",
+      "description": "As expected, your function now returns `undefined` again. Your `call` variable is not necessary any more, so remove the `call` declaration and the `console.log` for the `call` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\n--fcc-editable-region--\nfunction padRow() {\n\n}\nconst call = padRow();\nconsole.log(call);\n--fcc-editable-region--\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should not have a `call` declaration.\n\n```js\nassert.notMatch(__helpers.removeWhiteSpace(__helpers.removeJSComments(code)), /constcall/);\n```\n\nYou should not log your `call` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /call/);\n```"
+    },
+    {
+      "title": "Step 96",
+      "description": "Replace the `done` reference in your `padRow` call with `rows.length + 1`.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nlet done = 0;\n\nwhile (rows.length < count) {\n  done++;\n  rows.push(padRow(done, count));\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should pass `rows.length + 1` as the first argument to your `padRow` call.\n\n```js\nassert.match(__helpers.removeJSComments(code), /rows\\.push\\(padRow\\s*\\(\\s*rows\\.length\\s*\\+\\s*1/);\n```"
+    },
+    {
+      "title": "Step 82",
+      "description": "The text is gone again! Empty strings evaluate to `false`, making them a <dfn>falsy value</dfn>. You will learn more about truthy and falsy values in future projects.\n\nIn addition to `if` statements, JavaScript also has <dfn>else if</dfn> statements. `else if` statements allow you to check multiple conditions in a single block of code.\n\nHere is the syntax for an `else if` statement:\n\n```js\nif (condition1) {\n  // code to run if condition1 is true\n} else if (condition2) {\n  // code to run if condition2 is true\n} else if (condition3) {\n  // code to run if condition3 is true\n} \n```\n\nIf the first condition is `false`, JavaScript will check the next condition in the chain. If the second condition is `false`, JavaScript will check the third condition, and so on.\n\nBelow your `if` statement, add an `else if` statement that checks if `5` is less than `10`. Then inside the body of the `else if` statement, log the string `\"5 is less than 10\"` to the console.\n\nCheck the console to see the results.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nif (\"\") {\n  console.log(\"Condition is true\");\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should have an `else if` statement.\n\n```js\nassert.match(__helpers.removeJSComments(code), /else\\s+if\\s*\\(/);\n```\n\nYour `else if` statement should check if `5` is less than `10`.\n\n```js\nassert.match(__helpers.removeJSComments(code), /else\\s+if\\s*\\(\\s*5\\s*<\\s*10\\s*\\)/);\n```\n\nYou should log the string `\"5 is less than 10\"` to the console.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*('|\"|`)5\\s+is\\s+less\\s+than\\s+10\\1\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 83",
+      "description": "Sometimes you will want to run different code when all of the `if...else if` conditions are `false`. You can do this by adding an `else` block. \n\nAn `else` block will only evaluate if the conditions in the `if` and `else if` blocks are not met.\n\nHere the `else` block is added to the `else if` block. \n\n```js\n\nif (condition) {\n  // this code will run if condition is true\n} else if (condition2) {\n  // this code will run if the first condition is false\n} else {\n  // this code will run \n  // if the first and second conditions are false\n}\n```\n\nAdd an `else` block to the `else if` block. Inside the `else` block, log the string `\"This is the else block\"` to the console.\n\nTo see the results in the console, you can manually change the `<` in the `else if` statement to `>`. That will make the condition `false` and the `else` block will run.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(rowNumber, rowCount) {\n  return \" \".repeat(rowCount - rowNumber) + character.repeat(2 * rowNumber - 1) + \" \".repeat(rowCount - rowNumber);\n}\n\n// TODO: use a different type of loop\n/*for (let i = 1; i <= count; i++) {\n  rows.push(padRow(i, count));\n}*/\n\n--fcc-editable-region--\nif (\"\") {\n  console.log(\"Condition is true\");\n} else if (5 < 10) {\n  console.log(\"5 is less than 10\");\n}\n--fcc-editable-region--\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should have an `else` block.\n\n```js\nassert.match(__helpers.removeJSComments(code), /else\\s*\\{/);\n```\n\nYour `else` block should log the string `\"This is the else block\"` to the console.\n\n```js\nassert.match(__helpers.removeJSComments(code), /console\\.log\\(\\s*('|\"|`)This\\s+is\\s+the\\s+else\\s+block\\1\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 14",
+      "description": "Now that you have reviewed declaration and initialization, remove the code you wrote for your review.\n\nDo not remove your `character` variable.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = \"Hello\";\n--fcc-editable-region--\nlet profession = \"teacher\";\nlet age;\nconsole.log(age);\nconsole.log(profession);\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should not have a `profession` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /let\\s+profession/);\n```\n\nYou should not have a `age` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /let\\s+age/);\n```\n\nYou should not have a `console.log` statement for `age`.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /console\\.log\\(\\s*age\\s*\\);/);\n```\n\nYou should not have a `console.log` statement for `profession`.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /console\\.log\\(\\s*profession\\s*\\);/);\n```\n\nYou should still have your `character` variable.\n\n```js\nassert.strictEqual(character, \"Hello\");\n```"
+    },
+    {
+      "title": "Step 13",
+      "description": "Before moving forward, you should take a moment to review the concepts you have learned.\n\nUse the `let` keyword to declare a `profession` variable and an `age` variable. Initialize `profession` with the string `\"teacher\"`, but do not initialize `age` with any value.\n\nLog both of your variables to the console to see the results.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = \"Hello\";\n--fcc-editable-region--\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "You should declare a `profession` variable.\n\n```js\nassert.match(code, /(?:var|let|const)\\s+profession/);\n```\n\nYou should use `let` to declare the `profession` variable.\n\n```js\nassert.match(code, /let\\s+profession/);\n```\n\nYou should assign the string `\"teacher\"` to the `profession` variable.\n\n```js\nassert.strictEqual(profession, \"teacher\");\n```\n\nYou should declare an `age` variable.\n\n```js\nassert.match(code, /(?:var|let|const)\\s+age/);\n```\n\nYou should use `let` to declare the `age` variable.\n\n```js\nassert.match(code, /let\\s+age/);\n```\n\nYou should not assign a value to the `age` variable.\n\n```js\nassert.isUndefined(age);\n```\n\nYou should log `age` to the console.\n\n```js\nassert.match(code, /console\\.log\\(\\s*age\\s*\\);?/);\n```\n\nYou should log `profession` to the console.\n\n```js\nassert.match(code, /console\\.log\\(\\s*profession\\s*\\);?/);\n```"
+    },
+    {
+      "title": "Step 24",
+      "description": "In the last few steps, you learned all about working with arrays. Take a moment to review what you have learned.\n\nStart by declaring a `cities` variable and initializing it as an array of the strings `\"London\"`, `\"New York\"`, and `\"Mumbai\"`. Then log that variable to the console.\n\nAfter logging, change the last element of `cities` to the string `\"Mexico City\"`, then log the `cities` variable again.\n\nWhen done correctly, you should see this output in the console.\n\n```js\n[ \"London\", \"New York\", \"Mumbai\" ]\n[ \"London\", \"New York\", \"Mexico City\" ]\n```",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\n--fcc-editable-region--\n\n--fcc-editable-region--\nconsole.log(rows);"
+        }
+      ],
+      "testCode": "You should use `let` to declare a `cities` variable.\n\n```js\nassert.match(code, /let\\s+cities/);\n```\n\nYou should assign an array of the strings `\"London\"`, `\"New York\"`, and `\"Mumbai\"` to the `cities` variable.\n\n```js\nassert.match(code, /let\\s+cities\\s*=\\s*\\[\\s*(\"|'|`)London\\1\\s*,\\s*(\"|'|`)New York\\2\\s*,\\s*(\"|'|`)Mumbai\\3\\s*,?\\s*\\]/);\n```\n\nYou should use `console.log()` to log the entire `cities` array to the console.\n\n```js\nassert.match(code, /console\\.log\\(\\s*cities\\s*\\)/);\n```\n\nYou should update the last element of the `cities` array to the string `\"Mexico City\"`. Remember that you can access the last element of an array using `array[array.length - 1]`.\n\n```js\nassert.deepEqual(cities, [\"London\", \"New York\", \"Mexico City\"]);\n```\n\nYou should have two `console.log(cities)` statements in your code.\n\n```js\nassert.lengthOf(__helpers.removeJSComments(code).match(/console\\.log\\(\\s*cities\\s*\\)/g), 2);\n```"
+    },
+    {
+      "title": "Step 25",
+      "description": "Now you are ready to move onto the next set of array lessons.\n\nRemove all of your code from the previous step.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "let character = 'Hello';\nlet count = 8;\nlet rows = [\"Naomi\", \"Quincy\", \"CamperChan\"];\n--fcc-editable-region--\nlet cities = [\"London\", \"New York\", \"Mumbai\"];\nconsole.log(cities);\ncities[cities.length - 1] = \"Mexico City\";\nconsole.log(cities);\n--fcc-editable-region--\nconsole.log(rows);"
+        }
+      ],
+      "testCode": "You should remove all references to your `cities` variable.\n\n```js\nassert.notMatch(__helpers.removeJSComments(code), /cities/);\n```"
+    },
+    {
+      "title": "Step 55",
+      "description": "Before moving on, take a moment to review how functions work.\n\nDeclare a function named `addTwoNumbers`. This function should take two arguments and return the sum of those two arguments.\n\nYour function should not use hard-coded values. An example of a hard-coded function might be:\n\n```js\nfunction sayName(firstName, lastName) {\n  return \"John Doe\";\n}\n\nsayName(\"Camper\", \"Cat\");\n```\n\nThis function would return `\"John Doe\"` regardless of the arguments passed to the parameters `firstName`, and `lastName`, so `\"John Doe\"` is considered a hard-coded value.\n\nDeclare a `sum` variable and assign it the value of calling your `addTwoNumbers` function with `5` and `10` as the arguments. Log the `sum` variable to the console.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(name) {\n  return name;\n}\n--fcc-editable-region--\n\n--fcc-editable-region--\n\nconst call = padRow(\"CamperChan\");\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should have a function called `addTwoNumbers`.\n\n```js\nassert.isFunction(addTwoNumbers);\n```\n\nYour function `addTwoNumbers` should have two parameters.\n\n```js\nassert.lengthOf(addTwoNumbers, 2);\n```\n\nYour function should return the sum of the two parameters.\n\n```js\nassert.strictEqual(addTwoNumbers(5,10), 15);\n```\n\nYour function should not return a hard-coded value. That is, it should work with any two number arguments.\n\n```js\nassert.strictEqual(addTwoNumbers(3, 5), 8);\n```\n\nYou should declare a `sum` variable.\n\n```js\nassert.isDefined(sum);\n```\n\nYour `sum` variable should have the value `15`.\n\n```js\nassert.strictEqual(sum, 15);\n```\n\nYou should assign `sum` the value from calling the `addTwoNumbers` function with `5` and `10` for the arguments.\n\n```js\nassert.match(code, /sum\\s*=\\s*addTwoNumbers\\s*\\(/);\n```\n\nYou should log your `sum` variable.\n\n```js\nassert.match(code, /console\\.log\\(\\s*sum\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 56",
+      "description": "With that quick review complete, you should remove your `addTwoNumbers` function, `sum` variable, and log statement.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "const character = \"#\";\nconst count = 8;\nconst rows = [];\n\nfunction padRow(name) {\n  return name;\n}\n--fcc-editable-region--\nfunction addTwoNumbers(num1, num2) {\n  return num1 + num2;\n}\n\nconst sum = addTwoNumbers(5, 10);\nconsole.log(sum)\n\n--fcc-editable-region--\n\nconst call = padRow();\nconsole.log(call);\n\n\nfor (let i = 0; i < count; i = i + 1) {\n  rows.push(character.repeat(i + 1))\n}\n\nlet result = \"\"\n\nfor (const row of rows) {\n  result = result + row + \"\\n\";\n}\n\nconsole.log(result);"
+        }
+      ],
+      "testCode": "You should not have a `addTwoNumbers` function in your code.\n\n```js\nassert.notMatch(code, /addTwoNumbers/);\n```\n\nYou should not have a `sum` variable in your code.\n\n```js\nassert.notMatch(code, /sum/);\n```\n\nYou should not log the `sum` variable.\n\n```js\nassert.notMatch(code, /console\\.log\\(\\s*sum\\s*\\)/);\n```"
+    },
+    {
+      "title": "Step 1",
+      "description": "JavaScript is the programming language that powers the web. Unlike the HTML and CSS you have learned previously, JavaScript is most commonly used to write logic instead of markup.\n\nIn this project, you will learn the basics of Javascript and apply those concepts to building a pyramid generator. \n\nA pyramid generator is a program where you can set the type of character, the count for the pyramid, and the direction of the pyramid. The program will then generate a pyramid based on those inputs.\n\nClick on the \"Check your code\" button to proceed to the next step and start the project.",
+      "files": [
+        {
+          "name": "script.js",
+          "language": "js",
+          "content": "console.log(\"Let's build a pyramid using JavaScript basics:\");\nconsole.log(\"    #    \");\nconsole.log(\"   ###   \");\nconsole.log(\"  #####  \");\nconsole.log(\" ####### \");\nconsole.log(\"#########\");\n--fcc-editable-region--\n\n--fcc-editable-region--"
+        }
+      ],
+      "testCode": "Submit to continue. \n\n```js\n\n```"
+    }
+  ]
+}

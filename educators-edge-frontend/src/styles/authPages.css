@@ -1,0 +1,19 @@
+/* Soft floating effect to give life to cards */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.float-subtle {
+  animation: float 12s ease-in-out infinite;
+}
+
+/* Brand accent for buttons if not overridden by theme */
+.brand-accent {
+  background: linear-gradient(135deg, #6366f1 0%, #a78bfa 100%);
+}
+
+/* Background gradient for auth pages */
+.auth-bg {
+  background: linear-gradient(135deg, #eef2fe 0%, #f5f7ff 70%);
+}
