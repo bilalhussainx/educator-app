@@ -77,8 +77,8 @@ const StuckPointNotifications: React.FC = () => {
                 const data = await response.json();
                 setNotifications(data);
             } catch (err) {
-                if (err instanceof Error && err.message === 'AuthError') navigate('/login');
                 console.error("Failed to fetch notifications:", err);
+                // Don't redirect to login here - let the main app handle authentication
             } finally {
                 setIsLoading(false);
             }
@@ -179,13 +179,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!user) { navigate('/login'); return; }
+            if (!user) return; // Let the main app handle authentication
             setIsLoading(true);
             const token = localStorage.getItem('authToken');
             try {
                 const coursesEndpoint = user.role === 'teacher' ? '/api/courses' : '/api/students/my-courses';
                 const coursesResponse = await fetch(`http://localhost:5000${coursesEndpoint}`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (coursesResponse.status === 401) { navigate('/login'); return; }
+                if (!coursesResponse.ok) {
+                    console.error('Failed to fetch courses:', coursesResponse.status);
+                    return;
+                }
                 const coursesData = await coursesResponse.json();
                 setCourses(coursesData);
                 
