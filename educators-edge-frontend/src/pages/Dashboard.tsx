@@ -9,7 +9,7 @@
  * and role-based rendering.
  */
 import React, {useState, useEffect } from 'react';
-import type { DashboardProps, User, Course, EnrolledCourse, LiveSession, StuckPointNotification } from '../types/index.ts';
+import type { DashboardProps, Course, EnrolledCourse, LiveSession, StuckPointNotification } from '../types/index.ts';
 import { useNavigate } from 'react-router-dom';
 import * as ProgressPrimitive from "@radix-ui/react-progress";
 import { cn } from "@/lib/utils";

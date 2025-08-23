@@ -317,13 +317,13 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
                     const currentFiles = initialFilesRef.current;
                     const onFilesChangeCallback = onFilesChangeRef.current;
                     const updatedStudentFiles = currentFiles.map(studentFile => {
-                        const correspondingTeacherFile = updatedFilesFromTeacher.find(teacherFile => teacherFile.name === studentFile.filename);
+                        const correspondingTeacherFile = updatedFilesFromTeacher.find(teacherFile => teacherFile.filename === studentFile.filename);
                         return correspondingTeacherFile ? { ...studentFile, content: correspondingTeacherFile.content } : studentFile;
                     });
                     onFilesChangeCallback(updatedStudentFiles);
-                    const teacherActiveFile = updatedFilesFromTeacher.find(f => f.name === newWorkspace.activeFileName);
+                    const teacherActiveFile = updatedFilesFromTeacher.find(f => f.filename === newWorkspace.activeFileName);
                     if (teacherActiveFile) {
-                        const correspondingStudentFile = currentFiles.find(f => f.filename === teacherActiveFile.name);
+                        const correspondingStudentFile = currentFiles.find(f => f.filename === teacherActiveFile.filename);
                         if (correspondingStudentFile) setActiveFileId(correspondingStudentFile.id);
                     }
                     break;

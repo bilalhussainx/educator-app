@@ -2,7 +2,7 @@ import React from 'react';
 import Editor from '@monaco-editor/react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Terminal as TerminalIcon, File as FileIcon } from 'lucide-react';
-import { StudentHomeworkState, CodeFile } from '../types/index.ts';
+import { StudentHomeworkState, CodeFile } from '../../types/index.ts';
 
 interface StudentWorkspaceViewProps {
     workspace: StudentHomeworkState | undefined;
