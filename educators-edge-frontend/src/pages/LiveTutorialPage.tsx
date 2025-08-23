@@ -85,7 +85,7 @@ const LiveTutorialPage: React.FC = () => {
     const [handsRaised, setHandsRaised] = useState<Set<string>>(new Set());
     const [spotlightedStudentId, setSpotlightedStudentId] = useState<string | null>(null);
     const [spotlightWorkspace, setSpotlightWorkspace] = useState<StudentHomeworkState | null>(null);
-    const [connectionStatus, setConnectionStatus] = useState('Initializing...');
+    // const [connectionStatus, setConnectionStatus] = useState('Initializing...');
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [isMuted, setIsMuted] = useState(false);
@@ -98,7 +98,7 @@ const LiveTutorialPage: React.FC = () => {
     const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
     const [teacherId, setTeacherId] = useState<string | null>(null);
     const [isStudentChatOpen, setIsStudentChatOpen] = useState(false);
-    const [connectedPeers, setConnectedPeers] = useState<Map<string, RTCPeerConnection>>(new Map());
+    // const [connectedPeers, setConnectedPeers] = useState<Map<string, RTCPeerConnection>>(new Map());
     const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
@@ -184,7 +184,7 @@ const LiveTutorialPage: React.FC = () => {
             fitAddon.current.fit();
             newTerm.onData((data) => {
                 if (ws.current?.readyState === WebSocket.OPEN && roleRef.current === 'teacher' && viewingMode === 'teacher') {
-                    sendWsMessage('TERMINAL_IN', data);
+                    sendWsMessage('TERMINAL_IN', { data });
                 }
             });
             term.current = newTerm;
@@ -553,7 +553,7 @@ const LiveTutorialPage: React.FC = () => {
     };
 
     // WebRTC event handlers
-    const handleInitiateVideoConnection = async (targetId: string, targetUsername: string) => {
+    const handleInitiateVideoConnection = async (targetId: string, _targetUsername: string) => {
         if (!localStreamRef.current) {
             console.error('[WEBRTC] No local stream available for initiation');
             return;
@@ -580,7 +580,7 @@ const LiveTutorialPage: React.FC = () => {
         // The actual offer will come through WEBRTC_OFFER, this just prepares us
     };
 
-    const handleWebRTCOffer = async (fromId: string, offer: RTCSessionDescriptionInit, isAutoCall: boolean = false) => {
+    const handleWebRTCOffer = async (fromId: string, offer: RTCSessionDescriptionInit, _isAutoCall: boolean = false) => {
         if (!localStreamRef.current) {
             console.error('[WEBRTC] No local stream available for handling offer');
             return;
@@ -716,11 +716,11 @@ const LiveTutorialPage: React.FC = () => {
         }
     };
 
-    const onTerminalData = (data: string) => {
-        if (role === 'teacher' && viewingMode === 'teacher') {
-            sendWsMessage('TERMINAL_IN', data);
-        }
-    };
+    // const onTerminalData = (data: string) => {
+    //     if (role === 'teacher' && viewingMode === 'teacher') {
+    //         sendWsMessage('TERMINAL_IN', { data });
+    //     }
+    // };
     
     const handleRunCode = () => {
         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {

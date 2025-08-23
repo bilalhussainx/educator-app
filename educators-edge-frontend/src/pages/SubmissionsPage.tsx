@@ -12,7 +12,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { Submission, LessonFile } from '../types/index.ts';
 import Editor from '@monaco-editor/react';
 import { cn } from "@/lib/utils";
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 
 // CoreZenith UI Components & Icons
 import { Button } from "@/components/ui/button";

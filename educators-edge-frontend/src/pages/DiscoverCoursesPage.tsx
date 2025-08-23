@@ -145,7 +145,7 @@ const DiscoverCoursesPage: React.FC = () => {
                             placeholder="Search by course, topic, or instructor..."
                             className="w-full p-4 pl-12 text-base bg-slate-900/60 border-2 border-slate-700 rounded-lg focus:border-cyan-400 focus:ring-0"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.g.target.value)}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </header>
