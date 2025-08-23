@@ -24,7 +24,7 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import LiveTutorialPage from './pages/LiveTutorialPage';
 import CreateLessonPage from './pages/CreateLessonPage';
-import AscentIDE from './pages/AscentIDE';
+// import AscentIDE from './pages/AscentIDE';
 import SubmissionsPage from './pages/SubmissionsPage';
 import CreateCoursePage from './pages/CreateCoursePage';
 import CourseManagementPage from './pages/CourseManagementPage';

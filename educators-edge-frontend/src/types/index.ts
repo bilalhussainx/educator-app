@@ -135,6 +135,15 @@ export interface StuckPointNotification {
     };
 }
 
+// Type for awards/achievements
+export interface Award {
+    id: string;
+    title: string;
+    description: string;
+    icon?: string;
+    earned_at?: string;
+}
+
 // /*
 //  * =================================================================
 //  * FOLDER: src/

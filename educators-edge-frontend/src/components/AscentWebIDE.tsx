@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { AscentIdeData, LessonFile } from '../types/index.ts';
+import type { AscentIdeData, Submission } from '../types/index.ts';
 import Editor from '@monaco-editor/react';
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Toaster, toast } from 'sonner';
-import { ChevronLeft, BeakerIcon, Send, Save } from 'lucide-react';
+import { ChevronLeft, Send, Save, Award } from 'lucide-react';
 
 const AscentWebIDE: React.FC = () => {
     const { lessonId } = useParams<{ lessonId: string }>();
@@ -29,7 +29,7 @@ const AscentWebIDE: React.FC = () => {
     
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submission, setSubmission] = useState<Submission | null>(null); // <-- ADD THIS LINE
+    const [submission, setSubmission] = useState<Submission | null>(null);
 
     const [startTime, setStartTime] = useState<number>(Date.now());
     const [codeChurn, setCodeChurn] = useState<number>(0);
@@ -102,21 +102,22 @@ const AscentWebIDE: React.FC = () => {
             { filename: 'script.js', content: jsCode },
         ];
         
-        toast.promise(
-            fetch(`http://localhost:5000/api/lessons/${lessonId}/save-progress`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ files: filesPayload })
-            }).then(res => {
-                if (!res.ok) throw new Error('Failed to save progress.');
-                return res.json();
-            }),
-            {
-                loading: 'Saving your work...',
-                success: 'Progress saved!',
-                error: (err) => err.message,
-            }
-        ).finally(() => setIsSaving(false));
+        const savePromise = fetch(`http://localhost:5000/api/lessons/${lessonId}/save-progress`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ files: filesPayload })
+        }).then(res => {
+            if (!res.ok) throw new Error('Failed to save progress.');
+            return res.json();
+        });
+        
+        toast.promise(savePromise, {
+            loading: 'Saving your work...',
+            success: 'Progress saved!',
+            error: (err) => err.message,
+        });
+        
+        savePromise.finally(() => setIsSaving(false));
     };
 
     const handleSubmit = async () => {
@@ -138,24 +139,25 @@ const AscentWebIDE: React.FC = () => {
         
         analytics.track('Solution Submitted', { ...submissionPayload, lesson_id: lessonId });
         
-        toast.promise(
-            fetch(`http://localhost:5000/api/lessons/${lessonId}/submit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(submissionPayload)
-            }).then(async (res) => {
-                if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.error || 'Submission failed.');
-                }
-                return res.json();
-            }),
-            {
-                loading: 'Submitting your solution...',
-                success: (data) => data.message || "Project submitted successfully!",
-                error: (err) => err.message,
+        const submitPromise = fetch(`http://localhost:5000/api/lessons/${lessonId}/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(submissionPayload)
+        }).then(async (res) => {
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Submission failed.');
             }
-        ).finally(() => setIsSubmitting(false));
+            return res.json();
+        });
+        
+        toast.promise(submitPromise, {
+            loading: 'Submitting your solution...',
+            success: (data) => data.message || "Project submitted successfully!",
+            error: (err) => err.message,
+        });
+        
+        submitPromise.finally(() => setIsSubmitting(false));
     };
 
     const renderActiveEditor = () => {
