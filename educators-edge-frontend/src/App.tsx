@@ -67,8 +67,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ token, user, roles, chi
 
 // --- Main App Component ---
 export default function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('authToken'));
+  const [token, setTokenState] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Wrapper function to update both state and localStorage
+  const setToken = (newToken: string | null) => {
+    setTokenState(newToken);
+    if (newToken) {
+      localStorage.setItem('authToken', newToken);
+    } else {
+      localStorage.removeItem('authToken');
+    }
+  };
+
+  // Initialize token from localStorage on app start
+  useEffect(() => {
+    const storedToken = localStorage.getItem('authToken');
+    setTokenState(storedToken);
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -78,13 +96,24 @@ export default function App() {
         analytics.identify(decodedUser.user);
       } catch (error) {
         console.error("Invalid token:", error);
-        localStorage.removeItem('authToken');
         setToken(null);
         setUser(null);
         analytics.reset();
       }
     }
   }, [token]);
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
       <Routes>
