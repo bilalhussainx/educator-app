@@ -29,7 +29,7 @@ const AscentWebIDE: React.FC = () => {
     
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submission, setSubmission] = useState<Submission | null>(null);
+    const [submission] = useState<Submission | null>(null);
 
     const [startTime, setStartTime] = useState<number>(Date.now());
     const [codeChurn, setCodeChurn] = useState<number>(0);

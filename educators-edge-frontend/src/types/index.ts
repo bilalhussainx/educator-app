@@ -72,6 +72,11 @@ export interface DashboardProps {
     user: User | null;
     setUser: (user: User | null) => void;
 }
+
+export interface AuthNavProps {
+    route: string;
+    setRoute: (route: string) => void;
+}
 // Represents a single, simple test case for display on the frontend.
 export interface TestCase {
     description: string;

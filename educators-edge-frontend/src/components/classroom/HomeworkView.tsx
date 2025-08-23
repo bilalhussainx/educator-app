@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { toast, Toaster } from 'sonner';
-import { Lesson, LessonFile, TestResult, CodeFile } from '../../types';
+import { Lesson, LessonFile, TestResult, CodeFile } from '../../types/index.ts';
 import { File as FileIcon, XCircle, Lightbulb, BeakerIcon, Save, Send, Lock, Eye, ArrowLeft, CheckCircle, Video, VideoOff, Mic, MicOff, Users } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 
@@ -599,7 +599,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
 //         <GlassAlertDialogContent>
 //             <AlertDialogHeader>
 //                 <AlertDialogTitle className="flex items-center gap-3 text-cyan-300"><BeakerIcon /> Test Run Results</AlertDialogTitle>
-//                 <AlertDialogDescription as="div" className="pt-4 space-y-4 text-slate-300">
+//                 <AlertDialogDescription className="pt-4 space-y-4 text-slate-300">
 //                     {isLoading ? "Executing tests in simulation..." : results && (
 //                         <>
 //                             <div className={cn('p-4 rounded-lg border', results.failed > 0 ? 'bg-red-950/40 border-red-500/30 text-red-300' : 'bg-green-950/40 border-green-500/30 text-green-300')}>

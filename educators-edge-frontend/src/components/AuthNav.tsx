@@ -5,7 +5,7 @@
  * =================================================================
  */
 import React from 'react';
-import type { AuthNavProps } from '../types';
+import type { AuthNavProps } from '../types/index.ts';
 
 const AuthNav: React.FC<AuthNavProps> = ({ route, setRoute }) => (
   <nav className="flex justify-center space-x-4 mb-8">
