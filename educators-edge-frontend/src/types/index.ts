@@ -60,17 +60,6 @@ export interface Submission {
     submitted_at: string;
 }
 
-export interface AscentIdeData {
-  lesson: Lesson;
-  files: LessonFile[];
-  gradedSubmission: Submission | null; // <-- ADD THIS LINE
-  testCases: any[]; // Replace with a real type if you have one
-  submissionHistory: SubmissionHistory[];
-//   officialSolution: any; // Replace with a real type if you have one
-  courseId: string;
-  previousLessonId: string | null;
-  nextLessonId: string | null;
-}
 
 // --- Component Prop Types ---
 
@@ -142,6 +131,28 @@ export interface Award {
     description: string;
     icon?: string;
     earned_at?: string;
+}
+
+// Additional types for live tutorial functionality
+export type UserRole = 'teacher' | 'student';
+export type ViewingMode = 'teacher' | string; // string for student IDs
+
+export interface CodeFile {
+    id: string;
+    filename: string;
+    content: string;
+    language: string;
+}
+
+export interface Student {
+    id: string;
+    username: string;
+}
+
+export interface StudentHomeworkState {
+    studentId: string;
+    files: CodeFile[];
+    terminalOutput: string;
 }
 
 // /*

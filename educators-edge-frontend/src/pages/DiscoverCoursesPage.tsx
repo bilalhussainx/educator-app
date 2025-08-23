@@ -10,7 +10,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Course } from '../types';
+import type { Course } from '../types/index.ts';
 import { cn } from "@/lib/utils";
 
 // Import shadcn components and icons

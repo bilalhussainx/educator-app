@@ -26,7 +26,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, File as FileIcon, BrainCircuit, Terminal as TerminalIcon, ChevronLeft, BeakerIcon, CheckCircle, XCircle, FilePlus2, Trash2, Lightbulb, Save, Send, ArrowLeftRight } from 'lucide-react';
+import { File as FileIcon, BrainCircuit, Terminal as TerminalIcon, ChevronLeft, BeakerIcon, CheckCircle, XCircle, FilePlus2, Trash2, Lightbulb, Save, Send, ArrowLeftRight } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
 // --- Type definition for structured test results ---

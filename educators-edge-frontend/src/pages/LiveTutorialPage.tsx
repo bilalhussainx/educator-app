@@ -85,7 +85,7 @@ const LiveTutorialPage: React.FC = () => {
     const [handsRaised, setHandsRaised] = useState<Set<string>>(new Set());
     const [spotlightedStudentId, setSpotlightedStudentId] = useState<string | null>(null);
     const [spotlightWorkspace, setSpotlightWorkspace] = useState<StudentHomeworkState | null>(null);
-    // const [connectionStatus, setConnectionStatus] = useState('Initializing...');
+    const [connectionStatus, setConnectionStatus] = useState('Initializing...');
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [isMuted, setIsMuted] = useState(false);
@@ -98,7 +98,7 @@ const LiveTutorialPage: React.FC = () => {
     const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
     const [teacherId, setTeacherId] = useState<string | null>(null);
     const [isStudentChatOpen, setIsStudentChatOpen] = useState(false);
-    // const [connectedPeers, setConnectedPeers] = useState<Map<string, RTCPeerConnection>>(new Map());
+    const [connectedPeers, setConnectedPeers] = useState<Map<string, RTCPeerConnection>>(new Map());
     const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
