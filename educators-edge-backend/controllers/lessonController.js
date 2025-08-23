@@ -404,7 +404,7 @@ exports.createSubmission = async (req, res) => {
     // The route parameter for submit is just 'id' based on your original controller
     const { id: lessonId } = req.params; 
     
-    const { files, time_to_solve_seconds, code_churn } = req.body;
+    const { files, time_to_solve_seconds, code_churn, copy_paste_activity } = req.body;
     
     if (!files || !Array.isArray(files) || files.length === 0) {
         return res.status(400).json({ error: 'Submitted code cannot be empty.' });
@@ -429,23 +429,27 @@ exports.createSubmission = async (req, res) => {
 
         const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
 
-        // This is the corrected INSERT statement.
+        // This is the corrected INSERT statement with performance metrics
         const submissionResult = await db.query(
             `INSERT INTO submissions (
                 lesson_id, 
                 student_id, 
                 submitted_code, 
                 time_to_solve_seconds, 
-                code_churn, 
+                code_churn,
+                copy_paste_activity,
+                time_taken,
                 error_types,
                 is_correct
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
             [
                 lessonId, 
                 studentId, 
                 JSON.stringify(files), 
                 time_to_solve_seconds, 
-                code_churn, 
+                code_churn,
+                copy_paste_activity || 0,
+                Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
                 JSON.stringify(errorTypes),
                 execution.success // This is the boolean value for is_correct
             ]
@@ -673,7 +677,11 @@ exports.getLessonSubmissions = async (req, res) => {
                 s.grade, 
                 s.submitted_at, 
                 u.username,
-                cfl.feedback_message AS "ai_feedback"
+                cfl.feedback_message AS "ai_feedback",
+                s.mastery_level,
+                s.code_churn,
+                s.copy_paste_activity,
+                s.time_taken
              FROM submissions s 
              JOIN users u ON s.student_id = u.id
              LEFT JOIN conceptual_feedback_log cfl ON cfl.submission_id = s.id
@@ -963,9 +971,11 @@ exports.getAscentIdeData = async (req, res) => {
         // 4. Fetch test cases (your placeholder is fine)
         const testCases = [ /* ... */ ];
 
-        // 5. Fetch submission history
+        // 5. Fetch submission history with performance metrics
         const historyResult = await db.query(
-            'SELECT id, submitted_at, is_correct FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC',
+            `SELECT id, submitted_at, is_correct, code_churn, copy_paste_activity, time_taken, 
+                    time_to_solve_seconds, mastery_level 
+             FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC`,
             [studentId, lessonId]
         );
         const submissionHistory = historyResult.rows;

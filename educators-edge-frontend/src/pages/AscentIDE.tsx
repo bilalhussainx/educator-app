@@ -76,6 +76,35 @@ const FeedbackCard = ({ submission }: { submission: Submission }) => (
         </CardHeader>
         <CardContent>
             <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{submission.feedback}</p>
+            
+            {(submission.time_taken || submission.code_churn || submission.copy_paste_activity) && (
+                <div className="mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                    <h4 className="text-sm font-medium text-slate-300 mb-2">Performance Metrics</h4>
+                    <div className="grid grid-cols-3 gap-4 text-xs">
+                        {submission.time_taken && (
+                            <div>
+                                <span className="text-slate-500">Time Spent</span>
+                                <div className="text-slate-200 font-medium">{submission.time_taken} minutes</div>
+                            </div>
+                        )}
+                        {submission.code_churn !== undefined && (
+                            <div>
+                                <span className="text-slate-500">Code Changes</span>
+                                <div className="text-slate-200 font-medium">{submission.code_churn} edits</div>
+                            </div>
+                        )}
+                        {submission.copy_paste_activity !== undefined && (
+                            <div>
+                                <span className="text-slate-500">Copy-Paste Activity</span>
+                                <div className={cn("font-medium", submission.copy_paste_activity > 50 ? "text-yellow-400" : "text-slate-200")}>
+                                    {submission.copy_paste_activity}%
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            
             <p className="text-xs text-slate-500 mt-4">
                 Graded on: {new Date(submission.submitted_at).toLocaleDateString()}
             </p>
@@ -114,7 +143,10 @@ const AscentIDE: React.FC = () => {
     // --- APE State ---
     const [startTime, setStartTime] = useState<number>(Date.now());
     const [codeChurn, setCodeChurn] = useState<number>(0);
+    const [copyPasteActivity, setCopyPasteActivity] = useState<number>(0);
     const prevFileContentRef = useRef<string>("");
+    const totalTypedCharsRef = useRef<number>(0);
+    const pastedCharsRef = useRef<number>(0);
     
     // --- Refs ---
     const editorRef = useRef<any>(null);
@@ -193,6 +225,9 @@ const AscentIDE: React.FC = () => {
                 analytics.track('Lesson Started', { lesson_id: data.lesson.id, lesson_title: data.lesson.title });
                 setStartTime(Date.now());
                 setCodeChurn(0);
+                setCopyPasteActivity(0);
+                totalTypedCharsRef.current = 0;
+                pastedCharsRef.current = 0;
                 prevFileContentRef.current = data.files?.[0]?.content || "";
 
             } catch (err) {
@@ -210,8 +245,17 @@ const AscentIDE: React.FC = () => {
         if (editor) {
             const pasteListener = editor.onDidPaste((e: any) => {
                 const pastedText = e.text || '';
+                const pastedLength = pastedText.length;
+                
+                pastedCharsRef.current += pastedLength;
+                totalTypedCharsRef.current += pastedLength;
+                
+                if (totalTypedCharsRef.current > 0) {
+                    setCopyPasteActivity(Math.round((pastedCharsRef.current / totalTypedCharsRef.current) * 100));
+                }
+                
                 analytics.track('Code Pasted', {
-                    character_count: pastedText.length,
+                    character_count: pastedLength,
                     line_count: pastedText.split('\n').length,
                     active_file: activeFile?.filename,
                     lesson_id: lessonId,
@@ -227,6 +271,15 @@ const AscentIDE: React.FC = () => {
         const newContent = content || '';
         const churn = Math.abs((newContent.split('\n').length) - (prevFileContentRef.current.split('\n').length));
         setCodeChurn(prev => prev + churn);
+        
+        const charDiff = newContent.length - prevFileContentRef.current.length;
+        if (charDiff > 0) {
+            totalTypedCharsRef.current += charDiff;
+            if (totalTypedCharsRef.current > 0) {
+                setCopyPasteActivity(Math.round((pastedCharsRef.current / totalTypedCharsRef.current) * 100));
+            }
+        }
+        
         prevFileContentRef.current = newContent;
         
         const updatedFiles = files.map(file => file.id === activeFileId ? { ...file, content: newContent } : file);
@@ -331,6 +384,7 @@ const AscentIDE: React.FC = () => {
             files,
             time_to_solve_seconds: Math.round((Date.now() - startTime) / 1000),
             code_churn: codeChurn,
+            copy_paste_activity: copyPasteActivity,
         };
         
         analytics.track('Solution Submitted', submissionPayload);
@@ -490,12 +544,34 @@ const AscentIDE: React.FC = () => {
                                 <div className="space-y-2">
                                     {ideData.submissionHistory.length > 0 ? ideData.submissionHistory.map(sub => (
                                         <div key={sub.id} className="p-2 bg-slate-900/50 rounded border border-slate-700 text-xs">
-                                            <div className="flex justify-between items-center">
+                                            <div className="flex justify-between items-center mb-2">
                                                 <span className={cn("font-medium", sub.is_correct ? 'text-green-400' : 'text-red-400')}>
                                                     {sub.is_correct ? 'Passed' : 'Failed'}
                                                 </span>
                                                 <span className="text-slate-400 text-xs">{format(new Date(sub.submitted_at), 'MMM d, HH:mm')}</span>
                                             </div>
+                                            {(sub.time_taken || sub.code_churn || sub.copy_paste_activity) && (
+                                                <div className="grid grid-cols-3 gap-2 text-xs text-slate-400">
+                                                    {sub.time_taken && (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-slate-500">Time</span>
+                                                            <span className="text-slate-300">{sub.time_taken}m</span>
+                                                        </div>
+                                                    )}
+                                                    {sub.code_churn !== undefined && (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-slate-500">Churn</span>
+                                                            <span className="text-slate-300">{sub.code_churn}</span>
+                                                        </div>
+                                                    )}
+                                                    {sub.copy_paste_activity !== undefined && (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-slate-500">Copy%</span>
+                                                            <span className={cn("text-slate-300", sub.copy_paste_activity > 50 && "text-yellow-400")}>{sub.copy_paste_activity}%</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )) : <p className="text-slate-500 text-center p-3 text-xs">No submissions yet.</p>}
                                 </div>

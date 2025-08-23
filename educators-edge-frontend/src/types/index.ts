@@ -58,6 +58,11 @@ export interface Submission {
     feedback: string | null;
     grade: string | null;
     submitted_at: string;
+    // Student performance stats
+    mastery_level?: number; // 0-100 score
+    code_churn?: number; // Number of code changes/edits
+    copy_paste_activity?: number; // Percentage of code that was copy-pasted
+    time_taken?: number; // Time in minutes to complete submission
 }
 
 
@@ -88,8 +93,14 @@ export interface TestCase {
 export interface SubmissionHistory {
     id: string;
     submitted_at: string;
-    is_correct: boolean; // You'll need to add this to your backend query
+    is_correct: boolean;
     submitted_code: LessonFile[];
+    // Performance metrics
+    code_churn?: number; // Number of code changes/edits
+    copy_paste_activity?: number; // Percentage of code that was copy-pasted (0-100)
+    time_taken?: number; // Time in minutes to complete submission
+    time_to_solve_seconds?: number; // Time in seconds for more precision
+    mastery_level?: number; // 0-100 score
 }
 
 

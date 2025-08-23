@@ -33,7 +33,10 @@ const AscentWebIDE: React.FC = () => {
 
     const [startTime, setStartTime] = useState<number>(Date.now());
     const [codeChurn, setCodeChurn] = useState<number>(0);
+    const [copyPasteActivity, setCopyPasteActivity] = useState<number>(0);
     const prevCodeRef = useRef({ html: '', css: '', js: '' });
+    const totalTypedCharsRef = useRef<number>(0);
+    const pastedCharsRef = useRef<number>(0);
 
     useEffect(() => {
         const fetchIdeData = async () => {
@@ -60,6 +63,9 @@ const AscentWebIDE: React.FC = () => {
                 prevCodeRef.current = { html, css, js };
                 setStartTime(Date.now());
                 setCodeChurn(0);
+                setCopyPasteActivity(0);
+                totalTypedCharsRef.current = 0;
+                pastedCharsRef.current = 0;
                 analytics.track('Lesson Started', { lesson_id: data.lesson.id, lesson_title: data.lesson.title });
 
             } catch (err) {
@@ -84,6 +90,18 @@ const AscentWebIDE: React.FC = () => {
             if (churn > 0) {
                 setCodeChurn(prev => prev + churn);
             }
+            
+            const currentTotal = htmlCode.length + cssCode.length + jsCode.length;
+            const prevTotal = prevCodeRef.current.html.length + prevCodeRef.current.css.length + prevCodeRef.current.js.length;
+            const charDiff = currentTotal - prevTotal;
+            
+            if (charDiff > 0) {
+                totalTypedCharsRef.current += charDiff;
+                if (totalTypedCharsRef.current > 0) {
+                    setCopyPasteActivity(Math.round((pastedCharsRef.current / totalTypedCharsRef.current) * 100));
+                }
+            }
+            
             prevCodeRef.current = { html: htmlCode, css: cssCode, js: jsCode };
 
         }, 300); 
@@ -135,6 +153,7 @@ const AscentWebIDE: React.FC = () => {
             files: filesPayload,
             time_to_solve_seconds: Math.round((Date.now() - startTime) / 1000),
             code_churn: codeChurn,
+            copy_paste_activity: copyPasteActivity,
         };
         
         analytics.track('Solution Submitted', { ...submissionPayload, lesson_id: lessonId });
@@ -160,14 +179,49 @@ const AscentWebIDE: React.FC = () => {
         submitPromise.finally(() => setIsSubmitting(false));
     };
 
+    const handleEditorDidMount = (editor: any) => {
+        editor.onDidPaste && editor.onDidPaste((e: any) => {
+            if (e.range) {
+                const pastedLength = e.range.endColumn - e.range.startColumn;
+                pastedCharsRef.current += pastedLength;
+                totalTypedCharsRef.current += pastedLength;
+                
+                if (totalTypedCharsRef.current > 0) {
+                    setCopyPasteActivity(Math.round((pastedCharsRef.current / totalTypedCharsRef.current) * 100));
+                }
+            }
+        });
+    };
+
     const renderActiveEditor = () => {
         switch (activeFile) {
             case 'html':
-                return <Editor language="html" theme="vs-dark" value={htmlCode} onChange={(val) => setHtmlCode(val || '')} options={{ minimap: { enabled: false }, padding: { top: 12 } }} />;
+                return <Editor 
+                    language="html" 
+                    theme="vs-dark" 
+                    value={htmlCode} 
+                    onChange={(val) => setHtmlCode(val || '')} 
+                    onMount={handleEditorDidMount}
+                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+                />;
             case 'css':
-                return <Editor language="css" theme="vs-dark" value={cssCode} onChange={(val) => setCssCode(val || '')} options={{ minimap: { enabled: false }, padding: { top: 12 } }} />;
+                return <Editor 
+                    language="css" 
+                    theme="vs-dark" 
+                    value={cssCode} 
+                    onChange={(val) => setCssCode(val || '')} 
+                    onMount={handleEditorDidMount}
+                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+                />;
             case 'js':
-                return <Editor language="javascript" theme="vs-dark" value={jsCode} onChange={(val) => setJsCode(val || '')} options={{ minimap: { enabled: false }, padding: { top: 12 } }} />;
+                return <Editor 
+                    language="javascript" 
+                    theme="vs-dark" 
+                    value={jsCode} 
+                    onChange={(val) => setJsCode(val || '')} 
+                    onMount={handleEditorDidMount}
+                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+                />;
         }
     };
 
@@ -183,6 +237,35 @@ const AscentWebIDE: React.FC = () => {
             </CardHeader>
             <CardContent>
                 <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{submission.feedback}</p>
+                
+                {(submission.time_taken || submission.code_churn || submission.copy_paste_activity) && (
+                    <div className="mt-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                        <h4 className="text-sm font-medium text-slate-300 mb-2">Performance Metrics</h4>
+                        <div className="grid grid-cols-3 gap-4 text-xs">
+                            {submission.time_taken && (
+                                <div>
+                                    <span className="text-slate-500">Time Spent</span>
+                                    <div className="text-slate-200 font-medium">{submission.time_taken} minutes</div>
+                                </div>
+                            )}
+                            {submission.code_churn !== undefined && (
+                                <div>
+                                    <span className="text-slate-500">Code Changes</span>
+                                    <div className="text-slate-200 font-medium">{submission.code_churn} edits</div>
+                                </div>
+                            )}
+                            {submission.copy_paste_activity !== undefined && (
+                                <div>
+                                    <span className="text-slate-500">Copy-Paste Activity</span>
+                                    <div className={cn("font-medium", submission.copy_paste_activity > 50 ? "text-yellow-400" : "text-slate-200")}>
+                                        {submission.copy_paste_activity}%
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                
                 <p className="text-xs text-slate-500 mt-4">
                     Graded on: {new Date(submission.submitted_at).toLocaleDateString()}
                 </p>
