@@ -7,13 +7,14 @@ console.log("--- BullMQ Queue Initializing ---");
 console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("Is REDIS_URL present?", !!process.env.REDIS_URL);
 // Be careful not to log the full URL if it contains a password in sensitive logs,
-// but for debugging this is okay.
+// but for debugging git this is okay.
 console.log("REDIS_URL value:", process.env.REDIS_URL);
 // --- END DEBUGGING BLOCK ---
 
-const connectionOptions = process.env.REDIS_URL 
-    ? { connection: { uri: process.env.REDIS_URL } } // Use the 'uri' property for direct URL connection
-    : { connection: { host: '127.0.0.1', port: 6379 } };
+const connectionOptions = process.env.REDIS_URL ? process.env.REDIS_URL : {
+    host: '127.0.0.1',
+    port: 6379
+};
 
 const apeQueue = new Queue('analyze-submission', connectionOptions);
 

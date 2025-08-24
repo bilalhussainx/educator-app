@@ -1,9 +1,11 @@
 const { Worker } = require('bullmq');
 require('dotenv').config();
 
-const connectionOptions = process.env.REDIS_URL 
-    ? { connection: process.env.REDIS_URL } 
-    : { connection: { host: '127.0.0.1', port: 6379 } };
+// --- APPLY THE SAME DEFINITIVE FIX HERE ---
+const connectionOptions = process.env.REDIS_URL ? process.env.REDIS_URL : {
+    host: '127.0.0.1',
+    port: 6379
+};
 
 console.log("Initializing BullMQ Worker...");
 if (process.env.REDIS_URL) {
