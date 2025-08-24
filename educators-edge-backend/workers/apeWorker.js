@@ -1,8 +1,6 @@
-// apeWorker.js (Production-Ready)
 const { Worker } = require('bullmq');
 require('dotenv').config();
 
-// Use the same robust connection logic as the queue
 const connectionOptions = process.env.REDIS_URL 
     ? { connection: process.env.REDIS_URL } 
     : { connection: { host: '127.0.0.1', port: 6379 } };
@@ -15,9 +13,7 @@ if (process.env.REDIS_URL) {
 }
 
 const worker = new Worker('analyze-submission', async job => {
-    // Your job processing logic here...
     console.log(`Processing job ${job.id}`);
-    // ...
 }, connectionOptions);
 
 worker.on('completed', job => {

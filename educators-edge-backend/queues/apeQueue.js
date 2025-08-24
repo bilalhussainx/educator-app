@@ -21,42 +21,40 @@ apeQueue.on('error', (err) => {
     console.error('BullMQ Queue Error:', err);
 });
 
-module.exports = apeQueue;```
+// module.exports = apeQueue;```
 
-**B. Update `apeWorker.js` (for the Background Worker)**
+// **B. Update `apeWorker.js` (for the Background Worker)**
 
-```javascript
-// apeWorker.js
-const { Worker } = require('bullmq');
-require('dotenv').config();
+// ```javascript
+// const { Worker } = require('bullmq');
+// require('dotenv').config();
 
-// --- ADD THE SAME DEBUGGING BLOCK ---
-console.log("--- BullMQ Worker Initializing ---");
-console.log("NODE_ENV:", process.env.NODE_ENV);
-console.log("Is REDIS_URL present?", !!process.env.REDIS_URL);
-console.log("REDIS_URL value:", process.env.REDIS_URL);
-// --- END DEBUGGING BLOCK ---
+// console.log("--- BullMQ Worker Initializing ---");
+// console.log("NODE_ENV:", process.env.NODE_ENV);
+// console.log("Is REDIS_URL present?", !!process.env.REDIS_URL);
+// console.log("REDIS_URL value:", process.env.REDIS_URL);
 
-const connectionOptions = process.env.REDIS_URL 
-    ? { connection: { uri: process.env.REDIS_URL } } // Use the 'uri' property
-    : { connection: { host: '127.0.0.1', port: 6379 } };
 
-const worker = new Worker('analyze-submission', async job => {
-    // ... your job logic
-}, connectionOptions);
+// const connectionOptions = process.env.REDIS_URL 
+//     ? { connection: { uri: process.env.REDIS_URL } } 
+//     : { connection: { host: '127.0.0.1', port: 6379 } };
 
-worker.on('error', (err) => {
-    console.error('BullMQ Worker Error:', err);
-});
+// const worker = new Worker('analyze-submission', async job => {
+//     // ... your job logic
+// }, connectionOptions);
 
-console.log("BullMQ Worker started and waiting for jobs.");
-// // src/queues/apeQueue.js
-// const { Queue } = require('bullmq');
-// const redisConnection = require('../config/redis');
+// worker.on('error', (err) => {
+//     console.error('BullMQ Worker Error:', err);
+// });
 
-// const APE_QUEUE_NAME = 'ape-analysis-queue';
+// console.log("BullMQ Worker started and waiting for jobs.");
+// // // src/queues/apeQueue.js
+// // const { Queue } = require('bullmq');
+// // const redisConnection = require('../config/redis');
 
-// // A queue is where we add jobs
-// const apeQueue = new Queue(APE_QUEUE_NAME, { connection: redisConnection });
+// // const APE_QUEUE_NAME = 'ape-analysis-queue';
 
-// module.exports = apeQueue;
+// // // A queue is where we add jobs
+// // const apeQueue = new Queue(APE_QUEUE_NAME, { connection: redisConnection });
+
+// // module.exports = apeQueue;
