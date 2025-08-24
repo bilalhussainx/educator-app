@@ -99,8 +99,7 @@ temp/
 ehthumbs.db
 Thumbs.db
 
-# Docker
-Dockerfile.dockerignore
+
 
 # Database
 *.sqlite
