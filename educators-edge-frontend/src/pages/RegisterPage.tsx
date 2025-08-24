@@ -9,6 +9,7 @@
  */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { createApiUrl } from '../config/api';
 
 // Import shadcn components
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ const RegisterPage: React.FC = () => {
     setError(null);
     setMessage(null);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(createApiUrl('api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

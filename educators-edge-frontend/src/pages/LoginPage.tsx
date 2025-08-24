@@ -8,6 +8,7 @@
  * registration page, reinforcing the brand experience.
  */
 import React, { useState } from 'react';
+import { createApiUrl } from '../config/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
@@ -42,7 +43,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setToken, setUser }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(createApiUrl('api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
