@@ -17,6 +17,7 @@
  * and safety when accessing event properties like `e.target.value`.
  */
 import React, { useState, useEffect } from 'react';
+import { createApiUrl } from './src/config/api';
 
 // --- Type Definitions ---
 // It's a best practice to define your types in one place.
@@ -105,7 +106,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute, setToken }) => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(createApiUrl('api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -179,7 +180,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     setMessage(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(createApiUrl('api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

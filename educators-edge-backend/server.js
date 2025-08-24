@@ -49,9 +49,11 @@ const wss = new WebSocketServer({ server });
 initializeWebSocket(wss);
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+const HOST = process.env.HOST || '0.0.0.0'; // Listen on all network interfaces
+server.listen(PORT, HOST, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`WebSocket server is ready.`);
+  console.log(`To access from other devices, use: http://<your-ip-address>:${PORT}`);
 });
 // require('dotenv').config();
 
