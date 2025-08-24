@@ -158,10 +158,13 @@ const ViewLessonPage: React.FC = () => {
         const token = localStorage.getItem('authToken');
         if (!token || !lessonId) return;
 
-        const terminalSessionId = crypto.randomUUID(); 
+        const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000';
+
+        const terminalSessionId = crypto.randomUUID();
+        
         const wsUrl = isLiveHomework
-            ? `ws://localhost:5000?sessionId=${terminalSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`
-            : `ws://localhost:5000?sessionId=${terminalSessionId}&token=${token}`;
+            ? `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`
+            : `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}`;
             
         const currentWs = new WebSocket(wsUrl);
         ws.current = currentWs;

@@ -44,7 +44,10 @@ const AscentWebIDE: React.FC = () => {
             setIsLoading(true);
             const token = localStorage.getItem('authToken');
             try {
-                const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/ascent-ide`, {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+                // 2. Construct the full request URL dynamically.
+                const response = await fetch(`${apiUrl}/api/lessons/${lessonId}/ascent-ide`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Failed to load lesson data.');

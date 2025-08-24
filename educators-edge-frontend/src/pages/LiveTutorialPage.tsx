@@ -197,7 +197,8 @@ const LiveTutorialPage: React.FC = () => {
                 sessionStorage.removeItem(`studentJustReturned_${sessionId}`);
             }
 
-            const wsUrl = `ws://localhost:5000?sessionId=${sessionId}&token=${token}`;
+            const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000';
+            const wsUrl = `${wsBaseUrl}?sessionId=${sessionId}&token=${token}`;
             const currentWs = new WebSocket(wsUrl);
             ws.current = currentWs;
 
