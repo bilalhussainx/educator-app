@@ -23,42 +23,47 @@ app.use(express.json());
 
 // --- DEFINITIVE CORS CONFIGURATION V3 (Manual Preflight) ---
 
+// --- DEFINITIVE CORS CONFIGURATION V3 (Manual Preflight) ---
+
 const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'https://educator-app.vercel.app',
-    'https://educator-a9yc0y90h-bilalhussainxs-projects.vercel.app',
-    'https://educator-2ovjl9xd8-bilalhussainxs-projects.vercel.app'
-];
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://educator-app.vercel.app',
+      'https://educator-a9yc0y90h-bilalhussainxs-projects.vercel.app',
+      'https://educator-2ovjl9xd8-bilalhussainxs-projects.vercel.app'
+  ];
 
 const corsOptions = {
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('This origin is not allowed by CORS'));
-        }
-    },
-    credentials: true,
-};
+      origin: (origin, callback) => {
+          if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+              callback(null, true);
+          } else {
+              console.log('CORS blocked origin:', origin);
+              callback(new Error('This origin is not allowed by CORS'));
+          }
+      },
+      credentials: true,
+  };
 
 app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-    
-    if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        return res.sendStatus(204);
-    }
-    
-    next();
-});
+      const origin = req.headers.origin;
+      if (allowedOrigins.includes(origin)) {
+          res.setHeader('Access-Control-Allow-Origin', origin);
+      }
+
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+      if (req.method === 'OPTIONS') {
+          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+          return res.sendStatus(204);
+      }
+
+      next();
+  });
 
 app.use(cors(corsOptions));
+
 
 // --- END OF FIX ---
 
