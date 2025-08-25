@@ -78,14 +78,20 @@ function initializeWebSocket(wss) {
         const lessonId = urlParams.get('lessonId');
 
         if (!sessionId || !token) {
-            return ws.close(1008, "Session ID and token are required");
+            return ws.close(4001, "Session ID and token are required");
         }
 
+        // --- THIS IS THE DEFINITIVE SECURITY FIX ---
         let user;
         try {
-            user = jwtDecode(token).user;
-        } catch (e) {
-            return ws.close(1008, "Invalid authentication token");
+            // Use jwt.verify to securely validate the token against your secret key.
+            // This checks the signature, expiration, and decodes the payload in one step.
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            user = decoded.user;
+        } catch (err) {
+            console.error('[WS Auth] Connection rejected due to invalid token:', err.message);
+            // Use a custom error code so the frontend can handle it gracefully.
+            return ws.close(4001, "Invalid or expired authentication token");
         }
 
         const isHomeworkSession = !!teacherSessionId && !!lessonId;
@@ -118,7 +124,7 @@ function initializeWebSocket(wss) {
                         isFrozen: false,
                         whiteboardLines: [],
                         isWhiteboardVisible: false,
-                        videoConnections: new Map(), // Track active video connections
+                        videoConnections: new Map(),
                     };
                     sessions.set(sessionId, session);
 
@@ -133,21 +139,16 @@ function initializeWebSocket(wss) {
                 }
             }
         }
-        const existingClient = Array.from(session.clients).find(c => 
-            c.id === user.id && c.isHomework === isHomeworkSession
-        );
+        
+        const existingClient = Array.from(session.clients).find(c => c.id === user.id && c.isHomework === isHomeworkSession);
         if (existingClient) {
-            log(`Found existing ${isHomeworkSession ? 'homework' : 'main'} client for user ${user.username}. Terminating old connection and replacing.`);
-            // Terminate the old connection to prevent ghost clients.
+            log(`Found existing client for ${user.username}. Terminating old connection.`);
             existingClient.ws.terminate(); 
-            // Remove the old client object from the set.
             session.clients.delete(existingClient);
         }
 
         const clientInfo = { id: user.id, username: user.username, role: user.role || 'student', ws: ws, isHomework: isHomeworkSession };
         session.clients.add(clientInfo);
-
-        
 
         if (clientInfo.role === 'teacher' && !isHomeworkSession) {
             addSession(sessionId, {
