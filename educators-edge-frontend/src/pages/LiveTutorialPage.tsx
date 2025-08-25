@@ -82,7 +82,8 @@ const LiveTutorialPage: React.FC = () => {
     const [handsRaised, setHandsRaised] = useState<Set<string>>(new Set());
     const [spotlightedStudentId, setSpotlightedStudentId] = useState<string | null>(null);
     const [spotlightWorkspace, setSpotlightWorkspace] = useState<StudentHomeworkState | null>(null);
-    const [_connectionStatus, setConnectionStatus] = useState('Initializing...');
+    const [isConnected, setIsConnected] = useState(false); // More useful for disabling UI
+
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [isMuted, setIsMuted] = useState(false);
@@ -124,97 +125,114 @@ const LiveTutorialPage: React.FC = () => {
     const isTeacherControllingThisStudent = isTeacherViewingStudent && controlledStudentId === viewingMode;
     const isEditorReadOnly = (role === 'student' && (isFrozen || !!spotlightedStudentId)) || (isTeacherViewingStudent && !isTeacherControllingThisStudent);
     
-    // --- THIS IS THE ONLY LOGICAL CHANGE YOU NEED TO MAKE ---
-    // Unified Initialization and Cleanup Effect
-    useEffect(() => {
-        if (!token) {
-            navigate('/login');
-            return;
-        }
+   // Unified Initialization and Cleanup Effect
+useEffect(() => {
+    if (!token) {
+        navigate('/login');
+        return;
+    }
 
-        // Stage 1: Initialize Terminal (No Changes)
-        if (terminalRef.current && !term.current) {
-            // ... your existing terminal setup logic ...
-        }
-
-        // Stage 2: Initialize WebSocket (THIS IS THE FIX)
-        if (term.current && !ws.current) {
-            const needsSyncOnReturn = sessionStorage.getItem(`studentJustReturned_${sessionId}`) === 'true';
-            if (needsSyncOnReturn) {
-                sessionStorage.removeItem(`studentJustReturned_${sessionId}`);
+    // --- Stage 1: Initialize Terminal (No Changes) ---
+    if (terminalRef.current && !term.current) {
+        fitAddon.current = new FitAddon();
+        const newTerm = new Terminal({ cursorBlink: true, theme: { background: '#0D1117', foreground: '#c9d1d9', cursor: '#c9d1d9' }, fontSize: 14 });
+        newTerm.loadAddon(fitAddon.current);
+        newTerm.open(terminalRef.current);
+        fitAddon.current.fit();
+        newTerm.onData((data) => {
+            if (ws.current?.readyState === WebSocket.OPEN && roleRef.current === 'teacher' && viewingMode === 'teacher') {
+                sendWsMessage('TERMINAL_IN', { data });
             }
+        });
+        term.current = newTerm;
+    }
 
-            // 1. Get the base HTTP/HTTPS URL from your central apiClient.
-            const httpUrl = apiClient.defaults.baseURL || '';
-
-            // 2. Convert it to a WebSocket URL (ws:// or wss://).
-            const wsBaseUrl = httpUrl.replace(/^http/, 'ws');
-            
-            const wsUrl = `${wsBaseUrl}?sessionId=${sessionId}&token=${token}`;
-            
-            // 3. Log for definitive proof in the browser console.
-            console.log("Attempting to connect WebSocket to:", wsUrl);
-
-            const currentWs = new WebSocket(wsUrl);
-            ws.current = currentWs;
-
-            currentWs.onopen = () => {
-                setConnectionStatus('Connected');
-                toast.success("Live session connected!");
-                if (needsSyncOnReturn && roleRef.current === 'student') {
-                    sendWsMessage('STUDENT_RETURN_TO_CLASSROOM');
-                }
-            };
-            
-            initializeWebSocketEvents(currentWs);
-            currentWs.onclose = () => setConnectionStatus('Disconnected');
-            currentWs.onerror = (event) => {
-                console.error("WebSocket connection error:", event);
-                setConnectionStatus('Connection Error');
-                toast.error("Real-time connection failed. Please refresh the page.");
-            };
+    // --- Stage 2: Initialize WebSocket (Corrected) ---
+    if (term.current && !ws.current) {
+        const needsSyncOnReturn = sessionStorage.getItem(`studentJustReturned_${sessionId}`) === 'true';
+        if (needsSyncOnReturn) {
+            sessionStorage.removeItem(`studentJustReturned_${sessionId}`);
         }
 
-        // --- Stage 3: Initialize Media ---
-        const setupMedia = async () => {
-            try {
-                if (!localStreamRef.current) {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    setLocalStream(stream);
-                    localStreamRef.current = stream;
-                    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-                    console.log('[MEDIA] Local media stream initialized');
-                }
-            } catch (err) {
-                 console.error("Could not get user media.", err);
-                 toast.error("Could not access camera/microphone. Please grant permissions.");
+        const httpUrl = apiClient.defaults.baseURL || '';
+        const wsBaseUrl = httpUrl.replace(/^http/, 'ws');
+        const wsUrl = `${wsBaseUrl}?sessionId=${sessionId}&token=${token}`;
+        
+        console.log("Attempting to connect WebSocket to:", wsUrl);
+
+        const currentWs = new WebSocket(wsUrl);
+        ws.current = currentWs;
+
+        // --- WebSocket Event Handlers with Simplified State Management ---
+        currentWs.onopen = () => {
+            console.log("WebSocket connection established successfully.");
+            toast.success("Connected to live session!");
+            setIsConnected(true); // Set connection state to true
+            
+            if (needsSyncOnReturn && roleRef.current === 'student') {
+                sendWsMessage('STUDENT_RETURN_TO_CLASSROOM');
             }
         };
-        setupMedia();
+        
+        initializeWebSocketEvents(currentWs);
 
-        // --- Cleanup Function ---
-        return () => {
-            console.log('[CLEANUP] Cleaning up connections and media');
-            ws.current?.close();
+        currentWs.onclose = () => {
+            console.log("WebSocket connection closed.");
+            setIsConnected(false); // Set connection state to false
+        };
+        
+        currentWs.onerror = (event) => {
+            console.error("WebSocket error observed:", event);
+            setIsConnected(false); // Set connection state to false
+            toast.error("Connection to the live session was lost. Please refresh.");
+        };
+    }
+
+    // --- Stage 3: Initialize Media (No Changes) ---
+    const setupMedia = async () => {
+        try {
+            if (!localStreamRef.current) {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                setLocalStream(stream);
+                localStreamRef.current = stream;
+                if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+                console.log('[MEDIA] Local media stream initialized');
+            }
+        } catch (err) {
+             console.error("Could not get user media.", err);
+             toast.error("Could not access camera/microphone. Please grant permissions.");
+        }
+    };
+    setupMedia();
+
+    // --- Stage 4: Cleanup Function (No Changes) ---
+    return () => {
+        console.log('[CLEANUP] Cleaning up connections and media');
+        if (ws.current) {
+            ws.current.close();
             ws.current = null;
-            
-            // Clean up all peer connections
-            peerConnectionsRef.current.forEach((pc, peerId) => {
-                console.log(`[CLEANUP] Closing peer connection to ${peerId}`);
-                pc.close();
-            });
-            peerConnectionsRef.current.clear();
-            
-            localStreamRef.current?.getTracks().forEach(track => {
+        }
+        
+        peerConnectionsRef.current.forEach((pc, peerId) => {
+            console.log(`[CLEANUP] Closing peer connection to ${peerId}`);
+            pc.close();
+        });
+        peerConnectionsRef.current.clear();
+        
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => {
                 console.log('[CLEANUP] Stopping local media track');
                 track.stop();
             });
             localStreamRef.current = null;
-            
-            term.current?.dispose();
+        }
+        
+        if (term.current) {
+            term.current.dispose();
             term.current = null;
-        };
-    }, []);
+        }
+    };
+}, [sessionId, navigate, token]);
 
     // Effect to manage session storage for homework state
     useEffect(() => {
@@ -791,8 +809,8 @@ const LiveTutorialPage: React.FC = () => {
                     {spotlightedStudentId && <Badge className="animate-pulse bg-fuchsia-600 border-fuchsia-500 text-white"><Star className="mr-2 h-4 w-4" />SPOTLIGHT: {students.find(s => s.id === spotlightedStudentId)?.username || 'Student'}</Badge>}
                     {isTeacherControllingThisStudent && <Badge className="animate-pulse bg-fuchsia-600 border-fuchsia-500 text-white"><Lock className="mr-2 h-4 w-4" />CONTROLLING: {students.find(s => s.id === viewingMode)?.username || 'Student'}</Badge>}
                     {role === 'teacher' && !spotlightedStudentId && !isTeacherControllingThisStudent && <Badge variant="outline" className="border-slate-600 text-slate-300">Viewing: {viewingMode === 'teacher' ? 'My Workspace' : students.find(s => s.id === viewingMode)?.username || 'Student'}</Badge>}
-                    {role === 'student' && <Button size="sm" onClick={handleRaiseHand} className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold"><Hand className="mr-2 h-4 w-4" />Raise Hand</Button>}
-                    {role === 'student' && <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} className="bg-slate-700 hover:bg-slate-600 text-white"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button>}
+                    {role === 'student' && <Button size="sm" onClick={handleRaiseHand} disabled={!isConnected}  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold"><Hand className="mr-2 h-4 w-4" />Raise Hand</Button>}
+                    {role === 'student' && <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} disabled={!isConnected} className="bg-slate-700 hover:bg-slate-600 text-white"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button>}
                     {role === 'teacher' && <Button size="sm" onClick={handleToggleFreeze} className={cn('font-bold text-white', isFrozen ? 'bg-red-600 hover:bg-red-500' : 'bg-fuchsia-600 hover:bg-fuchsia-500')}><Lock className="mr-2 h-4 w-4" />{isFrozen ? "Unfreeze All" : "Freeze All"}</Button>}
                     {role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} className="bg-slate-700 hover:bg-slate-600 text-white"><Brush className="mr-2 h-4 w-4" />{isWhiteboardVisible ? "Hide Board" : "Show Board"}</Button>}
                     {isWhiteboardVisible && role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} className="bg-red-600 hover:bg-red-500 text-white"><Trash2 className="mr-2 h-4 w-4" />Clear</Button>}
