@@ -2,6 +2,9 @@
   "permissions": {
     "additionalDirectories": [
       "C:\\c\\Users\\Bilal\\Downloads\\educator-app"
+    ],
+    "allow": [
+      "Bash(git add:*)"
     ]
   }
 }
