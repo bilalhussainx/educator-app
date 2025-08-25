@@ -23,7 +23,10 @@ redisClient.on('error', (err) => console.error('Redis client for Queue Error:', 
 // 2. Pass the created client directly to BullMQ.
 //    This removes all guesswork.
 const apeQueue = new Queue('analyze-submission', {
-    connection: redisClient
+    connection: redisClient,
+    // Some versions of BullMQ might use `client` instead of `connection` for external clients.
+    // Providing both is the safest way to ensure compatibility.
+    client: redisClient 
 });
 
 apeQueue.on('ready', () => {

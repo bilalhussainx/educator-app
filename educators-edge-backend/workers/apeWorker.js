@@ -25,7 +25,8 @@ const worker = new Worker('analyze-submission', async job => {
     // Your job processing logic here...
     console.log(`Processing job ${job.id} for user ${job.data.userId}`);
 }, {
-    connection: redisClient
+    connection: redisClient,
+    client: redisClient
 });
 
 worker.on('ready', () => {
