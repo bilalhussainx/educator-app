@@ -1,14 +1,14 @@
-// perfect with refresh
-const Docker = require('dockerode');
-const docker = new Docker();
-const { jwtDecode } = require('jwt-decode');
+// services/websocketHandler.js
+
+const jwt = require('jsonwebtoken');
+const url = require('url');
 const { addSession, removeSession } = require('./sessionStore');
+const { executeCode } = require('../services/executionService'); // For running code
+
 const log = (msg) => console.log(`[WSS] ${msg}`);
-
-
 const sessions = new Map();
 
-// Helper functions
+// --- Helper Functions ---
 function broadcast(session, message) {
     if (!session || !session.clients) return;
     session.clients.forEach(client => {
@@ -17,6 +17,7 @@ function broadcast(session, message) {
         }
     });
 }
+
 function broadcastToAll(session, message) {
     if (!session || !session.clients) return;
     session.clients.forEach(client => {
@@ -25,6 +26,7 @@ function broadcastToAll(session, message) {
         }
     });
 }
+
 function sendToClient(session, userId, message) {
     if (!session || !session.clients) return;
     const client = Array.from(session.clients).find(c => c.id === userId);
@@ -34,6 +36,7 @@ function sendToClient(session, userId, message) {
         console.log(`[WEBSOCKET] Could not find or send to client ID: ${userId}`);
     }
 }
+
 function getTeacher(session) {
     if (!session || !session.clients) return null;
     return Array.from(session.clients).find(c => c.role === 'teacher');
@@ -49,7 +52,6 @@ function initiateVideoConnectionsForNewUser(session, newClient) {
     const students = getStudents(session);
     
     if (newClient.role === 'teacher') {
-        // Teacher joined - initiate connections to all students
         students.forEach(student => {
             console.log(`[VIDEO] Teacher initiating connection to student ${student.username}`);
             sendToClient(session, teacher.id, { 
@@ -57,18 +59,17 @@ function initiateVideoConnectionsForNewUser(session, newClient) {
                 payload: { targetId: student.id, targetUsername: student.username, isInitiator: true }
             });
         });
-    } else if (newClient.role === 'student') {
-        // Student joined - teacher initiates connection if present
-        if (teacher) {
-            console.log(`[VIDEO] Auto-initiating video connection: Teacher -> Student ${newClient.username}`);
-            sendToClient(session, teacher.id, { 
-                type: 'INITIATE_VIDEO_CONNECTION', 
-                payload: { targetId: newClient.id, targetUsername: newClient.username, isInitiator: true }
-            });
-        }
+    } else if (newClient.role === 'student' && teacher) {
+        console.log(`[VIDEO] Auto-initiating video connection: Teacher -> Student ${newClient.username}`);
+        sendToClient(session, teacher.id, { 
+            type: 'INITIATE_VIDEO_CONNECTION', 
+            payload: { targetId: newClient.id, targetUsername: newClient.username, isInitiator: true }
+        });
     }
 }
 
+
+// --- Main WebSocket Initializer ---
 function initializeWebSocket(wss) {
     wss.on('connection', async (ws, req) => {
         const urlParams = new URLSearchParams(req.url.split('?')[1]);
@@ -81,64 +82,43 @@ function initializeWebSocket(wss) {
             return ws.close(4001, "Session ID and token are required");
         }
 
-        // --- THIS IS THE DEFINITIVE SECURITY FIX ---
         let user;
         try {
-            // Use jwt.verify to securely validate the token against your secret key.
-            // This checks the signature, expiration, and decodes the payload in one step.
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             user = decoded.user;
         } catch (err) {
             console.error('[WS Auth] Connection rejected due to invalid token:', err.message);
-            // Use a custom error code so the frontend can handle it gracefully.
             return ws.close(4001, "Invalid or expired authentication token");
         }
 
         const isHomeworkSession = !!teacherSessionId && !!lessonId;
         const sessionKey = isHomeworkSession ? teacherSessionId : sessionId;
-        let session = sessions.get(sessionKey);
 
-        if (!session) {
+        // Create the session in memory if it doesn't exist
+        if (!sessions.has(sessionKey)) {
             if (isHomeworkSession) {
                 console.error(`[ERROR] Student tried to join homework for a non-existent session: ${sessionKey}`);
                 return ws.close(1011, "Cannot join homework for a session that does not exist.");
-            } else {
-                try {
-                    const container = await docker.createContainer({ Image: 'code-execution-env', Tty: true, Cmd: ['/bin/bash'], OpenStdin: true, HostConfig: { AutoRemove: true }});
-                    await container.start();
-                    const exec = await container.exec({ Cmd: ['/bin/bash'], AttachStdin: true, AttachStdout: true, AttachStderr: true, Tty: true });
-                    const terminalStream = await exec.start({ hijack: true, stdin: true });
-                    
-                    session = {
-                        container,
-                        terminalStream,
-                        clients: new Set(),
-                        files: [],
-                        activeFile: '',
-                        terminalOutput: '',
-                        assignments: new Map(),
-                        handsRaised: new Set(),
-                        spotlightedStudentId: null, 
-                        studentWorkspaces: new Map(),
-                        controlledStudentId: null,
-                        isFrozen: false,
-                        whiteboardLines: [],
-                        isWhiteboardVisible: false,
-                        videoConnections: new Map(),
-                    };
-                    sessions.set(sessionId, session);
-
-                    session.terminalStream.on('data', (chunk) => {
-                        const output = chunk.toString('utf8');
-                        session.terminalOutput += output;
-                        broadcast(session, { type: 'TERMINAL_OUT', payload: output });
-                    });
-                } catch (err) {
-                    console.error("Failed to create container:", err);
-                    return ws.close(1011, "Failed to initialize session environment.");
-                }
             }
+            
+            log(`Creating new session: ${sessionKey}`);
+            sessions.set(sessionKey, {
+                clients: new Set(),
+                files: [],
+                activeFile: '',
+                terminalOutput: `CoreZenith Virtual Terminal for session ${sessionKey}\n$ `,
+                assignments: new Map(),
+                handsRaised: new Set(),
+                spotlightedStudentId: null,
+                studentWorkspaces: new Map(),
+                controlledStudentId: null,
+                isFrozen: false,
+                whiteboardLines: [],
+                isWhiteboardVisible: false,
+                videoConnections: new Map(),
+            });
         }
+        const session = sessions.get(sessionKey);
         
         const existingClient = Array.from(session.clients).find(c => c.id === user.id && c.isHomework === isHomeworkSession);
         if (existingClient) {
@@ -160,9 +140,7 @@ function initializeWebSocket(wss) {
             });
         }
 
-        console.log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey}.`);
         log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey} (Homework: ${isHomeworkSession}). Total clients: ${session.clients.size}`);
-        log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey}. Total clients: ${session.clients.size}`);
         const teacher = getTeacher(session);
 
         if (isHomeworkSession) {
@@ -199,10 +177,9 @@ function initializeWebSocket(wss) {
             const studentList = Array.from(session.clients).filter(c => c.role === 'student' && !c.isHomework).map(c => ({ id: c.id, username: c.username }));
             broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: studentList }});
 
-            // Auto-initiate video connections for new users
             setTimeout(() => {
                 initiateVideoConnectionsForNewUser(session, clientInfo);
-            }, 1000); // Small delay to ensure client is ready
+            }, 1000);
         }
 
         ws.on('message', async (message) => {
@@ -211,7 +188,6 @@ function initializeWebSocket(wss) {
             
             if (data.type === 'PRIVATE_MESSAGE') {
                 const { to, text } = data.payload;
-                console.log(`[CHAT] Relaying message from ${fromId} to ${to}`);
                 sendToClient(session, to, {
                     type: 'PRIVATE_MESSAGE',
                     payload: { from: fromId, text, timestamp: new Date().toISOString() }
@@ -221,16 +197,13 @@ function initializeWebSocket(wss) {
 
             switch (data.type) {
                 case 'INITIATE_VIDEO_CONNECTION':
-                    // Teacher is initiating connection to a student
                     const targetId = data.payload.targetId;
-                    console.log(`[VIDEO] Initiating connection from ${fromId} to ${targetId}`);
                     sendToClient(session, targetId, { 
                         type: 'AUTO_ACCEPT_VIDEO_CALL', 
                         payload: { from: fromId, username: clientInfo.username }
                     });
                     break;
                 case 'WEBRTC_OFFER':
-                    console.log(`[VIDEO] Relaying offer from ${fromId} to ${data.payload.to}`);
                     sendToClient(session, data.payload.to, { 
                         type: 'WEBRTC_OFFER', 
                         payload: { 
@@ -242,26 +215,21 @@ function initializeWebSocket(wss) {
                     });
                     return;
                 case 'WEBRTC_ANSWER':
-                    console.log(`[VIDEO] Relaying answer from ${fromId} to ${data.payload.to}`);
                     sendToClient(session, data.payload.to, { type: 'WEBRTC_ANSWER', payload: { from: fromId, answer: data.payload.answer }});
                     return;
                 case 'WEBRTC_ICE_CANDIDATE':
                     sendToClient(session, data.payload.to, { type: 'WEBRTC_ICE_CANDIDATE', payload: { from: fromId, candidate: data.payload.candidate }});
                     return;
                 case 'VIDEO_CONNECTION_ESTABLISHED':
-                    // Track successful connections
                     const connectionKey = `${Math.min(fromId, data.payload.peerId)}_${Math.max(fromId, data.payload.peerId)}`;
                     session.videoConnections.set(connectionKey, {
                         participants: [fromId, data.payload.peerId],
                         establishedAt: new Date()
                     });
-                    console.log(`[VIDEO] Connection established between ${fromId} and ${data.payload.peerId}`);
                     break;
                 case 'VIDEO_CONNECTION_ENDED':
-                    // Remove from tracking
                     const endConnectionKey = `${Math.min(fromId, data.payload.peerId)}_${Math.max(fromId, data.payload.peerId)}`;
                     session.videoConnections.delete(endConnectionKey);
-                    console.log(`[VIDEO] Connection ended between ${fromId} and ${data.payload.peerId}`);
                     break;
             }
 
@@ -279,7 +247,6 @@ function initializeWebSocket(wss) {
                 return;
             }
             if (data.type === 'STUDENT_RETURN_TO_CLASSROOM') {
-                console.log(`[STATE_SYNC] Student ${clientInfo.username} returned to classroom. Sending full workspace.`);
                 sendToClient(session, clientInfo.id, {
                     type: 'TEACHER_WORKSPACE_UPDATE',
                     payload: {
@@ -289,9 +256,7 @@ function initializeWebSocket(wss) {
                     }
                 });
                 
-                // Re-establish video connection with teacher
                 if (teacher && clientInfo.role === 'student') {
-                    console.log(`[VIDEO] Re-establishing video connection for student ${clientInfo.username} returning from homework`);
                     setTimeout(() => {
                         sendToClient(session, teacher.id, { 
                             type: 'INITIATE_VIDEO_CONNECTION', 
@@ -361,55 +326,38 @@ function initializeWebSocket(wss) {
                     session.assignments.set(data.payload.studentId, data.payload);
                     break;
                 case 'TERMINAL_IN':
-                    if (session.terminalStream) {
-                        session.terminalStream.write(data.payload);
+                    const command = data.payload.data;
+                    session.terminalOutput += command;
+                    broadcast(session, { type: 'TERMINAL_OUT', payload: command });
+                    if (command.includes('\r')) {
+                        session.terminalOutput += '$ ';
+                        broadcast(session, { type: 'TERMINAL_OUT', payload: '\n$ ' });
                     }
                     break;
                 case 'RUN_CODE':
-                     if (session.terminalStream) {
-                        session.terminalOutput = '';
-                        // broadcast(session, {
-                        //     type: 'TEACHER_WORKSPACE_UPDATE',
-                        //     payload: {
-                        //         files: session.files,
-                        //         activeFileName: session.activeFile,
-                        //         terminalOutput: session.terminalOutput
-                        //     }
-                        // });
-                        const { language, code } = data.payload;
-                        const escapedCode = code.replace(/'/g, "'\\''");
-                        let command;
-                        switch (language) {
-                            case 'javascript':
-                                command = `echo '${escapedCode}' > temp_run_file.js && node temp_run_file.js`;
-                                break;
-                            case 'python':
-                                command = `echo '${escapedCode}' > temp_run_file.py && python3 temp_run_file.py`;
-                                break;
-                            case 'java':
-                                command = `echo '${escapedCode}' > Main.java && javac Main.java && java Main`;
-                                break;
-                            default:
-                                command = `echo "Unsupported language: ${language}"`;
-                        }
-                        session.terminalStream.write(`clear && ${command}\n`);
-                    }
-                    break;
+                     const { language, code } = data.payload;
+                     try {
+                         const executionResult = await executeCode(code, language);
+                         const output = executionResult.output || (executionResult.success ? 'Execution complete.' : 'Execution finished with errors.');
+                         session.terminalOutput += output + '\n$ ';
+                         broadcast(session, { type: 'TERMINAL_OUT', payload: output + '\n$ ' });
+                     } catch (err) {
+                         console.error("Error during remote code execution:", err);
+                         const errorMessage = `Execution failed: ${err.message}\n$ `;
+                         session.terminalOutput += errorMessage;
+                         broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
+                     }
+                     break;
             }
         });
 
         ws.on('close', async () => {
             session.clients.delete(clientInfo);
-            console.log(`${clientInfo.role} ${clientInfo.username} disconnected.`);
             log(`${clientInfo.role} ${clientInfo.username} disconnected. Total clients left: ${session.clients.size}`);
 
-            // Clean up video connections involving this user
             for (const [connectionKey, connection] of session.videoConnections) {
                 if (connection.participants.includes(clientInfo.id)) {
                     session.videoConnections.delete(connectionKey);
-                    console.log(`[VIDEO] Removed connection ${connectionKey} due to user disconnect`);
-                    
-                    // Notify the other participant
                     const otherParticipant = connection.participants.find(id => id !== clientInfo.id);
                     if (otherParticipant) {
                         sendToClient(session, otherParticipant, {
@@ -439,24 +387,16 @@ function initializeWebSocket(wss) {
                     sendToClient(session, teacher.id, { type: 'HOMEWORK_LEAVE', payload: { studentId: user.id } });
                 }
             } else if (session.clients.size === 0) {
-                console.log(`Last client left. Stopping container for session ${sessionId}`);
-                try {
-                    if (session.container) await session.container.stop();
-                } catch (err) {
-                    if (err.statusCode !== 404 && err.statusCode !== 304) {
-                        console.error("Error stopping container:", err);
-                    }
-                }
+                log(`Last client left. Deleting session ${sessionId}`);
                 sessions.delete(sessionId);
+                removeSession(sessionId);
             } else {
                  const updatedStudentList = Array.from(session.clients)
                     .filter(c => c.role === 'student' && !c.isHomework)
                     .map(c => ({ id: c.id, username: c.username }));
                 broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: updatedStudentList }});
                 
-                // Re-establish connections for remaining users if teacher disconnected
                 if (clientInfo.role === 'teacher') {
-                    // Teacher disconnected, students should be notified
                     const students = getStudents(session);
                     students.forEach(student => {
                         sendToClient(session, student.id, {
@@ -465,7 +405,6 @@ function initializeWebSocket(wss) {
                         });
                     });
                 } else if (clientInfo.role === 'student') {
-                    // Student disconnected, notify teacher if present
                     const remainingTeacher = getTeacher(session);
                     if (remainingTeacher) {
                         sendToClient(session, remainingTeacher.id, {
@@ -475,14 +414,522 @@ function initializeWebSocket(wss) {
                     }
                 }
             }
-             if (clientInfo.role === 'teacher' && session.clients.size === 0) {
-                removeSession(sessionId);
-            }
         });
     });
 }
 
 module.exports = initializeWebSocket;
+// // perfect with refresh
+// // const Docker = require('dockerode');
+// const jwt = require('jsonwebtoken');
+// const url = require('url');
+// const { addSession, removeSession } = require('./sessionStore');
+
+// const log = (msg) => console.log(`[WSS] ${msg}`);
+
+
+
+// const sessions = new Map();
+
+// // Helper functions
+// function broadcast(session, message) {
+//     if (!session || !session.clients) return;
+//     session.clients.forEach(client => {
+//         if (!client.isHomework && client.ws.readyState === client.ws.OPEN) {
+//             client.ws.send(JSON.stringify(message));
+//         }
+//     });
+// }
+// function broadcastToAll(session, message) {
+//     if (!session || !session.clients) return;
+//     session.clients.forEach(client => {
+//         if (client.ws.readyState === client.ws.OPEN) {
+//             client.ws.send(JSON.stringify(message));
+//         }
+//     });
+// }
+// function sendToClient(session, userId, message) {
+//     if (!session || !session.clients) return;
+//     const client = Array.from(session.clients).find(c => c.id === userId);
+//     if (client && client.ws.readyState === client.ws.OPEN) {
+//         client.ws.send(JSON.stringify(message));
+//     } else {
+//         console.log(`[WEBSOCKET] Could not find or send to client ID: ${userId}`);
+//     }
+// }
+// function getTeacher(session) {
+//     if (!session || !session.clients) return null;
+//     return Array.from(session.clients).find(c => c.role === 'teacher');
+// }
+
+// function getStudents(session) {
+//     if (!session || !session.clients) return [];
+//     return Array.from(session.clients).filter(c => c.role === 'student');
+// }
+
+// function initiateVideoConnectionsForNewUser(session, newClient) {
+//     const teacher = getTeacher(session);
+//     const students = getStudents(session);
+    
+//     if (newClient.role === 'teacher') {
+//         // Teacher joined - initiate connections to all students
+//         students.forEach(student => {
+//             console.log(`[VIDEO] Teacher initiating connection to student ${student.username}`);
+//             sendToClient(session, teacher.id, { 
+//                 type: 'INITIATE_VIDEO_CONNECTION', 
+//                 payload: { targetId: student.id, targetUsername: student.username, isInitiator: true }
+//             });
+//         });
+//     } else if (newClient.role === 'student') {
+//         // Student joined - teacher initiates connection if present
+//         if (teacher) {
+//             console.log(`[VIDEO] Auto-initiating video connection: Teacher -> Student ${newClient.username}`);
+//             sendToClient(session, teacher.id, { 
+//                 type: 'INITIATE_VIDEO_CONNECTION', 
+//                 payload: { targetId: newClient.id, targetUsername: newClient.username, isInitiator: true }
+//             });
+//         }
+//     }
+// }
+
+// function initializeWebSocket(wss) {
+//     wss.on('connection', async (ws, req) => {
+//         const urlParams = new URLSearchParams(req.url.split('?')[1]);
+//         const sessionId = urlParams.get('sessionId');
+//         const token = urlParams.get('token');
+//         const teacherSessionId = urlParams.get('teacherSessionId');
+//         const lessonId = urlParams.get('lessonId');
+
+//         if (!sessionId || !token) {
+//             return ws.close(4001, "Session ID and token are required");
+//         }
+
+//         // --- THIS IS THE DEFINITIVE SECURITY FIX ---
+//         let user;
+//         try {
+//             // Use jwt.verify to securely validate the token against your secret key.
+//             // This checks the signature, expiration, and decodes the payload in one step.
+//             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//             user = decoded.user;
+//         } catch (err) {
+//             console.error('[WS Auth] Connection rejected due to invalid token:', err.message);
+//             // Use a custom error code so the frontend can handle it gracefully.
+//             return ws.close(4001, "Invalid or expired authentication token");
+//         }
+
+//         const isHomeworkSession = !!teacherSessionId && !!lessonId;
+//         const sessionKey = isHomeworkSession ? teacherSessionId : sessionId;
+//         if (!sessions.has(sessionKey)) {
+//             if (isHomeworkSession) {
+//                 console.error(`[ERROR] Student tried to join homework for a non-existent session: ${sessionKey}`);
+//                 return ws.close(1011, "Cannot join homework for a session that does not exist.");
+//             }
+            
+//             log(`Creating new session: ${sessionKey}`);
+//             sessions.set(sessionKey, {
+//                 // We remove the container and terminalStream properties
+//                 clients: new Set(),
+//                 files: [],
+//                 activeFile: '',
+//                 terminalOutput: `CoreZenith Virtual Terminal for session ${sessionKey}\n$ `, // Default output
+//                 assignments: new Map(),
+//                 handsRaised: new Set(),
+//                 spotlightedStudentId: null,
+//                 studentWorkspaces: new Map(),
+//                 controlledStudentId: null,
+//                 isFrozen: false,
+//                 whiteboardLines: [],
+//                 isWhiteboardVisible: false,
+//                 videoConnections: new Map(),
+//             });
+//         }
+//         let session = sessions.get(sessionKey);
+
+//         if (!session) {
+//             if (isHomeworkSession) {
+//                 console.error(`[ERROR] Student tried to join homework for a non-existent session: ${sessionKey}`);
+//                 return ws.close(1011, "Cannot join homework for a session that does not exist.");
+//             } else {
+//                 try {
+//                     const container = await docker.createContainer({ Image: 'code-execution-env', Tty: true, Cmd: ['/bin/bash'], OpenStdin: true, HostConfig: { AutoRemove: true }});
+//                     await container.start();
+//                     const exec = await container.exec({ Cmd: ['/bin/bash'], AttachStdin: true, AttachStdout: true, AttachStderr: true, Tty: true });
+//                     const terminalStream = await exec.start({ hijack: true, stdin: true });
+                    
+//                     session = {
+//                         container,
+//                         terminalStream,
+//                         clients: new Set(),
+//                         files: [],
+//                         activeFile: '',
+//                         terminalOutput: '',
+//                         assignments: new Map(),
+//                         handsRaised: new Set(),
+//                         spotlightedStudentId: null, 
+//                         studentWorkspaces: new Map(),
+//                         controlledStudentId: null,
+//                         isFrozen: false,
+//                         whiteboardLines: [],
+//                         isWhiteboardVisible: false,
+//                         videoConnections: new Map(),
+//                     };
+//                     sessions.set(sessionId, session);
+
+//                     session.terminalStream.on('data', (chunk) => {
+//                         const output = chunk.toString('utf8');
+//                         session.terminalOutput += output;
+//                         broadcast(session, { type: 'TERMINAL_OUT', payload: output });
+//                     });
+//                 } catch (err) {
+//                     console.error("Failed to create container:", err);
+//                     return ws.close(1011, "Failed to initialize session environment.");
+//                 }
+//             }
+//         }
+        
+//         const existingClient = Array.from(session.clients).find(c => c.id === user.id && c.isHomework === isHomeworkSession);
+//         if (existingClient) {
+//             log(`Found existing client for ${user.username}. Terminating old connection.`);
+//             existingClient.ws.terminate(); 
+//             session.clients.delete(existingClient);
+//         }
+
+//         const clientInfo = { id: user.id, username: user.username, role: user.role || 'student', ws: ws, isHomework: isHomeworkSession };
+//         session.clients.add(clientInfo);
+
+//         if (clientInfo.role === 'teacher' && !isHomeworkSession) {
+//             addSession(sessionId, {
+//                 sessionId,
+//                 teacherId: user.id,
+//                 teacherName: user.username,
+//                 courseId: 'default_course',
+//                 courseName: 'General Session',
+//             });
+//         }
+
+//         console.log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey}.`);
+//         log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey} (Homework: ${isHomeworkSession}). Total clients: ${session.clients.size}`);
+//         log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey}. Total clients: ${session.clients.size}`);
+//         const teacher = getTeacher(session);
+
+//         if (isHomeworkSession) {
+//             if (teacher) {
+//                 sendToClient(session, teacher.id, { type: 'HOMEWORK_JOIN', payload: { studentId: user.id } });
+//             }
+//              ws.send(JSON.stringify({ type: 'FREEZE_STATE_UPDATE', payload: { isFrozen: session.isFrozen } }));
+//              ws.send(JSON.stringify({ type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: session.controlledStudentId } }));
+//         } else {
+//             ws.send(JSON.stringify({ 
+//                 type: 'ROLE_ASSIGNED', 
+//                 payload: { 
+//                     role: clientInfo.role,
+//                     files: session.files,
+//                     activeFile: session.activeFile,
+//                     terminalOutput: session.terminalOutput,
+//                     spotlightedStudentId: session.spotlightedStudentId,
+//                     controlledStudentId: session.controlledStudentId,
+//                     isFrozen: session.isFrozen,
+//                     whiteboardLines: session.whiteboardLines,
+//                     isWhiteboardVisible: session.isWhiteboardVisible,
+//                     teacherId: teacher ? teacher.id : null,
+//                 } 
+//             }));
+
+//             if (clientInfo.role === 'student' && session.assignments.has(user.id)) {
+//                 ws.send(JSON.stringify({ type: 'HOMEWORK_ASSIGNED', payload: session.assignments.get(user.id) }));
+//             }
+            
+//             if (teacher) {
+//                  ws.send(JSON.stringify({ type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) } }));
+//             }
+
+//             const studentList = Array.from(session.clients).filter(c => c.role === 'student' && !c.isHomework).map(c => ({ id: c.id, username: c.username }));
+//             broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: studentList }});
+
+//             // Auto-initiate video connections for new users
+//             setTimeout(() => {
+//                 initiateVideoConnectionsForNewUser(session, clientInfo);
+//             }, 1000); // Small delay to ensure client is ready
+//         }
+
+//         ws.on('message', async (message) => {
+//             const data = JSON.parse(message.toString());
+//             const fromId = clientInfo.id;
+            
+//             if (data.type === 'PRIVATE_MESSAGE') {
+//                 const { to, text } = data.payload;
+//                 console.log(`[CHAT] Relaying message from ${fromId} to ${to}`);
+//                 sendToClient(session, to, {
+//                     type: 'PRIVATE_MESSAGE',
+//                     payload: { from: fromId, text, timestamp: new Date().toISOString() }
+//                 });
+//                 return;
+//             }
+
+//             switch (data.type) {
+//                 case 'INITIATE_VIDEO_CONNECTION':
+//                     // Teacher is initiating connection to a student
+//                     const targetId = data.payload.targetId;
+//                     console.log(`[VIDEO] Initiating connection from ${fromId} to ${targetId}`);
+//                     sendToClient(session, targetId, { 
+//                         type: 'AUTO_ACCEPT_VIDEO_CALL', 
+//                         payload: { from: fromId, username: clientInfo.username }
+//                     });
+//                     break;
+//                 case 'WEBRTC_OFFER':
+//                     console.log(`[VIDEO] Relaying offer from ${fromId} to ${data.payload.to}`);
+//                     sendToClient(session, data.payload.to, { 
+//                         type: 'WEBRTC_OFFER', 
+//                         payload: { 
+//                             from: fromId, 
+//                             offer: data.payload.offer, 
+//                             username: clientInfo.username,
+//                             isAutoCall: data.payload.isAutoCall || false
+//                         }
+//                     });
+//                     return;
+//                 case 'WEBRTC_ANSWER':
+//                     console.log(`[VIDEO] Relaying answer from ${fromId} to ${data.payload.to}`);
+//                     sendToClient(session, data.payload.to, { type: 'WEBRTC_ANSWER', payload: { from: fromId, answer: data.payload.answer }});
+//                     return;
+//                 case 'WEBRTC_ICE_CANDIDATE':
+//                     sendToClient(session, data.payload.to, { type: 'WEBRTC_ICE_CANDIDATE', payload: { from: fromId, candidate: data.payload.candidate }});
+//                     return;
+//                 case 'VIDEO_CONNECTION_ESTABLISHED':
+//                     // Track successful connections
+//                     const connectionKey = `${Math.min(fromId, data.payload.peerId)}_${Math.max(fromId, data.payload.peerId)}`;
+//                     session.videoConnections.set(connectionKey, {
+//                         participants: [fromId, data.payload.peerId],
+//                         establishedAt: new Date()
+//                     });
+//                     console.log(`[VIDEO] Connection established between ${fromId} and ${data.payload.peerId}`);
+//                     break;
+//                 case 'VIDEO_CONNECTION_ENDED':
+//                     // Remove from tracking
+//                     const endConnectionKey = `${Math.min(fromId, data.payload.peerId)}_${Math.max(fromId, data.payload.peerId)}`;
+//                     session.videoConnections.delete(endConnectionKey);
+//                     console.log(`[VIDEO] Connection ended between ${fromId} and ${data.payload.peerId}`);
+//                     break;
+//             }
+
+//             if (clientInfo.isHomework) {
+//                 if (!teacher) return;
+//                 switch(data.type) {
+//                     case 'HOMEWORK_CODE_UPDATE':
+//                         session.studentWorkspaces?.set(user.id, data.payload);
+//                         sendToClient(session, teacher.id, { type: 'STUDENT_WORKSPACE_UPDATED', payload: { studentId: user.id, workspace: data.payload } });
+//                         break;
+//                     case 'HOMEWORK_TERMINAL_IN':
+//                         sendToClient(session, teacher.id, { type: 'HOMEWORK_TERMINAL_UPDATE', payload: { studentId: user.id, output: data.payload } });
+//                         break;
+//                 }
+//                 return;
+//             }
+//             if (data.type === 'STUDENT_RETURN_TO_CLASSROOM') {
+//                 console.log(`[STATE_SYNC] Student ${clientInfo.username} returned to classroom. Sending full workspace.`);
+//                 sendToClient(session, clientInfo.id, {
+//                     type: 'TEACHER_WORKSPACE_UPDATE',
+//                     payload: {
+//                         files: session.files,
+//                         activeFileName: session.activeFile,
+//                         terminalOutput: session.terminalOutput,
+//                     }
+//                 });
+                
+//                 // Re-establish video connection with teacher
+//                 if (teacher && clientInfo.role === 'student') {
+//                     console.log(`[VIDEO] Re-establishing video connection for student ${clientInfo.username} returning from homework`);
+//                     setTimeout(() => {
+//                         sendToClient(session, teacher.id, { 
+//                             type: 'INITIATE_VIDEO_CONNECTION', 
+//                             payload: { targetId: clientInfo.id, targetUsername: clientInfo.username, isInitiator: true }
+//                         });
+//                     }, 500);
+//                 }
+//                 return;
+//             }
+
+//             if (data.type === 'RAISE_HAND' && clientInfo.role === 'student') {
+//                 session.handsRaised.has(clientInfo.id) ? session.handsRaised.delete(clientInfo.id) : session.handsRaised.add(clientInfo.id);
+//                 broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) } });
+//                 return;
+//             }
+
+//             if (clientInfo.role !== 'teacher') return;
+
+//             // Teacher-only actions
+//             switch (data.type) {
+//                 case 'TOGGLE_WHITEBOARD':
+//                     session.isWhiteboardVisible = !session.isWhiteboardVisible;
+//                     broadcast(session, { type: 'WHITEBOARD_VISIBILITY_UPDATE', payload: { isVisible: session.isWhiteboardVisible } });
+//                     break;
+//                 case 'WHITEBOARD_DRAW':
+//                     session.whiteboardLines.push(data.payload.line);
+//                     broadcast(session, { type: 'WHITEBOARD_UPDATE', payload: { line: data.payload.line } });
+//                     break;
+//                 case 'WHITEBOARD_CLEAR':
+//                     session.whiteboardLines = [];
+//                     broadcast(session, { type: 'WHITEBOARD_CLEAR' });
+//                     break;
+//                 case 'TAKE_CONTROL':
+//                     session.controlledStudentId = data.payload.studentId;
+//                     broadcastToAll(session, { type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: session.controlledStudentId }});
+//                     break;
+//                 case 'TOGGLE_FREEZE':
+//                     session.isFrozen = !session.isFrozen;
+//                     broadcastToAll(session, { type: 'FREEZE_STATE_UPDATE', payload: { isFrozen: session.isFrozen }});
+//                     break;
+//                 case 'TEACHER_DIRECT_EDIT':
+//                     const { studentId, workspace } = data.payload;
+//                     session.studentWorkspaces?.set(studentId, workspace);
+//                     const studentClient = Array.from(session.clients).find(c => c.id === studentId && c.isHomework);
+//                     if (studentClient) {
+//                         studentClient.ws.send(JSON.stringify({ type: 'HOMEWORK_CODE_UPDATE', payload: workspace }));
+//                     }
+//                     broadcast(session, { type: 'STUDENT_WORKSPACE_UPDATED', payload: { studentId, workspace } });
+//                     break;
+//                 case 'SPOTLIGHT_STUDENT':
+//                     session.spotlightedStudentId = data.payload.studentId;
+//                     const spotlightWorkspace = data.payload.studentId ? session.studentWorkspaces?.get(data.payload.studentId) || null : null;
+//                     broadcast(session, { type: 'SPOTLIGHT_UPDATE', payload: { studentId: session.spotlightedStudentId, workspace: spotlightWorkspace }});
+//                     break;
+//                 case 'TEACHER_CODE_UPDATE':
+//                     session.files = data.payload.files;
+//                     session.activeFile = data.payload.activeFileName;
+//                     broadcast(session, { type: 'TEACHER_CODE_DID_UPDATE',
+//                        payload: {
+//                        files: session.files,
+//                        activeFileName: session.activeFile
+//                     }
+//                         });
+//                     break;
+//                 case 'ASSIGN_HOMEWORK':
+//                     sendToClient(session, data.payload.studentId, { type: 'HOMEWORK_ASSIGNED', payload: data.payload });
+//                     session.assignments.set(data.payload.studentId, data.payload);
+//                     break;
+//                 case 'TERMINAL_IN':
+//                     if (session.terminalStream) {
+//                         session.terminalStream.write(data.payload);
+//                     }
+//                     break;
+//                 case 'RUN_CODE':
+//                      if (session.terminalStream) {
+//                         session.terminalOutput = '';
+//                         // broadcast(session, {
+//                         //     type: 'TEACHER_WORKSPACE_UPDATE',
+//                         //     payload: {
+//                         //         files: session.files,
+//                         //         activeFileName: session.activeFile,
+//                         //         terminalOutput: session.terminalOutput
+//                         //     }
+//                         // });
+//                         const { language, code } = data.payload;
+//                         const escapedCode = code.replace(/'/g, "'\\''");
+//                         let command;
+//                         switch (language) {
+//                             case 'javascript':
+//                                 command = `echo '${escapedCode}' > temp_run_file.js && node temp_run_file.js`;
+//                                 break;
+//                             case 'python':
+//                                 command = `echo '${escapedCode}' > temp_run_file.py && python3 temp_run_file.py`;
+//                                 break;
+//                             case 'java':
+//                                 command = `echo '${escapedCode}' > Main.java && javac Main.java && java Main`;
+//                                 break;
+//                             default:
+//                                 command = `echo "Unsupported language: ${language}"`;
+//                         }
+//                         session.terminalStream.write(`clear && ${command}\n`);
+//                     }
+//                     break;
+//             }
+//         });
+
+//         ws.on('close', async () => {
+//             session.clients.delete(clientInfo);
+//             console.log(`${clientInfo.role} ${clientInfo.username} disconnected.`);
+//             log(`${clientInfo.role} ${clientInfo.username} disconnected. Total clients left: ${session.clients.size}`);
+
+//             // Clean up video connections involving this user
+//             for (const [connectionKey, connection] of session.videoConnections) {
+//                 if (connection.participants.includes(clientInfo.id)) {
+//                     session.videoConnections.delete(connectionKey);
+//                     console.log(`[VIDEO] Removed connection ${connectionKey} due to user disconnect`);
+                    
+//                     // Notify the other participant
+//                     const otherParticipant = connection.participants.find(id => id !== clientInfo.id);
+//                     if (otherParticipant) {
+//                         sendToClient(session, otherParticipant, {
+//                             type: 'PEER_DISCONNECTED',
+//                             payload: { disconnectedUserId: clientInfo.id }
+//                         });
+//                     }
+//                 }
+//             }
+
+//             if (session.handsRaised.has(clientInfo.id)) {
+//                 session.handsRaised.delete(clientInfo.id);
+//                 broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) }});
+//             }
+
+//             if (session.spotlightedStudentId === clientInfo.id) {
+//                 session.spotlightedStudentId = null;
+//                 broadcast(session, { type: 'SPOTLIGHT_UPDATE', payload: { studentId: null, workspace: null }});
+//             }
+//             if (session.controlledStudentId === clientInfo.id) {
+//                 session.controlledStudentId = null;
+//                 broadcastToAll(session, { type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: null }});
+//             }
+            
+//             if (isHomeworkSession) {
+//                 if (teacher) {
+//                     sendToClient(session, teacher.id, { type: 'HOMEWORK_LEAVE', payload: { studentId: user.id } });
+//                 }
+//             } else if (session.clients.size === 0) {
+//                 console.log(`Last client left. Stopping container for session ${sessionId}`);
+//                 try {
+//                     if (session.container) await session.container.stop();
+//                 } catch (err) {
+//                     if (err.statusCode !== 404 && err.statusCode !== 304) {
+//                         console.error("Error stopping container:", err);
+//                     }
+//                 }
+//                 sessions.delete(sessionId);
+//             } else {
+//                  const updatedStudentList = Array.from(session.clients)
+//                     .filter(c => c.role === 'student' && !c.isHomework)
+//                     .map(c => ({ id: c.id, username: c.username }));
+//                 broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: updatedStudentList }});
+                
+//                 // Re-establish connections for remaining users if teacher disconnected
+//                 if (clientInfo.role === 'teacher') {
+//                     // Teacher disconnected, students should be notified
+//                     const students = getStudents(session);
+//                     students.forEach(student => {
+//                         sendToClient(session, student.id, {
+//                             type: 'TEACHER_DISCONNECTED',
+//                             payload: {}
+//                         });
+//                     });
+//                 } else if (clientInfo.role === 'student') {
+//                     // Student disconnected, notify teacher if present
+//                     const remainingTeacher = getTeacher(session);
+//                     if (remainingTeacher) {
+//                         sendToClient(session, remainingTeacher.id, {
+//                             type: 'STUDENT_DISCONNECTED',
+//                             payload: { studentId: clientInfo.id, studentUsername: clientInfo.username }
+//                         });
+//                     }
+//                 }
+//             }
+//              if (clientInfo.role === 'teacher' && session.clients.size === 0) {
+//                 removeSession(sessionId);
+//             }
+//         });
+//     });
+// }
+
+// module.exports = initializeWebSocket;
 // // perfect with refresh
 // const Docker = require('dockerode');
 // const docker = new Docker();
