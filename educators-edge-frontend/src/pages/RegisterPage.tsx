@@ -41,7 +41,7 @@ const RegisterPage: React.FC = () => {
     setError(null);
     setMessage(null);
     try {
-      const response = await apiClient.post('/api/auth/register', formData);
+      await apiClient.post('/api/auth/register', formData);
       setMessage('Registration successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
