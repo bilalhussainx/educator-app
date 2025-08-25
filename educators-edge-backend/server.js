@@ -22,23 +22,31 @@ const app = express();
 
 // --- Definitive CORS Configuration ---
 
-// 1. Define the specific URLs of your frontends that are allowed to connect.
 const allowedOrigins = [
-    'http://localhost:3000',          // Your local frontend for development
-    'https://educator-app.vercel.app' // Your production Vercel URL
+    'http://localhost:3000',
+    'https://educator-app.vercel.app',
+    'https://educator-a9yc0y90h-bilalhussainxs-projects.vercel.app' // The preview URL
 ];
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests from the list of allowed origins, and also allow
-        // requests that don't have an origin (like Postman or mobile apps).
-        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        console.log(`[CORS] Request from origin: ${origin}`); // Log every incoming origin
+
+        // Allow requests with no origin (like Postman, mobile apps, or server-to-server)
+        if (!origin) {
+            console.log('[CORS] Origin-less request allowed.');
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            console.log(`[CORS] Origin "${origin}" is in the allowed list. Granting access.`);
             callback(null, true);
         } else {
+            console.error(`[CORS] Origin "${origin}" is NOT in the allowed list. Blocking request.`);
             callback(new Error('This origin is not allowed by the CORS policy.'));
         }
     },
-    credentials: true, // Allow cookies and authorization headers to be sent
+    credentials: true,
 };
 
 // 2. Apply middleware in the correct order.
