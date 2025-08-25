@@ -1,4 +1,4 @@
-// services/executionService.js
+// services/executionService.js (Multi-Language Version)
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -7,51 +7,73 @@ const executeCode = (code, language) => {
     return new Promise((resolve, reject) => {
         const tempDir = path.join(__dirname, 'temp');
         if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir);
+            fs.mkdirSync(tempDir, { recursive: true });
         }
 
+        const uniqueId = crypto.randomUUID();
         let fileExtension, command;
-        // --- THIS IS THE CORRECTED LOGIC ---
+        let filePath = path.join(tempDir, `temp_${uniqueId}`);
+
+        // This switch statement now knows how to handle all the new languages.
         switch (language.toLowerCase()) {
             case 'javascript':
                 fileExtension = 'js';
-                command = 'node'; // Use 'node' to execute JavaScript
+                filePath += `.${fileExtension}`;
+                command = `node ${filePath}`;
                 break;
             case 'python':
                 fileExtension = 'py';
-                command = 'python3'; // Use 'python3' to execute Python
+                filePath += `.${fileExtension}`;
+                command = `python3 ${filePath}`;
                 break;
             case 'java':
-                // Java execution is more complex and requires compilation first
                 fileExtension = 'java';
-                command = 'java'; // This would be part of a multi-step process
+                // Java is special: it needs to be compiled first, then run.
+                const javaFilePath = path.join(tempDir, 'Main.java'); // Java requires a specific class name
+                fs.writeFileSync(javaFilePath, code);
+                // The command is a chain: compile, then run.
+                command = `javac ${javaFilePath} && java -cp ${tempDir} Main`;
+                break;
+            case 'ruby':
+                fileExtension = 'rb';
+                filePath += `.${fileExtension}`;
+                command = `ruby ${filePath}`;
+                break;
+            case 'go':
+                fileExtension = 'go';
+                filePath += `.${fileExtension}`;
+                command = `go run ${filePath}`;
                 break;
             default:
                 return reject(new Error(`Unsupported language: ${language}`));
         }
-        // --- END OF CORRECTION ---
+        
+        // Write the file only if it's not the special Java case
+        if (language.toLowerCase() !== 'java') {
+            fs.writeFileSync(filePath, code);
+        }
 
-        const filePath = path.join(tempDir, `temp_run_file.${fileExtension}`);
-        fs.writeFileSync(filePath, code);
-
-        // Execute the file using the correct command
-        exec(`${command} ${filePath}`, (error, stdout, stderr) => {
-            fs.unlinkSync(filePath); // Clean up the temporary file
+        exec(command, (error, stdout, stderr) => {
+            // Clean up all temporary files created
+            const filesToDelete = [filePath, path.join(tempDir, 'Main.java'), path.join(tempDir, 'Main.class')];
+            filesToDelete.forEach(file => {
+                if (fs.existsSync(file)) fs.unlinkSync(file);
+            });
 
             if (error) {
-                // If there's an execution error, the 'output' is the stderr
-                resolve({ success: false, output: stderr });
+                resolve({ success: false, output: stderr || error.message });
             } else if (stderr) {
-                // Some processes write to stderr for warnings even on success
-                resolve({ success: true, output: stderr });
-            }
-            else {
-                // Otherwise, the output is stdout
+                // Some languages (like Java compiler warnings) use stderr for non-fatal output
+                resolve({ success: true, output: stdout || stderr });
+            } else {
                 resolve({ success: true, output: stdout });
             }
         });
     });
 };
+
+// We need the crypto module for unique file names
+const crypto = require('crypto');
 
 module.exports = {
     executeCode
