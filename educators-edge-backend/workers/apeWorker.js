@@ -1,29 +1,39 @@
+// apeWorker.js
 const { Worker } = require('bullmq');
+const Redis = require('ioredis');
 require('dotenv').config();
 
-// --- APPLY THE SAME DEFINITIVE FIX HERE ---
-const connectionOptions = process.env.REDIS_URL ? process.env.REDIS_URL : {
-    host: '127.0.0.1',
-    port: 6379
-};
+console.log("--- BullMQ Worker Initializing ---");
 
-console.log("Initializing BullMQ Worker...");
-if (process.env.REDIS_URL) {
-    console.log("Worker connecting to Redis via URL.");
-} else {
-    console.log("Worker connecting to local Redis.");
+if (!process.env.REDIS_URL) {
+    console.error("FATAL ERROR: REDIS_URL is not defined in the environment.");
+    process.exit(1);
 }
 
-const worker = new Worker('analyze-submission', async job => {
-    console.log(`Processing job ${job.id}`);
-}, connectionOptions);
+// 1. Create another explicit Redis client instance for the worker.
+const redisClient = new Redis(process.env.REDIS_URL, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+});
 
-worker.on('completed', job => {
-  console.log(`${job.id} has completed!`);
+redisClient.on('connect', () => console.log('Redis client for Worker connected.'));
+redisClient.on('error', (err) => console.error('Redis client for Worker Error:', err));
+
+
+// 2. Pass the created client directly to the Worker.
+const worker = new Worker('analyze-submission', async job => {
+    // Your job processing logic here...
+    console.log(`Processing job ${job.id} for user ${job.data.userId}`);
+}, {
+    connection: redisClient
+});
+
+worker.on('ready', () => {
+    console.log('BullMQ Worker is connected and ready.');
 });
 
 worker.on('failed', (job, err) => {
-  console.log(`${job.id} has failed with ${err.message}`);
+  console.log(`Job ${job.id} has failed with ${err.message}`);
 });
 // /*
 //  * =================================================================
