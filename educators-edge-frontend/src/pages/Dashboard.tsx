@@ -1,178 +1,3 @@
-// /*
-//  * =================================================================
-//  * FOLDER: src/pages/
-//  * FILE:   Dashboard.tsx (REDESIGNED - Final)
-//  * =================================================================
-//  * DESCRIPTION: The final redesigned Personal HQ. This version uses a
-//  * professional widget-based layout, removes redundant logic now handled
-//  * by the global sidebar, and preserves all original data-fetching
-//  * and role-based rendering.
-//  */
-// import React, {useState, useEffect } from 'react';
-// import type { DashboardProps, Course, EnrolledCourse, LiveSession, StuckPointNotification } from '../types/index.ts';
-// import { useNavigate } from 'react-router-dom';
-// import * as ProgressPrimitive from "@radix-ui/react-progress";
-// import { cn } from "@/lib/utils";
-// import { Button } from "@/components/ui/button";
-// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-// import { Separator } from "@/components/ui/separator";
-// import {
-//     PlusCircle, Users, BookOpen, Settings, Search,
-//     AlertTriangle, Eye, RadioTower, ChevronsRight,
-//     BarChart, Zap, Calendar
-// } from 'lucide-react';
-// import { toast } from 'sonner';
-// import apiClient from '../services/apiClient';
-
-
-// // --- Reusable UI Components ---
-// const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
-//     <Card className={cn("bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white transition-all duration-300", className)} {...props} />
-// );
-
-// const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root>, React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>>(
-//     ({ className, value, ...props }, ref) => (
-//         <ProgressPrimitive.Root
-//             ref={ref}
-//             className={cn("relative h-2 w-full overflow-hidden rounded-full bg-slate-800", className)}
-//             {...props}
-//         >
-//             <ProgressPrimitive.Indicator
-//                 className="h-full w-full flex-1 bg-cyan-400 transition-all"
-//                 style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-//             />
-//         </ProgressPrimitive.Root>
-//     )
-// );
-// Progress.displayName = ProgressPrimitive.Root.displayName;
-
-
-// // --- Dashboard Widget Components ---
-
-// const HudStatCard: React.FC<{ icon: React.ElementType; value: string | number; label: string; }> = ({ icon: Icon, value, label }) => (
-//     <GlassCard>
-//         <CardContent className="p-4 flex items-center gap-4">
-//             <div className="p-2 bg-slate-700/50 rounded-lg">
-//                 <Icon className="h-6 w-6 text-cyan-400" />
-//             </div>
-//             <div>
-//                 <p className="text-2xl font-bold">{value}</p>
-//                 <p className="text-sm text-slate-400">{label}</p>
-//             </div>
-//         </CardContent>
-//     </GlassCard>
-// );
-
-// const StuckPointNotifications: React.FC = () => {
-//     const [notifications, setNotifications] = useState<StuckPointNotification[]>([]);
-//     const [isLoading, setIsLoading] = useState(true);
-//     const navigate = useNavigate();
-
-//     useEffect(() => {
-//         const fetchNotifications = async () => {
-//             const token = localStorage.getItem('authToken');
-//             try {
-//                 const response = await fetch('http://localhost:5000/api/stuck-points', {
-//                     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-//                 });
-//                 if (response.status === 401) throw new Error('AuthError');
-//                 const data = await response.json();
-//                 setNotifications(data);
-//             } catch (err) {
-//                 console.error("Failed to fetch notifications:", err);
-//                 // Don't redirect to login here - let the main app handle authentication
-//             } finally {
-//                 setIsLoading(false);
-//             }
-//         };
-//         fetchNotifications();
-//     }, [navigate]);
-
-//     const handleViewAndDismiss = async (studentId: string, lessonId: string) => {
-//         setNotifications(current => current.filter(n => !(n.student_id === studentId && n.details.lesson_id === lessonId)));
-//         navigate(`/lesson/${lessonId}`); // Use the new AscentIDE route
-//         const token = localStorage.getItem('authToken');
-//         await fetch('http://localhost:5000/api/stuck-points/dismiss', {
-//             method: 'POST',
-//             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-//             body: JSON.stringify({ studentId, lessonId })
-//         });
-//     };
-    
-//     if (isLoading || notifications.length === 0) return null;
-
-//     return (
-//         <GlassCard className="border-fuchsia-500/50 hover:border-fuchsia-400 bg-fuchsia-950/20">
-//             <CardHeader>
-//                 <div className="flex items-center gap-4">
-//                     <div className="p-2 bg-fuchsia-500/10 rounded-lg border border-fuchsia-500/20">
-//                         <AlertTriangle className="h-6 w-6 text-fuchsia-400" />
-//                     </div>
-//                     <div>
-//                         <CardTitle className="text-xl text-fuchsia-300">AI-Powered Alerts</CardTitle>
-//                         <CardDescription className="text-fuchsia-400/80">Students detected requiring assistance.</CardDescription>
-//                     </div>
-//                 </div>
-//             </CardHeader>
-//             <CardContent>
-//                 <ul className="space-y-3">
-//                     {notifications.map(n => (
-//                         <li key={`${n.student_id}-${n.details.lesson_id}`} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
-//                             <div>
-//                                 <p className="font-semibold text-gray-200">{n.message}</p>
-//                                 <p className="text-sm text-gray-400">
-//                                     {`Test: "${n.details.stuck_on_test}" (${n.details.attempts_on_test} attempts)`}
-//                                 </p>
-//                             </div>
-//                             <Button variant="outline" size="sm" onClick={() => handleViewAndDismiss(n.student_id, n.details.lesson_id)} className="border-fuchsia-400/50 text-fuchsia-300 hover:bg-fuchsia-500/10 hover:text-fuchsia-200">
-//                                 <Eye className="mr-2 h-4 w-4" /> Review
-//                             </Button>
-//                         </li>
-//                     ))}
-//                 </ul>
-//             </CardContent>
-//         </GlassCard>
-//     );
-// };
-
-
-
-
-// // --- Main Dashboard Component ---
-// const Dashboard: React.FC<DashboardProps> = ({ user }) => {
-//     const [courses, setCourses] = useState<Course[] | EnrolledCourse[]>([]);
-//     const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
-//     const [isLoading, setIsLoading] = useState(true);
-//     const navigate = useNavigate();
-
-//     useEffect(() => {
-//         const fetchData = async () => {
-//             if (!user) return; // Let the main app handle authentication
-//             setIsLoading(true);
-//             const token = localStorage.getItem('authToken');
-//             try {
-//                 const coursesEndpoint = user.role === 'teacher' ? '/api/courses' : '/api/students/my-courses';
-//                 const coursesResponse = await fetch(`http://localhost:5000${coursesEndpoint}`, { headers: { 'Authorization': `Bearer ${token}` } });
-//                 if (!coursesResponse.ok) {
-//                     console.error('Failed to fetch courses:', coursesResponse.status);
-//                     return;
-//                 }
-//                 const coursesData = await coursesResponse.json();
-//                 setCourses(coursesData);
-                
-//                 if (user.role === 'student') {
-//                     const sessionsResponse = await fetch('http://localhost:5000/api/sessions/active', { headers: { 'Authorization': `Bearer ${token}` } });
-//                     if (sessionsResponse.ok) setLiveSessions(await sessionsResponse.json());
-//                 }
-//             } catch (err) {
-//                 console.error("Failed to fetch dashboard data:", err);
-//                 toast.error("Could not load dashboard data.");
-//             } finally {
-//                 setIsLoading(false);
-//             }
-//         };
-//         fetchData();
-//     }, [navigate, user]);
 import React, { useState, useEffect } from 'react';
 import type { DashboardProps, Course, EnrolledCourse, LiveSession, StuckPointNotification } from '../types/index.ts';
 import { useNavigate } from 'react-router-dom';
@@ -190,7 +15,7 @@ import { toast } from 'sonner';
 import apiClient from '../services/apiClient'; // The centralized API client
 import axios from 'axios'; // Import axios to check for specific error types
 
-// --- Reusable UI Components (No Changes) ---
+// --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
     <Card className={cn("bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white transition-all duration-300", className)} {...props} />
 );
@@ -211,7 +36,8 @@ const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root
 );
 Progress.displayName = ProgressPrimitive.Root.displayName;
 
-// --- Dashboard Widget Components (Refactored) ---
+
+// --- Dashboard Widget Components ---
 
 const HudStatCard: React.FC<{ icon: React.ElementType; value: string | number; label: string; }> = ({ icon: Icon, value, label }) => (
     <GlassCard>
@@ -235,12 +61,10 @@ const StuckPointNotifications: React.FC = () => {
     useEffect(() => {
         const fetchNotifications = async () => {
             try {
-                // REFACTORED: Use apiClient for the request
                 const response = await apiClient.get('/api/stuck-points');
                 setNotifications(response.data);
             } catch (err) {
                 console.error("Failed to fetch notifications:", err);
-                // No need to redirect here; the apiClient's interceptor could handle it globally
             } finally {
                 setIsLoading(false);
             }
@@ -251,7 +75,6 @@ const StuckPointNotifications: React.FC = () => {
     const handleViewAndDismiss = async (studentId: string, lessonId: string) => {
         setNotifications(current => current.filter(n => !(n.student_id === studentId && n.details.lesson_id === lessonId)));
         navigate(`/lesson/${lessonId}`);
-        // REFACTORED: Use apiClient for the request
         await apiClient.post('/api/stuck-points/dismiss', { studentId, lessonId });
     };
     
@@ -328,7 +151,7 @@ const LiveSessions: React.FC<{ sessions: LiveSession[] }> = ({ sessions }) => {
 };
 
 
-// --- Main Dashboard Component (Refactored) ---
+// --- Main Dashboard Component ---
 const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     const [courses, setCourses] = useState<Course[] | EnrolledCourse[]>([]);
     const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
@@ -345,7 +168,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             try {
                 const coursesEndpoint = user.role === 'teacher' ? '/api/courses' : '/api/students/my-courses';
                 
-                // REFACTORED: Use the apiClient
                 const coursesResponse = await apiClient.get(coursesEndpoint);
                 setCourses(coursesResponse.data);
                 
@@ -409,94 +231,86 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             )}
         </div>
     );
+
     const renderStudentDashboard = () => {
-    // Assume `courses` is an array of EnrolledCourse objects available in the component's scope.
-    const enrolledCourses = courses as EnrolledCourse[];
-    
-    // The first course in the sorted list is the primary one for the "Continue" widget.
-    const primaryCourse = enrolledCourses.length > 0 ? enrolledCourses[0] : null;
-    
-    // All subsequent courses are for the "My Learning Paths" grid.
-    const otherCourses = enrolledCourses.slice(1);
+        const enrolledCourses = courses as EnrolledCourse[];
+        const primaryCourse = enrolledCourses.length > 0 ? enrolledCourses[0] : null;
+        const otherCourses = enrolledCourses.slice(1);
 
-    return (
-        <div className="space-y-8">
-            <header>
-                <h1 className="text-4xl font-bold tracking-tighter text-white">Welcome back, {user?.username}</h1>
-                <p className="text-lg text-slate-400 mt-2">Let's continue your ascent. Your mission for today is clear.</p>
-            </header>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <HudStatCard icon={BarChart} value={128} label="Problems Solved" />
-                <HudStatCard icon={Zap} value={2450} label="Weekly XP" />
-                <HudStatCard icon={Calendar} value={"12 Days"} label="Active Streak" />
-            </div>
+        return (
+            <div className="space-y-8">
+                <header>
+                    <h1 className="text-4xl font-bold tracking-tighter text-white">Welcome back, {user?.username}</h1>
+                    <p className="text-lg text-slate-400 mt-2">Let's continue your ascent. Your mission for today is clear.</p>
+                </header>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <HudStatCard icon={BarChart} value={128} label="Problems Solved" />
+                    <HudStatCard icon={Zap} value={2450} label="Weekly XP" />
+                    <HudStatCard icon={Calendar} value={"12 Days"} label="Active Streak" />
+                </div>
 
-            {/* "Continue Your Ascent" Widget for the primary course */}
-            {primaryCourse && (
-                <GlassCard className="border-cyan-500/50 hover:border-cyan-400">
-                     <CardHeader>
-                        <CardTitle className="text-2xl text-white">Continue Your Ascent</CardTitle>
-                        <CardDescription className="text-slate-400 pt-1">{primaryCourse.title}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
-                        <div>
-                            <div className="flex justify-between text-sm text-slate-300 mb-2">
-                                <span>Progress</span>
-                                <span className="font-mono">{primaryCourse.lessons_completed} / {primaryCourse.lesson_count}</span>
+                {primaryCourse && (
+                    <GlassCard className="border-cyan-500/50 hover:border-cyan-400">
+                         <CardHeader>
+                            <CardTitle className="text-2xl text-white">Continue Your Ascent</CardTitle>
+                            <CardDescription className="text-slate-400 pt-1">{primaryCourse.title}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
+                            <div>
+                                <div className="flex justify-between text-sm text-slate-300 mb-2">
+                                    <span>Progress</span>
+                                    <span className="font-mono">{primaryCourse.lessons_completed} / {primaryCourse.lesson_count}</span>
+                                </div>
+                                <Progress value={(primaryCourse.lessons_completed / primaryCourse.lesson_count) * 100} />
                             </div>
-                            <Progress value={(primaryCourse.lessons_completed / primaryCourse.lesson_count) * 100} />
-                        </div>
-                        <Button className="w-full text-lg py-6 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold" onClick={() => navigate(`/courses/${primaryCourse.id}/learn`)}>
-                            <ChevronsRight className="mr-2 h-5 w-5" />
-                            {primaryCourse.lessons_completed === primaryCourse.lesson_count ? 'Review Course' : 'Jump Back In'}
-                        </Button>
-                    </CardContent>
-                </GlassCard>
-            )}
+                            <Button className="w-full text-lg py-6 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold" onClick={() => navigate(`/courses/${primaryCourse.id}/learn`)}>
+                                <ChevronsRight className="mr-2 h-5 w-5" />
+                                {primaryCourse.lessons_completed === primaryCourse.lesson_count ? 'Review Course' : 'Jump Back In'}
+                            </Button>
+                        </CardContent>
+                    </GlassCard>
+                )}
 
-            {/* Live Sessions Widget */}
-            <LiveSessions sessions={liveSessions} />
+                <LiveSessions sessions={liveSessions} />
 
-            {/* NEW SECTION: "My Other Learning Paths" grid */}
-            {otherCourses.length > 0 && (
-                <div className="space-y-6 pt-4">
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-200">My Other Learning Paths</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {otherCourses.map(course => (
-                            <GlassCard key={course.id} className="hover:border-slate-500 flex flex-col">
-                                <CardHeader>
-                                    <CardTitle className="text-xl text-white">{course.title}</CardTitle>
-                                    <CardDescription className="h-10 text-slate-400 pt-1">{course.description}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4 pt-4 flex-grow flex flex-col justify-end">
-                                    <div>
-                                        <div className="flex justify-between text-sm text-slate-300 mb-2">
-                                            <span>Progress</span>
-                                            <span className="font-mono">{course.lessons_completed} / {course.lesson_count}</span>
+                {otherCourses.length > 0 && (
+                    <div className="space-y-6 pt-4">
+                        <h2 className="text-2xl font-bold tracking-tight text-slate-200">My Other Learning Paths</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {otherCourses.map(course => (
+                                <GlassCard key={course.id} className="hover:border-slate-500 flex flex-col">
+                                    <CardHeader>
+                                        <CardTitle className="text-xl text-white">{course.title}</CardTitle>
+                                        <CardDescription className="h-10 text-slate-400 pt-1">{course.description}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4 pt-4 flex-grow flex flex-col justify-end">
+                                        <div>
+                                            <div className="flex justify-between text-sm text-slate-300 mb-2">
+                                                <span>Progress</span>
+                                                <span className="font-mono">{course.lessons_completed} / {course.lesson_count}</span>
+                                            </div>
+                                            <Progress value={(course.lessons_completed / course.lesson_count) * 100} />
                                         </div>
-                                        <Progress value={(course.lessons_completed / course.lesson_count) * 100} />
-                                    </div>
-                                    <Button className="w-full bg-slate-800/70 border border-slate-600 hover:bg-slate-700/80 text-slate-200" onClick={() => navigate(`/courses/${course.id}/learn`)}>
-                                        <BookOpen className="mr-2 h-4 w-4" /> View Course
-                                    </Button>
-                                </CardContent>
-                            </GlassCard>
-                        ))}
+                                        <Button className="w-full bg-slate-800/70 border border-slate-600 hover:bg-slate-700/80 text-slate-200" onClick={() => navigate(`/courses/${course.id}/learn`)}>
+                                            <BookOpen className="mr-2 h-4 w-4" /> View Course
+                                        </Button>
+                                    </CardContent>
+                                </GlassCard>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Fallback display for students with no enrolled courses */}
-            {courses.length === 0 && !isLoading && (
-                <div className="col-span-full text-center py-16 border-2 border-dashed border-slate-700 rounded-xl">
-                    <h3 className="text-lg font-medium text-slate-300">Your learning journey awaits!</h3>
-                    <p className="text-slate-500 mb-4">Enroll in a course to begin your ascent.</p>
-                    <Button onClick={() => navigate('/courses/discover')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold"><Search className="mr-2 h-4 w-4" /> Discover Courses</Button>
-                </div>
-            )}
-        </div>
-    );
-};
+                {courses.length === 0 && !isLoading && (
+                    <div className="col-span-full text-center py-16 border-2 border-dashed border-slate-700 rounded-xl">
+                        <h3 className="text-lg font-medium text-slate-300">Your learning journey awaits!</h3>
+                        <p className="text-slate-500 mb-4">Enroll in a course to begin your ascent.</p>
+                        <Button onClick={() => navigate('/courses/discover')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold"><Search className="mr-2 h-4 w-4" /> Discover Courses</Button>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     if (!user) { return null; }
 
@@ -508,6 +322,516 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 };
 
 export default Dashboard;
+// // /*
+// //  * =================================================================
+// //  * FOLDER: src/pages/
+// //  * FILE:   Dashboard.tsx (REDESIGNED - Final)
+// //  * =================================================================
+// //  * DESCRIPTION: The final redesigned Personal HQ. This version uses a
+// //  * professional widget-based layout, removes redundant logic now handled
+// //  * by the global sidebar, and preserves all original data-fetching
+// //  * and role-based rendering.
+// //  */
+// // import React, {useState, useEffect } from 'react';
+// // import type { DashboardProps, Course, EnrolledCourse, LiveSession, StuckPointNotification } from '../types/index.ts';
+// // import { useNavigate } from 'react-router-dom';
+// // import * as ProgressPrimitive from "@radix-ui/react-progress";
+// // import { cn } from "@/lib/utils";
+// // import { Button } from "@/components/ui/button";
+// // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+// // import { Separator } from "@/components/ui/separator";
+// // import {
+// //     PlusCircle, Users, BookOpen, Settings, Search,
+// //     AlertTriangle, Eye, RadioTower, ChevronsRight,
+// //     BarChart, Zap, Calendar
+// // } from 'lucide-react';
+// // import { toast } from 'sonner';
+// // import apiClient from '../services/apiClient';
+
+
+// // // --- Reusable UI Components ---
+// // const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
+// //     <Card className={cn("bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white transition-all duration-300", className)} {...props} />
+// // );
+
+// // const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root>, React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>>(
+// //     ({ className, value, ...props }, ref) => (
+// //         <ProgressPrimitive.Root
+// //             ref={ref}
+// //             className={cn("relative h-2 w-full overflow-hidden rounded-full bg-slate-800", className)}
+// //             {...props}
+// //         >
+// //             <ProgressPrimitive.Indicator
+// //                 className="h-full w-full flex-1 bg-cyan-400 transition-all"
+// //                 style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+// //             />
+// //         </ProgressPrimitive.Root>
+// //     )
+// // );
+// // Progress.displayName = ProgressPrimitive.Root.displayName;
+
+
+// // // --- Dashboard Widget Components ---
+
+// // const HudStatCard: React.FC<{ icon: React.ElementType; value: string | number; label: string; }> = ({ icon: Icon, value, label }) => (
+// //     <GlassCard>
+// //         <CardContent className="p-4 flex items-center gap-4">
+// //             <div className="p-2 bg-slate-700/50 rounded-lg">
+// //                 <Icon className="h-6 w-6 text-cyan-400" />
+// //             </div>
+// //             <div>
+// //                 <p className="text-2xl font-bold">{value}</p>
+// //                 <p className="text-sm text-slate-400">{label}</p>
+// //             </div>
+// //         </CardContent>
+// //     </GlassCard>
+// // );
+
+// // const StuckPointNotifications: React.FC = () => {
+// //     const [notifications, setNotifications] = useState<StuckPointNotification[]>([]);
+// //     const [isLoading, setIsLoading] = useState(true);
+// //     const navigate = useNavigate();
+
+// //     useEffect(() => {
+// //         const fetchNotifications = async () => {
+// //             const token = localStorage.getItem('authToken');
+// //             try {
+// //                 const response = await fetch('http://localhost:5000/api/stuck-points', {
+// //                     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+// //                 });
+// //                 if (response.status === 401) throw new Error('AuthError');
+// //                 const data = await response.json();
+// //                 setNotifications(data);
+// //             } catch (err) {
+// //                 console.error("Failed to fetch notifications:", err);
+// //                 // Don't redirect to login here - let the main app handle authentication
+// //             } finally {
+// //                 setIsLoading(false);
+// //             }
+// //         };
+// //         fetchNotifications();
+// //     }, [navigate]);
+
+// //     const handleViewAndDismiss = async (studentId: string, lessonId: string) => {
+// //         setNotifications(current => current.filter(n => !(n.student_id === studentId && n.details.lesson_id === lessonId)));
+// //         navigate(`/lesson/${lessonId}`); // Use the new AscentIDE route
+// //         const token = localStorage.getItem('authToken');
+// //         await fetch('http://localhost:5000/api/stuck-points/dismiss', {
+// //             method: 'POST',
+// //             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+// //             body: JSON.stringify({ studentId, lessonId })
+// //         });
+// //     };
+    
+// //     if (isLoading || notifications.length === 0) return null;
+
+// //     return (
+// //         <GlassCard className="border-fuchsia-500/50 hover:border-fuchsia-400 bg-fuchsia-950/20">
+// //             <CardHeader>
+// //                 <div className="flex items-center gap-4">
+// //                     <div className="p-2 bg-fuchsia-500/10 rounded-lg border border-fuchsia-500/20">
+// //                         <AlertTriangle className="h-6 w-6 text-fuchsia-400" />
+// //                     </div>
+// //                     <div>
+// //                         <CardTitle className="text-xl text-fuchsia-300">AI-Powered Alerts</CardTitle>
+// //                         <CardDescription className="text-fuchsia-400/80">Students detected requiring assistance.</CardDescription>
+// //                     </div>
+// //                 </div>
+// //             </CardHeader>
+// //             <CardContent>
+// //                 <ul className="space-y-3">
+// //                     {notifications.map(n => (
+// //                         <li key={`${n.student_id}-${n.details.lesson_id}`} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+// //                             <div>
+// //                                 <p className="font-semibold text-gray-200">{n.message}</p>
+// //                                 <p className="text-sm text-gray-400">
+// //                                     {`Test: "${n.details.stuck_on_test}" (${n.details.attempts_on_test} attempts)`}
+// //                                 </p>
+// //                             </div>
+// //                             <Button variant="outline" size="sm" onClick={() => handleViewAndDismiss(n.student_id, n.details.lesson_id)} className="border-fuchsia-400/50 text-fuchsia-300 hover:bg-fuchsia-500/10 hover:text-fuchsia-200">
+// //                                 <Eye className="mr-2 h-4 w-4" /> Review
+// //                             </Button>
+// //                         </li>
+// //                     ))}
+// //                 </ul>
+// //             </CardContent>
+// //         </GlassCard>
+// //     );
+// // };
+
+
+
+
+// // // --- Main Dashboard Component ---
+// // const Dashboard: React.FC<DashboardProps> = ({ user }) => {
+// //     const [courses, setCourses] = useState<Course[] | EnrolledCourse[]>([]);
+// //     const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
+// //     const [isLoading, setIsLoading] = useState(true);
+// //     const navigate = useNavigate();
+
+// //     useEffect(() => {
+// //         const fetchData = async () => {
+// //             if (!user) return; // Let the main app handle authentication
+// //             setIsLoading(true);
+// //             const token = localStorage.getItem('authToken');
+// //             try {
+// //                 const coursesEndpoint = user.role === 'teacher' ? '/api/courses' : '/api/students/my-courses';
+// //                 const coursesResponse = await fetch(`http://localhost:5000${coursesEndpoint}`, { headers: { 'Authorization': `Bearer ${token}` } });
+// //                 if (!coursesResponse.ok) {
+// //                     console.error('Failed to fetch courses:', coursesResponse.status);
+// //                     return;
+// //                 }
+// //                 const coursesData = await coursesResponse.json();
+// //                 setCourses(coursesData);
+                
+// //                 if (user.role === 'student') {
+// //                     const sessionsResponse = await fetch('http://localhost:5000/api/sessions/active', { headers: { 'Authorization': `Bearer ${token}` } });
+// //                     if (sessionsResponse.ok) setLiveSessions(await sessionsResponse.json());
+// //                 }
+// //             } catch (err) {
+// //                 console.error("Failed to fetch dashboard data:", err);
+// //                 toast.error("Could not load dashboard data.");
+// //             } finally {
+// //                 setIsLoading(false);
+// //             }
+// //         };
+// //         fetchData();
+// //     }, [navigate, user]);
+// import React, { useState, useEffect } from 'react';
+// import type { DashboardProps, Course, EnrolledCourse, LiveSession, StuckPointNotification } from '../types/index.ts';
+// import { useNavigate } from 'react-router-dom';
+// import * as ProgressPrimitive from "@radix-ui/react-progress";
+// import { cn } from "@/lib/utils";
+// import { Button } from "@/components/ui/button";
+// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Separator } from "@/components/ui/separator";
+// import {
+//     PlusCircle, Users, BookOpen, Settings, Search,
+//     AlertTriangle, Eye, RadioTower, ChevronsRight,
+//     BarChart, Zap, Calendar
+// } from 'lucide-react';
+// import { toast } from 'sonner';
+// import apiClient from '../services/apiClient'; // The centralized API client
+// import axios from 'axios'; // Import axios to check for specific error types
+
+// // --- Reusable UI Components (No Changes) ---
+// const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
+//     <Card className={cn("bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white transition-all duration-300", className)} {...props} />
+// );
+
+// const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root>, React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>>(
+//     ({ className, value, ...props }, ref) => (
+//         <ProgressPrimitive.Root
+//             ref={ref}
+//             className={cn("relative h-2 w-full overflow-hidden rounded-full bg-slate-800", className)}
+//             {...props}
+//         >
+//             <ProgressPrimitive.Indicator
+//                 className="h-full w-full flex-1 bg-cyan-400 transition-all"
+//                 style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+//             />
+//         </ProgressPrimitive.Root>
+//     )
+// );
+// Progress.displayName = ProgressPrimitive.Root.displayName;
+
+// // --- Dashboard Widget Components (Refactored) ---
+
+// const HudStatCard: React.FC<{ icon: React.ElementType; value: string | number; label: string; }> = ({ icon: Icon, value, label }) => (
+//     <GlassCard>
+//         <CardContent className="p-4 flex items-center gap-4">
+//             <div className="p-2 bg-slate-700/50 rounded-lg">
+//                 <Icon className="h-6 w-6 text-cyan-400" />
+//             </div>
+//             <div>
+//                 <p className="text-2xl font-bold">{value}</p>
+//                 <p className="text-sm text-slate-400">{label}</p>
+//             </div>
+//         </CardContent>
+//     </GlassCard>
+// );
+
+// const StuckPointNotifications: React.FC = () => {
+//     const [notifications, setNotifications] = useState<StuckPointNotification[]>([]);
+//     const [isLoading, setIsLoading] = useState(true);
+//     const navigate = useNavigate();
+
+//     useEffect(() => {
+//         const fetchNotifications = async () => {
+//             try {
+//                 // REFACTORED: Use apiClient for the request
+//                 const response = await apiClient.get('/api/stuck-points');
+//                 setNotifications(response.data);
+//             } catch (err) {
+//                 console.error("Failed to fetch notifications:", err);
+//                 // No need to redirect here; the apiClient's interceptor could handle it globally
+//             } finally {
+//                 setIsLoading(false);
+//             }
+//         };
+//         fetchNotifications();
+//     }, []);
+
+//     const handleViewAndDismiss = async (studentId: string, lessonId: string) => {
+//         setNotifications(current => current.filter(n => !(n.student_id === studentId && n.details.lesson_id === lessonId)));
+//         navigate(`/lesson/${lessonId}`);
+//         // REFACTORED: Use apiClient for the request
+//         await apiClient.post('/api/stuck-points/dismiss', { studentId, lessonId });
+//     };
+    
+//     if (isLoading || notifications.length === 0) return null;
+
+//     return (
+//         <GlassCard className="border-fuchsia-500/50 hover:border-fuchsia-400 bg-fuchsia-950/20">
+//             <CardHeader>
+//                 <div className="flex items-center gap-4">
+//                     <div className="p-2 bg-fuchsia-500/10 rounded-lg border border-fuchsia-500/20">
+//                         <AlertTriangle className="h-6 w-6 text-fuchsia-400" />
+//                     </div>
+//                     <div>
+//                         <CardTitle className="text-xl text-fuchsia-300">AI-Powered Alerts</CardTitle>
+//                         <CardDescription className="text-fuchsia-400/80">Students detected requiring assistance.</CardDescription>
+//                     </div>
+//                 </div>
+//             </CardHeader>
+//             <CardContent>
+//                 <ul className="space-y-3">
+//                     {notifications.map(n => (
+//                         <li key={`${n.student_id}-${n.details.lesson_id}`} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+//                             <div>
+//                                 <p className="font-semibold text-gray-200">{n.message}</p>
+//                                 <p className="text-sm text-gray-400">
+//                                     {`Test: "${n.details.stuck_on_test}" (${n.details.attempts_on_test} attempts)`}
+//                                 </p>
+//                             </div>
+//                             <Button variant="outline" size="sm" onClick={() => handleViewAndDismiss(n.student_id, n.details.lesson_id)} className="border-fuchsia-400/50 text-fuchsia-300 hover:bg-fuchsia-500/10 hover:text-fuchsia-200">
+//                                 <Eye className="mr-2 h-4 w-4" /> Review
+//                             </Button>
+//                         </li>
+//                     ))}
+//                 </ul>
+//             </CardContent>
+//         </GlassCard>
+//     );
+// };
+
+// const LiveSessions: React.FC<{ sessions: LiveSession[] }> = ({ sessions }) => {
+//     const navigate = useNavigate();
+//     if (sessions.length === 0) return null;
+
+//     return (
+//         <GlassCard className="border-cyan-500/50 hover:border-cyan-400 bg-cyan-950/20">
+//             <CardHeader>
+//                 <div className="flex items-center gap-4">
+//                     <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+//                         <RadioTower className="h-6 w-6 text-cyan-400 animate-pulse" />
+//                     </div>
+//                     <div>
+//                         <CardTitle className="text-xl text-cyan-300">Live Sessions Available</CardTitle>
+//                         <CardDescription className="text-cyan-400/80">Join a live instruction session now.</CardDescription>
+//                     </div>
+//                 </div>
+//             </CardHeader>
+//             <CardContent>
+//                 <ul className="space-y-3">
+//                     {sessions.map(session => (
+//                         <li key={session.sessionId} className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+//                             <div>
+//                                 <p className="font-semibold text-gray-200">{session.courseName}</p>
+//                                 <p className="text-sm text-gray-400">Hosted by {session.teacherName}</p>
+//                             </div>
+//                             <Button onClick={() => navigate(`/session/${session.sessionId}`)} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
+//                                 Join Now
+//                             </Button>
+//                         </li>
+//                     ))}
+//                 </ul>
+//             </CardContent>
+//         </GlassCard>
+//     );
+// };
+
+
+// // --- Main Dashboard Component (Refactored) ---
+// const Dashboard: React.FC<DashboardProps> = ({ user }) => {
+//     const [courses, setCourses] = useState<Course[] | EnrolledCourse[]>([]);
+//     const [liveSessions, setLiveSessions] = useState<LiveSession[]>([]);
+//     const [isLoading, setIsLoading] = useState(true);
+//     const navigate = useNavigate();
+
+//     useEffect(() => {
+//         const fetchData = async () => {
+//             if (!user) {
+//                 navigate('/login');
+//                 return;
+//             }
+//             setIsLoading(true);
+//             try {
+//                 const coursesEndpoint = user.role === 'teacher' ? '/api/courses' : '/api/students/my-courses';
+                
+//                 // REFACTORED: Use the apiClient
+//                 const coursesResponse = await apiClient.get(coursesEndpoint);
+//                 setCourses(coursesResponse.data);
+                
+//                 if (user.role === 'student') {
+//                     const sessionsResponse = await apiClient.get('/api/sessions/active');
+//                     setLiveSessions(sessionsResponse.data);
+//                 }
+//             } catch (err) {
+//                 console.error("Failed to fetch dashboard data:", err);
+//                 toast.error("Could not load dashboard data.");
+//                 if (axios.isAxiosError(err) && err.response?.status === 401) {
+//                     navigate('/login');
+//                 }
+//             } finally {
+//                 setIsLoading(false);
+//             }
+//         };
+//         fetchData();
+//     }, [navigate, user]);
+
+//     const renderTeacherDashboard = () => (
+//         <div className="space-y-8">
+//             <header>
+//                 <h1 className="text-4xl font-bold tracking-tighter text-white">Teacher Dashboard</h1>
+//                 <p className="text-lg text-slate-400 mt-2">Oversee your courses and student progress.</p>
+//             </header>
+//             <StuckPointNotifications />
+//             <div className="flex justify-between items-center">
+//                 <h2 className="text-2xl font-bold tracking-tight text-slate-200">My Courses</h2>
+//                 <Button onClick={() => navigate('/courses/new')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
+//                     <PlusCircle className="mr-2 h-4 w-4" /> Create Course
+//                 </Button>
+//             </div>
+//             {isLoading ? <p className="text-slate-400">Loading courses...</p> : (
+//                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+//                     {courses.length > 0 ? (courses as Course[]).map(course => (
+//                         <GlassCard key={course.id} className="hover:border-slate-500">
+//                             <CardHeader>
+//                                 <CardTitle className="text-xl text-white">{course.title}</CardTitle>
+//                                 <CardDescription className="h-10 text-slate-400 pt-1">{course.description}</CardDescription>
+//                             </CardHeader>
+//                             <CardContent className="space-y-4 pt-4">
+//                                 <Separator className="bg-slate-700" />
+//                                 <div className="flex justify-between text-sm text-slate-400">
+//                                     <div className="flex items-center gap-2"><Users className="h-4 w-4 text-cyan-400/70" /><span>{course.student_count} Students</span></div>
+//                                     <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-cyan-400/70" /><span>{course.lesson_count} Lessons</span></div>
+//                                 </div>
+//                                 <Button className="w-full bg-slate-800/70 border border-slate-600 hover:bg-slate-700/80 text-slate-200" onClick={() => navigate(`/courses/${course.id}/manage`)}>
+//                                     <Settings className="mr-2 h-4 w-4" /> Manage Course
+//                                 </Button>
+//                             </CardContent>
+//                         </GlassCard>
+//                     )) : (
+//                         <div className="col-span-full text-center py-16 border-2 border-dashed border-slate-700 rounded-xl">
+//                             <h3 className="text-lg font-medium text-slate-300">No courses yet</h3>
+//                             <p className="text-slate-500 mb-4">Create your first course to begin your teaching journey.</p>
+//                             <Button onClick={() => navigate('/courses/new')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold"><PlusCircle className="mr-2 h-4 w-4" /> Create First Course</Button>
+//                         </div>
+//                     )}
+//                 </div>
+//             )}
+//         </div>
+//     );
+//     const renderStudentDashboard = () => {
+//     // Assume `courses` is an array of EnrolledCourse objects available in the component's scope.
+//     const enrolledCourses = courses as EnrolledCourse[];
+    
+//     // The first course in the sorted list is the primary one for the "Continue" widget.
+//     const primaryCourse = enrolledCourses.length > 0 ? enrolledCourses[0] : null;
+    
+//     // All subsequent courses are for the "My Learning Paths" grid.
+//     const otherCourses = enrolledCourses.slice(1);
+
+//     return (
+//         <div className="space-y-8">
+//             <header>
+//                 <h1 className="text-4xl font-bold tracking-tighter text-white">Welcome back, {user?.username}</h1>
+//                 <p className="text-lg text-slate-400 mt-2">Let's continue your ascent. Your mission for today is clear.</p>
+//             </header>
+//             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+//                 <HudStatCard icon={BarChart} value={128} label="Problems Solved" />
+//                 <HudStatCard icon={Zap} value={2450} label="Weekly XP" />
+//                 <HudStatCard icon={Calendar} value={"12 Days"} label="Active Streak" />
+//             </div>
+
+//             {/* "Continue Your Ascent" Widget for the primary course */}
+//             {primaryCourse && (
+//                 <GlassCard className="border-cyan-500/50 hover:border-cyan-400">
+//                      <CardHeader>
+//                         <CardTitle className="text-2xl text-white">Continue Your Ascent</CardTitle>
+//                         <CardDescription className="text-slate-400 pt-1">{primaryCourse.title}</CardDescription>
+//                     </CardHeader>
+//                     <CardContent className="space-y-4 pt-4">
+//                         <div>
+//                             <div className="flex justify-between text-sm text-slate-300 mb-2">
+//                                 <span>Progress</span>
+//                                 <span className="font-mono">{primaryCourse.lessons_completed} / {primaryCourse.lesson_count}</span>
+//                             </div>
+//                             <Progress value={(primaryCourse.lessons_completed / primaryCourse.lesson_count) * 100} />
+//                         </div>
+//                         <Button className="w-full text-lg py-6 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold" onClick={() => navigate(`/courses/${primaryCourse.id}/learn`)}>
+//                             <ChevronsRight className="mr-2 h-5 w-5" />
+//                             {primaryCourse.lessons_completed === primaryCourse.lesson_count ? 'Review Course' : 'Jump Back In'}
+//                         </Button>
+//                     </CardContent>
+//                 </GlassCard>
+//             )}
+
+//             {/* Live Sessions Widget */}
+//             <LiveSessions sessions={liveSessions} />
+
+//             {/* NEW SECTION: "My Other Learning Paths" grid */}
+//             {otherCourses.length > 0 && (
+//                 <div className="space-y-6 pt-4">
+//                     <h2 className="text-2xl font-bold tracking-tight text-slate-200">My Other Learning Paths</h2>
+//                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+//                         {otherCourses.map(course => (
+//                             <GlassCard key={course.id} className="hover:border-slate-500 flex flex-col">
+//                                 <CardHeader>
+//                                     <CardTitle className="text-xl text-white">{course.title}</CardTitle>
+//                                     <CardDescription className="h-10 text-slate-400 pt-1">{course.description}</CardDescription>
+//                                 </CardHeader>
+//                                 <CardContent className="space-y-4 pt-4 flex-grow flex flex-col justify-end">
+//                                     <div>
+//                                         <div className="flex justify-between text-sm text-slate-300 mb-2">
+//                                             <span>Progress</span>
+//                                             <span className="font-mono">{course.lessons_completed} / {course.lesson_count}</span>
+//                                         </div>
+//                                         <Progress value={(course.lessons_completed / course.lesson_count) * 100} />
+//                                     </div>
+//                                     <Button className="w-full bg-slate-800/70 border border-slate-600 hover:bg-slate-700/80 text-slate-200" onClick={() => navigate(`/courses/${course.id}/learn`)}>
+//                                         <BookOpen className="mr-2 h-4 w-4" /> View Course
+//                                     </Button>
+//                                 </CardContent>
+//                             </GlassCard>
+//                         ))}
+//                     </div>
+//                 </div>
+//             )}
+
+//             {/* Fallback display for students with no enrolled courses */}
+//             {courses.length === 0 && !isLoading && (
+//                 <div className="col-span-full text-center py-16 border-2 border-dashed border-slate-700 rounded-xl">
+//                     <h3 className="text-lg font-medium text-slate-300">Your learning journey awaits!</h3>
+//                     <p className="text-slate-500 mb-4">Enroll in a course to begin your ascent.</p>
+//                     <Button onClick={() => navigate('/courses/discover')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold"><Search className="mr-2 h-4 w-4" /> Discover Courses</Button>
+//                 </div>
+//             )}
+//         </div>
+//     );
+// };
+
+//     if (!user) { return null; }
+
+//     return (
+//         <div className="max-w-7xl mx-auto">
+//             {user.role === 'teacher' ? renderTeacherDashboard() : renderStudentDashboard()}
+//         </div>
+//     );
+// };
+
+// export default Dashboard;
 
 // /*
 //  * =================================================================
