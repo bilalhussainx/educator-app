@@ -144,18 +144,17 @@ const StudentCoursePage: React.FC = () => {
 
                 const actionData = response.data;
                 if (actionData && !dismissedActionIds.includes(actionData.id)) {
-                        console.log("APE Action received:", actionData);
+                    console.log("APE Action received:", actionData);
 
-                        // --- APE: Handle different action types ---
-                        if (actionData.action_type === 'ADAPT_TUTOR_STYLE' && actionData.metadata?.newStyle) {
-                            // This is a "silent" action. Update state and complete it.
-                            console.log(`APE: Silently adapting tutor style to ${actionData.metadata.newStyle}`);
-                            setTutorStyle(actionData.metadata.newStyle);
-                            handleActionComplete(actionData.id, true); // Mark as silent
-                        } else {
-                            // This is a visual action. Show the modal.
-                            setActiveAction(actionData);
-                        }
+                    // --- APE: Handle different action types ---
+                    if (actionData.action_type === 'ADAPT_TUTOR_STYLE' && actionData.metadata?.newStyle) {
+                        // This is a "silent" action. Update state and complete it.
+                        console.log(`APE: Silently adapting tutor style to ${actionData.metadata.newStyle}`);
+                        setTutorStyle(actionData.metadata.newStyle);
+                        handleActionComplete(actionData.id, true); // Mark as silent
+                    } else {
+                        // This is a visual action. Show the modal.
+                        setActiveAction(actionData);
                     }
                 }
             } catch (err) {
