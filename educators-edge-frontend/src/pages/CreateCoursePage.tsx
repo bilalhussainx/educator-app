@@ -43,7 +43,6 @@ const CreateCoursePage: React.FC = () => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
-        const token = localStorage.getItem('authToken');
 
         try {
             await apiClient.post('/api/courses', { title, description });

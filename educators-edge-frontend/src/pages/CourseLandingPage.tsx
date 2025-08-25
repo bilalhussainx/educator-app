@@ -96,10 +96,9 @@ const CourseLandingPage: React.FC = () => {
     const handleEnroll = async () => {
         setIsEnrolling(true);
         setEnrollmentStatus(null);
-        const token = localStorage.getItem('authToken');
 
         try {
-            const response = await apiClient.post(`/api/courses/${courseId}/enroll`);
+            await apiClient.post(`/api/courses/${courseId}/enroll`);
 
             setEnrollmentStatus({ type: 'success', message: 'Successfully enrolled! Redirecting to your dashboard...' });
             

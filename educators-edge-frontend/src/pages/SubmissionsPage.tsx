@@ -137,15 +137,15 @@ const SubmissionsPage: React.FC = () => {
     e.preventDefault();
     if (!selectedSubmission) return;
     setIsSubmittingFeedback(true);
-    const token = localStorage.getItem('authToken');
 
     // Using toast.promise for clear user feedback
     toast.promise(
         apiClient.patch(`/api/lessons/submissions/${selectedSubmission.id}`, { feedback, grade }),
         {
             loading: 'Saving feedback...',
-            success: (updatedSubmissionFromServer) => {
+            success: (response) => {
                 // This logic is now safe because the promise was successful
+                const updatedSubmissionFromServer = response.data;
                 setFeedback(updatedSubmissionFromServer.feedback || '');
                 setGrade(updatedSubmissionFromServer.grade || '');
 

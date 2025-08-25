@@ -97,7 +97,6 @@ const CourseManagementPage: React.FC = () => {
 
     const handlePublishToggle = async (isPublished: boolean) => {
         if (!course) return;
-        const token = localStorage.getItem('authToken');
         const originalState = course.is_published;
         setCourse({ ...course, is_published: isPublished });
 

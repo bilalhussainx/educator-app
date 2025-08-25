@@ -21,7 +21,6 @@ const LessonLoaderPage: React.FC = () => {
             if (!lessonId) return;
             
             setIsLoading(true);
-            const token = localStorage.getItem('authToken');
             try {
                 // This is a much faster API call. We ONLY ask for the 'lesson_type'.
                 const response = await apiClient.get(`/api/lessons/${lessonId}/ascent-ide`);

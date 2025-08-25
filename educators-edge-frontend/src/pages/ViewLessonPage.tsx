@@ -323,7 +323,6 @@ const ViewLessonPage: React.FC = () => {
     };
 
     const handleSubmit = async () => {
-        const token = localStorage.getItem('authToken');
         setError(null);
         setConceptualHint(null);
         
@@ -441,7 +440,6 @@ const ViewLessonPage: React.FC = () => {
         setIsHintModalOpen(true);
         setIsHintLoading(true);
         setAiHint('');
-        const token = localStorage.getItem('authToken');
 
         let promptModifier = "The student is asking for a Socratic hint. Guide them to the answer without giving it away directly.";
         if (tutorStyle === 'hint_based') {

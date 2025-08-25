@@ -172,7 +172,6 @@ const StudentCoursePage: React.FC = () => {
     const handleActionComplete = (actionId: number, isSilent: boolean = false) => {
         setDismissedActionIds(prevIds => [...prevIds, actionId]);
 
-        const token = localStorage.getItem('authToken');
         apiClient.post(`/api/users/actions/${actionId}/complete`).catch(err => console.error("Failed to mark action as complete:", err));
 
         // Only clear the active action if it wasn't a silent one (which never sets it)

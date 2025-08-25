@@ -69,7 +69,6 @@ const StuckPointNotifications: React.FC = () => {
 
     useEffect(() => {
         const fetchNotifications = async () => {
-            const token = localStorage.getItem('authToken');
             try {
                 const response = await apiClient.get('/api/stuck-points');
                 setNotifications(response.data);
@@ -86,7 +85,6 @@ const StuckPointNotifications: React.FC = () => {
     const handleViewAndDismiss = async (studentId: string, lessonId: string) => {
         setNotifications(current => current.filter(n => !(n.student_id === studentId && n.details.lesson_id === lessonId)));
         navigate(`/lesson/${lessonId}`); // Use the new AscentIDE route
-        const token = localStorage.getItem('authToken');
         await apiClient.post('/api/stuck-points/dismiss', { studentId, lessonId });
     };
     
@@ -174,7 +172,6 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         const fetchData = async () => {
             if (!user) return; // Let the main app handle authentication
             setIsLoading(true);
-            const token = localStorage.getItem('authToken');
             try {
                 const coursesEndpoint = user.role === 'teacher' ? '/api/courses' : '/api/students/my-courses';
                 const coursesResponse = await apiClient.get(coursesEndpoint);
