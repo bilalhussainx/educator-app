@@ -30,6 +30,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { FilePlus2, XCircle, Terminal as TerminalIcon, ChevronLeft, BeakerIcon, Lightbulb, Play, X } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import apiClient from '../services/apiClient';
 
 // --- Type Definitions ---
 type DiagnosticsTabKey = 'tests' | 'terminal';
@@ -268,16 +269,12 @@ const CreateLessonPage: React.FC = () => {
         setIsLoading(true);
         setFormError(null);
         try {
-            const response = await fetch('http://localhost:5000/api/lessons', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-                body: JSON.stringify({ title, description, objective, files, courseId, testCode, concepts: taggedConcepts })
-            });
-            if (!response.ok) throw new Error((await response.json()).error || 'Failed to create lesson');
+            await apiClient.post('/api/lessons', { title, description, objective, files, courseId, testCode, concepts: taggedConcepts });
             toast.success("Lesson created successfully!");
             navigate(`/courses/${courseId}/manage`);
-        } catch (err) {
-            setFormError(err instanceof Error ? err.message : 'An unknown error occurred');
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.error || err.message || 'Failed to create lesson';
+            setFormError(errorMessage);
         } finally {
             setIsLoading(false);
         }

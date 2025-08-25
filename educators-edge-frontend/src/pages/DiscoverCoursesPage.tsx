@@ -12,6 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Course } from '../types/index.ts';
 import { cn } from "@/lib/utils";
+import apiClient from '../services/apiClient';
 
 // Import shadcn components and icons
 import { Button } from "@/components/ui/button";
@@ -50,18 +51,11 @@ const DiscoverCoursesPage: React.FC = () => {
                 return;
             }
             try {
-                const response = await fetch('http://localhost:5000/api/courses/discover', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch courses');
-                }
-                const data = await response.json();
-                setCourses(data);
-            } catch (err) {
-                if (err instanceof Error) setError(err.message);
-                else setError('An unknown error occurred.');
+                const response = await apiClient.get('/api/courses/discover');
+                setCourses(response.data);
+            } catch (err: any) {
+                const errorMessage = err.response?.data?.error || err.message || 'An unknown error occurred.';
+                setError(errorMessage);
             } finally {
                 setIsLoading(false);
             }

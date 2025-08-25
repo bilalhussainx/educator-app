@@ -5,6 +5,7 @@ import Editor from '@monaco-editor/react';
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import analytics from '../services/analyticsService.ts';
+import apiClient from '../services/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
@@ -123,14 +124,9 @@ const AscentWebIDE: React.FC = () => {
             { filename: 'script.js', content: jsCode },
         ];
         
-        const savePromise = fetch(`http://localhost:5000/api/lessons/${lessonId}/save-progress`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ files: filesPayload })
-        }).then(res => {
-            if (!res.ok) throw new Error('Failed to save progress.');
-            return res.json();
-        });
+        const savePromise = apiClient.post(`/api/lessons/${lessonId}/save-progress`, {
+            files: filesPayload
+        }).then(res => res.data);
         
         toast.promise(savePromise, {
             loading: 'Saving your work...',
@@ -161,17 +157,12 @@ const AscentWebIDE: React.FC = () => {
         
         analytics.track('Solution Submitted', { ...submissionPayload, lesson_id: lessonId });
         
-        const submitPromise = fetch(`http://localhost:5000/api/lessons/${lessonId}/submit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(submissionPayload)
-        }).then(async (res) => {
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Submission failed.');
-            }
-            return res.json();
-        });
+        const submitPromise = apiClient.post(`/api/lessons/${lessonId}/submit`, submissionPayload)
+            .then(res => res.data)
+            .catch(error => {
+                const errorMsg = error.response?.data?.error || 'Submission failed.';
+                throw new Error(errorMsg);
+            });
         
         toast.promise(submitPromise, {
             loading: 'Submitting your solution...',

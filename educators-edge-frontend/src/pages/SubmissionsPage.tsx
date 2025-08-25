@@ -10,6 +10,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Submission, LessonFile } from '../types/index.ts';
+import apiClient from '../services/apiClient';
 import Editor from '@monaco-editor/react';
 import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
@@ -60,11 +61,8 @@ const SubmissionsPage: React.FC = () => {
         if (!lessonId || !token) { navigate('/login'); return; }
         setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/submissions`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!response.ok) throw new Error((await response.json()).error || 'Failed to fetch submissions.');
-            const data: SubmissionWithFeedback[] = await response.json();
+            const response = await apiClient.get(`/api/lessons/${lessonId}/submissions`);
+            const data: SubmissionWithFeedback[] = response.data;
             setAllSubmissions(data);
 
             if (data.length > 0) {
@@ -143,18 +141,7 @@ const SubmissionsPage: React.FC = () => {
 
     // Using toast.promise for clear user feedback
     toast.promise(
-        fetch(`http://localhost:5000/api/lessons/submissions/${selectedSubmission.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ feedback, grade })
-        }).then(async (res) => {
-            if (!res.ok) {
-                // Try to parse the error from the backend for a more specific message
-                const errData = await res.json().catch(() => ({ error: 'An unknown error occurred while saving.' }));
-                throw new Error(errData.error || 'Failed to save feedback.');
-            }
-            return res.json();
-        }),
+        apiClient.patch(`/api/lessons/submissions/${selectedSubmission.id}`, { feedback, grade }),
         {
             loading: 'Saving feedback...',
             success: (updatedSubmissionFromServer) => {

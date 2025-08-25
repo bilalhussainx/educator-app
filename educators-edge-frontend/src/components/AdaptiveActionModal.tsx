@@ -13,6 +13,7 @@ import type { AdaptiveAction } from '../pages/StudentCoursePage'; // Assuming ty
 import { Button } from "@/components/ui/button";
 import { BrainCircuit, Lightbulb, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import apiClient from '../services/apiClient';
 import Editor from '@monaco-editor/react';
 
 // Import the Markdown renderer to correctly display formatted text and code
@@ -96,18 +97,12 @@ const GeneratedProblemView: React.FC<AdaptiveActionModalProps> = ({ action, onCl
     const handleVerify = async () => {
         setIsVerifying(true);
         setVerificationResult(null);
-        const token = localStorage.getItem('authToken');
         
         try {
-            const response = await fetch(`http://localhost:5000/api/users/actions/solve-problem/${action.id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-                body: JSON.stringify({ code })
-            });
-            const result = await response.json();
-            setVerificationResult(result);
+            const response = await apiClient.post(`/api/users/actions/solve-problem/${action.id}`, { code });
+            setVerificationResult(response.data);
 
-            if (result.success) {
+            if (response.data.success) {
                 // On success, close the modal after a short delay
                 setTimeout(() => {
                     onClose();

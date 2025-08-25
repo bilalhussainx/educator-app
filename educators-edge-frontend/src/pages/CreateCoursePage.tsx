@@ -9,6 +9,7 @@
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../services/apiClient';
 
 // CoreZenith UI Components & Icons
 import { Button } from "@/components/ui/button";
@@ -45,12 +46,7 @@ const CreateCoursePage: React.FC = () => {
         const token = localStorage.getItem('authToken');
 
         try {
-            const response = await fetch('http://localhost:5000/api/courses', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-                body: JSON.stringify({ title, description })
-            });
-            if (!response.ok) throw new Error((await response.json()).error || 'Failed to create course');
+            await apiClient.post('/api/courses', { title, description });
             navigate('/dashboard');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred');

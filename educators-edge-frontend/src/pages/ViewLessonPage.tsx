@@ -28,6 +28,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { File as FileIcon, BrainCircuit, Terminal as TerminalIcon, ChevronLeft, BeakerIcon, CheckCircle, XCircle, FilePlus2, Trash2, Lightbulb, Save, Send, ArrowLeftRight } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import apiClient from '../services/apiClient';
 
 // --- Type definition for structured test results ---
 interface TestResult {
@@ -162,9 +163,7 @@ const ViewLessonPage: React.FC = () => {
 
         const terminalSessionId = crypto.randomUUID();
         
-        const wsUrl = isLiveHomework
-            ? `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`
-            : `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}`;
+        const wsUrl = `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}`;
             
         const currentWs = new WebSocket(wsUrl);
         ws.current = currentWs;
@@ -230,17 +229,12 @@ const ViewLessonPage: React.FC = () => {
 
     // --- Data Fetching & Initial Analytics Event ---
     useEffect(() => {
-        const token = localStorage.getItem('authToken');
         const fetchLessonState = async () => {
             if (!lessonId) return;
             setIsLoading(true);
             try {
-                const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/student-state`, { 
-                    headers: { 'Authorization': `Bearer ${token}` } 
-                });
-                if (!response.ok) throw new Error('Failed to fetch lesson state.');
-                
-                const data = await response.json();
+                const response = await apiClient.get(`/api/lessons/${lessonId}/student-state`);
+                const data = response.data;
                 setLesson(data.lesson);
                 setFiles(data.files || []);
                 setSubmission(data.submission || null); // <-- ADD THIS LINE to store the submission data
@@ -257,8 +251,9 @@ const ViewLessonPage: React.FC = () => {
                 const initialContent = data.files?.find((f: LessonFile) => f.id === (data.files?.[0]?.id || null))?.content || "";
                 prevFileContentRef.current = initialContent;
 
-            } catch (err) {
-                if (err instanceof Error) setError(err.message);
+            } catch (err: any) {
+                const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch lesson state.';
+                setError(errorMessage);
             } finally {
                 setIsLoading(false);
             }
@@ -310,31 +305,18 @@ const ViewLessonPage: React.FC = () => {
     const handleSaveCode = async () => {
         if (!lessonId) return;
         setIsSaving(true);
-        const token = localStorage.getItem('authToken');
         toast.loading("Saving your progress...");
 
         try {
-            const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/save-progress`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ files })
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error || 'Failed to save progress.');
-            }
+            await apiClient.post(`/api/lessons/${lessonId}/save-progress`, { files });
             
             toast.dismiss();
             toast.success("Progress saved successfully!");
 
-        } catch (err) {
+        } catch (err: any) {
             toast.dismiss();
-            if (err instanceof Error) {
-                toast.error(err.message);
-            } else {
-                toast.error("An unknown error occurred while saving.");
-            }
+            const errorMessage = err.response?.data?.error || err.message || "An unknown error occurred while saving.";
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
         }
@@ -357,20 +339,8 @@ const ViewLessonPage: React.FC = () => {
 
         const promise = () => new Promise(async (resolve, reject) => {
             try {
-                const submitResponse = await fetch(`http://localhost:5000/api/lessons/${lessonId}/submit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(submissionPayload)
-                });
-
-                if (!submitResponse.ok) {
-                    const errorData = await submitResponse.json().catch(() => ({
-                        error: 'Submission failed. Please run the tests to see the errors.'
-                    }));
-                    return reject(new Error(errorData.error));
-                }
-
-                const result = await submitResponse.json();
+                const submitResponse = await apiClient.post(`/api/lessons/${lessonId}/submit`, submissionPayload);
+                const result = submitResponse.data;
                 
                 if (result.feedback_type === 'conceptual_hint') {
                     setConceptualHint(result.message);
@@ -379,8 +349,9 @@ const ViewLessonPage: React.FC = () => {
                     setTimeout(() => navigate(`/courses/${lesson?.course_id}/learn`), 2500);
                     return resolve({ message: "Great work! Your solution is correct. Redirecting..." });
                 }
-            } catch (err) {
-                return reject(err);
+            } catch (err: any) {
+                const errorMessage = err.response?.data?.error || err.message || 'Submission failed. Please run the tests to see the errors.';
+                return reject(new Error(errorMessage));
             }
         });
 
@@ -402,15 +373,9 @@ const ViewLessonPage: React.FC = () => {
         setIsTesting(true);
         setIsTestResultsModalOpen(true);
         setTestResults(null);
-        const token = localStorage.getItem('authToken');
-
         try {
-            const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/run-tests`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ files })
-            });
-            const data: TestResult = await response.json();
+            const response = await apiClient.post(`/api/lessons/${lessonId}/run-tests`, { files });
+            const data: TestResult = response.data;
             setTestResults(data);
 
             analytics.track('Test Run Executed', {
@@ -420,8 +385,8 @@ const ViewLessonPage: React.FC = () => {
                 lesson_id: lessonId,
             });
 
-        } catch (err) {
-            const results = err instanceof Error ? err.message : 'An unknown error occurred.';
+        } catch (err: any) {
+            const results = err.response?.data?.error || err.message || 'An unknown error occurred.';
             setTestResults({ passed: 0, failed: 1, total: 1, results });
         } finally {
             setIsTesting(false);
@@ -492,20 +457,11 @@ const ViewLessonPage: React.FC = () => {
         };
 
         try {
-            const response = await fetch('http://localhost:5000/api/ai/get-hint', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error || 'The AI assistant could not provide a hint.');
-            }
-            const data = await response.json();
-            setAiHint(data.hint);
-        } catch (err) {
-            if (err instanceof Error) setAiHint(`Error: ${err.message}`);
-            else setAiHint('An unknown error occurred.');
+            const response = await apiClient.post('/api/ai/get-hint', payload);
+            setAiHint(response.data.hint);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.error || err.message || 'The AI assistant could not provide a hint.';
+            setAiHint(`Error: ${errorMessage}`);
         } finally {
             setIsHintLoading(false);
         }

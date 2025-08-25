@@ -25,6 +25,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 // Import types
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
+import apiClient from '../services/apiClient';
 
 // --- Type Definitions and Helpers ---
 interface Message { from: string; text: string; timestamp: string; }
@@ -275,9 +276,10 @@ const LiveTutorialPage: React.FC = () => {
     // Fetch available lessons for teacher
     useEffect(() => {
         if (role === 'teacher') {
-            fetch('http://localhost:5000/api/lessons/teacher/list', { headers: { 'Authorization': `Bearer ${token}` } })
-            .then(res => res.ok ? res.json() : [])
-            .then(setAvailableLessons);
+            apiClient.get('/api/lessons/teacher/list')
+            .then(res => res.data || [])
+            .then(setAvailableLessons)
+            .catch(() => setAvailableLessons([]));
         }
     }, [role, token]);
 
@@ -640,14 +642,8 @@ const LiveTutorialPage: React.FC = () => {
         if (!pendingHomework) return;
         if (!homeworkFiles) {
             try {
-                const stateRes = await fetch(`http://localhost:5000/api/lessons/${pendingHomework.lessonId}/student-state`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (stateRes.ok) {
-                    const data = await stateRes.json();
-                    setHomeworkFiles(data.files || []);
-                } else {
-                    toast.error("Could not load lesson files.");
-                    return;
-                }
+                const stateRes = await apiClient.get(`/api/lessons/${pendingHomework.lessonId}/student-state`);
+                setHomeworkFiles(stateRes.data.files || []);
             } catch (error) {
                 console.error("Error fetching homework state:", error);
                 toast.error("A network error occurred.");

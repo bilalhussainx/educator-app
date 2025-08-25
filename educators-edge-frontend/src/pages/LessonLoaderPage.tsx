@@ -1,6 +1,7 @@
 // src/pages/LessonLoaderPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
+import apiClient from '../services/apiClient';
 
 // Import BOTH of your powerful IDE components
 import AscentIDE from './AscentIDE.tsx';
@@ -23,13 +24,10 @@ const LessonLoaderPage: React.FC = () => {
             const token = localStorage.getItem('authToken');
             try {
                 // This is a much faster API call. We ONLY ask for the 'lesson_type'.
-                const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/ascent-ide`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) throw new Error('Failed to fetch lesson metadata.');
-
+                const response = await apiClient.get(`/api/lessons/${lessonId}/ascent-ide`);
+                
                 // We only need the 'lesson' object from the response to get the type
-                const data = await response.json();
+                const data = response.data;
                 if (data.lesson && data.lesson.lesson_type) {
                     setLessonType(data.lesson.lesson_type);
                 } else {

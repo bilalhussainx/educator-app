@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Lightbulb } from 'lucide-react';
 // import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import apiClient from '../services/apiClient';
 
 export interface Concept {
     id: number;
@@ -41,13 +42,8 @@ export const ConceptTagger: React.FC<ConceptTaggerProps> = ({ value, onChange })
             }
             setIsLoading(true);
             try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`http://localhost:5000/api/concepts/search?query=${searchQuery}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) throw new Error("Search failed");
-                const data = await response.json();
-                setSearchResults(data);
+                const response = await apiClient.get(`/api/concepts/search?query=${searchQuery}`);
+                setSearchResults(response.data);
             } catch (error) {
                 toast.error("Failed to search for concepts.");
             } finally {
@@ -75,16 +71,9 @@ export const ConceptTagger: React.FC<ConceptTaggerProps> = ({ value, onChange })
         
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('authToken');
-            const response = await fetch(`http://localhost:5000/api/concepts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ name: searchQuery.trim() })
-            });
-            if (!response.ok) throw new Error("Failed to create concept");
-            const newConcept = await response.json();
-            handleSelect(newConcept);
-            toast.success(`Concept "${newConcept.name}" created.`);
+            const response = await apiClient.post(`/api/concepts`, { name: searchQuery.trim() });
+            handleSelect(response.data);
+            toast.success(`Concept "${response.data.name}" created.`);
         } catch (error) {
             toast.error("Could not create concept.");
         } finally {

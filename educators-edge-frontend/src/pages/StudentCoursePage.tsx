@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Course, Lesson } from '../types/index.ts';
+import apiClient from '../services/apiClient';
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import * as ProgressPrimitive from "@radix-ui/react-progress";
 import { cn } from "@/lib/utils";
@@ -122,13 +123,8 @@ const StudentCoursePage: React.FC = () => {
             if (!token || !courseId) { navigate('/login'); return; }
             setIsLoading(true);
             try {
-                const response = await fetch(`http://localhost:5000/api/students/my-courses/${courseId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) {
-                    throw new Error((await response.json()).error || 'Failed to fetch course details.');
-                }
-                setCourse(await response.json());
+                const response = await apiClient.get(`/api/students/my-courses/${courseId}`);
+                setCourse(response.data);
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'An unknown error occurred.');
             } finally {
@@ -143,15 +139,11 @@ const StudentCoursePage: React.FC = () => {
         const checkForNextAction = async () => {
             if (activeAction) return;
 
-            const token = localStorage.getItem('authToken');
             try {
-                const response = await fetch('http://localhost:5000/api/users/next-action', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const response = await apiClient.get('/api/users/next-action');
 
-                if (response.ok) {
-                    const actionData = await response.json();
-                    if (actionData && !dismissedActionIds.includes(actionData.id)) {
+                const actionData = response.data;
+                if (actionData && !dismissedActionIds.includes(actionData.id)) {
                         console.log("APE Action received:", actionData);
 
                         // --- APE: Handle different action types ---
@@ -182,10 +174,7 @@ const StudentCoursePage: React.FC = () => {
         setDismissedActionIds(prevIds => [...prevIds, actionId]);
 
         const token = localStorage.getItem('authToken');
-        fetch(`http://localhost:5000/api/users/actions/${actionId}/complete`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        }).catch(err => console.error("Failed to mark action as complete:", err));
+        apiClient.post(`/api/users/actions/${actionId}/complete`).catch(err => console.error("Failed to mark action as complete:", err));
 
         // Only clear the active action if it wasn't a silent one (which never sets it)
         if (!isSilent) {

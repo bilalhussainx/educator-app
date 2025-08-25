@@ -35,6 +35,7 @@ import {
     FileCode, BotMessageSquare, NotebookPen, Check, FilePlus2, Trash2, Save, PanelLeft
 } from 'lucide-react';
 import { Award } from 'lucide-react'; // Add a new icon import
+import apiClient from '../services/apiClient';
 
 
 
@@ -168,9 +169,7 @@ const AscentIDE: React.FC = () => {
 
         const terminalSessionId = crypto.randomUUID();
         
-        const wsUrl = isLiveHomework
-            ? `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`
-            : `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}`;
+        const wsUrl = `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}`;
             
         const currentWs = new WebSocket(wsUrl);
         ws.current = currentWs;
@@ -204,17 +203,9 @@ const AscentIDE: React.FC = () => {
             if (!lessonId) return;
             setIsLoading(true);
             setError(null);
-            const token = localStorage.getItem('authToken');
             try {
-                const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/ascent-ide`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error || 'Failed to load Ascent IDE data.');
-                }
-                
-                const data: AscentIdeData = await response.json();
+                const response = await apiClient.get(`/api/lessons/${lessonId}/ascent-ide`);
+                const data: AscentIdeData = response.data;
                 setIdeData(data);
                 setFiles(data.files || []);
                 setSubmission(data.gradedSubmission || null); // <-- ADD THIS LINE
@@ -334,15 +325,7 @@ const AscentIDE: React.FC = () => {
     const handleSaveCode = async () => {
         if (!lessonId) return;
         setIsSaving(true);
-        const token = localStorage.getItem('authToken');
-        const savePromise = fetch(`http://localhost:5000/api/lessons/${lessonId}/save-progress`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ files })
-        }).then(res => {
-            if (!res.ok) throw new Error('Failed to save.');
-            return res.json();
-        });
+        const savePromise = apiClient.post(`/api/lessons/${lessonId}/save-progress`, { files }).then(res => res.data);
         
         toast.promise(savePromise, {
             loading: 'Saving your progress...',
@@ -358,14 +341,9 @@ const AscentIDE: React.FC = () => {
         setIsTesting(true);
         setDiagnosticsTab('results');
         setTestResults(null);
-        const token = localStorage.getItem('authToken');
         try {
-            const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/run-tests`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ files })
-            });
-            const data: TestResult = await response.json();
+            const response = await apiClient.post(`/api/lessons/${lessonId}/run-tests`, { files });
+            const data: TestResult = response.data;
             setTestResults(data);
             analytics.track('Test Run Executed', { passed_count: data.passed, failed_count: data.failed, lesson_id: lessonId });
         } catch (err) {
@@ -395,24 +373,14 @@ const AscentIDE: React.FC = () => {
         await handleRunTests();
 
         try {
-            const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/submit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(submissionPayload)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Submission failed.');
-            }
-
-            const result = await response.json();
+            const response = await apiClient.post(`/api/lessons/${lessonId}/submit`, submissionPayload);
+            const result = response.data;
             toast.success("Correct! All tests passed.");
             setIsSolutionUnlocked(true);
             
             // Refetch data to update submission history
-            const newDataResponse = await fetch(`http://localhost:5000/api/lessons/${lessonId}/ascent-ide`, { headers: { 'Authorization': `Bearer ${token}` } });
-            setIdeData(await newDataResponse.json());
+            const newDataResponse = await apiClient.get(`/api/lessons/${lessonId}/ascent-ide`);
+            setIdeData(newDataResponse.data);
 
             if (result.feedback_type === 'conceptual_hint' && result.message) {
                 setConceptualHint(result.message);
@@ -441,8 +409,6 @@ const AscentIDE: React.FC = () => {
         setIsHintModalOpen(true);
         setIsHintLoading(true);
         setAiHint('');
-        const token = localStorage.getItem('authToken');
-
         let promptModifier = "The student is asking for a Socratic hint. Guide them to the answer without giving it away directly.";
         if (tutorStyle === 'hint_based') { promptModifier = "The student seems to be struggling. Provide a more direct hint."; }
         else if (tutorStyle === 'direct') { promptModifier = "The student needs a direct explanation. Explain the concept and provide a corrected code snippet."; }
@@ -450,19 +416,11 @@ const AscentIDE: React.FC = () => {
         const payload = { selectedCode: activeFile.content, lessonId: ideData.lesson.id, promptModifier };
 
         try {
-            const response = await fetch('http://localhost:5000/api/ai/get-hint', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(payload)
-            });
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error || 'The AI assistant could not provide a hint.');
-            }
-            const data = await response.json();
-            setAiHint(data.hint);
-        } catch (err) {
-            setAiHint(err instanceof Error ? `Error: ${err.message}`: 'An unknown error occurred.');
+            const response = await apiClient.post('/api/ai/get-hint', payload);
+            setAiHint(response.data.hint);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.error || err.message || 'The AI assistant could not provide a hint.';
+            setAiHint(`Error: ${errorMessage}`);
         } finally {
             setIsHintLoading(false);
         }

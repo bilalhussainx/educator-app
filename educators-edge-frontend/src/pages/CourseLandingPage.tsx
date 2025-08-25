@@ -12,6 +12,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { Course, Lesson } from '../types/index.ts';
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import { cn } from "@/lib/utils";
+import apiClient from '../services/apiClient';
 
 // Import shadcn components and icons
 import { Button } from "@/components/ui/button";
@@ -79,15 +80,8 @@ const CourseLandingPage: React.FC = () => {
                 return;
             }
             try {
-                const response = await fetch(`http://localhost:5000/api/courses/public/${courseId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch course details.');
-                }
-                const data = await response.json();
-                setCourse(data);
+                const response = await apiClient.get(`/api/courses/public/${courseId}`);
+                setCourse(response.data);
             } catch (err) {
                 if (err instanceof Error) setError(err.message);
                 else setError('An unknown error occurred.');
@@ -105,16 +99,7 @@ const CourseLandingPage: React.FC = () => {
         const token = localStorage.getItem('authToken');
 
         try {
-            const response = await fetch(`http://localhost:5000/api/courses/${courseId}/enroll`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to enroll in the course.');
-            }
+            const response = await apiClient.post(`/api/courses/${courseId}/enroll`);
 
             setEnrollmentStatus({ type: 'success', message: 'Successfully enrolled! Redirecting to your dashboard...' });
             

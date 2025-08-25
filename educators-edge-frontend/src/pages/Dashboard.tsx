@@ -11,6 +11,7 @@
 import React, {useState, useEffect } from 'react';
 import type { DashboardProps, Course, EnrolledCourse, LiveSession, StuckPointNotification } from '../types/index.ts';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../services/apiClient';
 import * as ProgressPrimitive from "@radix-ui/react-progress";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -70,12 +71,8 @@ const StuckPointNotifications: React.FC = () => {
         const fetchNotifications = async () => {
             const token = localStorage.getItem('authToken');
             try {
-                const response = await fetch('http://localhost:5000/api/stuck-points', {
-                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-                });
-                if (response.status === 401) throw new Error('AuthError');
-                const data = await response.json();
-                setNotifications(data);
+                const response = await apiClient.get('/api/stuck-points');
+                setNotifications(response.data);
             } catch (err) {
                 console.error("Failed to fetch notifications:", err);
                 // Don't redirect to login here - let the main app handle authentication
@@ -90,11 +87,7 @@ const StuckPointNotifications: React.FC = () => {
         setNotifications(current => current.filter(n => !(n.student_id === studentId && n.details.lesson_id === lessonId)));
         navigate(`/lesson/${lessonId}`); // Use the new AscentIDE route
         const token = localStorage.getItem('authToken');
-        await fetch('http://localhost:5000/api/stuck-points/dismiss', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-            body: JSON.stringify({ studentId, lessonId })
-        });
+        await apiClient.post('/api/stuck-points/dismiss', { studentId, lessonId });
     };
     
     if (isLoading || notifications.length === 0) return null;
@@ -184,17 +177,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             const token = localStorage.getItem('authToken');
             try {
                 const coursesEndpoint = user.role === 'teacher' ? '/api/courses' : '/api/students/my-courses';
-                const coursesResponse = await fetch(`http://localhost:5000${coursesEndpoint}`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!coursesResponse.ok) {
-                    console.error('Failed to fetch courses:', coursesResponse.status);
-                    return;
-                }
-                const coursesData = await coursesResponse.json();
+                const coursesResponse = await apiClient.get(coursesEndpoint);
+                const coursesData = coursesResponse.data;
                 setCourses(coursesData);
                 
                 if (user.role === 'student') {
-                    const sessionsResponse = await fetch('http://localhost:5000/api/sessions/active', { headers: { 'Authorization': `Bearer ${token}` } });
-                    if (sessionsResponse.ok) setLiveSessions(await sessionsResponse.json());
+                    const sessionsResponse = await apiClient.get('/api/sessions/active');
+                    setLiveSessions(sessionsResponse.data);
                 }
             } catch (err) {
                 console.error("Failed to fetch dashboard data:", err);

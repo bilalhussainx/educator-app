@@ -13,6 +13,7 @@ import type { Course, Lesson } from '../types/index.ts';
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";
+import apiClient from '../services/apiClient';
 
 // CoreZenith UI Components & Icons
 import { Button } from "@/components/ui/button";
@@ -75,11 +76,9 @@ const CourseManagementPage: React.FC = () => {
         if (!token || !courseId) { navigate('/login'); return; }
         setIsLoading(true);
         try {
-            const response = await fetch(`http://localhost:5000/api/courses/${courseId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!response.ok) throw new Error((await response.json()).error || 'Failed to fetch course details.');
-            const data = await response.json();
-            setCourse(data);
-            setLessons(data.lessons || []);
+            const response = await apiClient.get(`/api/courses/${courseId}`);
+            setCourse(response.data);
+            setLessons(response.data.lessons || []);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred.');
         } finally {
@@ -103,12 +102,7 @@ const CourseManagementPage: React.FC = () => {
         setCourse({ ...course, is_published: isPublished });
 
         try {
-            const response = await fetch(`http://localhost:5000/api/courses/${course.id}/publish`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ is_published: isPublished })
-            });
-            if (!response.ok) throw new Error('Failed to update course status.');
+            await apiClient.patch(`/api/courses/${course.id}/publish`, { is_published: isPublished });
         } catch (err) {
             console.error(err);
             setError('Failed to update status. Reverting change.');

@@ -18,6 +18,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { toast, Toaster } from 'sonner';
 import { Lesson, LessonFile, TestResult, CodeFile } from '../../types/index.ts';
+import apiClient from '../../services/apiClient';
 import { File as FileIcon, XCircle, Lightbulb, BeakerIcon, Save, Send, Lock, Eye, ArrowLeft, CheckCircle, Video, VideoOff, Mic, MicOff, Users } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 
@@ -269,10 +270,11 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
     // --- Logic and Handlers (100% Original) ---
     useEffect(() => {
         const fetchLessonDetails = async () => {
-            const res = await fetch(`http://localhost:5000/api/lessons/${lessonId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) {
-                const data = await res.json();
-                setLesson(data);
+            try {
+                const response = await apiClient.get(`/api/lessons/${lessonId}`);
+                setLesson(response.data);
+            } catch (error) {
+                console.error('Failed to fetch lesson details:', error);
             }
         };
         fetchLessonDetails();
@@ -370,9 +372,8 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
         if (!lessonId) return;
         setIsTesting(true); setIsTestModalOpen(true); setTestResults(null);
         try {
-            const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/run-tests`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ files: initialFiles }) });
-            const data: TestResult = await response.json();
-            setTestResults(data);
+            const response = await apiClient.post(`/api/lessons/${lessonId}/run-tests`, { files: initialFiles });
+            setTestResults(response.data);
         } catch (err) {
             setTestResults({ passed: 0, failed: 1, total: 1, results: "An error occurred while running tests." });
         } finally {
@@ -385,11 +386,10 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
         setIsSaving(true);
         toast.loading("Saving your progress...");
         try {
-            const response = await fetch(`http://localhost:5000/api/lessons/${lessonId}/save-progress`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ files: initialFiles }) });
-            if (!response.ok) throw new Error((await response.json()).error || 'Failed to save progress.');
+            await apiClient.post(`/api/lessons/${lessonId}/save-progress`, { files: initialFiles });
             toast.dismiss(); toast.success("Progress saved successfully!");
-        } catch (err) {
-            toast.dismiss(); toast.error(err instanceof Error ? err.message : "An unknown error occurred.");
+        } catch (err: any) {
+            toast.dismiss(); toast.error(err.response?.data?.error || err.message || "An unknown error occurred.");
         } finally {
             setIsSaving(false);
         }
@@ -399,9 +399,8 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
         setError(null); setConceptualHint(null);
         const promise = () => new Promise(async (resolve, reject) => {
             try {
-                const submitResponse = await fetch(`http://localhost:5000/api/lessons/${lessonId}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ files: initialFiles }) });
-                if (!submitResponse.ok) return reject(new Error((await submitResponse.json()).error || 'Submission failed.'));
-                const result = await submitResponse.json();
+                const response = await apiClient.post(`/api/lessons/${lessonId}/submit`, { files: initialFiles });
+                const result = response.data;
                 if (result.feedback_type === 'conceptual_hint') {
                     setConceptualHint(result.message);
                     return resolve({message: "All tests passed! The AI has a suggestion."});
@@ -409,8 +408,9 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
                     setTimeout(() => onLeave(), 2500);
                     return resolve({message: "Great work! Returning to classroom..."});
                 }
-            } catch (err) {
-                return reject(err);
+            } catch (err: any) {
+                const errorMessage = err.response?.data?.error || err.message || 'Submission failed.';
+                return reject(new Error(errorMessage));
             }
         });
         toast.promise(promise, { loading: 'Submitting and checking tests...', success: (data: any) => data.message, error: (err) => { setError(err.message); return `Submission Failed: ${err.message}`; } });
