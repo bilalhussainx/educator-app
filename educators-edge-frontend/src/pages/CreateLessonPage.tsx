@@ -197,7 +197,7 @@ const CreateLessonPage: React.FC = () => {
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000';
+        const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
         const wsInstance = new WebSocket(`${wsBaseUrl}?sessionId=${crypto.randomUUID()}`);
         ws.current = wsInstance;
 

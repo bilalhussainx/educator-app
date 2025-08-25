@@ -281,7 +281,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
     }, [lessonId, token]);
     
     useEffect(() => {
-        const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000';
+        const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
         const homeworkSessionId = crypto.randomUUID();
         const wsUrl = `${wsBaseUrl}?sessionId=${homeworkSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`;
         const currentWs = new WebSocket(wsUrl);

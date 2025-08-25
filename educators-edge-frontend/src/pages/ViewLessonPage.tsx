@@ -159,7 +159,7 @@ const ViewLessonPage: React.FC = () => {
         const token = localStorage.getItem('authToken');
         if (!token || !lessonId) return;
 
-        const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:5000';
+        const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
 
         const terminalSessionId = crypto.randomUUID();
         
