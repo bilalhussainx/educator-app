@@ -201,6 +201,8 @@ const LiveTutorialPage: React.FC = () => {
 
             const wsBaseUrl = getWebSocketUrl();
             const wsUrl = `${wsBaseUrl}?sessionId=${sessionId}&token=${token}`;
+            console.log("Attempting to connect WebSocket to:", wsUrl);
+
             const currentWs = new WebSocket(wsUrl);
             ws.current = currentWs;
 
