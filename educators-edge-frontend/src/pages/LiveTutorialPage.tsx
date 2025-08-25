@@ -26,6 +26,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 // Import types
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
 import apiClient from '../services/apiClient';
+import { getWebSocketUrl } from '../config/websocket';
 
 // --- Type Definitions and Helpers ---
 interface Message { from: string; text: string; timestamp: string; }
@@ -198,7 +199,7 @@ const LiveTutorialPage: React.FC = () => {
                 sessionStorage.removeItem(`studentJustReturned_${sessionId}`);
             }
 
-            const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+            const wsBaseUrl = getWebSocketUrl();
             const wsUrl = `${wsBaseUrl}?sessionId=${sessionId}&token=${token}`;
             const currentWs = new WebSocket(wsUrl);
             ws.current = currentWs;
@@ -1140,7 +1141,7 @@ export default LiveTutorialPage;
 //                 sessionStorage.removeItem(`studentJustReturned_${sessionId}`);
 //             }
 
-//             const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//             const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //             const currentWs = new WebSocket(wsUrl);
 //             ws.current = currentWs;
 
@@ -1818,7 +1819,7 @@ export default LiveTutorialPage;
 //                 sessionStorage.removeItem(`studentJustReturned_${sessionId}`);
 //             }
 
-//             const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//             const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //             const currentWs = new WebSocket(wsUrl);
 //             ws.current = currentWs;
 
@@ -2543,7 +2544,7 @@ export default LiveTutorialPage;
 //     //             sessionStorage.removeItem(`studentJustReturned_${sessionId}`);
 //     //         }
 
-//     //         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//     //         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //     //         const currentWs = new WebSocket(wsUrl);
 //     //         ws.current = currentWs;
 
@@ -2618,7 +2619,7 @@ export default LiveTutorialPage;
 //                 sessionStorage.removeItem(`studentJustReturned_${sessionId}`);
 //             }
 
-//             const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//             const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //             const currentWs = new WebSocket(wsUrl);
 //             ws.current = currentWs;
 
@@ -3368,7 +3369,7 @@ export default LiveTutorialPage;
 //             sessionStorage.removeItem(`justReturnedFromHomework_${sessionId}`);
 //         }
 
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         log("New WebSocket object created.");
@@ -4080,7 +4081,7 @@ export default LiveTutorialPage;
 //         log("Main effect running. Setting up WebSocket and Media.");
 
 //         if (!token) { navigate('/login'); return; }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         // error handling
@@ -4801,7 +4802,7 @@ export default LiveTutorialPage;
 //     // --- All useEffect hooks are preserved from the original, functional version ---
 //     useEffect(() => {
 //         if (!token) { navigate('/login'); return; }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         initializeWebSocketEvents(currentWs);
@@ -5424,7 +5425,7 @@ export default LiveTutorialPage;
     
 //     useEffect(() => {
 //         if (!token) { navigate('/login'); return; }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         initializeWebSocketEvents(currentWs);
@@ -6130,7 +6131,7 @@ export default LiveTutorialPage;
 //             navigate('/login');
 //             return;
 //         }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         initializeWebSocketEvents(currentWs);
@@ -6845,7 +6846,7 @@ export default LiveTutorialPage;
 //             navigate('/login');
 //             return;
 //         }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         initializeWebSocketEvents(currentWs);
@@ -7522,7 +7523,7 @@ export default LiveTutorialPage;
 //             navigate('/login');
 //             return;
 //         }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         initializeWebSocketEvents(currentWs);
@@ -8124,7 +8125,7 @@ export default LiveTutorialPage;
 //             navigate('/login');
 //             return;
 //         }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         initializeWebSocketEvents(currentWs);
@@ -8646,7 +8647,7 @@ export default LiveTutorialPage;
 //             navigate('/login');
 //             return;
 //         }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         initializeWebSocketEvents(currentWs);
@@ -9156,7 +9157,7 @@ export default LiveTutorialPage;
 //             navigate('/login');
 //             return;
 //         }
-//         const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:5000'}?sessionId=${sessionId}&token=${token}`;
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
 //         const currentWs = new WebSocket(wsUrl);
 //         ws.current = currentWs;
 //         initializeWebSocketEvents(currentWs);

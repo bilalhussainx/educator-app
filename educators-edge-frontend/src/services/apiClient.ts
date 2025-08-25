@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// For production deployment, detect if we're on the deployed URL and use production backend
+const API_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('educator-')) 
+    ? 'https://educator-app.onrender.com' 
+    : 'http://localhost:5000';
 
 const apiClient = axios.create({
   baseURL: API_URL,

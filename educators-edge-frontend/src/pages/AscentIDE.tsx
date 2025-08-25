@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { Award } from 'lucide-react'; // Add a new icon import
 import apiClient from '../services/apiClient';
+import { getWebSocketUrl } from '../config/websocket';
 
 
 
@@ -165,7 +166,7 @@ const AscentIDE: React.FC = () => {
         const token = localStorage.getItem('authToken');
         if (!token || !lessonId) return;
 
-        const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+        const wsBaseUrl = getWebSocketUrl();
 
         const terminalSessionId = crypto.randomUUID();
         

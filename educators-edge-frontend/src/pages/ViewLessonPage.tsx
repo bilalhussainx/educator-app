@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 // --- ANALYTICS & APE: Import services and stores ---
 import analytics from '../services/analyticsService.ts';
 import { useApeStore } from '../stores/apeStore';
+import { getWebSocketUrl } from '../config/websocket';
 
 // Import shadcn components and icons
 import { Button } from "@/components/ui/button";
@@ -159,7 +160,7 @@ const ViewLessonPage: React.FC = () => {
         const token = localStorage.getItem('authToken');
         if (!token || !lessonId) return;
 
-        const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+        const wsBaseUrl = getWebSocketUrl();
 
         const terminalSessionId = crypto.randomUUID();
         
