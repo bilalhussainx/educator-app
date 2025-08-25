@@ -1,5 +1,4 @@
-// FILE: server.js
-// require('dotenv').config();
+// FILE: server.js (Production-Ready)
 
 const express = require('express');
 const http = require('http');
@@ -9,52 +8,53 @@ const authRoutes = require('./routes/authRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const initializeWebSocket = require('./services/websocketHandler');
 const aiRoutes = require('./routes/aiRoutes');
-const userRoutes = require('./routes/userRoutes'); // Make sure path is correct
+const userRoutes = require('./routes/userRoutes');
 const conceptRoutes = require('./routes/conceptRoutes');
-
-// const submissionRoutes = require('./routes/submissionRoutes');
-
 const executeRoutes = require('./routes/executeRoutes');
 const terminalRoutes = require('./routes/terminalRoutes');
 const deploymentRoutes = require('./routes/deploymentRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const stuckPointRoutes = require('./routes/stuckPointRoutes');
-
+const sessionRoutes = require('./routes/sessionRoutes');
 
 const app = express();
+
+// --- Definitive CORS Configuration ---
+
+// 1. Define the specific URLs of your frontends that are allowed to connect.
 const allowedOrigins = [
-    'http://localhost:3000', // For local development
-    'https://educator-app.vercel.app' // YOUR VERCEL URL FROM THE ERROR LOG
+    'http://localhost:3000',          // Your local frontend for development
+    'https://educator-app.vercel.app' // Your production Vercel URL
 ];
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+        // Allow requests from the list of allowed origins, and also allow
+        // requests that don't have an origin (like Postman or mobile apps).
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('This origin is not allowed by the CORS policy.'));
         }
-        return callback(null, true);
     },
-    credentials: true, // This is important for handling cookies or authorization headers
+    credentials: true, // Allow cookies and authorization headers to be sent
 };
 
+// 2. Apply middleware in the correct order.
+// The JSON body parser should come before the CORS middleware.
+app.use(express.json());
 app.use(cors(corsOptions));
 
-app.use(express.json());
 
-// Health check endpoint
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    message: 'Educator App Backend is running',
-    timestamp: new Date().toISOString()
-  });
+// --- Health Check Endpoint for Render ---
+// This should be defined before your main API routes.
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
 });
 
-// Register API routes
+
+// --- Register All API Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/ai', aiRoutes);
@@ -64,24 +64,37 @@ app.use('/api/deploy', deploymentRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/stuck-points', stuckPointRoutes);
-app.use('/api/sessions', require('./routes/sessionRoutes'));
+app.use('/api/sessions', sessionRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/concepts', conceptRoutes);
 
-// app.use('/api/submissions', submissionRoutes);
 
-
+// --- Server and WebSocket Initialization ---
 
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+
+// 3. Add origin check to the WebSocket server for enhanced security.
+const wss = new WebSocketServer({
+    server,
+    handleProtocols: (protocols, request) => {
+        // This is a simple way to check the origin for WebSockets
+        const origin = request.headers.origin;
+        if (allowedOrigins.includes(origin)) {
+            return protocols.values().next().value; // Accept the first protocol
+        }
+        console.warn(`WebSocket connection from untrusted origin [${origin}] rejected.`);
+        return false; // Reject the connection
+    }
+});
+
 initializeWebSocket(wss);
 
-const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || '0.0.0.0'; // Listen on all network interfaces
+const PORT = process.env.PORT || 10000; // Render provides the PORT, default to 10000
+const HOST = '0.0.0.0'; // This is essential for Docker containers to accept external connections
+
 server.listen(PORT, HOST, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`WebSocket server is ready.`);
-  console.log(`To access from other devices, use: http://<your-ip-address>:${PORT}`);
 });
 // require('dotenv').config();
 
