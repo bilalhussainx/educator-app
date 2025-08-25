@@ -9,7 +9,7 @@
  */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createApiUrl } from '../config/api';
+import apiClient from '../services/apiClient';
 
 // Import shadcn components
 import { Button } from "@/components/ui/button";
@@ -41,13 +41,7 @@ const RegisterPage: React.FC = () => {
     setError(null);
     setMessage(null);
     try {
-      const response = await fetch(createApiUrl('api/auth/register'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to register');
+      const response = await apiClient.post('/api/auth/register', formData);
       setMessage('Registration successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {

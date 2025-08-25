@@ -17,7 +17,7 @@
  * and safety when accessing event properties like `e.target.value`.
  */
 import React, { useState, useEffect } from 'react';
-import { createApiUrl } from './src/config/api';
+import apiClient from './src/services/apiClient';
 
 // --- Type Definitions ---
 // It's a best practice to define your types in one place.
@@ -106,17 +106,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ setRoute, setToken }) => {
     setError(null);
 
     try {
-      const response = await fetch(createApiUrl('api/auth/login'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      const response = await apiClient.post('/api/auth/login', {
+        email,
+        password
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
-      }
+      
+      const data = response.data;
 
       // We know `data` has a `token` property because our backend sends it.
       // In a larger app, we would define a type for this response, e.g., `type LoginResponse = { token: string }`.
@@ -180,15 +175,11 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ setRoute }) => {
     setMessage(null);
 
     try {
-      const response = await fetch(createApiUrl('api/auth/register'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      const response = await apiClient.post('/api/auth/register', {
+        email,
+        password
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to register');
-      }
+      
       setMessage('Registration successful! Please log in.');
       setTimeout(() => setRoute('login'), 2000);
     } catch (err) {

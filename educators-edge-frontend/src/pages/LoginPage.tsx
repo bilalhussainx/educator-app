@@ -8,7 +8,7 @@
  * registration page, reinforcing the brand experience.
  */
 import React, { useState } from 'react';
-import { createApiUrl } from '../config/api';
+import apiClient from '../services/apiClient';
 import { Link, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
@@ -43,13 +43,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ setToken, setUser }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(createApiUrl('api/auth/login'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Login failed');
+      const response = await apiClient.post('/api/auth/login', formData);
+      const data = response.data;
       
       const token = data.token;
       setToken(token);
