@@ -18,6 +18,7 @@ import type { LessonFile } from '../types';
 
 // --- APE Component ---
 import { ConceptTagger, TaggedConcept } from '../components/ConceptTagger';
+import { getWebSocketUrl } from '../config/websocket';
 
 // --- UI Components & Icons ---
 import { Button } from "@/components/ui/button";
@@ -197,7 +198,7 @@ const CreateLessonPage: React.FC = () => {
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+        const wsBaseUrl = getWebSocketUrl();
         const wsInstance = new WebSocket(`${wsBaseUrl}?sessionId=${crypto.randomUUID()}`);
         ws.current = wsInstance;
 

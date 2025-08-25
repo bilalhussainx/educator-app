@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { toast, Toaster } from 'sonner';
 import { Lesson, LessonFile, TestResult, CodeFile } from '../../types/index.ts';
 import apiClient from '../../services/apiClient';
+import { getWebSocketUrl } from '../../config/websocket';
 import { File as FileIcon, XCircle, Lightbulb, BeakerIcon, Save, Send, Lock, Eye, ArrowLeft, CheckCircle, Video, VideoOff, Mic, MicOff, Users } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 
@@ -281,7 +282,7 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
     }, [lessonId, token]);
     
     useEffect(() => {
-        const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+        const wsBaseUrl = getWebSocketUrl();
         const homeworkSessionId = crypto.randomUUID();
         const wsUrl = `${wsBaseUrl}?sessionId=${homeworkSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`;
         const currentWs = new WebSocket(wsUrl);
