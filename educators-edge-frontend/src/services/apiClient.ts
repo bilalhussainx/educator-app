@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 // For production deployment, detect if we're on the deployed URL and use production backend
+// TEMPORARY: Using CORS proxy for testing until backend CORS is fixed
 const API_URL = import.meta.env.VITE_API_URL || 
   (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('educator-')) 
-    ? 'https://educator-app.onrender.com' 
+    ? 'https://cors-anywhere.herokuapp.com/https://educator-app.onrender.com' 
     : 'http://localhost:5000';
 
 const apiClient = axios.create({

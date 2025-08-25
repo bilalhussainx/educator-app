@@ -1,4 +1,4 @@
-// FILE: server.js (Definitive, Production-Ready Version)
+// FILE: server.js (Definitive, Final Version)
 
 const express = require('express');
 const http = require('http');
@@ -19,50 +19,54 @@ const stuckPointRoutes = require('./routes/stuckPointRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 
 const app = express();
+app.use(express.json());
 
-// --- Definitive CORS Configuration ---
+// --- DEFINITIVE CORS CONFIGURATION V3 (Manual Preflight) ---
 
-// 1. SINGLE SOURCE OF TRUTH for all allowed frontend URLs.
-//    This list will be used for both HTTP requests and WebSocket connections.
 const allowedOrigins = [
-    'http://localhost:3000',                                            // Local Vite dev server
-    'http://localhost:5173',                                            // Alternative local Vite port
-    'https://educator-app.vercel.app',                                  // Your main production URL
-    'https://educator-a9yc0y90h-bilalhussainxs-projects.vercel.app',    // A specific preview URL
-    'https://educator-2ovjl9xd8-bilalhussainxs-projects.vercel.app'     // Another specific preview URL
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://educator-app.vercel.app',
+    'https://educator-a9yc0y90h-bilalhussainxs-projects.vercel.app',
+    'https://educator-2ovjl9xd8-bilalhussainxs-projects.vercel.app'
 ];
 
 const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests from the list OR requests with no origin (like Postman/server-to-server)
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            callback(new Error('This origin is not allowed by the CORS policy.'));
+            callback(new Error('This origin is not allowed by CORS'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Explicitly allow all methods
-    allowedHeaders: ['Content-Type', 'Authorization'],             // Explicitly allow required headers
     credentials: true,
 };
 
-// 2. Apply middleware in the correct order.
-app.use(express.json());
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        return res.sendStatus(204);
+    }
+    
+    next();
+});
 
-// 3. Set up a global handler for preflight OPTIONS requests. This is a very robust fix.
-app.options('*', cors(corsOptions));
-
-// 4. Use the configured CORS options for all other requests.
 app.use(cors(corsOptions));
 
+// --- END OF FIX ---
 
-// --- Health Check Endpoint for Render ---
 app.get('/healthz', (req, res) => {
   res.status(200).send('OK');
 });
 
-
-// --- Register All API Routes ---
+// Register All API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/ai', aiRoutes);
@@ -76,24 +80,9 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/concepts', conceptRoutes);
 
-
-// --- Server and WebSocket Initialization ---
-
+// Server and WebSocket Initialization
 const server = http.createServer(app);
-
-const wss = new WebSocketServer({
-    server,
-    handleProtocols: (protocols, request) => {
-        const origin = request.headers.origin;
-        // The WebSocket server now uses the SAME `allowedOrigins` list for consistency.
-        if (allowedOrigins.includes(origin)) {
-            return protocols.values().next().value;
-        }
-        console.warn(`[WebSocket] Connection from untrusted origin [${origin}] rejected.`);
-        return false;
-    }
-});
-
+const wss = new WebSocketServer({ server }); // We can simplify the WS config now
 initializeWebSocket(wss);
 
 const PORT = process.env.PORT || 10000;
