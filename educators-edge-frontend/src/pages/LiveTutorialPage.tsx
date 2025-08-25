@@ -866,7 +866,7 @@ useEffect(() => {
                                                     <div className="p-2 flex justify-between items-center bg-slate-950/30 border-b border-slate-800">
                                                         <Select value={activeFile?.language || 'plaintext'} onValueChange={handleLanguageChange} disabled={isEditorReadOnly}>
                                                             <SelectTrigger className="w-[180px] bg-slate-800 border-slate-700 text-slate-200 font-semibold"><SelectValue /></SelectTrigger>
-                                                            <SelectContent className="bg-slate-900 border-slate-700 text-slate-200"><SelectItem value="javascript">JavaScript</SelectItem><SelectItem value="python">Python</SelectItem><SelectItem value="java">Java</SelectItem></SelectContent>
+                                                            <SelectContent className="bg-slate-900 border-slate-700 text-slate-200"><SelectItem value="javascript">JavaScript</SelectItem><SelectItem value="python">Python</SelectItem><SelectItem value="java">Java</SelectItem><SelectItem value="ruby">Ruby</SelectItem><SelectItem value="go">Go</SelectItem></SelectContent>
                                                         </Select>
                                                         {role === 'teacher' && viewingMode === 'teacher' && <Button onClick={handleRunCode} size="sm" disabled={!activeFile} className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"><Play className="mr-2 h-4 w-4" /> Run</Button>}
                                                     </div>
