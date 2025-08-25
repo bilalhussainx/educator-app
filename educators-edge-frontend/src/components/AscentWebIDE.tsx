@@ -116,7 +116,6 @@ const AscentWebIDE: React.FC = () => {
     const handleSaveCode = async () => {
         if (!lessonId) return;
         setIsSaving(true);
-        const token = localStorage.getItem('authToken');
 
         const filesPayload = [
             { filename: 'index.html', content: htmlCode },
@@ -140,7 +139,6 @@ const AscentWebIDE: React.FC = () => {
     const handleSubmit = async () => {
         if (!lessonId) return;
         setIsSubmitting(true);
-        const token = localStorage.getItem('authToken');
 
         const filesPayload = [
             { filename: 'index.html', content: htmlCode },

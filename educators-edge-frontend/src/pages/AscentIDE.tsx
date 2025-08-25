@@ -359,7 +359,6 @@ const AscentIDE: React.FC = () => {
         setIsSubmitting(true);
         setDiagnosticsTab('results');
         setConceptualHint(null);
-        const token = localStorage.getItem('authToken');
         
         const submissionPayload = {
             files,
