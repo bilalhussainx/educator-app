@@ -94,7 +94,6 @@ function initializeWebSocket(wss) {
         const isHomeworkSession = !!teacherSessionId && !!lessonId;
         const sessionKey = isHomeworkSession ? teacherSessionId : sessionId;
 
-        // Create the session in memory if it doesn't exist
         if (!sessions.has(sessionKey)) {
             if (isHomeworkSession) {
                 console.error(`[ERROR] Student tried to join homework for a non-existent session: ${sessionKey}`);
@@ -107,6 +106,7 @@ function initializeWebSocket(wss) {
                 files: [],
                 activeFile: '',
                 terminalOutput: `CoreZenith Virtual Terminal for session ${sessionKey}\n$ `,
+                terminalInputBuffer: '', // Buffer for the pseudo-interactive terminal
                 assignments: new Map(),
                 handsRaised: new Set(),
                 spotlightedStudentId: null,
@@ -206,12 +206,7 @@ function initializeWebSocket(wss) {
                 case 'WEBRTC_OFFER':
                     sendToClient(session, data.payload.to, { 
                         type: 'WEBRTC_OFFER', 
-                        payload: { 
-                            from: fromId, 
-                            offer: data.payload.offer, 
-                            username: clientInfo.username,
-                            isAutoCall: data.payload.isAutoCall || false
-                        }
+                        payload: { from: fromId, offer: data.payload.offer, username: clientInfo.username, isAutoCall: data.payload.isAutoCall || false }
                     });
                     return;
                 case 'WEBRTC_ANSWER':
@@ -222,10 +217,7 @@ function initializeWebSocket(wss) {
                     return;
                 case 'VIDEO_CONNECTION_ESTABLISHED':
                     const connectionKey = `${Math.min(fromId, data.payload.peerId)}_${Math.max(fromId, data.payload.peerId)}`;
-                    session.videoConnections.set(connectionKey, {
-                        participants: [fromId, data.payload.peerId],
-                        establishedAt: new Date()
-                    });
+                    session.videoConnections.set(connectionKey, { participants: [fromId, data.payload.peerId], establishedAt: new Date() });
                     break;
                 case 'VIDEO_CONNECTION_ENDED':
                     const endConnectionKey = `${Math.min(fromId, data.payload.peerId)}_${Math.max(fromId, data.payload.peerId)}`;
@@ -249,11 +241,7 @@ function initializeWebSocket(wss) {
             if (data.type === 'STUDENT_RETURN_TO_CLASSROOM') {
                 sendToClient(session, clientInfo.id, {
                     type: 'TEACHER_WORKSPACE_UPDATE',
-                    payload: {
-                        files: session.files,
-                        activeFileName: session.activeFile,
-                        terminalOutput: session.terminalOutput,
-                    }
+                    payload: { files: session.files, activeFileName: session.activeFile, terminalOutput: session.terminalOutput }
                 });
                 
                 if (teacher && clientInfo.role === 'student') {
@@ -314,36 +302,66 @@ function initializeWebSocket(wss) {
                 case 'TEACHER_CODE_UPDATE':
                     session.files = data.payload.files;
                     session.activeFile = data.payload.activeFileName;
-                    broadcast(session, { type: 'TEACHER_CODE_DID_UPDATE',
-                       payload: {
-                       files: session.files,
-                       activeFileName: session.activeFile
-                    }
-                        });
+                    broadcast(session, { type: 'TEACHER_CODE_DID_UPDATE', payload: { files: session.files, activeFileName: session.activeFile } });
                     break;
                 case 'ASSIGN_HOMEWORK':
                     sendToClient(session, data.payload.studentId, { type: 'HOMEWORK_ASSIGNED', payload: data.payload });
                     session.assignments.set(data.payload.studentId, data.payload);
                     break;
+
                 case 'TERMINAL_IN':
-                    const command = data.payload.data;
-                    session.terminalOutput += command;
-                    broadcast(session, { type: 'TERMINAL_OUT', payload: command });
-                    if (command.includes('\r')) {
-                        session.terminalOutput += '$ ';
-                        broadcast(session, { type: 'TERMINAL_OUT', payload: '\n$ ' });
+                    const input = data.payload.data;
+                    if (input === '\r') { // User pressed Enter
+                        const command = session.terminalInputBuffer.trim();
+                        session.terminalInputBuffer = '';
+                        session.terminalOutput += '\n';
+                        broadcast(session, { type: 'TERMINAL_OUT', payload: '\n' });
+
+                        const runCommandMatch = command.match(/^(node|python3|ruby|go run|java)\s+([\w\.-]+)/);
+                        if (runCommandMatch) {
+                            const activeFileInSession = session.files.find(f => f.name === session.activeFile);
+                            const language = activeFileInSession?.language || 'unknown';
+                            const code = activeFileInSession?.content || '';
+
+                            try {
+                                const executionResult = await executeCode(code, language);
+                                const output = executionResult.output || (executionResult.success ? '' : 'Execution failed.');
+                                session.terminalOutput += output + '\n$ ';
+                                broadcast(session, { type: 'TERMINAL_OUT', payload: output + '\n$ ' });
+                            } catch (err) {
+                                const errorMessage = `Execution failed: ${err.message}\n$ `;
+                                session.terminalOutput += errorMessage;
+                                broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
+                            }
+                        } else if (command.startsWith('pip install') || command.startsWith('npm install')) {
+                            const helpMessage = `[CoreZenith] Package installation is not supported in this terminal. Please ask your instructor to add libraries to the environment.\n$ `;
+                            session.terminalOutput += helpMessage;
+                            broadcast(session, { type: 'TERMINAL_OUT', payload: helpMessage });
+                        } else if (command) {
+                            const errorMessage = `/bin/sh: command not found: ${command}\n$ `;
+                            session.terminalOutput += errorMessage;
+                            broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
+                        } else {
+                            session.terminalOutput += '$ ';
+                            broadcast(session, { type: 'TERMINAL_OUT', payload: '$ ' });
+                        }
+                    } else {
+                        session.terminalInputBuffer += input;
+                        session.terminalOutput += input;
+                        broadcast(session, { type: 'TERMINAL_OUT', payload: input });
                     }
                     break;
+
                 case 'RUN_CODE':
                      const { language, code } = data.payload;
                      try {
                          const executionResult = await executeCode(code, language);
                          const output = executionResult.output || (executionResult.success ? 'Execution complete.' : 'Execution finished with errors.');
-                         session.terminalOutput += output + '\n$ ';
-                         broadcast(session, { type: 'TERMINAL_OUT', payload: output + '\n$ ' });
+                         session.terminalOutput += `\n${output}\n$ `;
+                         broadcast(session, { type: 'TERMINAL_OUT', payload: `\n${output}\n$ ` });
                      } catch (err) {
                          console.error("Error during remote code execution:", err);
-                         const errorMessage = `Execution failed: ${err.message}\n$ `;
+                         const errorMessage = `\nExecution failed: ${err.message}\n$ `;
                          session.terminalOutput += errorMessage;
                          broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
                      }
@@ -419,6 +437,427 @@ function initializeWebSocket(wss) {
 }
 
 module.exports = initializeWebSocket;
+// // services/websocketHandler.js
+
+// const jwt = require('jsonwebtoken');
+// const url = require('url');
+// const { addSession, removeSession } = require('./sessionStore');
+// const { executeCode } = require('../services/executionService'); // For running code
+
+// const log = (msg) => console.log(`[WSS] ${msg}`);
+// const sessions = new Map();
+
+// // --- Helper Functions ---
+// function broadcast(session, message) {
+//     if (!session || !session.clients) return;
+//     session.clients.forEach(client => {
+//         if (!client.isHomework && client.ws.readyState === client.ws.OPEN) {
+//             client.ws.send(JSON.stringify(message));
+//         }
+//     });
+// }
+
+// function broadcastToAll(session, message) {
+//     if (!session || !session.clients) return;
+//     session.clients.forEach(client => {
+//         if (client.ws.readyState === client.ws.OPEN) {
+//             client.ws.send(JSON.stringify(message));
+//         }
+//     });
+// }
+
+// function sendToClient(session, userId, message) {
+//     if (!session || !session.clients) return;
+//     const client = Array.from(session.clients).find(c => c.id === userId);
+//     if (client && client.ws.readyState === client.ws.OPEN) {
+//         client.ws.send(JSON.stringify(message));
+//     } else {
+//         console.log(`[WEBSOCKET] Could not find or send to client ID: ${userId}`);
+//     }
+// }
+
+// function getTeacher(session) {
+//     if (!session || !session.clients) return null;
+//     return Array.from(session.clients).find(c => c.role === 'teacher');
+// }
+
+// function getStudents(session) {
+//     if (!session || !session.clients) return [];
+//     return Array.from(session.clients).filter(c => c.role === 'student');
+// }
+
+// function initiateVideoConnectionsForNewUser(session, newClient) {
+//     const teacher = getTeacher(session);
+//     const students = getStudents(session);
+    
+//     if (newClient.role === 'teacher') {
+//         students.forEach(student => {
+//             console.log(`[VIDEO] Teacher initiating connection to student ${student.username}`);
+//             sendToClient(session, teacher.id, { 
+//                 type: 'INITIATE_VIDEO_CONNECTION', 
+//                 payload: { targetId: student.id, targetUsername: student.username, isInitiator: true }
+//             });
+//         });
+//     } else if (newClient.role === 'student' && teacher) {
+//         console.log(`[VIDEO] Auto-initiating video connection: Teacher -> Student ${newClient.username}`);
+//         sendToClient(session, teacher.id, { 
+//             type: 'INITIATE_VIDEO_CONNECTION', 
+//             payload: { targetId: newClient.id, targetUsername: newClient.username, isInitiator: true }
+//         });
+//     }
+// }
+
+
+// // --- Main WebSocket Initializer ---
+// function initializeWebSocket(wss) {
+//     wss.on('connection', async (ws, req) => {
+//         const urlParams = new URLSearchParams(req.url.split('?')[1]);
+//         const sessionId = urlParams.get('sessionId');
+//         const token = urlParams.get('token');
+//         const teacherSessionId = urlParams.get('teacherSessionId');
+//         const lessonId = urlParams.get('lessonId');
+
+//         if (!sessionId || !token) {
+//             return ws.close(4001, "Session ID and token are required");
+//         }
+
+//         let user;
+//         try {
+//             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//             user = decoded.user;
+//         } catch (err) {
+//             console.error('[WS Auth] Connection rejected due to invalid token:', err.message);
+//             return ws.close(4001, "Invalid or expired authentication token");
+//         }
+
+//         const isHomeworkSession = !!teacherSessionId && !!lessonId;
+//         const sessionKey = isHomeworkSession ? teacherSessionId : sessionId;
+
+//         // Create the session in memory if it doesn't exist
+//         if (!sessions.has(sessionKey)) {
+//             if (isHomeworkSession) {
+//                 console.error(`[ERROR] Student tried to join homework for a non-existent session: ${sessionKey}`);
+//                 return ws.close(1011, "Cannot join homework for a session that does not exist.");
+//             }
+            
+//             log(`Creating new session: ${sessionKey}`);
+//             sessions.set(sessionKey, {
+//                 clients: new Set(),
+//                 files: [],
+//                 activeFile: '',
+//                 terminalOutput: `CoreZenith Virtual Terminal for session ${sessionKey}\n$ `,
+//                 assignments: new Map(),
+//                 handsRaised: new Set(),
+//                 spotlightedStudentId: null,
+//                 studentWorkspaces: new Map(),
+//                 controlledStudentId: null,
+//                 isFrozen: false,
+//                 whiteboardLines: [],
+//                 isWhiteboardVisible: false,
+//                 videoConnections: new Map(),
+//             });
+//         }
+//         const session = sessions.get(sessionKey);
+        
+//         const existingClient = Array.from(session.clients).find(c => c.id === user.id && c.isHomework === isHomeworkSession);
+//         if (existingClient) {
+//             log(`Found existing client for ${user.username}. Terminating old connection.`);
+//             existingClient.ws.terminate(); 
+//             session.clients.delete(existingClient);
+//         }
+
+//         const clientInfo = { id: user.id, username: user.username, role: user.role || 'student', ws: ws, isHomework: isHomeworkSession };
+//         session.clients.add(clientInfo);
+
+//         if (clientInfo.role === 'teacher' && !isHomeworkSession) {
+//             addSession(sessionId, {
+//                 sessionId,
+//                 teacherId: user.id,
+//                 teacherName: user.username,
+//                 courseId: 'default_course',
+//                 courseName: 'General Session',
+//             });
+//         }
+
+//         log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey} (Homework: ${isHomeworkSession}). Total clients: ${session.clients.size}`);
+//         const teacher = getTeacher(session);
+
+//         if (isHomeworkSession) {
+//             if (teacher) {
+//                 sendToClient(session, teacher.id, { type: 'HOMEWORK_JOIN', payload: { studentId: user.id } });
+//             }
+//              ws.send(JSON.stringify({ type: 'FREEZE_STATE_UPDATE', payload: { isFrozen: session.isFrozen } }));
+//              ws.send(JSON.stringify({ type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: session.controlledStudentId } }));
+//         } else {
+//             ws.send(JSON.stringify({ 
+//                 type: 'ROLE_ASSIGNED', 
+//                 payload: { 
+//                     role: clientInfo.role,
+//                     files: session.files,
+//                     activeFile: session.activeFile,
+//                     terminalOutput: session.terminalOutput,
+//                     spotlightedStudentId: session.spotlightedStudentId,
+//                     controlledStudentId: session.controlledStudentId,
+//                     isFrozen: session.isFrozen,
+//                     whiteboardLines: session.whiteboardLines,
+//                     isWhiteboardVisible: session.isWhiteboardVisible,
+//                     teacherId: teacher ? teacher.id : null,
+//                 } 
+//             }));
+
+//             if (clientInfo.role === 'student' && session.assignments.has(user.id)) {
+//                 ws.send(JSON.stringify({ type: 'HOMEWORK_ASSIGNED', payload: session.assignments.get(user.id) }));
+//             }
+            
+//             if (teacher) {
+//                  ws.send(JSON.stringify({ type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) } }));
+//             }
+
+//             const studentList = Array.from(session.clients).filter(c => c.role === 'student' && !c.isHomework).map(c => ({ id: c.id, username: c.username }));
+//             broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: studentList }});
+
+//             setTimeout(() => {
+//                 initiateVideoConnectionsForNewUser(session, clientInfo);
+//             }, 1000);
+//         }
+
+//         ws.on('message', async (message) => {
+//             const data = JSON.parse(message.toString());
+//             const fromId = clientInfo.id;
+            
+//             if (data.type === 'PRIVATE_MESSAGE') {
+//                 const { to, text } = data.payload;
+//                 sendToClient(session, to, {
+//                     type: 'PRIVATE_MESSAGE',
+//                     payload: { from: fromId, text, timestamp: new Date().toISOString() }
+//                 });
+//                 return;
+//             }
+
+//             switch (data.type) {
+//                 case 'INITIATE_VIDEO_CONNECTION':
+//                     const targetId = data.payload.targetId;
+//                     sendToClient(session, targetId, { 
+//                         type: 'AUTO_ACCEPT_VIDEO_CALL', 
+//                         payload: { from: fromId, username: clientInfo.username }
+//                     });
+//                     break;
+//                 case 'WEBRTC_OFFER':
+//                     sendToClient(session, data.payload.to, { 
+//                         type: 'WEBRTC_OFFER', 
+//                         payload: { 
+//                             from: fromId, 
+//                             offer: data.payload.offer, 
+//                             username: clientInfo.username,
+//                             isAutoCall: data.payload.isAutoCall || false
+//                         }
+//                     });
+//                     return;
+//                 case 'WEBRTC_ANSWER':
+//                     sendToClient(session, data.payload.to, { type: 'WEBRTC_ANSWER', payload: { from: fromId, answer: data.payload.answer }});
+//                     return;
+//                 case 'WEBRTC_ICE_CANDIDATE':
+//                     sendToClient(session, data.payload.to, { type: 'WEBRTC_ICE_CANDIDATE', payload: { from: fromId, candidate: data.payload.candidate }});
+//                     return;
+//                 case 'VIDEO_CONNECTION_ESTABLISHED':
+//                     const connectionKey = `${Math.min(fromId, data.payload.peerId)}_${Math.max(fromId, data.payload.peerId)}`;
+//                     session.videoConnections.set(connectionKey, {
+//                         participants: [fromId, data.payload.peerId],
+//                         establishedAt: new Date()
+//                     });
+//                     break;
+//                 case 'VIDEO_CONNECTION_ENDED':
+//                     const endConnectionKey = `${Math.min(fromId, data.payload.peerId)}_${Math.max(fromId, data.payload.peerId)}`;
+//                     session.videoConnections.delete(endConnectionKey);
+//                     break;
+//             }
+
+//             if (clientInfo.isHomework) {
+//                 if (!teacher) return;
+//                 switch(data.type) {
+//                     case 'HOMEWORK_CODE_UPDATE':
+//                         session.studentWorkspaces?.set(user.id, data.payload);
+//                         sendToClient(session, teacher.id, { type: 'STUDENT_WORKSPACE_UPDATED', payload: { studentId: user.id, workspace: data.payload } });
+//                         break;
+//                     case 'HOMEWORK_TERMINAL_IN':
+//                         sendToClient(session, teacher.id, { type: 'HOMEWORK_TERMINAL_UPDATE', payload: { studentId: user.id, output: data.payload } });
+//                         break;
+//                 }
+//                 return;
+//             }
+//             if (data.type === 'STUDENT_RETURN_TO_CLASSROOM') {
+//                 sendToClient(session, clientInfo.id, {
+//                     type: 'TEACHER_WORKSPACE_UPDATE',
+//                     payload: {
+//                         files: session.files,
+//                         activeFileName: session.activeFile,
+//                         terminalOutput: session.terminalOutput,
+//                     }
+//                 });
+                
+//                 if (teacher && clientInfo.role === 'student') {
+//                     setTimeout(() => {
+//                         sendToClient(session, teacher.id, { 
+//                             type: 'INITIATE_VIDEO_CONNECTION', 
+//                             payload: { targetId: clientInfo.id, targetUsername: clientInfo.username, isInitiator: true }
+//                         });
+//                     }, 500);
+//                 }
+//                 return;
+//             }
+
+//             if (data.type === 'RAISE_HAND' && clientInfo.role === 'student') {
+//                 session.handsRaised.has(clientInfo.id) ? session.handsRaised.delete(clientInfo.id) : session.handsRaised.add(clientInfo.id);
+//                 broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) } });
+//                 return;
+//             }
+
+//             if (clientInfo.role !== 'teacher') return;
+
+//             // Teacher-only actions
+//             switch (data.type) {
+//                 case 'TOGGLE_WHITEBOARD':
+//                     session.isWhiteboardVisible = !session.isWhiteboardVisible;
+//                     broadcast(session, { type: 'WHITEBOARD_VISIBILITY_UPDATE', payload: { isVisible: session.isWhiteboardVisible } });
+//                     break;
+//                 case 'WHITEBOARD_DRAW':
+//                     session.whiteboardLines.push(data.payload.line);
+//                     broadcast(session, { type: 'WHITEBOARD_UPDATE', payload: { line: data.payload.line } });
+//                     break;
+//                 case 'WHITEBOARD_CLEAR':
+//                     session.whiteboardLines = [];
+//                     broadcast(session, { type: 'WHITEBOARD_CLEAR' });
+//                     break;
+//                 case 'TAKE_CONTROL':
+//                     session.controlledStudentId = data.payload.studentId;
+//                     broadcastToAll(session, { type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: session.controlledStudentId }});
+//                     break;
+//                 case 'TOGGLE_FREEZE':
+//                     session.isFrozen = !session.isFrozen;
+//                     broadcastToAll(session, { type: 'FREEZE_STATE_UPDATE', payload: { isFrozen: session.isFrozen }});
+//                     break;
+//                 case 'TEACHER_DIRECT_EDIT':
+//                     const { studentId, workspace } = data.payload;
+//                     session.studentWorkspaces?.set(studentId, workspace);
+//                     const studentClient = Array.from(session.clients).find(c => c.id === studentId && c.isHomework);
+//                     if (studentClient) {
+//                         studentClient.ws.send(JSON.stringify({ type: 'HOMEWORK_CODE_UPDATE', payload: workspace }));
+//                     }
+//                     broadcast(session, { type: 'STUDENT_WORKSPACE_UPDATED', payload: { studentId, workspace } });
+//                     break;
+//                 case 'SPOTLIGHT_STUDENT':
+//                     session.spotlightedStudentId = data.payload.studentId;
+//                     const spotlightWorkspace = data.payload.studentId ? session.studentWorkspaces?.get(data.payload.studentId) || null : null;
+//                     broadcast(session, { type: 'SPOTLIGHT_UPDATE', payload: { studentId: session.spotlightedStudentId, workspace: spotlightWorkspace }});
+//                     break;
+//                 case 'TEACHER_CODE_UPDATE':
+//                     session.files = data.payload.files;
+//                     session.activeFile = data.payload.activeFileName;
+//                     broadcast(session, { type: 'TEACHER_CODE_DID_UPDATE',
+//                        payload: {
+//                        files: session.files,
+//                        activeFileName: session.activeFile
+//                     }
+//                         });
+//                     break;
+//                 case 'ASSIGN_HOMEWORK':
+//                     sendToClient(session, data.payload.studentId, { type: 'HOMEWORK_ASSIGNED', payload: data.payload });
+//                     session.assignments.set(data.payload.studentId, data.payload);
+//                     break;
+//                 case 'TERMINAL_IN':
+//                     const command = data.payload.data;
+//                     session.terminalOutput += command;
+//                     broadcast(session, { type: 'TERMINAL_OUT', payload: command });
+//                     if (command.includes('\r')) {
+//                         session.terminalOutput += '$ ';
+//                         broadcast(session, { type: 'TERMINAL_OUT', payload: '\n$ ' });
+//                     }
+//                     break;
+//                 case 'RUN_CODE':
+//                      const { language, code } = data.payload;
+//                      try {
+//                          const executionResult = await executeCode(code, language);
+//                          const output = executionResult.output || (executionResult.success ? 'Execution complete.' : 'Execution finished with errors.');
+//                          session.terminalOutput += output + '\n$ ';
+//                          broadcast(session, { type: 'TERMINAL_OUT', payload: output + '\n$ ' });
+//                      } catch (err) {
+//                          console.error("Error during remote code execution:", err);
+//                          const errorMessage = `Execution failed: ${err.message}\n$ `;
+//                          session.terminalOutput += errorMessage;
+//                          broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
+//                      }
+//                      break;
+//             }
+//         });
+
+//         ws.on('close', async () => {
+//             session.clients.delete(clientInfo);
+//             log(`${clientInfo.role} ${clientInfo.username} disconnected. Total clients left: ${session.clients.size}`);
+
+//             for (const [connectionKey, connection] of session.videoConnections) {
+//                 if (connection.participants.includes(clientInfo.id)) {
+//                     session.videoConnections.delete(connectionKey);
+//                     const otherParticipant = connection.participants.find(id => id !== clientInfo.id);
+//                     if (otherParticipant) {
+//                         sendToClient(session, otherParticipant, {
+//                             type: 'PEER_DISCONNECTED',
+//                             payload: { disconnectedUserId: clientInfo.id }
+//                         });
+//                     }
+//                 }
+//             }
+
+//             if (session.handsRaised.has(clientInfo.id)) {
+//                 session.handsRaised.delete(clientInfo.id);
+//                 broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) }});
+//             }
+
+//             if (session.spotlightedStudentId === clientInfo.id) {
+//                 session.spotlightedStudentId = null;
+//                 broadcast(session, { type: 'SPOTLIGHT_UPDATE', payload: { studentId: null, workspace: null }});
+//             }
+//             if (session.controlledStudentId === clientInfo.id) {
+//                 session.controlledStudentId = null;
+//                 broadcastToAll(session, { type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: null }});
+//             }
+            
+//             if (isHomeworkSession) {
+//                 if (teacher) {
+//                     sendToClient(session, teacher.id, { type: 'HOMEWORK_LEAVE', payload: { studentId: user.id } });
+//                 }
+//             } else if (session.clients.size === 0) {
+//                 log(`Last client left. Deleting session ${sessionId}`);
+//                 sessions.delete(sessionId);
+//                 removeSession(sessionId);
+//             } else {
+//                  const updatedStudentList = Array.from(session.clients)
+//                     .filter(c => c.role === 'student' && !c.isHomework)
+//                     .map(c => ({ id: c.id, username: c.username }));
+//                 broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: updatedStudentList }});
+                
+//                 if (clientInfo.role === 'teacher') {
+//                     const students = getStudents(session);
+//                     students.forEach(student => {
+//                         sendToClient(session, student.id, {
+//                             type: 'TEACHER_DISCONNECTED',
+//                             payload: {}
+//                         });
+//                     });
+//                 } else if (clientInfo.role === 'student') {
+//                     const remainingTeacher = getTeacher(session);
+//                     if (remainingTeacher) {
+//                         sendToClient(session, remainingTeacher.id, {
+//                             type: 'STUDENT_DISCONNECTED',
+//                             payload: { studentId: clientInfo.id, studentUsername: clientInfo.username }
+//                         });
+//                     }
+//                 }
+//             }
+//         });
+//     });
+// }
+
+// module.exports = initializeWebSocket;
 // // perfect with refresh
 // // const Docker = require('dockerode');
 // const jwt = require('jsonwebtoken');
