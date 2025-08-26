@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+=import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { Terminal } from 'xterm';
@@ -9,77 +9,92 @@ import { cn } from "@/lib/utils";
 // --- AGORA SDK IMPORT ---
 import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 
-// --- CHILD COMPONENT IMPORTS ---
+// Import child components
 import { HomeworkView } from '../components/classroom/HomeworkView';
 import { WhiteboardPanel, Line } from '../components/classroom/WhiteboardPanel';
 import { ChatPanel } from '../components/classroom/ChatPanel';
-import { RosterPanel } from '../components/classroom/RosterPanel'; // Assuming RosterPanel is separate
 
-// --- UI & TYPE IMPORTS ---
+// Import shadcn components and icons
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users } from 'lucide-react';
+import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
-import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
+
+// Import types and configs
+import { UserRole, ViewingMode, CodeFile, Lesson, Student, StudentHomeworkState } from '../types';
 import apiClient from '../services/apiClient';
 import { getWebSocketUrl } from '../config/websocket';
 
-// --- HELPER FUNCTIONS & COMPONENTS ---
+// --- TYPE DEFINITIONS & HELPERS ---
 interface Message { from: string; text: string; timestamp: string; }
 const simpleJwtDecode = (token: string): { user: { id: string; role: UserRole } } | null => {
     try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         return JSON.parse(jsonPayload);
     } catch (error) { console.error("Invalid token:", error); return null; }
 };
 
-const VideoParticipant = ({ user, students, isLocal = false, localVideoRef }: { 
-    user?: IAgoraRTCRemoteUser, 
-    students: Student[], 
-    isLocal?: boolean,
-    localVideoRef?: React.RefObject<HTMLVideoElement>
-}) => {
+// --- INTEGRATED CHILD COMPONENTS ---
+const VideoParticipant = ({ user, students, isLocal = false, localVideoRef }: { user?: IAgoraRTCRemoteUser; students: Student[]; isLocal?: boolean; localVideoRef?: React.RefObject<HTMLVideoElement> }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     useEffect(() => {
         const targetRef = isLocal ? localVideoRef : videoRef;
         if (targetRef?.current && !isLocal && user?.videoTrack) {
             user.videoTrack.play(targetRef.current);
         }
-        if (!isLocal && user?.audioTrack) {
-            user.audioTrack.play();
-        }
+        if (!isLocal && user?.audioTrack) user.audioTrack.play();
         return () => { if (!isLocal) user?.videoTrack?.stop(); };
     }, [user, isLocal, localVideoRef]);
     const username = isLocal ? 'You' : (students.find(s => String(s.id) === String(user?.uid))?.username || `User...`);
-    const hasVideo = isLocal || user?.videoTrack;
     return (
         <div className="relative bg-slate-800/50 rounded-md overflow-hidden aspect-video">
-            {hasVideo ? (
-                <video ref={isLocal ? localVideoRef : videoRef} autoPlay playsInline muted={isLocal} className="w-full h-full object-cover" />
-            ) : (
-                <div className="w-full h-full flex items-center justify-center"><User className="h-6 w-6 text-slate-500" /></div>
-            )}
+            <video ref={isLocal ? localVideoRef : videoRef} autoPlay playsInline muted={isLocal} className="w-full h-full object-cover" />
             <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">{username}</div>
             {!isLocal && !user?.videoTrack && <VideoOff className="absolute top-1 right-1 h-3 w-3 text-slate-500" />}
         </div>
     );
 };
 
+const EnhancedRosterPanel = (props: any) => {
+    const { role, students, viewingMode, setViewingMode, handsRaised, handleSpotlightStudent, controlledStudentId, handleTakeControl, handleOpenChat, unreadMessages, localVideoRef, remoteUsers } = props;
+    return (
+        <div className="h-full flex flex-col bg-slate-900/30 backdrop-blur-sm">
+            <div className="p-3 border-b border-slate-700/50">
+                <h3 className="font-semibold text-slate-200 text-sm uppercase tracking-wider">Participants ({1 + remoteUsers.length})</h3>
+            </div>
+            <div className="flex-grow overflow-y-auto p-2 space-y-2">
+                <VideoParticipant isLocal localVideoRef={localVideoRef} students={students} />
+                {remoteUsers.map((user: IAgoraRTCRemoteUser) => (
+                    <VideoParticipant key={user.uid} user={user} students={students} />
+                ))}
+            </div>
+            {role === 'teacher' && (
+                <div className="flex-shrink-0 border-t border-slate-700/50">
+                    <div className="p-3 border-b border-slate-700/50"><h3 className="font-semibold text-slate-200 text-sm uppercase tracking-wider">Student Roster</h3></div>
+                    <div className="flex-grow overflow-y-auto p-2 space-y-1">
+                        {students.map((student: Student) => (
+                            <div key={student.id} className="p-2 rounded-lg bg-slate-800/30 border border-slate-700/50">
+                                <p>{student.username}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 // --- MAIN COMPONENT ---
 const LiveTutorialPage: React.FC = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
     const token = localStorage.getItem('authToken');
-    
-    // --- STATE MANAGEMENT ---
+
     const [role, setRole] = useState<UserRole>('unknown');
     const [students, setStudents] = useState<Student[]>([]);
     const [isConnected, setIsConnected] = useState(false);
@@ -110,7 +125,6 @@ const LiveTutorialPage: React.FC = () => {
     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
     const [isStudentChatOpen, setIsStudentChatOpen] = useState(false);
 
-    // --- REFS ---
     const ws = useRef<WebSocket | null>(null);
     const agoraClient = useRef<IAgoraRTCClient | null>(null);
     const localTracks = useRef<{ videoTrack: ILocalVideoTrack, audioTrack: ILocalAudioTrack } | null>(null);
@@ -121,13 +135,13 @@ const LiveTutorialPage: React.FC = () => {
     const roleRef = useRef(role);
     const teacherIdRef = useRef(teacherId);
     const activeChatStudentIdRef = useRef(activeChatStudentId);
+    const decodedToken = token ? simpleJwtDecode(token) : null;
     const currentUserId = decodedToken?.user?.id || null;
-    
+
     useEffect(() => { roleRef.current = role; }, [role]);
     useEffect(() => { teacherIdRef.current = teacherId; }, [teacherId]);
     useEffect(() => { activeChatStudentIdRef.current = activeChatStudentId; }, [activeChatStudentId]);
 
-    // --- COMPUTED STATE ---
     const displayedWorkspace = (() => {
         if (spotlightedStudentId && spotlightWorkspace) return spotlightWorkspace;
         if (role === 'teacher' && viewingMode !== 'teacher') return studentHomeworkStates.get(viewingMode) || { files: [], activeFileName: '' };
@@ -138,7 +152,7 @@ const LiveTutorialPage: React.FC = () => {
     const isTeacherControllingThisStudent = isTeacherViewingStudent && controlledStudentId === viewingMode;
     const isEditorReadOnly = !isConnected || (role === 'student' && (isFrozen || !!spotlightedStudentId)) || (isTeacherViewingStudent && !isTeacherControllingThisStudent);
 
-    // --- SINGLE UNIFIED INITIALIZATION EFFECT ---
+    // --- UNIFIED INITIALIZATION EFFECT ---
     useEffect(() => {
         if (!token || !sessionId || !currentUserId) { navigate('/login'); return; }
 
@@ -147,27 +161,15 @@ const LiveTutorialPage: React.FC = () => {
         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         agoraClient.current = client;
 
-        socket.onopen = () => {
-            setIsConnected(true);
-            toast.success("Real-time session connected!");
-            joinAgoraChannel();
-        };
-        socket.onclose = (event) => {
-            setIsConnected(false);
-            console.log("WebSocket closed:", event.code, event.reason);
-            toast.error("Disconnected from live session.");
-        };
-        socket.onerror = (error) => {
-            console.error("WebSocket Error:", error);
-            setIsConnected(false);
-            toast.error("Connection error occurred.");
-        };
+        socket.onopen = () => { setIsConnected(true); toast.success("Real-time session connected!"); joinAgoraChannel(); };
+        socket.onclose = () => { setIsConnected(false); toast.error("Real-time session disconnected."); };
+        socket.onerror = (err) => { console.error("WebSocket Error:", err); setIsConnected(false); toast.error("A real-time connection error occurred."); };
         initializeWebSocketEvents(socket);
 
         const joinAgoraChannel = async () => {
             try {
                 const agoraAppId = import.meta.env.VITE_AGORA_APP_ID;
-                if (!agoraAppId) throw new Error("Agora App ID missing.");
+                if (!agoraAppId) throw new Error("Agora App ID is not configured.");
                 const response = await apiClient.get(`/api/sessions/${sessionId}/generate-token`);
                 const { token: agoraToken, uid } = response.data;
                 await client.join(agoraAppId, sessionId, agoraToken, uid);
@@ -212,12 +214,10 @@ const LiveTutorialPage: React.FC = () => {
         };
     }, [sessionId, currentUserId, navigate, token]);
 
-    // --- OTHER EFFECTS ---
     useEffect(() => {
-        if (role === 'teacher') {
-            apiClient.get('/api/lessons/teacher/list').then(res => setAvailableLessons(res.data || []));
-        }
+        if (role === 'teacher') apiClient.get('/api/lessons/teacher/list').then(res => setAvailableLessons(res.data || []));
     }, [role]);
+
     useEffect(() => {
         if (term.current) {
             const output = (role === 'teacher' && viewingMode === 'teacher') ? teacherTerminalOutput : (studentHomeworkStates.get(viewingMode)?.terminalOutput || '');
