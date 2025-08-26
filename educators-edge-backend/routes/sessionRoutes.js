@@ -3,6 +3,8 @@ const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware'); // Correctly import your middleware
 const db = require('../db'); 
 const { getActiveSessions } = require('../services/sessionStore');
+const sessionController = require('../controllers/sessionController');
+
 
 // @route   GET api/sessions/active
 // @desc    Get active sessions for courses a student is enrolled in
@@ -44,5 +46,8 @@ router.get('/active', verifyToken, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
+
+router.get('/:sessionId/generate-token', verifyToken, sessionController.generateAgoraToken);
+
 
 module.exports = router;
