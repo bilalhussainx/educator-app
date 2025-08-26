@@ -1,11 +1,10 @@
 /*
  * =================================================================
  * FOLDER: src/pages/
- * FILE:   LiveTutorialPage.tsx (DEFINITIVE AGORA VERSION)
+ * FILE:   LiveTutorialPage.tsx (LEARNING-FIRST REDESIGN)
  * =================================================================
- * DESCRIPTION: This is the final, corrected version. It fully replaces
- * all manual WebRTC logic with the robust Agora SDK for multi-party,
- * Zoom-like video chat and removes all obsolete code.
+ * DESCRIPTION: Complete redesign prioritizing the learning experience
+ * with integrated, contextual video communication.
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -29,10 +28,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
+import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
-// import { AlertDialogContent } from "@/components/ui/alert-dialog";
 
 // Import types and configs
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
@@ -52,38 +51,279 @@ const simpleJwtDecode = (token: string) => {
     } catch (error) { console.error("Invalid token:", error); return null; }
 };
 
-// const GlassAlertDialogContent: React.FC<React.ComponentProps<typeof AlertDialogContent>> = ({ className, ...props }) => (
-//     <AlertDialogContent className={cn("bg-slate-900/60 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl", className)} {...props} />
-// );
-
-
-// --- Helper component to render a remote user's video ---
-const RemoteUserPlayer = ({ user, students }: { user: IAgoraRTCRemoteUser, students: Student[] }) => {
+// --- Integrated Video Components ---
+const VideoParticipant = ({ user, students, isLocal = false, size = "sm" }: { 
+    user?: IAgoraRTCRemoteUser, 
+    students: Student[], 
+    isLocal?: boolean,
+    size?: "xs" | "sm" | "md"
+}) => {
     const videoRef = useRef<HTMLVideoElement>(null);
+    
     useEffect(() => {
-        if (videoRef.current && user.videoTrack) {
+        if (!isLocal && videoRef.current && user?.videoTrack) {
             user.videoTrack.play(videoRef.current);
         }
-        if (user.audioTrack) {
+        if (!isLocal && user?.audioTrack) {
             user.audioTrack.play();
         }
         return () => {
-            user.videoTrack?.stop();
+            if (!isLocal) user?.videoTrack?.stop();
         };
-    }, [user]);
+    }, [user, isLocal]);
 
-    const username = students.find(s => String(s.id) === String(user.uid))?.username || `User ${user.uid.toString().substring(0, 4)}`;
+    const username = isLocal ? 'You' : 
+        (students.find(s => String(s.id) === String(user?.uid))?.username || `User ${user?.uid.toString().substring(0, 4)}`);
+
+    const hasVideo = isLocal || user?.videoTrack;
+    const sizeClass = {
+        xs: "h-16 w-20",
+        sm: "h-20 w-28", 
+        md: "h-32 w-40"
+    }[size];
 
     return (
-        <div className="w-full h-full relative bg-black">
-            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-            <div className="absolute bottom-1 left-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded">
+        <div className={cn("relative bg-slate-800/50 rounded-md overflow-hidden border border-slate-600/30", sizeClass)}>
+            {hasVideo ? (
+                <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted={isLocal}
+                    className="w-full h-full object-cover" 
+                />
+            ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                    <User className="h-6 w-6 text-slate-500" />
+                </div>
+            )}
+            <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
                 {username}
             </div>
+            {!hasVideo && (
+                <VideoOff className="absolute top-1 right-1 h-3 w-3 text-slate-500" />
+            )}
         </div>
     );
 };
 
+// --- Enhanced Roster Panel with Integrated Video ---
+const EnhancedRosterPanel = ({ 
+    role, students, viewingMode, setViewingMode, activeHomeworkStudents, handsRaised,
+    spotlightedStudentId, handleSpotlightStudent, assigningToStudentId, setAssigningToStudentId,
+    availableLessons, handleAssignHomework, controlledStudentId, handleTakeControl,
+    handleOpenChat, unreadMessages, localVideoRef, remoteUsers, isVideoCollapsed, setIsVideoCollapsed
+}: {
+    role: UserRole;
+    students: Student[];
+    viewingMode: ViewingMode;
+    setViewingMode: (mode: ViewingMode) => void;
+    activeHomeworkStudents: Set<string>;
+    handsRaised: Set<string>;
+    spotlightedStudentId: string | null;
+    handleSpotlightStudent: (studentId: string | null) => void;
+    assigningToStudentId: string | null;
+    setAssigningToStudentId: (id: string | null) => void;
+    availableLessons: Lesson[];
+    handleAssignHomework: (studentId: string, lessonId: number | string) => void;
+    controlledStudentId: string | null;
+    handleTakeControl: (studentId: string | null) => void;
+    handleOpenChat: (studentId: string) => void;
+    unreadMessages: Set<string>;
+    localVideoRef: React.RefObject<HTMLVideoElement>;
+    remoteUsers: IAgoraRTCRemoteUser[];
+    isVideoCollapsed: boolean;
+    setIsVideoCollapsed: (collapsed: boolean) => void;
+}) => {
+    return (
+        <div className="h-full flex flex-col bg-slate-900/30 backdrop-blur-sm">
+            {/* Video Section - Integrated at top */}
+            <div className="flex-shrink-0 border-b border-slate-700/50">
+                <div className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                        <Users className="h-4 w-4" />
+                        <span>{remoteUsers.length + 1} participants</span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsVideoCollapsed(!isVideoCollapsed)}
+                        className="h-6 w-6 p-0 text-slate-400"
+                    >
+                        {isVideoCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                    </Button>
+                </div>
+                
+                {!isVideoCollapsed && (
+                    <div className="p-3 pt-0 space-y-2">
+                        {/* Local video - always shown first */}
+                        <VideoParticipant isLocal localVideoRef={localVideoRef} students={students} size="sm" />
+                        
+                        {/* Remote participants */}
+                        <div className="grid grid-cols-2 gap-2">
+                            {remoteUsers.slice(0, 4).map(user => (
+                                <VideoParticipant 
+                                    key={user.uid} 
+                                    user={user} 
+                                    students={students}
+                                    size="xs"
+                                />
+                            ))}
+                        </div>
+                        
+                        {remoteUsers.length === 0 && (
+                            <div className="text-center py-2">
+                                <span className="text-xs text-slate-500">Waiting for others to join...</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Student Roster - Enhanced */}
+            {role === 'teacher' && (
+                <div className="flex-grow flex flex-col min-h-0">
+                    <div className="p-3 border-b border-slate-700/50">
+                        <h3 className="font-semibold text-slate-200 text-sm uppercase tracking-wider">Student Roster</h3>
+                    </div>
+                    
+                    <div className="p-2 border-b border-slate-700/50">
+                        <Button 
+                            onClick={() => { setViewingMode('teacher'); handleSpotlightStudent(null); }} 
+                            variant="ghost" 
+                            size="sm"
+                            className={cn(
+                                'w-full justify-start text-sm', 
+                                viewingMode === 'teacher' 
+                                    ? 'bg-cyan-500/10 text-cyan-300 font-semibold' 
+                                    : 'text-slate-300 hover:bg-slate-800/50'
+                            )}
+                        >
+                            <FileIcon className="mr-2 h-4 w-4"/> 
+                            My Workspace
+                        </Button>
+                    </div>
+
+                    <div className="flex-grow overflow-y-auto p-2 space-y-1">
+                        {students.map(student => {
+                            const isControllingThisStudent = controlledStudentId === student.id;
+                            const isViewingThisStudent = viewingMode === student.id;
+                            const isSpotlighted = spotlightedStudentId === student.id;
+                            const hasHandRaised = handsRaised.has(student.id);
+
+                            return (
+                                <div 
+                                    key={student.id} 
+                                    className={cn(
+                                        'rounded-lg border transition-all', 
+                                        hasHandRaised 
+                                            ? 'bg-fuchsia-900/20 border-fuchsia-600/50 animate-pulse' 
+                                            : 'bg-slate-800/30 border-slate-700/50',
+                                        isViewingThisStudent && 'ring-2 ring-cyan-500/50'
+                                    )}
+                                >
+                                    <div className="p-2">
+                                        <Button 
+                                            onClick={() => setViewingMode(student.id)} 
+                                            variant='ghost' 
+                                            size="sm"
+                                            className="w-full justify-start p-1 h-auto"
+                                        >
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-2">
+                                                    {hasHandRaised && <Hand className="h-4 w-4 text-fuchsia-400" />}
+                                                    {isSpotlighted && <Star className="h-4 w-4 text-yellow-400" />}
+                                                    <span className={cn(
+                                                        'text-sm', 
+                                                        isViewingThisStudent ? 'text-cyan-300 font-medium' : 'text-slate-200'
+                                                    )}>
+                                                        {student.username}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    {activeHomeworkStudents.has(student.id) && (
+                                                        <Badge variant="outline" className="h-5 text-xs bg-green-500/10 text-green-400 border-green-500/30">
+                                                            Live
+                                                        </Badge>
+                                                    )}
+                                                    {unreadMessages.has(student.id) && (
+                                                        <div className="h-2 w-2 bg-cyan-400 rounded-full" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Button>
+
+                                        {isViewingThisStudent && (
+                                            <div className="mt-2 pt-2 border-t border-slate-700/50 flex flex-wrap gap-1">
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline"
+                                                    onClick={() => handleSpotlightStudent(isSpotlighted ? null : student.id)}
+                                                    className="text-xs h-6 px-2"
+                                                >
+                                                    {isSpotlighted ? 'Unspot' : 'Spotlight'}
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline"
+                                                    onClick={() => handleTakeControl(isControllingThisStudent ? null : student.id)}
+                                                    className={cn(
+                                                        "text-xs h-6 px-2",
+                                                        isControllingThisStudent && "bg-red-500/10 text-red-400"
+                                                    )}
+                                                >
+                                                    {isControllingThisStudent ? 'Release' : 'Control'}
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline"
+                                                    onClick={() => handleOpenChat(student.id)}
+                                                    className="text-xs h-6 px-2"
+                                                >
+                                                    Chat
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="outline"
+                                                    onClick={() => setAssigningToStudentId(assigningToStudentId === student.id ? null : student.id)}
+                                                    className="text-xs h-6 px-2"
+                                                >
+                                                    Assign
+                                                </Button>
+                                            </div>
+                                        )}
+
+                                        {assigningToStudentId === student.id && (
+                                            <div className="mt-2 pt-2 border-t border-slate-700/50 space-y-1">
+                                                {availableLessons.length > 0 ? (
+                                                    availableLessons.map(lesson => (
+                                                        <Button 
+                                                            key={lesson.id} 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            className="w-full justify-start text-xs h-6 px-2 text-slate-300" 
+                                                            onClick={() => handleAssignHomework(student.id, lesson.id)}
+                                                        >
+                                                            {lesson.title}
+                                                        </Button>
+                                                    ))
+                                                ) : (
+                                                    <p className="text-xs text-slate-500 text-center py-2">
+                                                        No lessons available
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 // --- Main Live Tutorial Page Component ---
 const LiveTutorialPage: React.FC = () => {
@@ -102,8 +342,9 @@ const LiveTutorialPage: React.FC = () => {
     const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);
+    const [isVideoCollapsed, setIsVideoCollapsed] = useState(false);
 
-    // --- APPLICATION STATE (No Obsolete WebRTC State) ---
+    // --- APPLICATION STATE ---
     const [files, setFiles] = useState<CodeFile[]>([]);
     const [activeFileName, setActiveFileName] = useState<string>('');
     const [students, setStudents] = useState<Student[]>([]);
@@ -166,8 +407,6 @@ const LiveTutorialPage: React.FC = () => {
     const isEditorReadOnly = (role === 'student' && (isFrozen || !!spotlightedStudentId)) || (isTeacherViewingStudent && !isTeacherControllingThisStudent);
     
     // --- Effects ---
-
-    // Unified Initialization and Cleanup Effect for WebSocket, Agora, and Terminal
     useEffect(() => {
         if (!token || !sessionId || !currentUserId) {
             navigate('/login');
@@ -296,7 +535,6 @@ const LiveTutorialPage: React.FC = () => {
         }, 0);
         return () => clearTimeout(timeoutId);
     }, [role, viewingMode, teacherTerminalOutput, spotlightedStudentId, spotlightWorkspace, studentHomeworkStates, students, controlledStudentId]);
-
 
     // --- Handlers and Functions ---
     const sendWsMessage = (type: string, payload?: object) => {
@@ -519,138 +757,252 @@ const LiveTutorialPage: React.FC = () => {
     }
     
     return (
-        <div className="w-full h-screen flex flex-col bg-[#0a091a] text-white font-sans overflow-hidden">
+        <div className="w-full h-screen flex flex-col bg-slate-950 text-white font-sans overflow-hidden">
             <Toaster theme="dark" richColors position="top-right" />
-            <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(ellipse_at_center,white,transparent_70%)]"></div>
-
-            <header className="relative z-20 flex-shrink-0 flex justify-between items-center px-4 py-2 border-b border-slate-800 bg-slate-950/50 backdrop-blur-xl">
-                <h1 className="text-xl font-bold text-slate-100">CoreZenith Command Deck</h1>
-                <div className="flex items-center gap-2 font-semibold">
-                    <Badge className={cn('text-white', role === 'teacher' ? 'bg-cyan-500 text-slate-900' : 'bg-slate-700')}>{role.toUpperCase()}</Badge>
-                    {spotlightedStudentId && <Badge className="animate-pulse bg-fuchsia-600 border-fuchsia-500 text-white"><Star className="mr-2 h-4 w-4" />SPOTLIGHT: {students.find(s => s.id === spotlightedStudentId)?.username || 'Student'}</Badge>}
-                    {isTeacherControllingThisStudent && <Badge className="animate-pulse bg-fuchsia-600 border-fuchsia-500 text-white"><Lock className="mr-2 h-4 w-4" />CONTROLLING: {students.find(s => s.id === viewingMode)?.username || 'Student'}</Badge>}
-                    {role === 'teacher' && !spotlightedStudentId && !isTeacherControllingThisStudent && <Badge variant="outline" className="border-slate-600 text-slate-300">Viewing: {viewingMode === 'teacher' ? 'My Workspace' : students.find(s => s.id === viewingMode)?.username || 'Student'}</Badge>}
-                    {role === 'student' && <Button size="sm" onClick={handleRaiseHand} disabled={!isConnected}  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold"><Hand className="mr-2 h-4 w-4" />Raise Hand</Button>}
-                    {role === 'student' && <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} disabled={!isConnected} className="bg-slate-700 hover:bg-slate-600 text-white"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button>}
-                    {role === 'teacher' && <Button size="sm" onClick={handleToggleFreeze} className={cn('font-bold text-white', isFrozen ? 'bg-red-600 hover:bg-red-500' : 'bg-fuchsia-600 hover:bg-fuchsia-500')}><Lock className="mr-2 h-4 w-4" />{isFrozen ? "Unfreeze All" : "Freeze All"}</Button>}
-                    {role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} className="bg-slate-700 hover:bg-slate-600 text-white"><Brush className="mr-2 h-4 w-4" />{isWhiteboardVisible ? "Hide Board" : "Show Board"}</Button>}
-                    {isWhiteboardVisible && role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} className="bg-red-600 hover:bg-red-500 text-white"><Trash2 className="mr-2 h-4 w-4" />Clear</Button>}
-                    
-                    <div className="flex items-center gap-1 border-l border-slate-600 pl-2 ml-2">
-                        <Button size="sm" onClick={toggleMute} className={cn('text-white', !isMuted ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
-                            {!isMuted ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-                        </Button>
-                        <Button size="sm" onClick={toggleCamera} className={cn('text-white', !isCameraOff ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
-                            {!isCameraOff ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
-                        </Button>
+            
+            {/* Streamlined Header */}
+            <header className="flex-shrink-0 flex justify-between items-center px-6 py-3 bg-slate-900/80 backdrop-blur-sm border-b border-slate-700">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-lg font-bold text-slate-100">CoreZenith Live Session</h1>
+                    <div className="flex items-center gap-3">
+                        <Badge className={cn('font-medium', role === 'teacher' ? 'bg-cyan-600' : 'bg-purple-600')}>
+                            {role.toUpperCase()}
+                        </Badge>
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                            <div className={cn('h-2 w-2 rounded-full', isConnected ? 'bg-green-400' : 'bg-red-500')}></div>
+                            {isConnected ? 'Connected' : 'Offline'}
+                        </div>
                     </div>
                 </div>
-                <Button onClick={() => navigate('/dashboard')} className="bg-red-600 hover:bg-red-500 text-white font-bold"><PhoneOff className="mr-2 h-4 w-4" /> End Session</Button>
+
+                <div className="flex items-center gap-3">
+                    {/* Status Indicators */}
+                    {spotlightedStudentId && (
+                        <Badge className="bg-yellow-600/20 text-yellow-300 border-yellow-600/30">
+                            <Star className="mr-1 h-3 w-3" />
+                            Spotlight: {students.find(s => s.id === spotlightedStudentId)?.username}
+                        </Badge>
+                    )}
+                    {isTeacherControllingThisStudent && (
+                        <Badge className="bg-red-600/20 text-red-300 border-red-600/30">
+                            <Lock className="mr-1 h-3 w-3" />
+                            Controlling: {students.find(s => s.id === viewingMode)?.username}
+                        </Badge>
+                    )}
+
+                    {/* Student Actions */}
+                    {role === 'student' && (
+                        <>
+                            <Button size="sm" onClick={handleRaiseHand} className="bg-purple-600 hover:bg-purple-500">
+                                <Hand className="mr-2 h-4 w-4" />Raise Hand
+                            </Button>
+                            <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} variant="outline">
+                                <MessageCircle className="mr-2 h-4 w-4" />Chat
+                            </Button>
+                        </>
+                    )}
+
+                    {/* Teacher Actions */}
+                    {role === 'teacher' && (
+                        <>
+                            <Button size="sm" onClick={handleToggleFreeze} variant={isFrozen ? "destructive" : "outline"}>
+                                <Lock className="mr-2 h-4 w-4" />{isFrozen ? "Unfreeze" : "Freeze"}
+                            </Button>
+                            <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} variant="outline">
+                                <Brush className="mr-2 h-4 w-4" />Whiteboard
+                            </Button>
+                            {isWhiteboardVisible && (
+                                <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} variant="destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />Clear
+                                </Button>
+                            )}
+                        </>
+                    )}
+
+                    {/* Media Controls */}
+                    <div className="flex items-center gap-1 border-l border-slate-600 pl-3">
+                        <Button size="sm" onClick={toggleMute} variant={isMuted ? "destructive" : "outline"}>
+                            {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                        </Button>
+                        <Button size="sm" onClick={toggleCamera} variant={isCameraOff ? "destructive" : "outline"}>
+                            {isCameraOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+                        </Button>
+                    </div>
+
+                    <Button onClick={() => navigate('/dashboard')} variant="destructive">
+                        <PhoneOff className="mr-2 h-4 w-4" />End Session
+                    </Button>
+                </div>
             </header>
 
+            {/* Homework Assignment Alert */}
             {pendingHomework && role === 'student' && !isDoingHomework && (
-                <Alert className="relative z-10 rounded-none border-0 border-b border-blue-500/50 bg-blue-950/40 text-blue-200">
-                    <AlertTitle className="font-bold text-white">New Assignment Received!</AlertTitle>
-                    <AlertDescription className="flex items-center justify-between text-slate-200">
-                        Your instructor has assigned a new lesson: <strong>{pendingHomework.title}</strong>
-                        <Button size="sm" onClick={handleStartHomework} className="bg-blue-500 hover:bg-blue-400 text-white font-bold">Start Lesson<ChevronRight className="ml-2 h-4 w-4" /></Button>
+                <Alert className="rounded-none border-0 border-b border-blue-500/50 bg-blue-950/40">
+                    <AlertTitle>New Assignment Available</AlertTitle>
+                    <AlertDescription className="flex items-center justify-between">
+                        <span>Lesson: <strong>{pendingHomework.title}</strong></span>
+                        <Button size="sm" onClick={handleStartHomework} className="bg-blue-600 hover:bg-blue-500">
+                            Start Now <ChevronRight className="ml-2 h-4 w-4" />
+                        </Button>
                     </AlertDescription>
                 </Alert>
             )}
 
-            <main className="relative z-10 flex-grow flex flex-row overflow-hidden p-4 gap-4">
-                <PanelGroup direction="horizontal">
-                    <Panel defaultSize={75} minSize={30} className="flex flex-col gap-4">
-                        <Panel defaultSize={50} minSize={20} className="w-full h-full rounded-lg border border-slate-700/80 bg-black overflow-hidden grid grid-cols-2 grid-rows-2 gap-1 p-1">
-                            <div className="relative bg-slate-900 rounded-md overflow-hidden">
-                                <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                                <div className="absolute bottom-1 left-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded">You</div>
-                            </div>
-                            {remoteUsers.map(user => (
-                                <div key={user.uid} className="relative bg-slate-900 rounded-md overflow-hidden">
-                                    <RemoteUserPlayer user={user} students={students} />
-                                </div>
-                            ))}
-                        </Panel>
-
-                        <Panel defaultSize={50} minSize={20} className="flex flex-col">
-                            <PanelGroup direction="vertical">
-                                <Panel defaultSize={isWhiteboardVisible ? 60 : 100} minSize={20}>
-                                    <PanelGroup direction="horizontal" className="w-full h-full rounded-lg border border-slate-700/80 bg-slate-900/40 backdrop-blur-lg overflow-hidden">
-                                        <Panel defaultSize={20} minSize={15} className="flex flex-col bg-slate-950/20">
-                                            <div className="p-3 border-b border-slate-800 flex justify-between items-center">
-                                                <h2 className="font-semibold text-sm uppercase tracking-wider text-slate-300">Explorer</h2>
-                                                {role === 'teacher' && viewingMode === 'teacher' && <Button variant="ghost" size="icon" onClick={handleAddFile} className="h-7 w-7 text-slate-400 hover:bg-slate-700"><FilePlus className="h-4 w-4" /></Button>}
+            {/* Main Content - Learning First Layout */}
+            <main className="flex-grow flex overflow-hidden">
+                <PanelGroup direction="horizontal" className="w-full h-full">
+                    {/* Primary Learning Area */}
+                    <Panel defaultSize={75} minSize={60} className="flex flex-col">
+                        <div className="flex-grow bg-slate-900/30 border-r border-slate-700/50">
+                            <PanelGroup direction="vertical" className="h-full">
+                                {/* Code Editor Area */}
+                                <Panel defaultSize={isWhiteboardVisible ? 60 : 70} minSize={40}>
+                                    <PanelGroup direction="horizontal" className="h-full">
+                                        {/* File Explorer */}
+                                        <Panel defaultSize={20} minSize={15} className="bg-slate-950/30 border-r border-slate-700/30">
+                                            <div className="p-3 border-b border-slate-700/30 flex items-center justify-between">
+                                                <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Files</h3>
+                                                {role === 'teacher' && viewingMode === 'teacher' && (
+                                                    <Button variant="ghost" size="sm" onClick={handleAddFile} className="h-6 w-6 p-0">
+                                                        <FilePlus className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                             </div>
-                                            <div className="flex-grow overflow-y-auto py-1 px-1">
+                                            <div className="p-2 space-y-1">
                                                 {displayedWorkspace.files.map(file => (
-                                                    <div key={file.name} onClick={() => !isEditorReadOnly && handleActiveFileChange(file.name)} 
-                                                        className={cn('flex items-center px-2 py-1.5 rounded-md text-sm transition-colors', isEditorReadOnly ? 'cursor-not-allowed text-slate-500' : 'cursor-pointer text-slate-200 hover:bg-slate-800', displayedWorkspace.activeFileName === file.name && 'bg-cyan-500/10 text-cyan-300 font-semibold')}>
-                                                        <FileIcon className="h-4 w-4 mr-2.5 text-slate-500" /><span className="truncate">{file.name}</span>
-                                                    </div>
+                                                    <button
+                                                        key={file.name}
+                                                        onClick={() => !isEditorReadOnly && handleActiveFileChange(file.name)}
+                                                        disabled={isEditorReadOnly}
+                                                        className={cn(
+                                                            'w-full flex items-center px-2 py-1.5 rounded text-sm transition-colors text-left',
+                                                            isEditorReadOnly ? 'text-slate-500 cursor-not-allowed' : 'text-slate-300 hover:bg-slate-800/50',
+                                                            displayedWorkspace.activeFileName === file.name && 'bg-cyan-500/10 text-cyan-300 font-medium'
+                                                        )}
+                                                    >
+                                                        <FileIcon className="h-4 w-4 mr-2 opacity-60" />
+                                                        {file.name}
+                                                    </button>
                                                 ))}
                                             </div>
                                         </Panel>
-                                        <PanelResizeHandle className="w-2 bg-slate-800/50 hover:bg-slate-700/80 transition-colors" />
-                                        <Panel defaultSize={80} minSize={30}>
-                                            <PanelGroup direction="vertical">
-                                                <Panel defaultSize={70} minSize={20} className="overflow-hidden">
-                                                    <div className="h-full flex flex-col">
-                                                        <div className="p-2 flex justify-between items-center bg-slate-950/30 border-b border-slate-800">
-                                                            <Select value={activeFile?.language || 'plaintext'} onValueChange={handleLanguageChange} disabled={isEditorReadOnly}>
-                                                                <SelectTrigger className="w-[180px] bg-slate-800 border-slate-700 text-slate-200 font-semibold"><SelectValue /></SelectTrigger>
-                                                                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200"><SelectItem value="javascript">JavaScript</SelectItem><SelectItem value="python">Python</SelectItem><SelectItem value="java">Java</SelectItem><SelectItem value="ruby">Ruby</SelectItem><SelectItem value="go">Go</SelectItem></SelectContent>
-                                                            </Select>
-                                                            {role === 'teacher' && viewingMode === 'teacher' && <Button onClick={handleRunCode} size="sm" disabled={!activeFile} className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"><Play className="mr-2 h-4 w-4" /> Run</Button>}
-                                                        </div>
-                                                        <Editor height="100%" theme="vs-dark" path={activeFile?.name} language={activeFile?.language} value={activeFile?.content} onChange={handleWorkspaceChange} options={{ readOnly: isEditorReadOnly, fontSize: 14 }} />
-                                                    </div>
-                                                </Panel>
-                                                <PanelResizeHandle className="h-2 bg-slate-800/50 hover:bg-slate-700/80 transition-colors" />
-                                                <Panel defaultSize={30} minSize={10}>
-                                                    <div className="h-full flex flex-col bg-[#0D1117]">
-                                                        <div className="p-2 bg-slate-800/80 text-xs font-semibold flex items-center border-b-2 border-t border-slate-700 text-slate-300 tracking-wider uppercase"><TerminalIcon className="h-4 w-4 mr-2" />Terminal</div>
-                                                        <div ref={terminalRef} className="flex-grow p-2 overflow-hidden" />
-                                                    </div>
-                                                </Panel>
-                                            </PanelGroup>
+                                        
+                                        <PanelResizeHandle className="w-1 bg-slate-700/30 hover:bg-cyan-500/50" />
+                                        
+                                        {/* Code Editor */}
+                                        <Panel defaultSize={80} minSize={50}>
+                                            <div className="h-full flex flex-col">
+                                                <div className="flex items-center justify-between px-4 py-2 bg-slate-800/30 border-b border-slate-700/30">
+                                                    <Select value={activeFile?.language || 'plaintext'} onValueChange={handleLanguageChange} disabled={isEditorReadOnly}>
+                                                        <SelectTrigger className="w-40 h-8 bg-slate-700 border-slate-600">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="javascript">JavaScript</SelectItem>
+                                                            <SelectItem value="python">Python</SelectItem>
+                                                            <SelectItem value="java">Java</SelectItem>
+                                                            <SelectItem value="ruby">Ruby</SelectItem>
+                                                            <SelectItem value="go">Go</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {role === 'teacher' && viewingMode === 'teacher' && (
+                                                        <Button onClick={handleRunCode} size="sm" disabled={!activeFile} className="bg-green-600 hover:bg-green-500">
+                                                            <Play className="mr-2 h-4 w-4" /> Run
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                                <div className="flex-grow">
+                                                    <Editor 
+                                                        height="100%" 
+                                                        theme="vs-dark" 
+                                                        path={activeFile?.name} 
+                                                        language={activeFile?.language} 
+                                                        value={activeFile?.content} 
+                                                        onChange={handleWorkspaceChange} 
+                                                        options={{ 
+                                                            readOnly: isEditorReadOnly, 
+                                                            fontSize: 14,
+                                                            minimap: { enabled: false },
+                                                            scrollBeyondLastLine: false
+                                                        }} 
+                                                    />
+                                                </div>
+                                            </div>
                                         </Panel>
                                     </PanelGroup>
                                 </Panel>
-                                {isWhiteboardVisible && ( <>
-                                    <PanelResizeHandle className="h-2 bg-slate-800/50 hover:bg-slate-700/80 transition-colors" />
-                                    <Panel defaultSize={40} minSize={20} className="rounded-b-lg border-t-2 border-slate-700/80 bg-slate-900/40 backdrop-blur-lg">
-                                        <WhiteboardPanel lines={whiteboardLines} isTeacher={role === 'teacher'} onDraw={handleDraw} />
-                                    </Panel>
-                                </>)}
+                                
+                                <PanelResizeHandle className="h-1 bg-slate-700/30 hover:bg-cyan-500/50" />
+                                
+                                {/* Terminal */}
+                                <Panel defaultSize={isWhiteboardVisible ? 25 : 30} minSize={20}>
+                                    <div className="h-full bg-slate-950">
+                                        <div className="flex items-center px-4 py-2 bg-slate-800 border-b border-slate-700">
+                                            <TerminalIcon className="h-4 w-4 mr-2 text-slate-400" />
+                                            <span className="text-sm font-medium text-slate-300">Terminal</span>
+                                            {isEditorReadOnly && (
+                                                <Badge className="ml-2 bg-red-500/10 text-red-400 border-red-500/20 text-xs">
+                                                    Read Only
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <div ref={terminalRef} className="h-[calc(100%-40px)]" />
+                                    </div>
+                                </Panel>
+                                
+                                {/* Whiteboard */}
+                                {isWhiteboardVisible && (
+                                    <>
+                                        <PanelResizeHandle className="h-1 bg-slate-700/30 hover:bg-cyan-500/50" />
+                                        <Panel defaultSize={15} minSize={10}>
+                                            <WhiteboardPanel 
+                                                lines={whiteboardLines} 
+                                                isTeacher={role === 'teacher'} 
+                                                onDraw={handleDraw} 
+                                            />
+                                        </Panel>
+                                    </>
+                                )}
                             </PanelGroup>
-                        </Panel>
+                        </div>
                     </Panel>
-                    <PanelResizeHandle className="w-2 bg-slate-800/50 hover:bg-slate-700/80 transition-colors" />
-                    <Panel defaultSize={25} minSize={20} maxSize={40} className="rounded-lg border border-slate-700/80 bg-slate-900/40 backdrop-blur-lg overflow-hidden">
-                        <RosterPanel
+                    
+                    <PanelResizeHandle className="w-1 bg-slate-700/30 hover:bg-cyan-500/50" />
+                    
+                    {/* Right Sidebar - Enhanced Roster with Integrated Video */}
+                    <Panel defaultSize={25} minSize={20} maxSize={35}>
+                        <EnhancedRosterPanel
                             role={role} students={students} viewingMode={viewingMode} setViewingMode={setViewingMode}
-                            activeHomeworkStudents={activeHomeworkStudents} handsRaised={handsRaised} handleViewStudentCam={handleViewStudentCam}
+                            activeHomeworkStudents={activeHomeworkStudents} handsRaised={handsRaised}
                             spotlightedStudentId={spotlightedStudentId} handleSpotlightStudent={handleSpotlightStudent}
                             assigningToStudentId={assigningToStudentId} setAssigningToStudentId={setAssigningToStudentId}
                             availableLessons={availableLessons} handleAssignHomework={handleAssignHomework}
-                            isMuted={isMuted} toggleMute={toggleMute} isCameraOff={isCameraOff} toggleCamera={toggleCamera}
                             controlledStudentId={controlledStudentId} handleTakeControl={handleTakeControl}
-                            handleOpenChat={handleOpenChat} unreadMessages={unreadMessages} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} remoteStream={null} />
+                            handleOpenChat={handleOpenChat} unreadMessages={unreadMessages}
+                            localVideoRef={localVideoRef} remoteUsers={remoteUsers}
+                            isVideoCollapsed={isVideoCollapsed} setIsVideoCollapsed={setIsVideoCollapsed}
+                        />
                     </Panel>
                 </PanelGroup>
             </main>
+
+            {/* Chat Panels */}
             {role === 'teacher' && activeChatStudentId && (
                 <ChatPanel
-                    messages={chatMessages.get(activeChatStudentId) || []} currentUserId={currentUserId}
+                    messages={chatMessages.get(activeChatStudentId) || []} 
+                    currentUserId={currentUserId}
                     chattingWithUsername={students.find(s => s.id === activeChatStudentId)?.username || 'Student'}
-                    onSendMessage={handleSendMessage} onClose={() => setActiveChatStudentId(null)}
+                    onSendMessage={handleSendMessage} 
+                    onClose={() => setActiveChatStudentId(null)}
                 />
             )}
             {role === 'student' && isStudentChatOpen && teacherId && (
-                 <ChatPanel
-                    messages={chatMessages.get(teacherId) || []} currentUserId={currentUserId}
-                    chattingWithUsername={"Teacher"} onSendMessage={handleSendMessage} onClose={() => setIsStudentChatOpen(false)}
+                <ChatPanel
+                    messages={chatMessages.get(teacherId) || []} 
+                    currentUserId={currentUserId}
+                    chattingWithUsername="Teacher" 
+                    onSendMessage={handleSendMessage} 
+                    onClose={() => setIsStudentChatOpen(false)}
                 />
             )}
         </div>
@@ -658,6 +1010,666 @@ const LiveTutorialPage: React.FC = () => {
 };
 
 export default LiveTutorialPage;
+// /*
+//  * =================================================================
+//  * FOLDER: src/pages/
+//  * FILE:   LiveTutorialPage.tsx (DEFINITIVE AGORA VERSION)
+//  * =================================================================
+//  * DESCRIPTION: This is the final, corrected version. It fully replaces
+//  * all manual WebRTC logic with the robust Agora SDK for multi-party,
+//  * Zoom-like video chat and removes all obsolete code.
+//  */
+// import React, { useState, useEffect, useRef } from 'react';
+// import { useParams, useNavigate } from 'react-router-dom';
+// import Editor from '@monaco-editor/react';
+// import { Terminal } from 'xterm';
+// import { FitAddon } from 'xterm-addon-fit';
+// import 'xterm/css/xterm.css';
+// import { cn } from "@/lib/utils";
+
+// // --- AGORA SDK IMPORT ---
+// import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
+
+// // Import child components
+// import { HomeworkView } from '../components/classroom/HomeworkView';
+// import { RosterPanel } from '../components/classroom/RosterPanel';
+// import { WhiteboardPanel, Line } from '../components/classroom/WhiteboardPanel';
+// import { ChatPanel } from '../components/classroom/ChatPanel';
+
+// // Import shadcn components and icons
+// import { Button } from "@/components/ui/button";
+// import { Badge } from "@/components/ui/badge";
+// import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff } from 'lucide-react';
+// import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+// import { toast, Toaster } from 'sonner';
+// // import { AlertDialogContent } from "@/components/ui/alert-dialog";
+
+// // Import types and configs
+// import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
+// import apiClient from '../services/apiClient';
+// import { getWebSocketUrl } from '../config/websocket';
+
+// // --- Type Definitions and Helpers ---
+// interface Message { from: string; text: string; timestamp: string; }
+// const simpleJwtDecode = (token: string) => {
+//     try {
+//         const base64Url = token.split('.')[1];
+//         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+//         const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+//             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+//         }).join(''));
+//         return JSON.parse(jsonPayload);
+//     } catch (error) { console.error("Invalid token:", error); return null; }
+// };
+
+// // const GlassAlertDialogContent: React.FC<React.ComponentProps<typeof AlertDialogContent>> = ({ className, ...props }) => (
+// //     <AlertDialogContent className={cn("bg-slate-900/60 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl", className)} {...props} />
+// // );
+
+
+// // --- Helper component to render a remote user's video ---
+// const RemoteUserPlayer = ({ user, students }: { user: IAgoraRTCRemoteUser, students: Student[] }) => {
+//     const videoRef = useRef<HTMLVideoElement>(null);
+//     useEffect(() => {
+//         if (videoRef.current && user.videoTrack) {
+//             user.videoTrack.play(videoRef.current);
+//         }
+//         if (user.audioTrack) {
+//             user.audioTrack.play();
+//         }
+//         return () => {
+//             user.videoTrack?.stop();
+//         };
+//     }, [user]);
+
+//     const username = students.find(s => String(s.id) === String(user.uid))?.username || `User ${user.uid.toString().substring(0, 4)}`;
+
+//     return (
+//         <div className="w-full h-full relative bg-black">
+//             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+//             <div className="absolute bottom-1 left-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded">
+//                 {username}
+//             </div>
+//         </div>
+//     );
+// };
+
+
+// // --- Main Live Tutorial Page Component ---
+// const LiveTutorialPage: React.FC = () => {
+//     const { sessionId } = useParams<{ sessionId: string }>();
+//     const navigate = useNavigate();
+//     const token = localStorage.getItem('authToken');
+
+//     // --- State Management ---
+//     const decodedToken = token ? simpleJwtDecode(token) : null;
+//     const currentUserId = decodedToken?.user?.id || null;
+//     const [role, setRole] = useState<UserRole>(decodedToken?.user?.role || 'unknown');
+    
+//     // --- AGORA STATE ---
+//     const agoraClient = useRef<IAgoraRTCClient | null>(null);
+//     const localTracks = useRef<{ videoTrack: ILocalVideoTrack, audioTrack: ILocalAudioTrack } | null>(null);
+//     const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
+//     const [isMuted, setIsMuted] = useState(false);
+//     const [isCameraOff, setIsCameraOff] = useState(false);
+
+//     // --- APPLICATION STATE (No Obsolete WebRTC State) ---
+//     const [files, setFiles] = useState<CodeFile[]>([]);
+//     const [activeFileName, setActiveFileName] = useState<string>('');
+//     const [students, setStudents] = useState<Student[]>([]);
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
+//     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
+//     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
+//     const [controlledStudentId, setControlledStudentId] = useState<string | null>(null);
+//     const [isFrozen, setIsFrozen] = useState<boolean>(false);
+//     const [pendingHomework, setPendingHomework] = useState<{ lessonId: string; teacherSessionId: string; title: string; } | null>(() => {
+//         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
+//         return saved ? JSON.parse(saved) : null;
+//     });
+//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
+//     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
+//         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
+//         return saved === 'true';
+//     });
+//     const [homeworkFiles, setHomeworkFiles] = useState<LessonFile[] | null>(() => {
+//         const saved = sessionStorage.getItem(`homeworkFiles_${sessionId}`);
+//         return saved ? JSON.parse(saved) : null;
+//     });
+//     const [activeHomeworkStudents, setActiveHomeworkStudents] = useState<Set<string>>(new Set());
+//     const [handsRaised, setHandsRaised] = useState<Set<string>>(new Set());
+//     const [spotlightedStudentId, setSpotlightedStudentId] = useState<string | null>(null);
+//     const [spotlightWorkspace, setSpotlightWorkspace] = useState<StudentHomeworkState | null>(null);
+//     const [isConnected, setIsConnected] = useState(false);
+//     const [isWhiteboardVisible, setIsWhiteboardVisible] = useState(false);
+//     const [whiteboardLines, setWhiteboardLines] = useState<Line[]>([]);
+//     const [chatMessages, setChatMessages] = useState<Map<string, Message[]>>(new Map());
+//     const [activeChatStudentId, setActiveChatStudentId] = useState<string | null>(null);
+//     const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
+//     const [teacherId, setTeacherId] = useState<string | null>(null);
+//     const [isStudentChatOpen, setIsStudentChatOpen] = useState(false);
+
+//     // --- Refs ---
+//     const ws = useRef<WebSocket | null>(null);
+//     const localVideoRef = useRef<HTMLVideoElement>(null);
+//     const remoteVideoRef = useRef<HTMLVideoElement>(null);
+//     const terminalRef = useRef<HTMLDivElement>(null);
+//     const term = useRef<Terminal | null>(null);
+//     const fitAddon = useRef<FitAddon | null>(null);
+//     const roleRef = useRef(role);
+//     const teacherIdRef = useRef(teacherId);
+//     const activeChatStudentIdRef = useRef(activeChatStudentId);
+
+//     useEffect(() => { roleRef.current = role; }, [role]);
+//     useEffect(() => { teacherIdRef.current = teacherId; }, [teacherId]);
+//     useEffect(() => { activeChatStudentIdRef.current = activeChatStudentId; }, [activeChatStudentId]);
+
+//     // --- Computed State ---
+//     const displayedWorkspace = (() => {
+//         if (spotlightedStudentId && spotlightWorkspace) return spotlightWorkspace;
+//         if (role === 'teacher' && viewingMode !== 'teacher') return studentHomeworkStates.get(viewingMode) || { files: [], activeFileName: '' };
+//         return { files, activeFileName };
+//     })();
+//     const activeFile = displayedWorkspace.files.find(file => file.name === displayedWorkspace.activeFileName);
+//     const isTeacherViewingStudent = role === 'teacher' && viewingMode !== 'teacher';
+//     const isTeacherControllingThisStudent = isTeacherViewingStudent && controlledStudentId === viewingMode;
+//     const isEditorReadOnly = (role === 'student' && (isFrozen || !!spotlightedStudentId)) || (isTeacherViewingStudent && !isTeacherControllingThisStudent);
+    
+//     // --- Effects ---
+
+//     // Unified Initialization and Cleanup Effect for WebSocket, Agora, and Terminal
+//     useEffect(() => {
+//         if (!token || !sessionId || !currentUserId) {
+//             navigate('/login');
+//             return;
+//         }
+
+//         // --- WebSocket Setup ---
+//         const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
+//         console.log("Attempting to connect WebSocket to:", wsUrl);
+//         const socket = new WebSocket(wsUrl);
+//         ws.current = socket;
+//         socket.onopen = () => { setIsConnected(true); toast.success("Connected to live session!"); };
+//         socket.onclose = () => { setIsConnected(false); toast.error("Disconnected from live session."); };
+//         socket.onerror = (err) => { console.error("WebSocket Error:", err); setIsConnected(false); toast.error("A real-time connection error occurred."); };
+//         initializeWebSocketEvents(socket);
+
+//         // --- Agora Setup ---
+//         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+//         agoraClient.current = client;
+
+//         const joinAgoraChannel = async () => {
+//             try {
+//                 const agoraAppId = import.meta.env.VITE_AGORA_APP_ID;
+//                 if (!agoraAppId) {
+//                     throw new Error("Agora App ID is not configured in environment variables.");
+//                 }
+//                 const response = await apiClient.get(`/api/sessions/${sessionId}/generate-token`);
+//                 const { token: agoraToken, uid } = response.data;
+//                 await client.join(agoraAppId, sessionId, agoraToken, uid);
+                
+//                 const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+//                 localTracks.current = { videoTrack, audioTrack };
+                
+//                 if (localVideoRef.current) videoTrack.play(localVideoRef.current);
+//                 await client.publish([audioTrack, videoTrack]);
+//             } catch (error) {
+//                 console.error("Agora Connection Failed:", error);
+//                 toast.error("Could not connect to the video/audio service.");
+//             }
+//         };
+
+//         joinAgoraChannel();
+
+//         client.on('user-published', async (user, mediaType) => {
+//             await client.subscribe(user, mediaType);
+//             if (mediaType === 'video') setRemoteUsers(Array.from(client.remoteUsers));
+//             if (mediaType === 'audio') user.audioTrack?.play();
+//         });
+
+//         client.on('user-left', (_user) => {
+//             setRemoteUsers(Array.from(client.remoteUsers));
+//         });
+
+//         // --- Terminal Setup ---
+//         if (terminalRef.current && !term.current) {
+//             fitAddon.current = new FitAddon();
+//             const newTerm = new Terminal({ cursorBlink: true, theme: { background: '#0D1117', foreground: '#c9d1d9', cursor: '#c9d1d9' }, fontSize: 14 });
+//             newTerm.loadAddon(fitAddon.current);
+//             newTerm.open(terminalRef.current);
+//             fitAddon.current.fit();
+//             newTerm.onData((data) => {
+//                 if (ws.current?.readyState === WebSocket.OPEN && roleRef.current === 'teacher' && viewingMode === 'teacher') {
+//                     sendWsMessage('TERMINAL_IN', { data });
+//                 }
+//             });
+//             term.current = newTerm;
+//         }
+
+//         // --- Cleanup Function ---
+//         return () => {
+//             ws.current?.close();
+//             localTracks.current?.videoTrack.close();
+//             localTracks.current?.audioTrack.close();
+//             client.leave();
+//             term.current?.dispose();
+//         };
+//     }, [sessionId, currentUserId, navigate, token]);
+
+//     useEffect(() => {
+//         if (role === 'student') {
+//             sessionStorage.setItem(`isDoingHomework_${sessionId}`, String(isDoingHomework));
+//             if (pendingHomework) sessionStorage.setItem(`pendingHomework_${sessionId}`, JSON.stringify(pendingHomework));
+//             if (homeworkFiles) sessionStorage.setItem(`homeworkFiles_${sessionId}`, JSON.stringify(homeworkFiles));
+//             if (!isDoingHomework) {
+//                 sessionStorage.removeItem(`homeworkFiles_${sessionId}`);
+//                 sessionStorage.removeItem(`isDoingHomework_${sessionId}`);
+//                 sessionStorage.removeItem(`pendingHomework_${sessionId}`);
+//             }
+//         }
+//     }, [isDoingHomework, homeworkFiles, pendingHomework, role, sessionId]);
+
+//     useEffect(() => { if (pendingHomework && isDoingHomework && !homeworkFiles) handleStartHomework(); }, [pendingHomework, isDoingHomework, homeworkFiles]);
+
+//     useEffect(() => {
+//         if (role === 'teacher') {
+//             apiClient.get('/api/lessons/teacher/list')
+//             .then(res => res.data || [])
+//             .then(setAvailableLessons)
+//             .catch(() => setAvailableLessons([]));
+//         }
+//     }, [role, token]);
+
+//     useEffect(() => {
+//         const timeoutId = setTimeout(() => {
+//             if (!term.current) return;
+//             let outputToDisplay = '';
+//             let isTerminalReadOnly = false;
+//             if (spotlightedStudentId && spotlightWorkspace) {
+//                 const studentName = students.find(s => s.id === spotlightedStudentId)?.username || 'student';
+//                 outputToDisplay = spotlightWorkspace.terminalOutput || `\r\n--- Viewing Spotlight: ${studentName} ---\r\n`;
+//                 isTerminalReadOnly = true;
+//             } else if (role === 'teacher' && viewingMode !== 'teacher') {
+//                 const studentState = studentHomeworkStates.get(viewingMode);
+//                 const studentName = students.find(s => s.id === viewingMode)?.username || 'student';
+//                 outputToDisplay = studentState?.terminalOutput || `\r\n--- Watching ${studentName}'s Terminal ---\r\n`;
+//                 isTerminalReadOnly = !isTeacherControllingThisStudent;
+//             } else {
+//                 outputToDisplay = teacherTerminalOutput;
+//                 isTerminalReadOnly = (role !== 'teacher' || viewingMode !== 'teacher');
+//             }
+//             term.current.clear();
+//             term.current.write(outputToDisplay);
+//             if (term.current.options.disableStdin !== isTerminalReadOnly) {
+//                 term.current.options.disableStdin = isTerminalReadOnly;
+//             }
+//         }, 0);
+//         return () => clearTimeout(timeoutId);
+//     }, [role, viewingMode, teacherTerminalOutput, spotlightedStudentId, spotlightWorkspace, studentHomeworkStates, students, controlledStudentId]);
+
+
+//     // --- Handlers and Functions ---
+//     const sendWsMessage = (type: string, payload?: object) => {
+//         if (ws.current?.readyState === WebSocket.OPEN) {
+//             ws.current.send(JSON.stringify({ type, payload }));
+//         } else {
+//             console.error("WebSocket is not open. Cannot send message:", type, payload);
+//             toast.error("Connection lost. Please refresh the page.");
+//         }
+//     };
+    
+//     const initializeWebSocketEvents = (currentWs: WebSocket) => {
+//         currentWs.onmessage = async (event) => {
+//             const message = JSON.parse(event.data);
+//             switch (message.type) {
+//                 case 'PRIVATE_MESSAGE': {
+//                     const msg = message.payload as Message;
+//                     const chatPartnerId = roleRef.current === 'teacher' ? msg.from : teacherIdRef.current;
+//                     if (!chatPartnerId) return;
+//                     setChatMessages(prev => new Map(prev).set(chatPartnerId, [...(prev.get(chatPartnerId) || []), msg]));
+//                     if (roleRef.current === 'teacher' && activeChatStudentIdRef.current !== msg.from) {
+//                         setUnreadMessages(prev => new Set(prev).add(msg.from));
+//                     }
+//                     break;
+//                 }
+//                 case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
+//                 case 'WHITEBOARD_UPDATE': setWhiteboardLines(prev => [...prev, message.payload.line]); break;
+//                 case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+//                 case 'ROLE_ASSIGNED':
+//                     setRole(message.payload.role);
+//                     setFiles(message.payload.files || []);
+//                     setActiveFileName(message.payload.activeFile || '');
+//                     setSpotlightedStudentId(message.payload.spotlightedStudentId);
+//                     setControlledStudentId(message.payload.controlledStudentId);
+//                     setIsFrozen(message.payload.isFrozen);
+//                     setWhiteboardLines(message.payload.whiteboardLines || []);
+//                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
+//                     setTeacherId(message.payload.teacherId);
+//                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     break;
+//                 case 'TEACHER_WORKSPACE_UPDATE':
+//                     if (roleRef.current === 'student' && !spotlightedStudentId) {
+//                         setFiles(message.payload.files);
+//                         setActiveFileName(message.payload.activeFileName);
+//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     }
+//                     break;
+//                  case 'TEACHER_CODE_DID_UPDATE':
+//                     if (roleRef.current === 'student' && !spotlightedStudentId) {
+//                         setFiles(message.payload.files);
+//                         setActiveFileName(message.payload.activeFileName);
+//                     }
+//                     break;
+//                 case 'TERMINAL_OUT':
+//                      if ((roleRef.current === 'student' && !spotlightedStudentId) || (roleRef.current === 'teacher' && viewingMode === 'teacher')) {
+//                         setTeacherTerminalOutput(prev => prev + message.payload);
+//                      }
+//                     break;
+//                 case 'CONTROL_STATE_UPDATE': setControlledStudentId(message.payload.controlledStudentId); break;
+//                 case 'FREEZE_STATE_UPDATE': setIsFrozen(message.payload.isFrozen); break;
+//                 case 'STUDENT_LIST_UPDATE': setStudents(message.payload.students); break;
+//                 case 'STUDENT_WORKSPACE_UPDATED':
+//                     setStudentHomeworkStates(prev => new Map(prev).set(message.payload.studentId, { ...prev.get(message.payload.studentId), ...message.payload.workspace }));
+//                     if (spotlightedStudentId === message.payload.studentId) setSpotlightWorkspace(message.payload.workspace);
+//                     break;
+//                 case 'HOMEWORK_ASSIGNED': setPendingHomework(message.payload); setHomeworkFiles(null); setIsDoingHomework(false); break;
+//                 case 'HAND_RAISED_LIST_UPDATE': setHandsRaised(new Set(message.payload.studentsWithHandsRaised)); break;
+//                 case 'SPOTLIGHT_UPDATE': setSpotlightedStudentId(message.payload.studentId); setSpotlightWorkspace(message.payload.workspace); break;
+//                 case 'HOMEWORK_JOIN': setActiveHomeworkStudents(prev => new Set(prev).add(message.payload.studentId)); break;
+//                 case 'HOMEWORK_LEAVE': setActiveHomeworkStudents(prev => { const newSet = new Set(prev); newSet.delete(message.payload.studentId); return newSet; }); break;
+//                 case 'HOMEWORK_TERMINAL_UPDATE': 
+//                     setStudentHomeworkStates(prev => { 
+//                         const map = new Map(prev); 
+//                         const s = map.get(message.payload.studentId) || { files: [], activeFileName: '', terminalOutput: '' }; 
+//                         s.terminalOutput += message.payload.output; 
+//                         map.set(message.payload.studentId, s); 
+//                         return map; 
+//                     }); 
+//                     break;
+//             }
+//         };
+//     };
+
+//     const handleStartHomework = async () => {
+//         if (!pendingHomework) return;
+//         if (!homeworkFiles) {
+//             try {
+//                 const stateRes = await apiClient.get(`/api/lessons/${pendingHomework.lessonId}/student-state`);
+//                 setHomeworkFiles(stateRes.data.files || []);
+//             } catch (error) {
+//                 console.error("Error fetching homework state:", error);
+//                 toast.error("A network error occurred.");
+//                 return;
+//             }
+//         }
+//         setIsDoingHomework(true);
+//     };
+
+//     const handleWorkspaceChange = (value: string | undefined) => {
+//         const newCode = value || '';
+//         if (isTeacherControllingThisStudent) {
+//             const studentState = studentHomeworkStates.get(viewingMode);
+//             if (!studentState) return;
+//             const updatedFiles = studentState.files.map(f => f.name === studentState.activeFileName ? { ...f, content: newCode } : f);
+//             sendWsMessage('TEACHER_DIRECT_EDIT', { studentId: viewingMode, workspace: { ...studentState, files: updatedFiles }});
+//         } else if (role === 'teacher' && viewingMode === 'teacher') {
+//             const updatedFiles = files.map(f => f.name === activeFileName ? { ...f, content: newCode } : f);
+//             setFiles(updatedFiles);
+//             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
+//         }
+//     };
+//     const handleLanguageChange = (newLanguage: string) => {
+//          if (isTeacherControllingThisStudent) {
+//             const studentState = studentHomeworkStates.get(viewingMode);
+//             if (!studentState) return;
+//             const updatedFiles = studentState.files.map(f => f.name === studentState.activeFileName ? { ...f, language: newLanguage } : f);
+//             sendWsMessage('TEACHER_DIRECT_EDIT', { studentId: viewingMode, workspace: { ...studentState, files: updatedFiles }});
+//          } else if (role === 'teacher' && viewingMode === 'teacher') {
+//             const updatedFiles = files.map(f => f.name === activeFileName ? { ...f, language: newLanguage } : f);
+//             setFiles(updatedFiles);
+//             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
+//          }
+//     };
+//     const handleActiveFileChange = (fileName: string) => {
+//         if (isTeacherControllingThisStudent) {
+//             const studentState = studentHomeworkStates.get(viewingMode);
+//             if (!studentState) return;
+//             sendWsMessage('TEACHER_DIRECT_EDIT', { studentId: viewingMode, workspace: { ...studentState, activeFileName: fileName }});
+//         } else if (role === 'teacher' && viewingMode === 'teacher') {
+//              setActiveFileName(fileName);
+//              sendWsMessage('TEACHER_CODE_UPDATE', { files, activeFileName: fileName });
+//         }
+//     };
+
+//     const handleAddFile = () => {
+//         if (role !== 'teacher' || viewingMode !== 'teacher') return;
+//         const newFileName = prompt("Enter new file name (e.g., script.js):");
+//         if (newFileName && !files.some(f => f.name === newFileName)) {
+//             let language = 'plaintext';
+//             const extension = newFileName.split('.').pop();
+//             if (extension === 'js') language = 'javascript';
+//             if (extension === 'py') language = 'python';
+//             if (extension === 'java') language = 'java';
+//             const newFile = { name: newFileName, language, content: '' };
+//             const updatedFiles = [...files, newFile];
+//             setFiles(updatedFiles);
+//             setActiveFileName(newFileName);
+//             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName: newFileName });
+//         }
+//     };
+//     const handleAssignHomework = (studentId: string, lessonId: number | string) => {
+//         const lesson = availableLessons.find(l => l.id.toString() === lessonId.toString());
+//         if (lesson) {
+//             sendWsMessage('ASSIGN_HOMEWORK', { studentId, lessonId, teacherSessionId: sessionId, title: lesson.title });
+//             setAssigningToStudentId(null);
+//         }
+//     };
+    
+//     const handleRunCode = () => {
+//         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
+//             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
+//         }
+//     };
+
+//     const handleRaiseHand = () => sendWsMessage('RAISE_HAND');
+//     const handleSpotlightStudent = (studentId: string | null) => sendWsMessage('SPOTLIGHT_STUDENT', { studentId });
+//     const handleTakeControl = (studentId: string | null) => sendWsMessage('TAKE_CONTROL', { studentId });
+//     const handleToggleFreeze = () => sendWsMessage('TOGGLE_FREEZE');
+//     const handleViewStudentCam = async (_studentId: string) => { toast.info("Video connection is already active!"); };
+//     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
+//     const handleOpenChat = (studentId: string) => {
+//         setActiveChatStudentId(studentId);
+//         setUnreadMessages(prev => { const newSet = new Set(prev); newSet.delete(studentId); return newSet; });
+//     };
+
+//     const handleSendMessage = (text: string) => {
+//         const to = role === 'teacher' ? activeChatStudentId : teacherId;
+//         if (!to) { toast.error("Recipient not found."); return; }
+//         const message: Omit<Message, 'timestamp'> = { from: currentUserId!, text };
+//         sendWsMessage('PRIVATE_MESSAGE', { to, text: message.text });
+//         setChatMessages(prev => {
+//             const newMap = new Map(prev);
+//             const fullMessage: Message = { ...message, timestamp: new Date().toISOString() };
+//             newMap.set(to, [...(newMap.get(to) || []), fullMessage]);
+//             return newMap;
+//         });
+//     };
+
+//     const toggleMute = () => { 
+//         if (localTracks.current?.audioTrack) {
+//             const isEnabled = localTracks.current.audioTrack.enabled;
+//             localTracks.current.audioTrack.setEnabled(!isEnabled);
+//             setIsMuted(isEnabled);
+//         }
+//     };
+    
+//     const toggleCamera = () => { 
+//         if (localTracks.current?.videoTrack) {
+//             const isEnabled = localTracks.current.videoTrack.enabled;
+//             localTracks.current.videoTrack.setEnabled(!isEnabled);
+//             setIsCameraOff(isEnabled);
+//         }
+//     };
+
+//     if (role === 'student' && isDoingHomework && pendingHomework && homeworkFiles) {
+//         return <HomeworkView 
+//             lessonId={pendingHomework.lessonId} 
+//             teacherSessionId={pendingHomework.teacherSessionId} 
+//             token={token} 
+//             onLeave={() => {
+//                 sessionStorage.setItem(`isDoingHomework_${sessionId}`, 'false');
+//                 sessionStorage.removeItem(`homeworkFiles_${sessionId}`);
+//                 sessionStorage.removeItem(`pendingHomework_${sessionId}`);
+//                 setTimeout(() => { window.location.reload(); }, 50);
+//             }} 
+//             initialFiles={homeworkFiles} 
+//             onFilesChange={setHomeworkFiles} 
+//             currentUserId={currentUserId} 
+//         />;
+//     }
+    
+//     return (
+//         <div className="w-full h-screen flex flex-col bg-[#0a091a] text-white font-sans overflow-hidden">
+//             <Toaster theme="dark" richColors position="top-right" />
+//             <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(ellipse_at_center,white,transparent_70%)]"></div>
+
+//             <header className="relative z-20 flex-shrink-0 flex justify-between items-center px-4 py-2 border-b border-slate-800 bg-slate-950/50 backdrop-blur-xl">
+//                 <h1 className="text-xl font-bold text-slate-100">CoreZenith Command Deck</h1>
+//                 <div className="flex items-center gap-2 font-semibold">
+//                     <Badge className={cn('text-white', role === 'teacher' ? 'bg-cyan-500 text-slate-900' : 'bg-slate-700')}>{role.toUpperCase()}</Badge>
+//                     {spotlightedStudentId && <Badge className="animate-pulse bg-fuchsia-600 border-fuchsia-500 text-white"><Star className="mr-2 h-4 w-4" />SPOTLIGHT: {students.find(s => s.id === spotlightedStudentId)?.username || 'Student'}</Badge>}
+//                     {isTeacherControllingThisStudent && <Badge className="animate-pulse bg-fuchsia-600 border-fuchsia-500 text-white"><Lock className="mr-2 h-4 w-4" />CONTROLLING: {students.find(s => s.id === viewingMode)?.username || 'Student'}</Badge>}
+//                     {role === 'teacher' && !spotlightedStudentId && !isTeacherControllingThisStudent && <Badge variant="outline" className="border-slate-600 text-slate-300">Viewing: {viewingMode === 'teacher' ? 'My Workspace' : students.find(s => s.id === viewingMode)?.username || 'Student'}</Badge>}
+//                     {role === 'student' && <Button size="sm" onClick={handleRaiseHand} disabled={!isConnected}  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold"><Hand className="mr-2 h-4 w-4" />Raise Hand</Button>}
+//                     {role === 'student' && <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} disabled={!isConnected} className="bg-slate-700 hover:bg-slate-600 text-white"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button>}
+//                     {role === 'teacher' && <Button size="sm" onClick={handleToggleFreeze} className={cn('font-bold text-white', isFrozen ? 'bg-red-600 hover:bg-red-500' : 'bg-fuchsia-600 hover:bg-fuchsia-500')}><Lock className="mr-2 h-4 w-4" />{isFrozen ? "Unfreeze All" : "Freeze All"}</Button>}
+//                     {role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} className="bg-slate-700 hover:bg-slate-600 text-white"><Brush className="mr-2 h-4 w-4" />{isWhiteboardVisible ? "Hide Board" : "Show Board"}</Button>}
+//                     {isWhiteboardVisible && role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} className="bg-red-600 hover:bg-red-500 text-white"><Trash2 className="mr-2 h-4 w-4" />Clear</Button>}
+                    
+//                     <div className="flex items-center gap-1 border-l border-slate-600 pl-2 ml-2">
+//                         <Button size="sm" onClick={toggleMute} className={cn('text-white', !isMuted ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
+//                             {!isMuted ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+//                         </Button>
+//                         <Button size="sm" onClick={toggleCamera} className={cn('text-white', !isCameraOff ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
+//                             {!isCameraOff ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+//                         </Button>
+//                     </div>
+//                 </div>
+//                 <Button onClick={() => navigate('/dashboard')} className="bg-red-600 hover:bg-red-500 text-white font-bold"><PhoneOff className="mr-2 h-4 w-4" /> End Session</Button>
+//             </header>
+
+//             {pendingHomework && role === 'student' && !isDoingHomework && (
+//                 <Alert className="relative z-10 rounded-none border-0 border-b border-blue-500/50 bg-blue-950/40 text-blue-200">
+//                     <AlertTitle className="font-bold text-white">New Assignment Received!</AlertTitle>
+//                     <AlertDescription className="flex items-center justify-between text-slate-200">
+//                         Your instructor has assigned a new lesson: <strong>{pendingHomework.title}</strong>
+//                         <Button size="sm" onClick={handleStartHomework} className="bg-blue-500 hover:bg-blue-400 text-white font-bold">Start Lesson<ChevronRight className="ml-2 h-4 w-4" /></Button>
+//                     </AlertDescription>
+//                 </Alert>
+//             )}
+
+//             <main className="relative z-10 flex-grow flex flex-row overflow-hidden p-4 gap-4">
+//                 <PanelGroup direction="horizontal">
+//                     <Panel defaultSize={75} minSize={30} className="flex flex-col gap-4">
+//                         <Panel defaultSize={50} minSize={20} className="w-full h-full rounded-lg border border-slate-700/80 bg-black overflow-hidden grid grid-cols-2 grid-rows-2 gap-1 p-1">
+//                             <div className="relative bg-slate-900 rounded-md overflow-hidden">
+//                                 <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+//                                 <div className="absolute bottom-1 left-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded">You</div>
+//                             </div>
+//                             {remoteUsers.map(user => (
+//                                 <div key={user.uid} className="relative bg-slate-900 rounded-md overflow-hidden">
+//                                     <RemoteUserPlayer user={user} students={students} />
+//                                 </div>
+//                             ))}
+//                         </Panel>
+
+//                         <Panel defaultSize={50} minSize={20} className="flex flex-col">
+//                             <PanelGroup direction="vertical">
+//                                 <Panel defaultSize={isWhiteboardVisible ? 60 : 100} minSize={20}>
+//                                     <PanelGroup direction="horizontal" className="w-full h-full rounded-lg border border-slate-700/80 bg-slate-900/40 backdrop-blur-lg overflow-hidden">
+//                                         <Panel defaultSize={20} minSize={15} className="flex flex-col bg-slate-950/20">
+//                                             <div className="p-3 border-b border-slate-800 flex justify-between items-center">
+//                                                 <h2 className="font-semibold text-sm uppercase tracking-wider text-slate-300">Explorer</h2>
+//                                                 {role === 'teacher' && viewingMode === 'teacher' && <Button variant="ghost" size="icon" onClick={handleAddFile} className="h-7 w-7 text-slate-400 hover:bg-slate-700"><FilePlus className="h-4 w-4" /></Button>}
+//                                             </div>
+//                                             <div className="flex-grow overflow-y-auto py-1 px-1">
+//                                                 {displayedWorkspace.files.map(file => (
+//                                                     <div key={file.name} onClick={() => !isEditorReadOnly && handleActiveFileChange(file.name)} 
+//                                                         className={cn('flex items-center px-2 py-1.5 rounded-md text-sm transition-colors', isEditorReadOnly ? 'cursor-not-allowed text-slate-500' : 'cursor-pointer text-slate-200 hover:bg-slate-800', displayedWorkspace.activeFileName === file.name && 'bg-cyan-500/10 text-cyan-300 font-semibold')}>
+//                                                         <FileIcon className="h-4 w-4 mr-2.5 text-slate-500" /><span className="truncate">{file.name}</span>
+//                                                     </div>
+//                                                 ))}
+//                                             </div>
+//                                         </Panel>
+//                                         <PanelResizeHandle className="w-2 bg-slate-800/50 hover:bg-slate-700/80 transition-colors" />
+//                                         <Panel defaultSize={80} minSize={30}>
+//                                             <PanelGroup direction="vertical">
+//                                                 <Panel defaultSize={70} minSize={20} className="overflow-hidden">
+//                                                     <div className="h-full flex flex-col">
+//                                                         <div className="p-2 flex justify-between items-center bg-slate-950/30 border-b border-slate-800">
+//                                                             <Select value={activeFile?.language || 'plaintext'} onValueChange={handleLanguageChange} disabled={isEditorReadOnly}>
+//                                                                 <SelectTrigger className="w-[180px] bg-slate-800 border-slate-700 text-slate-200 font-semibold"><SelectValue /></SelectTrigger>
+//                                                                 <SelectContent className="bg-slate-900 border-slate-700 text-slate-200"><SelectItem value="javascript">JavaScript</SelectItem><SelectItem value="python">Python</SelectItem><SelectItem value="java">Java</SelectItem><SelectItem value="ruby">Ruby</SelectItem><SelectItem value="go">Go</SelectItem></SelectContent>
+//                                                             </Select>
+//                                                             {role === 'teacher' && viewingMode === 'teacher' && <Button onClick={handleRunCode} size="sm" disabled={!activeFile} className="bg-slate-700 hover:bg-slate-600 text-white font-semibold"><Play className="mr-2 h-4 w-4" /> Run</Button>}
+//                                                         </div>
+//                                                         <Editor height="100%" theme="vs-dark" path={activeFile?.name} language={activeFile?.language} value={activeFile?.content} onChange={handleWorkspaceChange} options={{ readOnly: isEditorReadOnly, fontSize: 14 }} />
+//                                                     </div>
+//                                                 </Panel>
+//                                                 <PanelResizeHandle className="h-2 bg-slate-800/50 hover:bg-slate-700/80 transition-colors" />
+//                                                 <Panel defaultSize={30} minSize={10}>
+//                                                     <div className="h-full flex flex-col bg-[#0D1117]">
+//                                                         <div className="p-2 bg-slate-800/80 text-xs font-semibold flex items-center border-b-2 border-t border-slate-700 text-slate-300 tracking-wider uppercase"><TerminalIcon className="h-4 w-4 mr-2" />Terminal</div>
+//                                                         <div ref={terminalRef} className="flex-grow p-2 overflow-hidden" />
+//                                                     </div>
+//                                                 </Panel>
+//                                             </PanelGroup>
+//                                         </Panel>
+//                                     </PanelGroup>
+//                                 </Panel>
+//                                 {isWhiteboardVisible && ( <>
+//                                     <PanelResizeHandle className="h-2 bg-slate-800/50 hover:bg-slate-700/80 transition-colors" />
+//                                     <Panel defaultSize={40} minSize={20} className="rounded-b-lg border-t-2 border-slate-700/80 bg-slate-900/40 backdrop-blur-lg">
+//                                         <WhiteboardPanel lines={whiteboardLines} isTeacher={role === 'teacher'} onDraw={handleDraw} />
+//                                     </Panel>
+//                                 </>)}
+//                             </PanelGroup>
+//                         </Panel>
+//                     </Panel>
+//                     <PanelResizeHandle className="w-2 bg-slate-800/50 hover:bg-slate-700/80 transition-colors" />
+//                     <Panel defaultSize={25} minSize={20} maxSize={40} className="rounded-lg border border-slate-700/80 bg-slate-900/40 backdrop-blur-lg overflow-hidden">
+//                         <RosterPanel
+//                             role={role} students={students} viewingMode={viewingMode} setViewingMode={setViewingMode}
+//                             activeHomeworkStudents={activeHomeworkStudents} handsRaised={handsRaised} handleViewStudentCam={handleViewStudentCam}
+//                             spotlightedStudentId={spotlightedStudentId} handleSpotlightStudent={handleSpotlightStudent}
+//                             assigningToStudentId={assigningToStudentId} setAssigningToStudentId={setAssigningToStudentId}
+//                             availableLessons={availableLessons} handleAssignHomework={handleAssignHomework}
+//                             isMuted={isMuted} toggleMute={toggleMute} isCameraOff={isCameraOff} toggleCamera={toggleCamera}
+//                             controlledStudentId={controlledStudentId} handleTakeControl={handleTakeControl}
+//                             handleOpenChat={handleOpenChat} unreadMessages={unreadMessages} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} remoteStream={null} />
+//                     </Panel>
+//                 </PanelGroup>
+//             </main>
+//             {role === 'teacher' && activeChatStudentId && (
+//                 <ChatPanel
+//                     messages={chatMessages.get(activeChatStudentId) || []} currentUserId={currentUserId}
+//                     chattingWithUsername={students.find(s => s.id === activeChatStudentId)?.username || 'Student'}
+//                     onSendMessage={handleSendMessage} onClose={() => setActiveChatStudentId(null)}
+//                 />
+//             )}
+//             {role === 'student' && isStudentChatOpen && teacherId && (
+//                  <ChatPanel
+//                     messages={chatMessages.get(teacherId) || []} currentUserId={currentUserId}
+//                     chattingWithUsername={"Teacher"} onSendMessage={handleSendMessage} onClose={() => setIsStudentChatOpen(false)}
+//                 />
+//             )}
+//         </div>
+//     );
+// };
+
+// export default LiveTutorialPage;
 // import React, { useState, useEffect, useRef } from 'react';
 // import { useParams, useNavigate } from 'react-router-dom';
 // // import Editor from '@monaco-editor/react';
