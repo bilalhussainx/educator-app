@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff } from 'lucide-react';
+import { PhoneOff, ChevronRight, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -29,7 +29,6 @@ import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRT
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
 import apiClient from '../services/apiClient';
 // We will not use a separate getWebSocketUrl, but derive it from the apiClient's config
-import { getWebSocketUrl } from '../config/websocket';
 // --- Type Definitions and Helpers (No Changes) ---
 interface Message { from: string; text: string; timestamp: string; }
 const simpleJwtDecode = (token: string) => {
@@ -93,12 +92,12 @@ const LiveTutorialPage: React.FC = () => {
     const [isConnected, setIsConnected] = useState(false); // More useful for disabling UI
 
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+    const [_remoteStream, _setRemoteStream] = useState<MediaStream | null>(null);
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);
     const [incomingCall, setIncomingCall] = useState<{ from: string; offer: RTCSessionDescriptionInit, username: string } | null>(null);
     const [isWhiteboardVisible, setIsWhiteboardVisible] = useState(false);
-    const [whiteboardLines, setWhiteboardLines] = useState<Line[]>([]);
+    const [_whiteboardLines, _setWhiteboardLines] = useState<Line[]>([]);
     const [chatMessages, setChatMessages] = useState<Map<string, Message[]>>(new Map());
     const [activeChatStudentId, setActiveChatStudentId] = useState<string | null>(null);
     const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
@@ -106,8 +105,8 @@ const LiveTutorialPage: React.FC = () => {
     const [isStudentChatOpen, setIsStudentChatOpen] = useState(false);
     const [_connectedPeers, setConnectedPeers] = useState<Map<string, RTCPeerConnection>>(new Map());
     const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
-    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    const [_isVideoEnabled, _setIsVideoEnabled] = useState(true);
+    const [_isAudioEnabled, _setIsAudioEnabled] = useState(true);
     const ws = useRef<WebSocket | null>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -713,7 +712,7 @@ useEffect(() => {
             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
         }
     };
-    const handleLanguageChange = (newLanguage: string) => {
+    const _handleLanguageChange = (newLanguage: string) => {
          if (isTeacherControllingThisStudent) {
             const studentState = studentHomeworkStates.get(viewingMode);
             if (!studentState) return;
@@ -725,7 +724,7 @@ useEffect(() => {
             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
          }
     };
-    const handleActiveFileChange = (fileName: string) => {
+    const _handleActiveFileChange = (fileName: string) => {
         if (isTeacherControllingThisStudent) {
             const studentState = studentHomeworkStates.get(viewingMode);
             if (!studentState) return;
@@ -736,7 +735,7 @@ useEffect(() => {
         }
     };
 
-    const handleAddFile = () => {
+    const _handleAddFile = () => {
         if (role !== 'teacher' || viewingMode !== 'teacher') return;
         const newFileName = prompt("Enter new file name (e.g., script.js):");
         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -766,7 +765,7 @@ useEffect(() => {
     //     }
     // };
     
-    const handleRunCode = () => {
+    const _handleRunCode = () => {
         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
         }
@@ -812,7 +811,7 @@ useEffect(() => {
         }
     };
 
-    const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
+    const _handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
     
     const handleOpenChat = (studentId: string) => {
         setActiveChatStudentId(studentId);
@@ -1625,7 +1624,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //         }
 //     };
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -1637,7 +1636,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //          }
 //     };
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -1648,7 +1647,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name (e.g., script.js):");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -1678,7 +1677,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -1713,7 +1712,7 @@ export default LiveTutorialPage;
 
 //     const toggleMute = () => { if (localStream) { localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled); setIsMuted(!isMuted); } };
 //     const toggleCamera = () => { if (localStream) { localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled); setIsCameraOff(!isCameraOff); } };
-//     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
+//     const _handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
     
 //     const handleOpenChat = (studentId: string) => {
 //         setActiveChatStudentId(studentId);
@@ -2303,7 +2302,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //         }
 //     };
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -2315,7 +2314,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //          }
 //     };
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -2326,7 +2325,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name (e.g., script.js):");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -2356,7 +2355,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -2391,7 +2390,7 @@ export default LiveTutorialPage;
 
 //     const toggleMute = () => { if (localStream) { localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled); setIsMuted(!isMuted); } };
 //     const toggleCamera = () => { if (localStream) { localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled); setIsCameraOff(!isCameraOff); } };
-//     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
+//     const _handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
     
 //     const handleOpenChat = (studentId: string) => {
 //         setActiveChatStudentId(studentId);
@@ -3182,7 +3181,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //         }
 //     };
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -3194,7 +3193,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //          }
 //     };
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -3205,7 +3204,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name (e.g., script.js):");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -3235,7 +3234,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -3270,7 +3269,7 @@ export default LiveTutorialPage;
 
 //     const toggleMute = () => { if (localStream) { localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled); setIsMuted(!isMuted); } };
 //     const toggleCamera = () => { if (localStream) { localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled); setIsCameraOff(!isCameraOff); } };
-//     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
+//     const _handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
     
 //     const handleOpenChat = (studentId: string) => {
 //         setActiveChatStudentId(studentId);
@@ -3903,7 +3902,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //         }
 //     };
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -3915,7 +3914,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //          }
 //     };
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -3926,7 +3925,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name (e.g., script.js):");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -3956,7 +3955,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -3991,7 +3990,7 @@ export default LiveTutorialPage;
 
 //     const toggleMute = () => { if (localStream) { localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled); setIsMuted(!isMuted); } };
 //     const toggleCamera = () => { if (localStream) { localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled); setIsCameraOff(!isCameraOff); } };
-//     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
+//     const _handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
     
 //     const handleOpenChat = (studentId: string) => {
 //         setActiveChatStudentId(studentId);
@@ -4635,7 +4634,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //         }
 //     };
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -4647,7 +4646,7 @@ export default LiveTutorialPage;
 //             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
 //          }
 //     };
-//         const handleActiveFileChange = (fileName: string) => {
+//         const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -4672,7 +4671,7 @@ export default LiveTutorialPage;
 //     //          sendWsMessage('TEACHER_CODE_UPDATE', { files, activeFileName: fileName });
 //     //     }
 //     // };
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name (e.g., script.js):");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -4709,7 +4708,7 @@ export default LiveTutorialPage;
 //     //         sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //     //     }
 //     // };
-//         const handleRunCode = () => {
+//         const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -4740,7 +4739,7 @@ export default LiveTutorialPage;
 //     };
 //     const toggleMute = () => { if (localStream) { localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled); setIsMuted(!isMuted); } };
 //     const toggleCamera = () => { if (localStream) { localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled); setIsCameraOff(!isCameraOff); } };
-//     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
+//     const _handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
 //     const handleOpenChat = (studentId: string) => {
 //         setActiveChatStudentId(studentId);
 //         setUnreadMessages(prev => { const newSet = new Set(prev); newSet.delete(studentId); return newSet; });
@@ -5222,7 +5221,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -5247,7 +5246,7 @@ export default LiveTutorialPage;
 //     //          sendWsMessage('TEACHER_CODE_UPDATE', { files, activeFileName: fileName });
 //     //     }
 //     // };
-//         const handleActiveFileChange = (fileName: string) => {
+//         const _handleActiveFileChange = (fileName: string) => {
 //         if (role === 'teacher' && viewingMode !== 'teacher') {
 //             // Teacher changes view of student file, no edit sent.
 //             setStudentHomeworkStates(prev => {
@@ -5264,7 +5263,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name (e.g., script.js):");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -5297,7 +5296,7 @@ export default LiveTutorialPage;
 
     
 
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -5331,7 +5330,7 @@ export default LiveTutorialPage;
     
 //     const toggleMute = () => { if (localStream) { localStream.getAudioTracks().forEach(track => track.enabled = !track.enabled); setIsMuted(!isMuted); } };
 //     const toggleCamera = () => { if (localStream) { localStream.getVideoTracks().forEach(track => track.enabled = !track.enabled); setIsCameraOff(!isCameraOff); } };
-//     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
+//     const _handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
 //     const handleOpenChat = (studentId: string) => {
 //         setActiveChatStudentId(studentId);
 //         setUnreadMessages(prev => { const newSet = new Set(prev); newSet.delete(studentId); return newSet; });
@@ -5863,7 +5862,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -5876,7 +5875,7 @@ export default LiveTutorialPage;
 //          }
 //     };
     
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -5898,7 +5897,7 @@ export default LiveTutorialPage;
 //     //         sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName: newFileName });
 //     //     }
 //     // };
-//      const handleAddFile = () => {
+//      const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name (e.g., script.js, main.py, App.java):");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -5930,7 +5929,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -5995,7 +5994,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleDraw = (line: Line) => {
+//     const _handleDraw = (line: Line) => {
 //         sendWsMessage('WHITEBOARD_DRAW', { line });
 //     };
 
@@ -6643,7 +6642,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -6656,7 +6655,7 @@ export default LiveTutorialPage;
 //          }
 //     };
     
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -6678,7 +6677,7 @@ export default LiveTutorialPage;
 //     //         sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName: newFileName });
 //     //     }
 //     // };
-//      const handleAddFile = () => {
+//      const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name (e.g., script.js, main.py, App.java):");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -6710,7 +6709,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -6775,7 +6774,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleDraw = (line: Line) => {
+//     const _handleDraw = (line: Line) => {
 //         sendWsMessage('WHITEBOARD_DRAW', { line });
 //     };
 
@@ -7359,7 +7358,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -7372,7 +7371,7 @@ export default LiveTutorialPage;
 //          }
 //     };
     
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -7383,7 +7382,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher' || viewingMode !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name:");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -7409,7 +7408,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
 //         }
@@ -7983,7 +7982,7 @@ export default LiveTutorialPage;
 //         }
 //     };
     
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //          if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -8000,7 +7999,7 @@ export default LiveTutorialPage;
 //          }
 //     };
     
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
 //             if (!studentState) return;
@@ -8016,7 +8015,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher') return;
 //         if (viewingMode !== 'teacher') {
 //             toast.error("You can only add files to your own workspace.");
@@ -8048,7 +8047,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             ws.current?.send(JSON.stringify({ type: 'RUN_CODE', payload: { language: activeFile.language, code: activeFile.content } }));
 //         }
@@ -8560,14 +8559,14 @@ export default LiveTutorialPage;
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files: updatedFiles, activeFileName } }));
 //     };
 
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //         if (role !== 'teacher') return;
 //         const updatedFiles = files.map(f => f.name === activeFileName ? { ...f, language: newLanguage } : f);
 //         setFiles(updatedFiles);
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files: updatedFiles, activeFileName } }));
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name:");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -8579,7 +8578,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (role !== 'teacher') return;
 //         setActiveFileName(fileName);
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files, activeFileName: fileName } }));
@@ -8601,7 +8600,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             ws.current?.send(JSON.stringify({ type: 'RUN_CODE', payload: { language: activeFile.language, code: activeFile.content } }));
 //         }
@@ -9079,14 +9078,14 @@ export default LiveTutorialPage;
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files: updatedFiles, activeFileName } }));
 //     };
 
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //         if (role !== 'teacher') return;
 //         const updatedFiles = files.map(f => f.name === activeFileName ? { ...f, language: newLanguage } : f);
 //         setFiles(updatedFiles);
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files: updatedFiles, activeFileName } }));
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name:");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -9098,7 +9097,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (role !== 'teacher') return;
 //         setActiveFileName(fileName);
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files, activeFileName: fileName } }));
@@ -9120,7 +9119,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             ws.current?.send(JSON.stringify({ type: 'RUN_CODE', payload: { language: activeFile.language, code: activeFile.content } }));
 //         }
@@ -9590,14 +9589,14 @@ export default LiveTutorialPage;
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files: updatedFiles, activeFileName } }));
 //     };
 
-//     const handleLanguageChange = (newLanguage: string) => {
+//     const _handleLanguageChange = (newLanguage: string) => {
 //         if (role !== 'teacher') return;
 //         const updatedFiles = files.map(f => f.name === activeFileName ? { ...f, language: newLanguage } : f);
 //         setFiles(updatedFiles);
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files: updatedFiles, activeFileName } }));
 //     };
 
-//     const handleAddFile = () => {
+//     const _handleAddFile = () => {
 //         if (role !== 'teacher') return;
 //         const newFileName = prompt("Enter new file name:");
 //         if (newFileName && !files.some(f => f.name === newFileName)) {
@@ -9609,7 +9608,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleActiveFileChange = (fileName: string) => {
+//     const _handleActiveFileChange = (fileName: string) => {
 //         if (role !== 'teacher') return;
 //         setActiveFileName(fileName);
 //         ws.current?.send(JSON.stringify({ type: 'TEACHER_CODE_UPDATE', payload: { files, activeFileName: fileName } }));
@@ -9631,7 +9630,7 @@ export default LiveTutorialPage;
 //         }
 //     };
 
-//     const handleRunCode = () => {
+//     const _handleRunCode = () => {
 //         if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
 //             ws.current?.send(JSON.stringify({ type: 'RUN_CODE', payload: { language: activeFile.language, code: activeFile.content } }));
 //         }
