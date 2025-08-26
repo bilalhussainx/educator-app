@@ -84,6 +84,7 @@ app.use('/api/stuck-points', stuckPointRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/concepts', conceptRoutes);
+app.use('/api/sessions', sessionRoutes);
 
 // Server and WebSocket Initialization
 const server = http.createServer(app);

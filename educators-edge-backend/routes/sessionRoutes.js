@@ -5,7 +5,6 @@ const db = require('../db');
 const { getActiveSessions } = require('../services/sessionStore');
 const sessionController = require('../controllers/sessionController');
 
-
 // @route   GET api/sessions/active
 // @desc    Get active sessions for courses a student is enrolled in
 // @access  Private (Protected by verifyToken)
