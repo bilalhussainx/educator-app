@@ -1081,7 +1081,7 @@ return (
                 {role === 'student' && <Button size="sm" onClick={handleRaiseHand} disabled={!isConnected}  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold"><Hand className="mr-2 h-4 w-4" />Raise Hand</Button>}
                 {role === 'student' && <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} disabled={!isConnected} className="bg-slate-700 hover:bg-slate-600 text-white"><MessageCircle className="mr-2 h-4 w-4" />Chat</Button>}
                 {role === 'teacher' && <Button size="sm" onClick={handleToggleFreeze} className={cn('font-bold text-white', isFrozen ? 'bg-red-600 hover:bg-red-500' : 'bg-fuchsia-600 hover:bg-fuchsia-500')}><Lock className="mr-2 h-4 w-4" />{isFrozen ? "Unfreeze All" : "Freeze All"}</Button>}
-                {role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} className="bg-slate-700 hover:bg-slate-600 text-white"><Brush className="mr-2 h-4 w-4" />{isWhitebordVisible ? "Hide Board" : "Show Board"}</Button>}
+                {role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} className="bg-slate-700 hover:bg-slate-600 text-white"><Brush className="mr-2 h-4 w-4" />{isWhiteboardVisible ? "Hide Board" : "Show Board"}</Button>}
                 {isWhiteboardVisible && role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} className="bg-red-600 hover:bg-red-500 text-white"><Trash2 className="mr-2 h-4 w-4" />Clear</Button>}
                 
                 <div className="flex items-center gap-1 border-l border-slate-600 pl-2 ml-2">
@@ -1157,8 +1157,7 @@ return (
                         localVideoRef={localVideoRef}
                         isMuted={isMuted} toggleMute={toggleMute} isCameraOff={isCameraOff} toggleCamera={toggleCamera}
                         controlledStudentId={controlledStudentId} handleTakeControl={handleTakeControl}
-                        handleOpenChat={handleOpenChat} unreadMessages={unreadMessages}
-                        // Remove the old remoteVideoRef and remoteStream props as they are no longer needed
+                        handleOpenChat={handleOpenChat} unreadMessages={unreadMessages} remoteVideoRef={remoteVideoRef} remoteStream={null}
                     />
                 </Panel>
             </PanelGroup>
