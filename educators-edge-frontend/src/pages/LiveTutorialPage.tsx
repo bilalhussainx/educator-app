@@ -1,11 +1,3 @@
-/*
- * =================================================================
- * FOLDER: src/pages/
- * FILE:   LiveTutorialPage.tsx (WEBSOCKET HANDLER ALIGNED)
- * =================================================================
- * DESCRIPTION: Revised to match the actual WebSocket handler implementation
- * and message types. Fixed all WebSocket communication patterns.
- */
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
@@ -17,28 +9,27 @@ import { cn } from "@/lib/utils";
 // --- AGORA SDK IMPORT ---
 import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 
-// Import child components
+// --- CHILD COMPONENT IMPORTS ---
 import { HomeworkView } from '../components/classroom/HomeworkView';
 import { WhiteboardPanel, Line } from '../components/classroom/WhiteboardPanel';
 import { ChatPanel } from '../components/classroom/ChatPanel';
+import { RosterPanel } from '../components/classroom/RosterPanel'; // Assuming RosterPanel is separate
 
-// Import shadcn components and icons
+// --- UI & TYPE IMPORTS ---
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
-
-// Import types and configs
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
 import apiClient from '../services/apiClient';
 import { getWebSocketUrl } from '../config/websocket';
 
-// --- Type Definitions and Helpers ---
+// --- HELPER FUNCTIONS & COMPONENTS ---
 interface Message { from: string; text: string; timestamp: string; }
-const simpleJwtDecode = (token: string) => {
+const simpleJwtDecode = (token: string): { user: { id: string; role: UserRole } } | null => {
     try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -49,361 +40,94 @@ const simpleJwtDecode = (token: string) => {
     } catch (error) { console.error("Invalid token:", error); return null; }
 };
 
-// --- Integrated Video Components ---
-const VideoParticipant = ({ user, students, isLocal = false, size = "sm", localVideoRef }: { 
+const VideoParticipant = ({ user, students, isLocal = false, localVideoRef }: { 
     user?: IAgoraRTCRemoteUser, 
     students: Student[], 
     isLocal?: boolean,
-    size?: "xs" | "sm" | "md",
     localVideoRef?: React.RefObject<HTMLVideoElement>
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
-    
     useEffect(() => {
-        if (isLocal && localVideoRef?.current) {
-            return;
-        }
-        if (!isLocal && videoRef.current && user?.videoTrack) {
-            user.videoTrack.play(videoRef.current);
+        const targetRef = isLocal ? localVideoRef : videoRef;
+        if (targetRef?.current && !isLocal && user?.videoTrack) {
+            user.videoTrack.play(targetRef.current);
         }
         if (!isLocal && user?.audioTrack) {
             user.audioTrack.play();
         }
-        return () => {
-            if (!isLocal) user?.videoTrack?.stop();
-        };
+        return () => { if (!isLocal) user?.videoTrack?.stop(); };
     }, [user, isLocal, localVideoRef]);
-
-    const username = isLocal ? 'You' : 
-        (students.find(s => String(s.id) === String(user?.uid))?.username || `User ${user?.uid.toString().substring(0, 4)}`);
-
+    const username = isLocal ? 'You' : (students.find(s => String(s.id) === String(user?.uid))?.username || `User...`);
     const hasVideo = isLocal || user?.videoTrack;
-    const sizeClass = {
-        xs: "h-16 w-20",
-        sm: "h-20 w-28", 
-        md: "h-32 w-40"
-    }[size];
-
     return (
-        <div className={cn("relative bg-slate-800/50 rounded-md overflow-hidden border border-slate-600/30", sizeClass)}>
+        <div className="relative bg-slate-800/50 rounded-md overflow-hidden aspect-video">
             {hasVideo ? (
-                isLocal && localVideoRef ? (
-                    <video 
-                        ref={localVideoRef} 
-                        autoPlay 
-                        playsInline 
-                        muted
-                        className="w-full h-full object-cover" 
-                    />
-                ) : (
-                    <video 
-                        ref={videoRef} 
-                        autoPlay 
-                        playsInline 
-                        className="w-full h-full object-cover" 
-                    />
-                )
+                <video ref={isLocal ? localVideoRef : videoRef} autoPlay playsInline muted={isLocal} className="w-full h-full object-cover" />
             ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                    <User className="h-6 w-6 text-slate-500" />
-                </div>
+                <div className="w-full h-full flex items-center justify-center"><User className="h-6 w-6 text-slate-500" /></div>
             )}
-            <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
-                {username}
-            </div>
-            {!hasVideo && (
-                <VideoOff className="absolute top-1 right-1 h-3 w-3 text-slate-500" />
-            )}
+            <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">{username}</div>
+            {!isLocal && !user?.videoTrack && <VideoOff className="absolute top-1 right-1 h-3 w-3 text-slate-500" />}
         </div>
     );
 };
 
-// --- Enhanced Roster Panel with Integrated Video ---
-const EnhancedRosterPanel = ({ 
-    role, students, viewingMode, setViewingMode, activeHomeworkStudents, handsRaised,
-    spotlightedStudentId, handleSpotlightStudent, assigningToStudentId, setAssigningToStudentId,
-    availableLessons, handleAssignHomework, controlledStudentId, handleTakeControl,
-    handleOpenChat, unreadMessages, localVideoRef, remoteUsers, isVideoCollapsed, setIsVideoCollapsed
-}: {
-    role: UserRole;
-    students: Student[];
-    viewingMode: ViewingMode;
-    setViewingMode: (mode: ViewingMode) => void;
-    activeHomeworkStudents: Set<string>;
-    handsRaised: Set<string>;
-    spotlightedStudentId: string | null;
-    handleSpotlightStudent: (studentId: string | null) => void;
-    assigningToStudentId: string | null;
-    setAssigningToStudentId: (id: string | null) => void;
-    availableLessons: Lesson[];
-    handleAssignHomework: (studentId: string, lessonId: number | string) => void;
-    controlledStudentId: string | null;
-    handleTakeControl: (studentId: string | null) => void;
-    handleOpenChat: (studentId: string) => void;
-    unreadMessages: Set<string>;
-    localVideoRef: React.RefObject<HTMLVideoElement>;
-    remoteUsers: IAgoraRTCRemoteUser[];
-    isVideoCollapsed: boolean;
-    setIsVideoCollapsed: (collapsed: boolean) => void;
-}) => {
-    return (
-        <div className="h-full flex flex-col bg-slate-900/30 backdrop-blur-sm">
-            {/* Video Section - Integrated at top */}
-            <div className="flex-shrink-0 border-b border-slate-700/50">
-                <div className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-slate-300">
-                        <Users className="h-4 w-4" />
-                        <span>{remoteUsers.length + 1} participants</span>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsVideoCollapsed(!isVideoCollapsed)}
-                        className="h-6 w-6 p-0 text-slate-400"
-                    >
-                        {isVideoCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                    </Button>
-                </div>
-                
-                {!isVideoCollapsed && (
-                    <div className="p-3 pt-0 space-y-2">
-                        <VideoParticipant isLocal localVideoRef={localVideoRef} students={students} size="sm" />
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                            {remoteUsers.slice(0, 4).map(user => (
-                                <VideoParticipant 
-                                    key={user.uid} 
-                                    user={user} 
-                                    students={students}
-                                    size="xs"
-                                />
-                            ))}
-                        </div>
-                        
-                        {remoteUsers.length === 0 && (
-                            <div className="text-center py-2">
-                                <span className="text-xs text-slate-500">Waiting for others to join...</span>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
 
-            {/* Student Roster */}
-            {role === 'teacher' && (
-                <div className="flex-grow flex flex-col min-h-0">
-                    <div className="p-3 border-b border-slate-700/50">
-                        <h3 className="font-semibold text-slate-200 text-sm uppercase tracking-wider">Student Roster</h3>
-                    </div>
-                    
-                    <div className="p-2 border-b border-slate-700/50">
-                        <Button 
-                            onClick={() => { setViewingMode('teacher'); handleSpotlightStudent(null); }} 
-                            variant="ghost" 
-                            size="sm"
-                            className={cn(
-                                'w-full justify-start text-sm', 
-                                viewingMode === 'teacher' 
-                                    ? 'bg-cyan-500/10 text-cyan-300 font-semibold' 
-                                    : 'text-slate-300 hover:bg-slate-800/50'
-                            )}
-                        >
-                            <FileIcon className="mr-2 h-4 w-4"/> 
-                            My Workspace
-                        </Button>
-                    </div>
-
-                    <div className="flex-grow overflow-y-auto p-2 space-y-1">
-                        {students.map(student => {
-                            const isControllingThisStudent = controlledStudentId === student.id;
-                            const isViewingThisStudent = viewingMode === student.id;
-                            const isSpotlighted = spotlightedStudentId === student.id;
-                            const hasHandRaised = handsRaised.has(student.id);
-
-                            return (
-                                <div 
-                                    key={student.id} 
-                                    className={cn(
-                                        'rounded-lg border transition-all', 
-                                        hasHandRaised 
-                                            ? 'bg-fuchsia-900/20 border-fuchsia-600/50 animate-pulse' 
-                                            : 'bg-slate-800/30 border-slate-700/50',
-                                        isViewingThisStudent && 'ring-2 ring-cyan-500/50'
-                                    )}
-                                >
-                                    <div className="p-2">
-                                        <Button 
-                                            onClick={() => setViewingMode(student.id)} 
-                                            variant='ghost' 
-                                            size="sm"
-                                            className="w-full justify-start p-1 h-auto"
-                                        >
-                                            <div className="flex items-center justify-between w-full">
-                                                <div className="flex items-center gap-2">
-                                                    {hasHandRaised && <Hand className="h-4 w-4 text-fuchsia-400" />}
-                                                    {isSpotlighted && <Star className="h-4 w-4 text-yellow-400" />}
-                                                    <span className={cn(
-                                                        'text-sm', 
-                                                        isViewingThisStudent ? 'text-cyan-300 font-medium' : 'text-slate-200'
-                                                    )}>
-                                                        {student.username}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    {activeHomeworkStudents.has(student.id) && (
-                                                        <Badge variant="outline" className="h-5 text-xs bg-green-500/10 text-green-400 border-green-500/30">
-                                                            Live
-                                                        </Badge>
-                                                    )}
-                                                    {unreadMessages.has(student.id) && (
-                                                        <div className="h-2 w-2 bg-cyan-400 rounded-full" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </Button>
-
-                                        {isViewingThisStudent && (
-                                            <div className="mt-2 pt-2 border-t border-slate-700/50 flex flex-wrap gap-1">
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline"
-                                                    onClick={() => handleSpotlightStudent(isSpotlighted ? null : student.id)}
-                                                    className="text-xs h-6 px-2"
-                                                >
-                                                    {isSpotlighted ? 'Unspot' : 'Spotlight'}
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline"
-                                                    onClick={() => handleTakeControl(isControllingThisStudent ? null : student.id)}
-                                                    className={cn(
-                                                        "text-xs h-6 px-2",
-                                                        isControllingThisStudent && "bg-red-500/10 text-red-400"
-                                                    )}
-                                                >
-                                                    {isControllingThisStudent ? 'Release' : 'Control'}
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline"
-                                                    onClick={() => handleOpenChat(student.id)}
-                                                    className="text-xs h-6 px-2"
-                                                >
-                                                    Chat
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline"
-                                                    onClick={() => setAssigningToStudentId(assigningToStudentId === student.id ? null : student.id)}
-                                                    className="text-xs h-6 px-2"
-                                                >
-                                                    Assign
-                                                </Button>
-                                            </div>
-                                        )}
-
-                                        {assigningToStudentId === student.id && (
-                                            <div className="mt-2 pt-2 border-t border-slate-700/50 space-y-1">
-                                                {availableLessons.length > 0 ? (
-                                                    availableLessons.map(lesson => (
-                                                        <Button 
-                                                            key={lesson.id} 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            className="w-full justify-start text-xs h-6 px-2 text-slate-300" 
-                                                            onClick={() => handleAssignHomework(student.id, lesson.id)}
-                                                        >
-                                                            {lesson.title}
-                                                        </Button>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-xs text-slate-500 text-center py-2">
-                                                        No lessons available
-                                                    </p>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// --- Main Live Tutorial Page Component ---
+// --- MAIN COMPONENT ---
 const LiveTutorialPage: React.FC = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
     const token = localStorage.getItem('authToken');
-
-    // --- State Management ---
-    const decodedToken = token ? simpleJwtDecode(token) : null;
-    const currentUserId = decodedToken?.user?.id || null;
-    const [role, setRole] = useState<UserRole>(decodedToken?.user?.role || 'unknown');
     
-    // --- AGORA STATE ---
-    const agoraClient = useRef<IAgoraRTCClient | null>(null);
-    const localTracks = useRef<{ videoTrack: ILocalVideoTrack, audioTrack: ILocalAudioTrack } | null>(null);
+    // --- STATE MANAGEMENT ---
+    const [role, setRole] = useState<UserRole>('unknown');
+    const [students, setStudents] = useState<Student[]>([]);
+    const [isConnected, setIsConnected] = useState(false);
+    const [teacherId, setTeacherId] = useState<string | null>(null);
+    const [files, setFiles] = useState<CodeFile[]>([]);
+    const [activeFileName, setActiveFileName] = useState<string>('');
+    const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
     const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);
-    const [isVideoCollapsed, setIsVideoCollapsed] = useState(false);
-
-    // --- APPLICATION STATE ---
-    const [files, setFiles] = useState<CodeFile[]>([]);
-    const [activeFileName, setActiveFileName] = useState<string>('');
-    const [students, setStudents] = useState<Student[]>([]);
-    const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
-    const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
-    const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
-    const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
-    const [controlledStudentId, setControlledStudentId] = useState<string | null>(null);
-    const [isFrozen, setIsFrozen] = useState<boolean>(false);
-    const [pendingHomework, setPendingHomework] = useState<{ lessonId: string; teacherSessionId: string; title: string; } | null>(() => {
-        const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
-        return saved ? JSON.parse(saved) : null;
-    });
-    const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-    const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
-        const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
-        return saved === 'true';
-    });
-    const [homeworkFiles, setHomeworkFiles] = useState<LessonFile[] | null>(() => {
-        const saved = sessionStorage.getItem(`homeworkFiles_${sessionId}`);
-        return saved ? JSON.parse(saved) : null;
-    });
-    const [activeHomeworkStudents, setActiveHomeworkStudents] = useState<Set<string>>(new Set());
-    const [handsRaised, setHandsRaised] = useState<Set<string>>(new Set());
-    const [spotlightedStudentId, setSpotlightedStudentId] = useState<string | null>(null);
-    const [spotlightWorkspace, setSpotlightWorkspace] = useState<StudentHomeworkState | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
     const [isWhiteboardVisible, setIsWhiteboardVisible] = useState(false);
     const [whiteboardLines, setWhiteboardLines] = useState<Line[]>([]);
     const [chatMessages, setChatMessages] = useState<Map<string, Message[]>>(new Map());
     const [activeChatStudentId, setActiveChatStudentId] = useState<string | null>(null);
     const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
-    const [teacherId, setTeacherId] = useState<string | null>(null);
+    const [spotlightedStudentId, setSpotlightedStudentId] = useState<string | null>(null);
+    const [isFrozen, setIsFrozen] = useState<boolean>(false);
+    const [controlledStudentId, setControlledStudentId] = useState<string | null>(null);
+    const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+    const [pendingHomework, setPendingHomework] = useState<any>(null);
+    const [isDoingHomework, setIsDoingHomework] = useState(false);
+    const [homeworkFiles, setHomeworkFiles] = useState<any>(null);
+    const [activeHomeworkStudents, setActiveHomeworkStudents] = useState<Set<string>>(new Set());
+    const [handsRaised, setHandsRaised] = useState<Set<string>>(new Set());
+    const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
+    const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
+    const [spotlightWorkspace, setSpotlightWorkspace] = useState<any>(null);
+    const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
     const [isStudentChatOpen, setIsStudentChatOpen] = useState(false);
 
-    // --- Refs ---
+    // --- REFS ---
     const ws = useRef<WebSocket | null>(null);
+    const agoraClient = useRef<IAgoraRTCClient | null>(null);
+    const localTracks = useRef<{ videoTrack: ILocalVideoTrack, audioTrack: ILocalAudioTrack } | null>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
-    const terminalRef = useRef<HTMLDivElement>(null);
     const term = useRef<Terminal | null>(null);
     const fitAddon = useRef<FitAddon | null>(null);
+    const terminalRef = useRef<HTMLDivElement>(null);
     const roleRef = useRef(role);
     const teacherIdRef = useRef(teacherId);
     const activeChatStudentIdRef = useRef(activeChatStudentId);
-
+    const currentUserId = decodedToken?.user?.id || null;
+    
     useEffect(() => { roleRef.current = role; }, [role]);
     useEffect(() => { teacherIdRef.current = teacherId; }, [teacherId]);
     useEffect(() => { activeChatStudentIdRef.current = activeChatStudentId; }, [activeChatStudentId]);
 
-    // --- Computed State ---
+    // --- COMPUTED STATE ---
     const displayedWorkspace = (() => {
         if (spotlightedStudentId && spotlightWorkspace) return spotlightWorkspace;
         if (role === 'teacher' && viewingMode !== 'teacher') return studentHomeworkStates.get(viewingMode) || { files: [], activeFileName: '' };
@@ -412,85 +136,62 @@ const LiveTutorialPage: React.FC = () => {
     const activeFile = displayedWorkspace.files.find(file => file.name === displayedWorkspace.activeFileName);
     const isTeacherViewingStudent = role === 'teacher' && viewingMode !== 'teacher';
     const isTeacherControllingThisStudent = isTeacherViewingStudent && controlledStudentId === viewingMode;
-    const isEditorReadOnly = (role === 'student' && (isFrozen || !!spotlightedStudentId)) || (isTeacherViewingStudent && !isTeacherControllingThisStudent);
-    
-    // --- Effects ---
+    const isEditorReadOnly = !isConnected || (role === 'student' && (isFrozen || !!spotlightedStudentId)) || (isTeacherViewingStudent && !isTeacherControllingThisStudent);
+
+    // --- SINGLE UNIFIED INITIALIZATION EFFECT ---
     useEffect(() => {
-        if (!token || !sessionId || !currentUserId) {
-            navigate('/login');
-            return;
-        }
+        if (!token || !sessionId || !currentUserId) { navigate('/login'); return; }
 
-        // --- WebSocket Setup (Aligned with backend) ---
-        const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
-        console.log("Connecting to WebSocket:", wsUrl);
-        const socket = new WebSocket(wsUrl);
+        const socket = new WebSocket(`${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`);
         ws.current = socket;
-        
-        socket.onopen = () => { 
-            setIsConnected(true); 
-            toast.success("Connected to live session!"); 
-        };
-        
-        socket.onclose = (event) => { 
-            setIsConnected(false); 
-            console.log("WebSocket closed:", event.code, event.reason);
-            toast.error("Disconnected from live session."); 
-        };
-        
-        socket.onerror = (error) => { 
-            console.error("WebSocket Error:", error); 
-            setIsConnected(false); 
-            toast.error("Connection error occurred."); 
-        };
-        
-        initializeWebSocketEvents(socket);
-
-        // --- Agora Setup ---
         const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         agoraClient.current = client;
+
+        socket.onopen = () => {
+            setIsConnected(true);
+            toast.success("Real-time session connected!");
+            joinAgoraChannel();
+        };
+        socket.onclose = (event) => {
+            setIsConnected(false);
+            console.log("WebSocket closed:", event.code, event.reason);
+            toast.error("Disconnected from live session.");
+        };
+        socket.onerror = (error) => {
+            console.error("WebSocket Error:", error);
+            setIsConnected(false);
+            toast.error("Connection error occurred.");
+        };
+        initializeWebSocketEvents(socket);
 
         const joinAgoraChannel = async () => {
             try {
                 const agoraAppId = import.meta.env.VITE_AGORA_APP_ID;
-                if (!agoraAppId) {
-                    throw new Error("Agora App ID is not configured in environment variables.");
-                }
+                if (!agoraAppId) throw new Error("Agora App ID missing.");
                 const response = await apiClient.get(`/api/sessions/${sessionId}/generate-token`);
                 const { token: agoraToken, uid } = response.data;
                 await client.join(agoraAppId, sessionId, agoraToken, uid);
                 
                 const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
                 localTracks.current = { videoTrack, audioTrack };
-                
                 if (localVideoRef.current) videoTrack.play(localVideoRef.current);
                 await client.publish([audioTrack, videoTrack]);
             } catch (error) {
                 console.error("Agora Connection Failed:", error);
-                toast.error("Could not connect to the video/audio service.");
+                toast.error("Could not connect to video/audio service.");
             }
         };
-
-        joinAgoraChannel();
 
         client.on('user-published', async (user, mediaType) => {
             await client.subscribe(user, mediaType);
             if (mediaType === 'video') setRemoteUsers(Array.from(client.remoteUsers));
             if (mediaType === 'audio') user.audioTrack?.play();
         });
+        client.on('user-left', () => setRemoteUsers(Array.from(client.remoteUsers)));
 
-        client.on('user-left', (_user) => {
-            setRemoteUsers(Array.from(client.remoteUsers));
-        });
-
-        // --- Terminal Setup ---
         if (terminalRef.current && !term.current) {
             fitAddon.current = new FitAddon();
-            const newTerm = new Terminal({ 
-                cursorBlink: true, 
-                theme: { background: '#0D1117', foreground: '#c9d1d9', cursor: '#c9d1d9' }, 
-                fontSize: 14 
-            });
+            const newTerm = new Terminal({ cursorBlink: true, theme: { background: '#0D1117', foreground: '#c9d1d9' }, fontSize: 14 });
             newTerm.loadAddon(fitAddon.current);
             newTerm.open(terminalRef.current);
             fitAddon.current.fit();
@@ -502,7 +203,6 @@ const LiveTutorialPage: React.FC = () => {
             term.current = newTerm;
         }
 
-        // --- Cleanup Function ---
         return () => {
             ws.current?.close();
             localTracks.current?.videoTrack.close();
@@ -512,63 +212,26 @@ const LiveTutorialPage: React.FC = () => {
         };
     }, [sessionId, currentUserId, navigate, token]);
 
-    useEffect(() => {
-        if (role === 'student') {
-            sessionStorage.setItem(`isDoingHomework_${sessionId}`, String(isDoingHomework));
-            if (pendingHomework) sessionStorage.setItem(`pendingHomework_${sessionId}`, JSON.stringify(pendingHomework));
-            if (homeworkFiles) sessionStorage.setItem(`homeworkFiles_${sessionId}`, JSON.stringify(homeworkFiles));
-            if (!isDoingHomework) {
-                sessionStorage.removeItem(`homeworkFiles_${sessionId}`);
-                sessionStorage.removeItem(`isDoingHomework_${sessionId}`);
-                sessionStorage.removeItem(`pendingHomework_${sessionId}`);
-            }
-        }
-    }, [isDoingHomework, homeworkFiles, pendingHomework, role, sessionId]);
-
-    useEffect(() => { if (pendingHomework && isDoingHomework && !homeworkFiles) handleStartHomework(); }, [pendingHomework, isDoingHomework, homeworkFiles]);
-
+    // --- OTHER EFFECTS ---
     useEffect(() => {
         if (role === 'teacher') {
-            apiClient.get('/api/lessons/teacher/list')
-            .then(res => res.data || [])
-            .then(setAvailableLessons)
-            .catch(() => setAvailableLessons([]));
+            apiClient.get('/api/lessons/teacher/list').then(res => setAvailableLessons(res.data || []));
         }
-    }, [role, token]);
-
+    }, [role]);
     useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (!term.current) return;
-            let outputToDisplay = '';
-            let isTerminalReadOnly = false;
-            if (spotlightedStudentId && spotlightWorkspace) {
-                const studentName = students.find(s => s.id === spotlightedStudentId)?.username || 'student';
-                outputToDisplay = spotlightWorkspace.terminalOutput || `\r\n--- Viewing Spotlight: ${studentName} ---\r\n`;
-                isTerminalReadOnly = true;
-            } else if (role === 'teacher' && viewingMode !== 'teacher') {
-                const studentState = studentHomeworkStates.get(viewingMode);
-                const studentName = students.find(s => s.id === viewingMode)?.username || 'student';
-                outputToDisplay = studentState?.terminalOutput || `\r\n--- Watching ${studentName}'s Terminal ---\r\n`;
-                isTerminalReadOnly = !isTeacherControllingThisStudent;
-            } else {
-                outputToDisplay = teacherTerminalOutput;
-                isTerminalReadOnly = (role !== 'teacher' || viewingMode !== 'teacher');
-            }
+        if (term.current) {
+            const output = (role === 'teacher' && viewingMode === 'teacher') ? teacherTerminalOutput : (studentHomeworkStates.get(viewingMode)?.terminalOutput || '');
             term.current.clear();
-            term.current.write(outputToDisplay);
-            if (term.current.options.disableStdin !== isTerminalReadOnly) {
-                term.current.options.disableStdin = isTerminalReadOnly;
-            }
-        }, 0);
-        return () => clearTimeout(timeoutId);
-    }, [role, viewingMode, teacherTerminalOutput, spotlightedStudentId, spotlightWorkspace, studentHomeworkStates, students, controlledStudentId]);
+            term.current.write(output);
+        }
+    }, [teacherTerminalOutput, viewingMode, studentHomeworkStates, role]);
 
     // --- Handlers and Functions ---
     const sendWsMessage = (type: string, payload?: object) => {
         if (ws.current?.readyState === WebSocket.OPEN) {
             ws.current.send(JSON.stringify({ type, payload }));
         } else {
-            console.error("WebSocket not open. Current state:", ws.current?.readyState);
+            console.error("WebSocket not open. State:", ws.current?.readyState);
             toast.error("Connection lost. Please refresh the page.");
         }
     };
@@ -687,7 +350,7 @@ const LiveTutorialPage: React.FC = () => {
         setIsDoingHomework(true);
     };
 
-    const handleWorkspaceChange = (value: string | undefined) => {
+const handleWorkspaceChange = (value: string | undefined) => {
         const newCode = value || '';
         if (isTeacherControllingThisStudent) {
             const studentState = studentHomeworkStates.get(viewingMode);
@@ -698,6 +361,12 @@ const LiveTutorialPage: React.FC = () => {
             const updatedFiles = files.map(f => f.name === activeFileName ? { ...f, content: newCode } : f);
             setFiles(updatedFiles);
             sendWsMessage('TEACHER_CODE_UPDATE', { files: updatedFiles, activeFileName });
+        }
+    };
+
+     const handleRunCode = () => {
+        if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
+            sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
         }
     };
 
@@ -750,11 +419,6 @@ const LiveTutorialPage: React.FC = () => {
         }
     };
     
-    const handleRunCode = () => {
-        if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
-            sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
-        }
-    };
 
     const handleRaiseHand = () => sendWsMessage('RAISE_HAND');
     const handleSpotlightStudent = (studentId: string | null) => sendWsMessage('SPOTLIGHT_STUDENT', { studentId });
@@ -1027,16 +691,31 @@ const LiveTutorialPage: React.FC = () => {
                     
                     {/* Right Sidebar - Enhanced Roster with Integrated Video */}
                     <Panel defaultSize={25} minSize={20} maxSize={35}>
-                        <EnhancedRosterPanel
-                            role={role} students={students} viewingMode={viewingMode} setViewingMode={setViewingMode}
-                            activeHomeworkStudents={activeHomeworkStudents} handsRaised={handsRaised}
-                            spotlightedStudentId={spotlightedStudentId} handleSpotlightStudent={handleSpotlightStudent}
-                            assigningToStudentId={assigningToStudentId} setAssigningToStudentId={setAssigningToStudentId}
-                            availableLessons={availableLessons} handleAssignHomework={handleAssignHomework}
-                            controlledStudentId={controlledStudentId} handleTakeControl={handleTakeControl}
-                            handleOpenChat={handleOpenChat} unreadMessages={unreadMessages}
-                            localVideoRef={localVideoRef} remoteUsers={remoteUsers}
-                            isVideoCollapsed={isVideoCollapsed} setIsVideoCollapsed={setIsVideoCollapsed}
+                        <RosterPanel
+                            role={role}
+                            students={students}
+                            viewingMode={viewingMode}
+                            setViewingMode={setViewingMode}
+                            activeHomeworkStudents={activeHomeworkStudents}
+                            handsRaised={handsRaised}
+                            spotlightedStudentId={spotlightedStudentId}
+                            handleSpotlightStudent={handleSpotlightStudent}
+                            assigningToStudentId={assigningToStudentId}
+                            setAssigningToStudentId={setAssigningToStudentId}
+                            availableLessons={availableLessons}
+                            handleAssignHomework={handleAssignHomework}
+                            controlledStudentId={controlledStudentId}
+                            handleTakeControl={handleTakeControl}
+                            handleOpenChat={handleOpenChat}
+                            unreadMessages={unreadMessages}
+                            localVideoRef={localVideoRef}
+                            handleViewStudentCam={(_studentId: string) => {}} // Provide a stub or your actual handler
+                            remoteVideoRef={useRef<HTMLVideoElement>(null)}
+                            remoteStream={null}
+                            isMuted={isMuted}
+                            toggleMute={toggleMute}
+                            isCameraOff={isCameraOff}
+                            toggleCamera={toggleCamera}
                         />
                     </Panel>
                 </PanelGroup>
