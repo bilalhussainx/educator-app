@@ -1,6 +1,6 @@
 // src/components/classroom/VideoManager.tsx
-import React, { useEffect, useState, useRef } from 'react';
-import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IRemoteVideoTrack, IRemoteAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
+import React, { useEffect, useRef } from 'react';
+import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 import apiClient from '../../services/apiClient';
 
 interface VideoManagerProps {
