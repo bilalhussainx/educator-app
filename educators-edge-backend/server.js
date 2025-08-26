@@ -21,6 +21,9 @@ const sessionRoutes = require('./routes/sessionRoutes');
 const app = express();
 app.use(express.json());
 
+
+
+
 // --- DEFINITIVE CORS CONFIGURATION V3 (Manual Preflight) ---
 
 // --- DEFINITIVE CORS CONFIGURATION V3 (Manual Preflight) ---
@@ -71,6 +74,7 @@ app.get('/healthz', (req, res) => {
   res.status(200).send('OK');
 });
 
+
 // Register All API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/lessons', lessonRoutes);
@@ -87,9 +91,20 @@ app.use('/api/concepts', conceptRoutes);
 app.use('/api/sessions', sessionRoutes);
 
 // Server and WebSocket Initialization
+// We can simplify the WS config now
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server }); // We can simplify the WS config now
+const wss = new WebSocketServer({ server }); 
+
+app.get('/test-ws', (req, res) => {
+    res.json({ 
+        wsReady: wss.clients.size >= 0,
+        jwtSecret: !!process.env.JWT_SECRET,
+        timestamp: Date.now()
+    });
+});
+
 initializeWebSocket(wss);
+
 
 const PORT = process.env.PORT || 10000;
 const HOST = '0.0.0.0';
