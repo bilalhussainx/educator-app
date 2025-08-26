@@ -333,13 +333,13 @@ useEffect(() => {
     useEffect(() => {
         if (localStream) {
             localStream.getVideoTracks().forEach(track => {
-                track.enabled = isVideoEnabled;
+                track.enabled = _isVideoEnabled;
             });
             localStream.getAudioTracks().forEach(track => {
-                track.enabled = isAudioEnabled;
+                track.enabled = _isAudioEnabled;
             });
         }
-    }, [isVideoEnabled, isAudioEnabled, localStream]);
+    }, [_isVideoEnabled, _isAudioEnabled, localStream]);
 
     // Declarative Terminal Content Rendering Effect
     useEffect(() => {
@@ -404,7 +404,7 @@ useEffect(() => {
             console.log(`[WEBRTC] Received ${event.track.kind} track from ${peerId}`);
             if (event.streams && event.streams[0]) {
                 setRemoteStreams(prev => new Map(prev).set(peerId, event.streams[0]));
-                setRemoteStream(event.streams[0]);
+                _setRemoteStream(event.streams[0]);
                 if (remoteVideoRef.current) {
                     remoteVideoRef.current.srcObject = event.streams[0];
                 }
@@ -465,7 +465,7 @@ useEffect(() => {
             const currentStream = remoteVideoRef.current.srcObject as MediaStream;
             const currentStreamId = remoteStreams.get(peerId)?.id;
             if (currentStream.id === currentStreamId) {
-                setRemoteStream(null);
+                _setRemoteStream(null);
                 remoteVideoRef.current.srcObject = null;
             }
         }
@@ -475,7 +475,7 @@ useEffect(() => {
 
     // --- Handlers and Functions ---
 
-    const handleTerminalPanelResize = () => {
+    const _handleTerminalPanelResize = () => {
         if (fitAddon.current) {
             // Defer to prevent race conditions with the panel library's internal state
             setTimeout(() => fitAddon.current?.fit(), 0);
@@ -514,8 +514,8 @@ useEffect(() => {
                     break;
                 }
                 case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
-                case 'WHITEBOARD_UPDATE': setWhiteboardLines(prevLines => [...prevLines, message.payload.line]); break;
-                case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+                case 'WHITEBOARD_UPDATE': _setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]); break;
+                case 'WHITEBOARD_CLEAR': _setWhiteboardLines([]); break;
                 case 'ROLE_ASSIGNED':
                     setRole(message.payload.role);
                     setFiles(message.payload.files || []);
@@ -523,7 +523,7 @@ useEffect(() => {
                     setSpotlightedStudentId(message.payload.spotlightedStudentId);
                     setControlledStudentId(message.payload.controlledStudentId);
                     setIsFrozen(message.payload.isFrozen);
-                    setWhiteboardLines(message.payload.whiteboardLines || []);
+                    _setWhiteboardLines(message.payload.whiteboardLines || []);
                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
                     setTeacherId(message.payload.teacherId);
                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
@@ -699,7 +699,7 @@ useEffect(() => {
         setIsDoingHomework(true);
     };
 
-    const handleWorkspaceChange = (value: string | undefined) => {
+    const _handleWorkspaceChange = (value: string | undefined) => {
         const newCode = value || '';
         if (isTeacherControllingThisStudent) {
             const studentState = studentHomeworkStates.get(viewingMode);
@@ -892,11 +892,11 @@ useEffect(() => {
                     
     //                 {/* Media Controls */}
     //                 <div className="flex items-center gap-1 border-l border-slate-600 pl-2 ml-2">
-    //                     <Button size="sm" onClick={toggleMute} className={cn('text-white', isAudioEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
-    //                         {isAudioEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+    //                     <Button size="sm" onClick={toggleMute} className={cn('text-white', _isAudioEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
+    //                         {_isAudioEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
     //                     </Button>
-    //                     <Button size="sm" onClick={toggleCamera} className={cn('text-white', isVideoEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
-    //                         {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+    //                     <Button size="sm" onClick={toggleCamera} className={cn('text-white', _isVideoEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
+    //                         {_isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
     //                     </Button>
     //                 </div>
     //             </div>
@@ -1084,11 +1084,11 @@ return (
                 {isWhiteboardVisible && role === 'teacher' && <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} className="bg-red-600 hover:bg-red-500 text-white"><Trash2 className="mr-2 h-4 w-4" />Clear</Button>}
                 
                 <div className="flex items-center gap-1 border-l border-slate-600 pl-2 ml-2">
-                    <Button size="sm" onClick={toggleMute} className={cn('text-white', isAudioEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
-                        {isAudioEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+                    <Button size="sm" onClick={toggleMute} className={cn('text-white', _isAudioEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
+                        {_isAudioEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
                     </Button>
-                    <Button size="sm" onClick={toggleCamera} className={cn('text-white', isVideoEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
-                        {isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+                    <Button size="sm" onClick={toggleCamera} className={cn('text-white', _isVideoEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500')}>
+                        {_isVideoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
                     </Button>
                 </div>
             </div>
@@ -1478,7 +1478,7 @@ export default LiveTutorialPage;
 
 //     // --- Handlers and Functions ---
 
-//     const handleTerminalPanelResize = () => {
+//     const _handleTerminalPanelResize = () => {
 //         if (fitAddon.current) {
 //             // Defer to prevent race conditions with the panel library's internal state
 //             setTimeout(() => fitAddon.current?.fit(), 0);
@@ -1509,8 +1509,8 @@ export default LiveTutorialPage;
 //                     break;
 //                 }
 //                 case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
-//                 case 'WHITEBOARD_UPDATE': setWhiteboardLines(prevLines => [...prevLines, message.payload.line]); break;
-//                 case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+//                 case 'WHITEBOARD_UPDATE': _setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]); break;
+//                 case 'WHITEBOARD_CLEAR': _setWhiteboardLines([]); break;
 //                 case 'ROLE_ASSIGNED':
 //                     setRole(message.payload.role);
 //                     setFiles(message.payload.files || []);
@@ -1518,7 +1518,7 @@ export default LiveTutorialPage;
 //                     setSpotlightedStudentId(message.payload.spotlightedStudentId);
 //                     setControlledStudentId(message.payload.controlledStudentId);
 //                     setIsFrozen(message.payload.isFrozen);
-//                     setWhiteboardLines(message.payload.whiteboardLines || []);
+//                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
 //                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
@@ -1578,7 +1578,7 @@ export default LiveTutorialPage;
 //         pc.onicecandidate = (event) => { if (event.candidate) sendWsMessage('WEBRTC_ICE_CANDIDATE', { to: targetId, candidate: event.candidate }); };
 //         pc.ontrack = (event) => {
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
 //             }
 //         };
@@ -1611,7 +1611,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -2156,7 +2156,7 @@ export default LiveTutorialPage;
 
 //     // --- Handlers and Functions ---
 
-//     const handleTerminalPanelResize = () => {
+//     const _handleTerminalPanelResize = () => {
 //         if (fitAddon.current) {
 //             // Defer to prevent race conditions with the panel library's internal state
 //             setTimeout(() => fitAddon.current?.fit(), 0);
@@ -2187,8 +2187,8 @@ export default LiveTutorialPage;
 //                     break;
 //                 }
 //                 case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
-//                 case 'WHITEBOARD_UPDATE': setWhiteboardLines(prevLines => [...prevLines, message.payload.line]); break;
-//                 case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+//                 case 'WHITEBOARD_UPDATE': _setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]); break;
+//                 case 'WHITEBOARD_CLEAR': _setWhiteboardLines([]); break;
 //                 case 'ROLE_ASSIGNED':
 //                     setRole(message.payload.role);
 //                     setFiles(message.payload.files || []);
@@ -2196,7 +2196,7 @@ export default LiveTutorialPage;
 //                     setSpotlightedStudentId(message.payload.spotlightedStudentId);
 //                     setControlledStudentId(message.payload.controlledStudentId);
 //                     setIsFrozen(message.payload.isFrozen);
-//                     setWhiteboardLines(message.payload.whiteboardLines || []);
+//                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
 //                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
@@ -2256,7 +2256,7 @@ export default LiveTutorialPage;
 //         pc.onicecandidate = (event) => { if (event.candidate) sendWsMessage('WEBRTC_ICE_CANDIDATE', { to: targetId, candidate: event.candidate }); };
 //         pc.ontrack = (event) => {
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
 //             }
 //         };
@@ -2289,7 +2289,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -3055,8 +3055,8 @@ export default LiveTutorialPage;
 //                     break;
 //                 }
 //                 case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
-//                 case 'WHITEBOARD_UPDATE': setWhiteboardLines(prevLines => [...prevLines, message.payload.line]); break;
-//                 case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+//                 case 'WHITEBOARD_UPDATE': _setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]); break;
+//                 case 'WHITEBOARD_CLEAR': _setWhiteboardLines([]); break;
 //                 case 'ROLE_ASSIGNED':
 //                     setRole(message.payload.role);
 //                     setFiles(message.payload.files || []);
@@ -3064,7 +3064,7 @@ export default LiveTutorialPage;
 //                     setSpotlightedStudentId(message.payload.spotlightedStudentId);
 //                     setControlledStudentId(message.payload.controlledStudentId);
 //                     setIsFrozen(message.payload.isFrozen);
-//                     setWhiteboardLines(message.payload.whiteboardLines || []);
+//                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
 //                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
@@ -3135,7 +3135,7 @@ export default LiveTutorialPage;
 //         pc.onicecandidate = (event) => { if (event.candidate) sendWsMessage('WEBRTC_ICE_CANDIDATE', { to: targetId, candidate: event.candidate }); };
 //         pc.ontrack = (event) => {
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
 //             }
 //         };
@@ -3168,7 +3168,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -3768,8 +3768,8 @@ export default LiveTutorialPage;
 //                         break;
 //                     }
 //                     case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
-//                     case 'WHITEBOARD_UPDATE': setWhiteboardLines(prevLines => [...prevLines, message.payload.line]); break;
-//                     case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+//                     case 'WHITEBOARD_UPDATE': _setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]); break;
+//                     case 'WHITEBOARD_CLEAR': _setWhiteboardLines([]); break;
 //                     case 'ROLE_ASSIGNED':
 //                         log("Processing ROLE_ASSIGNED.");
 //                         setRole(message.payload.role);
@@ -3778,7 +3778,7 @@ export default LiveTutorialPage;
 //                         setSpotlightedStudentId(message.payload.spotlightedStudentId);
 //                         setControlledStudentId(message.payload.controlledStudentId);
 //                         setIsFrozen(message.payload.isFrozen);
-//                         setWhiteboardLines(message.payload.whiteboardLines || []);
+//                         _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                         setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                         setTeacherId(message.payload.teacherId);
 //                         log(`  -> Setting teacherTerminalOutput state from ROLE_ASSIGNED.`);
@@ -3856,7 +3856,7 @@ export default LiveTutorialPage;
 //         pc.onicecandidate = (event) => { if (event.candidate) sendWsMessage('WEBRTC_ICE_CANDIDATE', { to: targetId, candidate: event.candidate }); };
 //         pc.ontrack = (event) => {
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
 //             }
 //         };
@@ -3889,7 +3889,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -4485,7 +4485,7 @@ export default LiveTutorialPage;
 //         pc.onicecandidate = (event) => { if (event.candidate) sendWsMessage('WEBRTC_ICE_CANDIDATE', { to: targetId, candidate: event.candidate }); };
 //         pc.ontrack = (event) => {
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
 //             }
 //         };
@@ -4527,8 +4527,8 @@ export default LiveTutorialPage;
 //                     }
 //                     break;
 //                 case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
-//                 case 'WHITEBOARD_UPDATE': setWhiteboardLines(prevLines => [...prevLines, message.payload.line]); break;
-//                 case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+//                 case 'WHITEBOARD_UPDATE': _setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]); break;
+//                 case 'WHITEBOARD_CLEAR': _setWhiteboardLines([]); break;
 //                 case 'ROLE_ASSIGNED':
 //                     setRole(message.payload.role);
 //                     setFiles(message.payload.files || []);
@@ -4536,7 +4536,7 @@ export default LiveTutorialPage;
 //                     setSpotlightedStudentId(message.payload.spotlightedStudentId);
 //                     setControlledStudentId(message.payload.controlledStudentId);
 //                     setIsFrozen(message.payload.isFrozen);
-//                     setWhiteboardLines(message.payload.whiteboardLines || []);
+//                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
 //                     // if (message.payload.role === 'student' && term.current && message.payload.terminalOutput) {
@@ -4621,7 +4621,7 @@ export default LiveTutorialPage;
 //         }
 //         setIsDoingHomework(true);
 //     };
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -5119,7 +5119,7 @@ export default LiveTutorialPage;
 //         pc.onicecandidate = (event) => { if (event.candidate) sendWsMessage('WEBRTC_ICE_CANDIDATE', { to: targetId, candidate: event.candidate }); };
 //         pc.ontrack = (event) => {
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
 //             }
 //         };
@@ -5151,8 +5151,8 @@ export default LiveTutorialPage;
 //                     }
 //                     break;
 //                 case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
-//                 case 'WHITEBOARD_UPDATE': setWhiteboardLines(prevLines => [...prevLines, message.payload.line]); break;
-//                 case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+//                 case 'WHITEBOARD_UPDATE': _setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]); break;
+//                 case 'WHITEBOARD_CLEAR': _setWhiteboardLines([]); break;
 //                 case 'ROLE_ASSIGNED':
 //                     setRole(message.payload.role);
 //                     setFiles(message.payload.files || []);
@@ -5160,7 +5160,7 @@ export default LiveTutorialPage;
 //                     setSpotlightedStudentId(message.payload.spotlightedStudentId);
 //                     setControlledStudentId(message.payload.controlledStudentId);
 //                     setIsFrozen(message.payload.isFrozen);
-//                     setWhiteboardLines(message.payload.whiteboardLines || []);
+//                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId); 
 //                     break;
@@ -5207,7 +5207,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -5743,7 +5743,7 @@ export default LiveTutorialPage;
 //         pc.onicecandidate = (event) => { if (event.candidate) sendWsMessage('WEBRTC_ICE_CANDIDATE', { to: targetId, candidate: event.candidate }); };
 //         pc.ontrack = (event) => {
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
 //             }
 //         };
@@ -5786,8 +5786,8 @@ export default LiveTutorialPage;
 //                     }
 //                     break;
 //                 case 'WHITEBOARD_VISIBILITY_UPDATE': setIsWhiteboardVisible(message.payload.isVisible); break;
-//                 case 'WHITEBOARD_UPDATE': setWhiteboardLines(prevLines => [...prevLines, message.payload.line]); break;
-//                 case 'WHITEBOARD_CLEAR': setWhiteboardLines([]); break;
+//                 case 'WHITEBOARD_UPDATE': _setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]); break;
+//                 case 'WHITEBOARD_CLEAR': _setWhiteboardLines([]); break;
 //                 case 'ROLE_ASSIGNED':
 //                     setRole(message.payload.role);
 //                     setFiles(message.payload.files || []);
@@ -5795,7 +5795,7 @@ export default LiveTutorialPage;
 //                     setSpotlightedStudentId(message.payload.spotlightedStudentId);
 //                     setControlledStudentId(message.payload.controlledStudentId);
 //                     setIsFrozen(message.payload.isFrozen);
-//                     setWhiteboardLines(message.payload.whiteboardLines || []);
+//                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId); 
 
@@ -5848,7 +5848,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -6471,7 +6471,7 @@ export default LiveTutorialPage;
 
 //         pc.ontrack = (event) => {
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) {
 //                     remoteVideoRef.current.srcObject = event.streams[0];
 //                 }
@@ -6480,7 +6480,7 @@ export default LiveTutorialPage;
         
 //         pc.onconnectionstatechange = () => {
 //             if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
-//                 setRemoteStream(null);
+//                 _setRemoteStream(null);
 //             }
 //         };
 
@@ -6508,10 +6508,10 @@ export default LiveTutorialPage;
 //                     setIsWhiteboardVisible(message.payload.isVisible);
 //                     break;
 //                 case 'WHITEBOARD_UPDATE':
-//                     setWhiteboardLines(prevLines => [...prevLines, message.payload.line]);
+//                     __setWhiteboardLines((prevLines: Line[]) => [...prevLines, message.payload.line]);
 //                     break;
 //                 case 'WHITEBOARD_CLEAR':
-//                     setWhiteboardLines([]);
+//                     __setWhiteboardLines([]);
 //                     break;
                 
 //                 case 'ROLE_ASSIGNED':
@@ -6522,7 +6522,7 @@ export default LiveTutorialPage;
 //                     setControlledStudentId(message.payload.controlledStudentId);
 //                     setIsFrozen(message.payload.isFrozen);
 //                     // --- NEW: Initialize whiteboard with existing lines from server ---
-//                     setWhiteboardLines(message.payload.whiteboardLines || []);
+//                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     break;
                 
@@ -6628,7 +6628,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -7187,7 +7187,7 @@ export default LiveTutorialPage;
 //         pc.ontrack = (event) => {
 //             console.log(`[WEBRTC] Received remote track. Displaying stream.`);
 //             if (event.streams && event.streams[0]) {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) {
 //                     remoteVideoRef.current.srcObject = event.streams[0];
 //                 }
@@ -7197,7 +7197,7 @@ export default LiveTutorialPage;
 //         pc.onconnectionstatechange = () => {
 //             console.log(`[WEBRTC] Connection state changed: ${pc.connectionState}`);
 //             if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
-//                 setRemoteStream(null);
+//                 _setRemoteStream(null);
 //             }
 //         };
 
@@ -7344,7 +7344,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -7962,7 +7962,7 @@ export default LiveTutorialPage;
 //         setIsDoingHomework(true);
 //     };
 
-//     const handleWorkspaceChange = (value: string | undefined) => {
+//     const _handleWorkspaceChange = (value: string | undefined) => {
 //         const newCode = value || '';
 //         if (isTeacherControllingThisStudent) {
 //             const studentState = studentHomeworkStates.get(viewingMode);
@@ -9655,7 +9655,7 @@ export default LiveTutorialPage;
 //                 }
 //             };
 //             peerConnection.current.ontrack = event => {
-//                 setRemoteStream(event.streams[0]);
+//                 _setRemoteStream(event.streams[0]);
 //                 if (remoteVideoRef.current) {
 //                     remoteVideoRef.current.srcObject = event.streams[0];
 //                 }
