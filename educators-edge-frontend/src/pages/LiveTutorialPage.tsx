@@ -19,7 +19,6 @@ import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRT
 
 // Import child components
 import { HomeworkView } from '../components/classroom/HomeworkView';
-import { RosterPanel } from '../components/classroom/RosterPanel';
 import { WhiteboardPanel, Line } from '../components/classroom/WhiteboardPanel';
 import { ChatPanel } from '../components/classroom/ChatPanel';
 
@@ -28,7 +27,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
@@ -52,15 +50,20 @@ const simpleJwtDecode = (token: string) => {
 };
 
 // --- Integrated Video Components ---
-const VideoParticipant = ({ user, students, isLocal = false, size = "sm" }: { 
+const VideoParticipant = ({ user, students, isLocal = false, size = "sm", localVideoRef }: { 
     user?: IAgoraRTCRemoteUser, 
     students: Student[], 
     isLocal?: boolean,
-    size?: "xs" | "sm" | "md"
+    size?: "xs" | "sm" | "md",
+    localVideoRef?: React.RefObject<HTMLVideoElement>
 }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     
     useEffect(() => {
+        if (isLocal && localVideoRef?.current) {
+            // Local video is handled by Agora directly
+            return;
+        }
         if (!isLocal && videoRef.current && user?.videoTrack) {
             user.videoTrack.play(videoRef.current);
         }
@@ -70,7 +73,7 @@ const VideoParticipant = ({ user, students, isLocal = false, size = "sm" }: {
         return () => {
             if (!isLocal) user?.videoTrack?.stop();
         };
-    }, [user, isLocal]);
+    }, [user, isLocal, localVideoRef]);
 
     const username = isLocal ? 'You' : 
         (students.find(s => String(s.id) === String(user?.uid))?.username || `User ${user?.uid.toString().substring(0, 4)}`);
@@ -85,13 +88,22 @@ const VideoParticipant = ({ user, students, isLocal = false, size = "sm" }: {
     return (
         <div className={cn("relative bg-slate-800/50 rounded-md overflow-hidden border border-slate-600/30", sizeClass)}>
             {hasVideo ? (
-                <video 
-                    ref={videoRef} 
-                    autoPlay 
-                    playsInline 
-                    muted={isLocal}
-                    className="w-full h-full object-cover" 
-                />
+                isLocal && localVideoRef ? (
+                    <video 
+                        ref={localVideoRef} 
+                        autoPlay 
+                        playsInline 
+                        muted
+                        className="w-full h-full object-cover" 
+                    />
+                ) : (
+                    <video 
+                        ref={videoRef} 
+                        autoPlay 
+                        playsInline 
+                        className="w-full h-full object-cover" 
+                    />
+                )
             ) : (
                 <div className="w-full h-full flex items-center justify-center">
                     <User className="h-6 w-6 text-slate-500" />
@@ -383,7 +395,6 @@ const LiveTutorialPage: React.FC = () => {
     // --- Refs ---
     const ws = useRef<WebSocket | null>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
-    const remoteVideoRef = useRef<HTMLVideoElement>(null);
     const terminalRef = useRef<HTMLDivElement>(null);
     const term = useRef<Terminal | null>(null);
     const fitAddon = useRef<FitAddon | null>(null);
@@ -703,7 +714,6 @@ const LiveTutorialPage: React.FC = () => {
     const handleSpotlightStudent = (studentId: string | null) => sendWsMessage('SPOTLIGHT_STUDENT', { studentId });
     const handleTakeControl = (studentId: string | null) => sendWsMessage('TAKE_CONTROL', { studentId });
     const handleToggleFreeze = () => sendWsMessage('TOGGLE_FREEZE');
-    const handleViewStudentCam = async (_studentId: string) => { toast.info("Video connection is already active!"); };
     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
     const handleOpenChat = (studentId: string) => {
         setActiveChatStudentId(studentId);
