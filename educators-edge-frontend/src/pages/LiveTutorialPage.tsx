@@ -798,7 +798,7 @@ useEffect(() => {
     // --- AGORA MEDIA CONTROLS ---
     const toggleMute = () => { 
         if (localTracks.current?.audioTrack) {
-            const isEnabled = localTracks.current.audioTrack.isEnabled;
+            const isEnabled = localTracks.current.audioTrack.enabled;
             localTracks.current.audioTrack.setEnabled(!isEnabled);
             setIsMuted(isEnabled); // Update UI state
         }
@@ -806,7 +806,7 @@ useEffect(() => {
     
     const toggleCamera = () => { 
         if (localTracks.current?.videoTrack) {
-            const isEnabled = localTracks.current.videoTrack.isEnabled;
+            const isEnabled = localTracks.current.videoTrack.enabled;
             localTracks.current.videoTrack.setEnabled(!isEnabled);
             setIsCameraOff(isEnabled); // Update UI state
         }
