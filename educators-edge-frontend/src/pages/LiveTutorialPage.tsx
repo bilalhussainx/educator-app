@@ -21,7 +21,7 @@ import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRT
 // Import child components
 import { HomeworkView } from '../components/classroom/HomeworkView';
 import { RosterPanel } from '../components/classroom/RosterPanel';
-import { WhiteboardPanel, Line } from '../components/classroom/WhiteboardPanel';
+import { Line } from '../components/classroom/WhiteboardPanel';
 import { ChatPanel } from '../components/classroom/ChatPanel';
 
 // Import shadcn components and icons
@@ -29,10 +29,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff } from 'lucide-react';
+import { PhoneOff, ChevronRight, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
-import { AlertDialogContent } from "@/components/ui/alert-dialog";
+// import { AlertDialogContent } from "@/components/ui/alert-dialog";
 
 // Import types and configs
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
@@ -635,7 +635,7 @@ const LiveTutorialPage: React.FC = () => {
                             availableLessons={availableLessons} handleAssignHomework={handleAssignHomework}
                             isMuted={isMuted} toggleMute={toggleMute} isCameraOff={isCameraOff} toggleCamera={toggleCamera}
                             controlledStudentId={controlledStudentId} handleTakeControl={handleTakeControl}
-                            handleOpenChat={handleOpenChat} unreadMessages={unreadMessages} localVideoRef={localVideoRef} remoteVideoRef={undefined} remoteStream={null} />
+                            handleOpenChat={handleOpenChat} unreadMessages={unreadMessages} localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} remoteStream={null} />
                     </Panel>
                 </PanelGroup>
             </main>
