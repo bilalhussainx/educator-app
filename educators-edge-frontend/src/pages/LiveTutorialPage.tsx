@@ -32,7 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialogContent } from "@/components/ui/alert-dialog";
 
 // Import types and configs
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
@@ -52,9 +52,9 @@ const simpleJwtDecode = (token: string) => {
     } catch (error) { console.error("Invalid token:", error); return null; }
 };
 
-const GlassAlertDialogContent: React.FC<React.ComponentProps<typeof AlertDialogContent>> = ({ className, ...props }) => (
-    <AlertDialogContent className={cn("bg-slate-900/60 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl", className)} {...props} />
-);
+// const GlassAlertDialogContent: React.FC<React.ComponentProps<typeof AlertDialogContent>> = ({ className, ...props }) => (
+//     <AlertDialogContent className={cn("bg-slate-900/60 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl", className)} {...props} />
+// );
 
 
 // --- Helper component to render a remote user's video ---
@@ -216,7 +216,7 @@ const LiveTutorialPage: React.FC = () => {
             if (mediaType === 'audio') user.audioTrack?.play();
         });
 
-        client.on('user-left', (user) => {
+        client.on('user-left', (_user) => {
             setRemoteUsers(Array.from(client.remoteUsers));
         });
 
@@ -464,7 +464,7 @@ const LiveTutorialPage: React.FC = () => {
     const handleSpotlightStudent = (studentId: string | null) => sendWsMessage('SPOTLIGHT_STUDENT', { studentId });
     const handleTakeControl = (studentId: string | null) => sendWsMessage('TAKE_CONTROL', { studentId });
     const handleToggleFreeze = () => sendWsMessage('TOGGLE_FREEZE');
-    const handleViewStudentCam = async (studentId: string) => { toast.info("Video connection is already active!"); };
+    const handleViewStudentCam = async (_studentId: string) => { toast.info("Video connection is already active!"); };
     const handleDraw = (line: Line) => sendWsMessage('WHITEBOARD_DRAW', { line });
     const handleOpenChat = (studentId: string) => {
         setActiveChatStudentId(studentId);
@@ -841,7 +841,7 @@ export default LiveTutorialPage;
 //         });
 
 //         // Listen for when users leave
-//         client.on('user-left', (user) => {
+//         client.on('user-left', (_user) => {
 //             setRemoteUsers(Array.from(client.remoteUsers));
 //         });
         
