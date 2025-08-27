@@ -19,6 +19,7 @@ import analytics from './services/analyticsService.js';
 import { AppLayout } from './components/layout/AppLayout';
 
 // --- Page Components ---
+import CourseEditorPage from './pages/CourseEditorPage.tsx';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
@@ -143,7 +144,7 @@ export default function App() {
                 <Route path="/courses/discover" element={<DiscoverCoursesPage />} />
                 <Route path="/courses/:courseId/learn" element={<StudentCoursePage />} />
                 <Route path="/courses/:courseId/landing" element={<CourseLandingPage />} />
-
+                <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />`
                 {/* Default route for any other authenticated path */}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
