@@ -54,7 +54,12 @@ router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLesso
 router.get('/:id/mysubmission', verifyToken, lessonController.getStudentSubmissionForLesson);
 router.get('/teacher/list', verifyToken, isTeacher, lessonController.getTeacherLessons);
 router.get('/:lessonId/ascent-ide', verifyToken, lessonController.getAscentIdeData);
+router.get('/library/search', verifyToken, isTeacher, lessonController.searchIngestedLessons);
+router.post('/add-to-course/:courseId', verifyToken, isTeacher, lessonController.addLessonToCourse);
 
+router.post('/:courseId/sort-with-ai', verifyToken, isTeacher, courseController.sortCourseLessonsWithAI);
+
+// ...
 
 // THIS IS THE FIX: The parameter is now ':id' to be consistent.
 router.post('/:id/run-tests', verifyToken, lessonController.runLessonTests);
