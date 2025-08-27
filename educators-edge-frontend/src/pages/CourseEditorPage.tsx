@@ -1,4 +1,4 @@
-// FILE: src/pages/CourseEditorPage.tsx (Definitive, UX-Focused Version)
+// FILE: src/pages/CourseEditorPage.tsx (Definitive, Corrected Version)
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
@@ -63,7 +63,6 @@ const CourseEditorPage: React.FC = () => {
     const [courseLessons, setCourseLessons] = useState<CourseLesson[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
     const [isSorting, setIsSorting] = useState(false);
     const [courseTitle, setCourseTitle] = useState('');
     
@@ -98,16 +97,14 @@ const CourseEditorPage: React.FC = () => {
 
     const handleAddLesson = async (lessonToAdd: IngestedLesson) => {
         try {
-            // Optimistic UI update
             const tempLesson: CourseLesson = { ...lessonToAdd, order_index: courseLessons.length };
             setCourseLessons(prev => [...prev, tempLesson]);
-
             await apiClient.post(`/api/lessons/add-to-course/${courseId}`, { ingestedLessonId: lessonToAdd.id });
-            await fetchCourseData(); // Re-sync with the database
+            await fetchCourseData();
             toast.success(`"${lessonToAdd.title}" added to course.`);
         } catch (error) {
             toast.error("Failed to add lesson.");
-            setCourseLessons(prev => prev.filter(l => l.id !== lessonToAdd.id)); // Rollback optimistic update
+            setCourseLessons(prev => prev.filter(l => l.id !== lessonToAdd.id));
         }
     };
 
@@ -115,11 +112,11 @@ const CourseEditorPage: React.FC = () => {
         const originalLessons = [...courseLessons];
         setCourseLessons(prev => prev.filter(l => l.id !== lessonIdToRemove));
         try {
-            await apiClient.delete(`/api/lessons/${lessonIdToRemove}`); // Assumes this endpoint exists
+            await apiClient.delete(`/api/lessons/${lessonIdToRemove}`);
             toast.success("Lesson removed.");
         } catch (error) {
             toast.error("Failed to remove lesson.");
-            setCourseLessons(originalLessons); // Rollback
+            setCourseLessons(originalLessons);
         }
     };
     
@@ -147,11 +144,8 @@ const CourseEditorPage: React.FC = () => {
                 const oldIndex = items.findIndex(item => item.id === active.id);
                 const newIndex = items.findIndex(item => item.id === over.id);
                 const newOrder = arrayMove(items, oldIndex, newIndex);
-                // Update order_index for the UI before saving
-                return newOrder.map((item, index) => ({ ...item, order_index: index }));
+                return newOrder.map((item: CourseLesson, index: number) => ({ ...item, order_index: index }));
             });
-            // Here you would call a backend endpoint to save the new manual order
-            // toast.info("Manual order saved.");
         }
     };
 
@@ -244,6 +238,251 @@ const CourseEditorPage: React.FC = () => {
 };
 
 export default CourseEditorPage;
+// // FILE: src/pages/CourseEditorPage.tsx (Definitive, UX-Focused Version)
+// import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// import { useParams, useNavigate } from 'react-router-dom';
+// import apiClient from '../services/apiClient';
+// import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+// import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+// import { CSS } from '@dnd-kit/utilities';
+
+// // --- UI IMPORTS ---
+// import { Button } from '@/components/ui/button';
+// import { Input } from '@/components/ui/input';
+// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// import { Toaster, toast } from 'sonner';
+// import { Search, Plus, Sparkles, Trash2, GripVertical, Eye, ChevronLeft, Loader2 } from 'lucide-react';
+// import { cn } from "@/lib/utils";
+
+// // --- TYPE DEFINITIONS ---
+// interface IngestedLesson {
+//     id: string;
+//     title: string;
+//     description: string;
+//     lesson_type: 'algorithmic' | 'frontend-project';
+// }
+// interface CourseLesson {
+//     id: string;
+//     title: string;
+//     order_index: number;
+//     lesson_type: 'algorithmic' | 'frontend-project';
+// }
+
+// // --- REUSABLE & STYLED COMPONENTS ---
+// const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
+//     <Card className={cn("bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white flex flex-col", className)} {...props} />
+// );
+
+// // --- DRAGGABLE LESSON ITEM COMPONENT ---
+// const SortableLessonItem = ({ lesson, onRemove, onPreview }: { lesson: CourseLesson, onRemove: (id: string) => void, onPreview: (id: string) => void }) => {
+//     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: lesson.id });
+//     const style = { transform: CSS.Transform.toString(transform), transition };
+    
+//     return (
+//         <div ref={setNodeRef} style={style} className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg flex items-center justify-between gap-2">
+//             <div className="flex items-center gap-3">
+//                 <GripVertical {...attributes} {...listeners} className="h-5 w-5 text-slate-500 cursor-grab" />
+//                 <span className="font-mono text-sm text-slate-500">{String(lesson.order_index + 1).padStart(2, '0')}</span>
+//                 <span className="font-medium text-slate-200">{lesson.title}</span>
+//             </div>
+//             <div className="flex items-center gap-1">
+//                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onPreview(lesson.id)}><Eye className="h-4 w-4" /></Button>
+//                 <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-500 hover:bg-red-500/10 hover:text-red-400" onClick={() => onRemove(lesson.id)}><Trash2 className="h-4 w-4" /></Button>
+//             </div>
+//         </div>
+//     );
+// };
+
+
+// // --- MAIN PAGE COMPONENT ---
+// const CourseEditorPage: React.FC = () => {
+//     const { courseId } = useParams<{ courseId: string }>();
+//     const navigate = useNavigate();
+    
+//     const [libraryLessons, setLibraryLessons] = useState<IngestedLesson[]>([]);
+//     const [courseLessons, setCourseLessons] = useState<CourseLesson[]>([]);
+//     const [searchTerm, setSearchTerm] = useState('');
+//     const [isLoading, setIsLoading] = useState(true);
+//     const [isSorting, setIsSorting] = useState(false);
+//     const [courseTitle, setCourseTitle] = useState('');
+    
+//     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+
+//     const fetchCourseData = useCallback(async () => {
+//         if (!courseId) return;
+//         try {
+//             const courseRes = await apiClient.get(`/api/courses/${courseId}`);
+//             setCourseTitle(courseRes.data.title);
+//             setCourseLessons(courseRes.data.lessons.sort((a: CourseLesson, b: CourseLesson) => a.order_index - b.order_index));
+//         } catch (error) {
+//             toast.error("Failed to load course data.");
+//             navigate('/dashboard');
+//         }
+//     }, [courseId, navigate]);
+
+//     useEffect(() => {
+//         const fetchInitialData = async () => {
+//             setIsLoading(true);
+//             await fetchCourseData();
+//             try {
+//                 const libraryRes = await apiClient.get('/api/lessons/library/search?language=javascript');
+//                 setLibraryLessons(libraryRes.data);
+//             } catch (error) {
+//                 toast.error("Failed to load lesson library.");
+//             }
+//             setIsLoading(false);
+//         };
+//         fetchInitialData();
+//     }, [courseId, fetchCourseData]);
+
+//     const handleAddLesson = async (lessonToAdd: IngestedLesson) => {
+//         try {
+//             // Optimistic UI update
+//             const tempLesson: CourseLesson = { ...lessonToAdd, order_index: courseLessons.length };
+//             setCourseLessons(prev => [...prev, tempLesson]);
+
+//             await apiClient.post(`/api/lessons/add-to-course/${courseId}`, { ingestedLessonId: lessonToAdd.id });
+//             await fetchCourseData(); // Re-sync with the database
+//             toast.success(`"${lessonToAdd.title}" added to course.`);
+//         } catch (error) {
+//             toast.error("Failed to add lesson.");
+//             setCourseLessons(prev => prev.filter(l => l.id !== lessonToAdd.id)); // Rollback optimistic update
+//         }
+//     };
+
+//     const handleRemoveLesson = async (lessonIdToRemove: string) => {
+//         const originalLessons = [...courseLessons];
+//         setCourseLessons(prev => prev.filter(l => l.id !== lessonIdToRemove));
+//         try {
+//             await apiClient.delete(`/api/lessons/${lessonIdToRemove}`); // Assumes this endpoint exists
+//             toast.success("Lesson removed.");
+//         } catch (error) {
+//             toast.error("Failed to remove lesson.");
+//             setCourseLessons(originalLessons); // Rollback
+//         }
+//     };
+    
+//     const handleSortWithAI = async () => {
+//         if (!courseId) return;
+//         setIsSorting(true);
+//         toast.promise(
+//             apiClient.post(`/api/courses/${courseId}/sort-with-ai`),
+//             {
+//                 loading: 'AI is organizing your curriculum...',
+//                 success: async (res) => {
+//                     await fetchCourseData();
+//                     return res.data.message;
+//                 },
+//                 error: (err) => err.response?.data?.error || 'AI sorting failed. Please try again.',
+//                 finally: () => setIsSorting(false),
+//             }
+//         );
+//     };
+
+//     const handleDragEnd = (event: DragEndEvent) => {
+//         const { active, over } = event;
+//         if (over && active.id !== over.id) {
+//             setCourseLessons((items) => {
+//                 const oldIndex = items.findIndex(item => item.id === active.id);
+//                 const newIndex = items.findIndex(item => item.id === over.id);
+//                 const newOrder = arrayMove(items, oldIndex, newIndex);
+//                 // Update order_index for the UI before saving
+//                 return  newOrder.map((item: CourseLesson, index: number) => ({ ...item, order_index: index }));
+//             });
+//             // Here you would call a backend endpoint to save the new manual order
+//             // toast.info("Manual order saved.");
+//         }
+//     };
+
+//     const handlePreviewLesson = (lessonId: string) => {
+//         window.open(`/lesson/${lessonId}`, '_blank');
+//     };
+
+//     const filteredLibrary = useMemo(() => libraryLessons.filter(lesson =>
+//         (lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//          lesson.description.toLowerCase().includes(searchTerm.toLowerCase())) &&
+//         !courseLessons.some(cl => cl.title === lesson.title)
+//     ), [libraryLessons, courseLessons, searchTerm]);
+
+//     if (isLoading) {
+//         return <div className="h-screen w-full flex items-center justify-center bg-[#0a091a] text-white">Loading Curriculum Studio...</div>;
+//     }
+
+//     return (
+//         <div className="w-full min-h-screen bg-[#0a091a] text-white font-sans">
+//             <Toaster theme="dark" richColors position="top-right" />
+//             <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+//                 <header className="mb-8">
+//                     <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4 text-slate-400 hover:bg-slate-800">
+//                         <ChevronLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+//                     </Button>
+//                     <h1 className="text-4xl font-bold tracking-tighter text-white">{courseTitle}</h1>
+//                     <p className="text-lg text-slate-400 mt-2">Curriculum Design Studio</p>
+//                 </header>
+
+//                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+//                     <GlassCard>
+//                         <CardHeader>
+//                             <CardTitle className="flex items-center gap-2"><Search /> Lesson Library</CardTitle>
+//                             <CardDescription>Search and add pre-built JavaScript lessons to your course.</CardDescription>
+//                             <div className="relative pt-2">
+//                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+//                                 <Input placeholder="Search by title or keyword (e.g., 'array', 'DOM')..." className="pl-10 bg-slate-950/60 border-slate-700" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+//                             </div>
+//                         </CardHeader>
+//                         <CardContent className="flex-grow max-h-[60vh] overflow-y-auto pr-3">
+//                             <ul className="space-y-2">
+//                                 {filteredLibrary.map(lesson => (
+//                                     <li key={lesson.id} className="p-3 border border-slate-700/60 bg-slate-800/30 rounded-lg flex justify-between items-start gap-3">
+//                                         <div className="flex-grow">
+//                                             <h4 className="font-medium text-slate-200">{lesson.title}</h4>
+//                                             <p className="text-xs text-slate-400 mt-1 line-clamp-2">{lesson.description}</p>
+//                                         </div>
+//                                         <Button size="sm" variant="outline" className="flex-shrink-0 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200" onClick={() => handleAddLesson(lesson)}>
+//                                             <Plus className="h-4 w-4" />
+//                                         </Button>
+//                                     </li>
+//                                 ))}
+//                             </ul>
+//                         </CardContent>
+//                     </GlassCard>
+
+//                     <GlassCard>
+//                         <CardHeader>
+//                             <div className="flex justify-between items-center">
+//                                 <CardTitle className="flex items-center gap-2">Course Blueprint</CardTitle>
+//                                 <Button onClick={handleSortWithAI} disabled={isSorting || courseLessons.length < 2} className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold">
+//                                     {isSorting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+//                                     Organize with AI
+//                                 </Button>
+//                             </div>
+//                             <CardDescription>Drag and drop to manually reorder, or let AI create the optimal learning path.</CardDescription>
+//                         </CardHeader>
+//                         <CardContent className="flex-grow max-h-[60vh] overflow-y-auto pr-3">
+//                             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+//                                 <SortableContext items={courseLessons} strategy={verticalListSortingStrategy}>
+//                                     <ul className="space-y-2">
+//                                         {courseLessons.map(lesson => (
+//                                             <SortableLessonItem key={lesson.id} lesson={lesson} onRemove={handleRemoveLesson} onPreview={handlePreviewLesson} />
+//                                         ))}
+//                                     </ul>
+//                                 </SortableContext>
+//                             </DndContext>
+//                             {courseLessons.length === 0 && (
+//                                 <div className="text-center py-16 border-2 border-dashed border-slate-700 rounded-xl">
+//                                     <p className="text-slate-400">Your course is empty.</p>
+//                                     <p className="text-sm text-slate-500 mt-1">Add lessons from the library to begin.</p>
+//                                 </div>
+//                             )}
+//                         </CardContent>
+//                     </GlassCard>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default CourseEditorPage;
 // // FILE: src/pages/CourseEditorPage.tsx
 // import React, { useState, useEffect } from 'react';
 // import { useParams } from 'react-router-dom';
