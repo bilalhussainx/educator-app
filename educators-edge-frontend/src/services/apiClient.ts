@@ -27,6 +27,11 @@ apiClient.interceptors.request.use((config) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Add cache-busting headers for development
+  if (!import.meta.env.PROD) {
+    config.headers['Cache-Control'] = 'no-cache';
+    config.headers['Pragma'] = 'no-cache';
+  }
   return config;
 });
 
