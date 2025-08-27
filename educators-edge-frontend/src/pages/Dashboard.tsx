@@ -215,7 +215,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                     <div className="flex items-center gap-2"><Users className="h-4 w-4 text-cyan-400/70" /><span>{course.student_count} Students</span></div>
                                     <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-cyan-400/70" /><span>{course.lesson_count} Lessons</span></div>
                                 </div>
-                                <Button className="w-full bg-slate-800/70 border border-slate-600 hover:bg-slate-700/80 text-slate-200" onClick={() => navigate(`/courses/${course.id}/manage`)}>
+                                <Button className="w-full bg-slate-800/70 border border-slate-600 hover:bg-slate-700/80 text-slate-200" onClick={() => navigate(`/courses/${course.id}/edit`)}>
                                     <Settings className="mr-2 h-4 w-4" /> Manage Course
                                 </Button>
                             </CardContent>
