@@ -14,11 +14,11 @@ if (import.meta.env.PROD && !API_URL) {
 }
 
 // 3. Log the URL for easy debugging.
-console.log(`[API Client] Initializing with base URL: ${API_URL || 'http://localhost:5000'}`);
+console.log(`[API Client] Initializing with base URL: ${API_URL || 'http://localhost:10000'}`);
 
 const apiClient = axios.create({
   // Fall back to localhost ONLY if the VITE_ variable is not found (for local dev).
-  baseURL: API_URL || 'http://localhost:5000',
+  baseURL: API_URL || 'http://localhost:10000',
 });
 
 // 4. The interceptor to add the auth token remains the same.
