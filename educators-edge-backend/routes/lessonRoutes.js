@@ -56,7 +56,7 @@ router.get('/:id/mysubmission', verifyToken, lessonController.getStudentSubmissi
 router.get('/teacher/list', verifyToken, isTeacher, lessonController.getTeacherLessons);
 router.get('/:lessonId/ascent-ide', verifyToken, lessonController.getAscentIdeData);
 router.get('/:lessonId/solution', verifyToken, lessonController.getLessonSolution);
-// router.post('/add-to-course/:courseId', verifyToken, isTeacher, courseController.addLessonToCourse);
+router.post('/add-to-course/:courseId', verifyToken, isTeacher, lessonController.addLessonToCourse);
 
 router.post('/:courseId/sort-with-ai', verifyToken, isTeacher, courseController.sortCourseLessonsWithAI);
 
