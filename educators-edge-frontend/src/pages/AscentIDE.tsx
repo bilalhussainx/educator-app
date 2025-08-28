@@ -51,7 +51,7 @@ const HintModal = ({ hint, isLoading, onClose }: { hint: string; isLoading: bool
         <GlassAlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2 text-fuchsia-300"><BrainCircuit className="h-5 w-5" /> AI Oracle</AlertDialogTitle>
-                <AlertDialogDescription as="div" className="pt-3 text-slate-300">
+                <AlertDialogDescription className="pt-3 text-slate-300">
                     {isLoading ? "Consulting the Oracle..." : <div className="bg-fuchsia-950/40 border border-fuchsia-500/30 p-3 rounded-md whitespace-pre-wrap text-sm">{hint}</div>}
                 </AlertDialogDescription>
             </AlertDialogHeader>
@@ -1217,7 +1217,7 @@ export default AscentIDE;
 //         <GlassAlertDialogContent>
 //             <AlertDialogHeader>
 //                 <AlertDialogTitle className="flex items-center gap-3 text-fuchsia-300"><BrainCircuit /> AI Oracle</AlertDialogTitle>
-//                 <AlertDialogDescription as="div" className="pt-4 text-slate-300">
+//                 <AlertDialogDescription className="pt-4 text-slate-300">
 //                     {isLoading ? "Consulting the Oracle..." : <div className="bg-fuchsia-950/40 border border-fuchsia-500/30 p-4 rounded-md whitespace-pre-wrap">{hint}</div>}
 //                 </AlertDialogDescription>
 //             </AlertDialogHeader>
@@ -1751,7 +1751,7 @@ export default AscentIDE;
 //         <GlassAlertDialogContent>
 //             <AlertDialogHeader>
 //                 <AlertDialogTitle className="flex items-center gap-3 text-fuchsia-300"><BrainCircuit /> AI Oracle</AlertDialogTitle>
-//                 <AlertDialogDescription as="div" className="pt-4 text-slate-300">
+//                 <AlertDialogDescription className="pt-4 text-slate-300">
 //                     {isLoading ? "Consulting the Oracle..." : <div className="bg-fuchsia-950/40 border border-fuchsia-500/30 p-4 rounded-md whitespace-pre-wrap">{hint}</div>}
 //                 </AlertDialogDescription>
 //             </AlertDialogHeader>
