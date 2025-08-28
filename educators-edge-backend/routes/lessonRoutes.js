@@ -32,6 +32,7 @@
 const express = require('express');
 const router = express.Router();
 const lessonController = require('../controllers/lessonController');
+const courseController = require('../controllers/courseController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { isTeacher } = require('../middleware/roleMiddleware');
 
