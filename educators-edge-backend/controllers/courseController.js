@@ -191,6 +191,32 @@ exports.enrollInCourse = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+
+// --- NEW: Sort course lessons with AI ---
+exports.sortCourseLessonsWithAI = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const teacherId = req.user.id;
+
+        // Verify the teacher owns the course
+        const courseResult = await db.query(
+            'SELECT id FROM courses WHERE id = $1 AND teacher_id = $2',
+            [courseId, teacherId]
+        );
+
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Course not found or you do not have permission to modify it.' });
+        }
+
+        // For now, return a placeholder response
+        // TODO: Implement AI sorting logic
+        res.json({ message: 'AI sorting functionality coming soon' });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
 // // =================================================================
 // // FILE: controllers/courseController.js (UPDATED)
 // // =================================================================
