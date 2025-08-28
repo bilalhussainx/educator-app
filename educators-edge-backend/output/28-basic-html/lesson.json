@@ -1,0 +1,336 @@
+{
+  "section": {
+    "id": "28-basic-html",
+    "name": "28-basic-html"
+  },
+  "challenges": [
+    {
+      "id": "5dc174fcf86c76b9248c6eb2",
+      "title": "Step 1",
+      "challengeType": 0,
+      "dashedName": "step-1",
+      "description": "In this workshop, you will continue working with basic HTML elements like headings, paragraphs, and lists by building a cat photo app. \n\nBegin the workshop by adding an `h1` element with the text of `CatPhotoApp`.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "<html>\n  <body>\n--fcc-editable-region--\n   \n--fcc-editable-region--\n  </body>\n</html>"
+        }
+      ],
+      "solution": [],
+      "tests": [
+        {
+          "text": "The text `CatPhotoApp` should be present in the code. You may want to check your spelling.",
+          "testCode": "assert.match(code, /catphotoapp/i);"
+        },
+        {
+          "text": "Your `h1` element should have an opening tag. Opening tags have this syntax: `<elementName>`.",
+          "testCode": "assert.exists(document.querySelector('h1'));"
+        },
+        {
+          "text": "Your `h1` element should have a closing tag. Closing tags have this syntax: `</elementName>`.",
+          "testCode": "assert.match(code, /<\\/h1\\>/);"
+        },
+        {
+          "text": "Your `h1` element's text should be `CatPhotoApp`. You have either omitted the text, have a typo, or it is not between the `h1` element's opening and closing tags.",
+          "testCode": "assert.equal(document.querySelector('h1')?.innerText.toLowerCase(), 'catphotoapp');"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\28-basic-html\\cat-photo-app\\5dc174fcf86c76b9248c6eb2.md"
+      },
+      "section": {
+        "id": "28-basic-html",
+        "name": "28-basic-html"
+      },
+      "lesson": {
+        "id": "cat-photo-app",
+        "name": "Cat Photo App"
+      }
+    },
+    {
+      "id": "5dc1798ff86c76b9248c6eb3",
+      "title": "Step 2",
+      "challengeType": 0,
+      "dashedName": "step-2",
+      "description": "Below the `h1` element, add an `h2` element with this text:\n\n`Cat Photos`",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "<html>\n  <body>\n--fcc-editable-region--\n    <h1>CatPhotoApp</h1>\n    \n--fcc-editable-region--\n  </body>\n</html>"
+        }
+      ],
+      "solution": [],
+      "tests": [
+        {
+          "text": "Your `h1` element should have an opening tag. Opening tags have this syntax: `<elementName>`.",
+          "testCode": "assert.exists(document.querySelector('h1'));"
+        },
+        {
+          "text": "Your `h1` element should have a closing tag. Closing tags have this syntax: `</elementName>`.",
+          "testCode": "assert.match(code, /<\\/h1\\>/);"
+        },
+        {
+          "text": "You should only have one `h1` element. Remove the extra.",
+          "testCode": "assert.lengthOf(document.querySelectorAll('h1'), 1);"
+        },
+        {
+          "text": "Your `h1` element's text should be 'CatPhotoApp'. You have either omitted the text or have a typo.",
+          "testCode": "assert.equal(document.querySelector('h1')?.innerText.toLowerCase(), 'catphotoapp');"
+        },
+        {
+          "text": "Your `h2` element should have an opening tag. Opening tags have this syntax: `<elementName>`.",
+          "testCode": "assert.exists(document.querySelector('h2'));"
+        },
+        {
+          "text": "Your `h2` element should have a closing tag. Closing tags have a `/` just after the `<` character.",
+          "testCode": "assert.match(code, /<\\/h2\\>/);"
+        },
+        {
+          "text": "Your `h2` element's text should be `Cat Photos`. Only place the text `Cat Photos` between the opening and closing `h2` tags.",
+          "testCode": "assert.equal(document.querySelector('h2')?.innerText.toLowerCase(), 'cat photos');"
+        },
+        {
+          "text": "Your `h2` element should be below the `h1` element. The `h1` element has greater importance and must be above the `h2` element.",
+          "testCode": "const collection = [...document.querySelectorAll('h1,h2')].map(\n  (node) => node.nodeName\n);\nassert.isBelow(collection.indexOf('H1'), collection.indexOf('H2'));"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\28-basic-html\\cat-photo-app\\5dc1798ff86c76b9248c6eb3.md"
+      },
+      "section": {
+        "id": "28-basic-html",
+        "name": "28-basic-html"
+      },
+      "lesson": {
+        "id": "cat-photo-app",
+        "name": "Cat Photo App"
+      }
+    },
+    {
+      "id": "5dc17d3bf86c76b9248c6eb4",
+      "title": "Step 3",
+      "challengeType": 0,
+      "dashedName": "step-3",
+      "description": "Create a `p` element below your `h2` element and give it the following text:\n\n`Everyone loves cute cats online!`",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "<html>\n  <body>\n    <h1>CatPhotoApp</h1>\n--fcc-editable-region--\n    <h2>Cat Photos</h2>\n    \n--fcc-editable-region--\n  </body>\n</html>"
+        }
+      ],
+      "solution": [],
+      "tests": [
+        {
+          "text": "Your `p` element should have an opening tag. Opening tags have the following syntax: `<elementName>`.",
+          "testCode": "assert.exists(document.querySelector('p'));"
+        },
+        {
+          "text": "Your `p` element should have a closing tag. Closing tags have a `/` just after the `<` character.",
+          "testCode": "assert.match(code, /<\\/p\\>/);"
+        },
+        {
+          "text": "Your `p` element's text should be `Everyone loves cute cats online!` You have either omitted the text or have a typo.",
+          "testCode": "const extraSpacesRemoved = document\n  .querySelector('p')\n  ?.innerText.replace(/\\s+/g, ' ');\nassert.match(extraSpacesRemoved, /everyone loves cute cats online!$/i);"
+        },
+        {
+          "text": "Your `p` element should be below the `h2` element. You have them in the wrong order.",
+          "testCode": "const collection = [...document.querySelectorAll('h2,p')].map(\n  (node) => node.nodeName\n);\nassert.isBelow(collection.indexOf('H2'), collection.indexOf('P'));"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\28-basic-html\\cat-photo-app\\5dc17d3bf86c76b9248c6eb4.md"
+      },
+      "section": {
+        "id": "28-basic-html",
+        "name": "28-basic-html"
+      },
+      "lesson": {
+        "id": "cat-photo-app",
+        "name": "Cat Photo App"
+      }
+    },
+    {
+      "id": "5dc17dc8f86c76b9248c6eb5",
+      "title": "Step 4",
+      "challengeType": 0,
+      "dashedName": "step-4",
+      "description": "Commenting allows you to leave messages without affecting the browser display. It also allows you to make code inactive. A comment in HTML starts with `<!--`, contains any number of lines of text, and ends with `-->`. \n\nHere is an example of a comment with the `TODO: Remove h1`:\n\n```html\n<!-- TODO: Remove h1 -->\n```\n\nAdd a comment above the `p` element with this text:\n\n`TODO: Add link to cat photos`",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "<html>\n  <body>\n    <h1>CatPhotoApp</h1>\n    <h2>Cat Photos</h2>\n--fcc-editable-region--\n    \n    <p>Everyone loves cute cats online!</p>\n    \n--fcc-editable-region--\n  </body>\n</html>"
+        }
+      ],
+      "solution": [
+        {
+          "language": "html",
+          "code": "<html>\n  <body>\n    <h1>CatPhotoApp</h1>\n    <h2>Cat Photos</h2>\n    <!-- TODO: Add link to cat photos -->    \n    <p>Everyone loves cute cats online!</p>\n  </body>\n</html>"
+        }
+      ],
+      "tests": [
+        {
+          "text": "Your comment should start with `<!--`. You are missing one or more of the characters that define the start of a comment.",
+          "testCode": "assert.match(code, /<!--/);"
+        },
+        {
+          "text": "Your comment should end with `-->`.  You are missing one or more of the characters that define the end of a comment.",
+          "testCode": "assert.match(code, /-->/);"
+        },
+        {
+          "text": "Your code should not have extra opening/closing comment characters. You have an extra `<!--` or `-->` displaying in the browser.",
+          "testCode": "const noSpaces = code.replace(/\\s/g, '');\nassert.isBelow(noSpaces.match(/<!--/g)?.length, 2)\nassert.isBelow(noSpaces.match(/-->/g)?.length, 2);"
+        },
+        {
+          "text": "Your comment should be above the `p` element. You have them in the wrong order.",
+          "testCode": "assert.match(\n  code.replace(/\\s/g, ''),\n  /<!--(.*?)--><p>everyonelovescutecatsonline!<\\/p>/i\n);"
+        },
+        {
+          "text": "Your comment should contain the text `TODO: Add link to cat photos`.",
+          "testCode": "assert.match(code, /<!--\\s*todo:\\s+add\\s+link\\s+to\\s+cat\\s+photos\\s*-->/i);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\28-basic-html\\cat-photo-app\\5dc17dc8f86c76b9248c6eb5.md"
+      },
+      "section": {
+        "id": "28-basic-html",
+        "name": "28-basic-html"
+      },
+      "lesson": {
+        "id": "cat-photo-app",
+        "name": "Cat Photo App"
+      }
+    },
+    {
+      "id": "668f08ea07b99b1f4a91acab",
+      "title": "Build a Recipe Page",
+      "challengeType": 25,
+      "dashedName": "build-a-recipe-page",
+      "description": "Fulfill the user stories below and get all the tests to pass to complete the lab.\n\n**User Stories:**\n\n1. You should have a `!DOCTYPE html` declaration.\n1. You should have an `html` element with `lang` set to `en`.\n1. You should have a `head` element containing a `title` element with the name of your recipe, and a `meta` element with a `charset` attribute set to `UTF-8`.\n1. You should have a `body` element.\n1. You should have an `h1` element with the name of your recipe.\n1. You should have a `p` element that introduces the recipe below the `h1`.\n1. You should have one `h2` element with the text `Ingredients` for the ingredients section.\n1. You should have an unordered list (`ul` element) with at least four list items (`li` elements) that lists your ingredients below the first `h2` element.\n1. You should have a second `h2` element with the text `Instructions` for the instructions section.\n1. You should have an ordered list (`ol` element) with at least four list items that lists the recipe steps in order, below the second `h2`.\n1. You should have one `img` element with a `src` attribute set to a valid image, you can use `https://cdn.freecodecamp.org/curriculum/labs/recipe.jpg` if you would like, and an `alt` attribute describing the image.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": ""
+        }
+      ],
+      "solution": [
+        {
+          "language": "html",
+          "code": "<!DOCTYPE html>\n<html lang=\"en\">\n\n<head>\n  <meta charset=\"utf-8\">\n  <title>Chocolate chip cookies recipe</title>\n</head>\n\n<body>\n  <h1>Chocolate Chip Cookies</h1>\n  <p>Welcome to the ultimate guide for making mini chocolate chip cookies! These bite-sized treats are perfect for\n    satisfying your sweet tooth without overindulging. Follow this simple recipe to create delicious,\n    crispy-on-the-outside, chewy-on-the-inside mini chocolate chip cookies that everyone will love.</p>\n  <img src=\"https://cdn.freecodecamp.org/curriculum/labs/recipe.jpg\" alt=\"Ingredients for baking: three eggs, a bowl of flour, a glass of milk, and a whisk arranged on a wooden table.\">\n  <h2>Ingredients</h2>\n  <ul>\n    <li>1 cup all-purpose flour</li>\n    <li>1/2 teaspoon baking soda</li>\n    <li>1/4 cup unsalted butter, softened</li>\n    <li>1/4 cup granulated sugar</li>\n    <li>1/2 teaspoon vanilla extract</li>\n    <li>1/2 cup mini chocolate chips</li>\n  </ul>\n  <h2>Instructions</h2>\n  <ol>\n    <li>Preheat your oven to 350°F (175°C) and line a baking sheet with parchment paper.</li>\n    <li>In a bowl, whisk together the flour and baking soda.</li>\n    <li>In another bowl, beat the butter, sugar, and vanilla extract until creamy.</li>\n    <li>Gradually add the dry ingredients to the wet mixture, then fold in the mini chocolate chips.</li>\n    <li>Drop small spoonfuls of dough onto the baking sheet.</li>\n    <li>Bake for 8-10 minutes, then let cool before enjoying!</li>\n  </ol>\n</body>\n\n</html>"
+        }
+      ],
+      "tests": [
+        {
+          "text": "Your recipe page should have a `!DOCTYPE html` declaration.",
+          "testCode": "assert.match(code, /<!DOCTYPE html>/i);"
+        },
+        {
+          "text": "You should have an `html` element with `lang` set to `en`.",
+          "testCode": "assert.match(code, /<html\\s+lang\\s*=\\s*('|\")en\\1\\s*>[\\s\\S]*<\\/\\s*html\\s*>/gi);"
+        },
+        {
+          "text": "You should have a `head` element within the `html` element.",
+          "testCode": "assert.match(code, /<html[\\s\\S]*>[\\s\\S]*<\\s*head\\s*>[\\s\\S]*<\\/\\s*head\\s*>[\\s\\S]*<\\/\\s*html\\s*>/i);"
+        },
+        {
+          "text": "You should have `title` element within your `head` element.",
+          "testCode": "assert.match(code, /<\\s*head\\s*>[\\s\\S]*<\\s*title\\s*>[\\s\\S]*<\\/\\s*title\\s*>[\\s\\S]*<\\/\\s*head\\s*>/i);"
+        },
+        {
+          "text": "Your `title` element should have your recipe title.",
+          "testCode": "assert.isAbove(document.querySelector('title')?.innerText.trim().length, 0);"
+        },
+        {
+          "text": "You should have a `meta` element within your `head` element.",
+          "testCode": "assert.match(code, /<\\s*head\\s*>[\\s\\S]*<\\s*meta[\\s\\S]*>[\\s\\S]*<\\/\\s*head\\s*>/i);"
+        },
+        {
+          "text": "Your `meta` element should have its `charset` attribute set to `UTF-8`.",
+          "testCode": "assert.match(code, /<\\s*meta[\\s\\S]+?charset\\s*=\\s*('|\")UTF-8\\1/i);"
+        },
+        {
+          "text": "You should have a `body` element within your `html` element.",
+          "testCode": "assert.match(code, /<\\s*html[\\s\\S]*>[\\s\\S]*<\\s*head\\s*>[\\s\\S]*<\\/\\s*head\\s*>[\\s\\S]*<\\s*body\\s*>[\\s\\S]*<\\/\\s*body\\s*>[\\s\\S]*<\\/\\s*html\\s*>/i);"
+        },
+        {
+          "text": "You should have an `h1` element with the name of your recipe.",
+          "testCode": "assert.isAbove(document.querySelector('h1')?.innerText.length, 0);"
+        },
+        {
+          "text": "You should only have one `h1` element.",
+          "testCode": "assert.lengthOf(document.querySelectorAll('h1'), 1);"
+        },
+        {
+          "text": "You should have a `p` element below your `h1` element.",
+          "testCode": "assert.strictEqual(document.querySelector('h1')?.nextElementSibling, document.querySelector('p'));"
+        },
+        {
+          "text": "Your first `p` element should describe your recipe.",
+          "testCode": "assert.isNotEmpty(document.querySelector('p')?.textContent?.trim());"
+        },
+        {
+          "text": "Your first `h2` element should have the text `Ingredients`.",
+          "testCode": "assert.equal(document.querySelectorAll('h2')[0]?.innerText, 'Ingredients');"
+        },
+        {
+          "text": "You should have an unordered list element below your first `h2` element.",
+          "testCode": "assert.strictEqual(document.querySelector('ul')?.previousElementSibling.tagName, 'H2');"
+        },
+        {
+          "text": "You should have at least four list item elements in your unordered list with the ingredients.",
+          "testCode": "const els = document.querySelectorAll('ul > li');\nassert.isAbove(els.length, 3);\nels.forEach(el => assert.isAbove(el.innerText.trim().length, 0))"
+        },
+        {
+          "text": "Your second `h2` element should have the text `Instructions`.",
+          "testCode": "assert.equal(document.querySelectorAll('h2')[1]?.innerText, 'Instructions');"
+        },
+        {
+          "text": "You should have an ordered list element below your second `h2` element.",
+          "testCode": "assert.strictEqual(document.querySelectorAll('h2')?.[1]?.nextElementSibling?.tagName, \"OL\");"
+        },
+        {
+          "text": "You should have at least four list item elements in your ordered list with the instructions.",
+          "testCode": "const els = document.querySelectorAll('ol > li');\nassert.isAbove(els.length, 3);\nels.forEach(el => assert.isAbove(el.innerText.trim().length, 0))"
+        },
+        {
+          "text": "You should have at least one `img` element.",
+          "testCode": "assert.exists(document.querySelector('img'));"
+        },
+        {
+          "text": "All your `img` elements should have a valid `src` attribute and value.\n\n```js\nconst img = document.querySelector('img');\nconst rawSrc = img?.getAttribute('src');\nconst resolvedSrc = img?.src;\nconst re = new RegExp(window.location.href, \"ig\");\n\nassert.isAbove(rawSrc?.trim().length, 0, \"The 'src' attribute must be explicitly set.\");\nassert.notMatch(resolvedSrc, re, \"The 'src' should not start with the current page URL\");\n\nimg.onload = () => {\n  console.log('Image loaded successfully.');\n};\n\nimg.onerror = (error) => {\n  console.error('Image failed to load:', error);\n  assert.fail(\"Your image's URL should be valid.\"); // Make the test instafail\n};\n\nif (img.complete) {\n  img.onload && img.onload();\n};\n```\n\nAll your `img` elements should have an `alt` attribute to describe the image.",
+          "testCode": "assert.isAbove(document.querySelector('img')?.alt.length, 0);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\28-basic-html\\recipe-page\\668f08ea07b99b1f4a91acab.md"
+      },
+      "section": {
+        "id": "28-basic-html",
+        "name": "28-basic-html"
+      },
+      "lesson": {
+        "id": "recipe-page",
+        "name": "Recipe Page"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 5,
+    "challenges_with_content": 5
+  }
+}

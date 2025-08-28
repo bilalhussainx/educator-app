@@ -1,63 +1,72 @@
-import fs from 'fs';
-import matter from 'gray-matter';
+// FILE: src/parsers/freeCodeCampParser.js (Definitive, Corrected Version)
+
+const fs = require('fs');
+const matter = require('gray-matter');
 
 /**
- * A robust parser that can handle the project-based markdown format.
+ * Extracts content from a specific section of the markdown (e.g., # --description--).
+ * @param {string} content - The full markdown content.
+ * @param {string} sectionName - The name of the section (e.g., "description", "hints").
+ */
+function extractSection(content, sectionName) {
+    const regex = new RegExp(`# --${sectionName}--\n([\\s\\S]*?)(?=\n# --|$)`, 'm');
+    const match = content.match(regex);
+    return match ? match[1].trim() : '';
+}
+
+/**
+ * Parses a block of code containing multiple file types (html, css, js).
+ * @param {string} blockContent - The content of a # --seed-contents-- or # --solutions-- block.
+ * @returns {object[]} An array of file objects.
+ */
+function parseSeedOrSolution(blockContent) {
+    const files = [];
+    const codeBlockRegex = /```(\w+)\n([\s\S]*?)```/g;
+    let match;
+    while ((match = codeBlockRegex.exec(blockContent)) !== null) {
+        const lang = match[1];
+        const code = match[2].trim();
+        let fileName = 'script.js'; // Default
+        if (lang === 'html') fileName = 'index.html';
+        if (lang === 'css') fileName = 'styles.css';
+        files.push({ name: fileName, language: lang, content: code });
+    }
+    return files;
+}
+
+/**
+ * Parses a single JavaScript markdown file to extract its content.
  * @param {string} filePath - The full path to the .md file.
  * @returns {object|null} A structured lesson object, or null if it's not a valid challenge.
  */
-export async function parseMarkdownFile(filePath) {
+async function parseMarkdownFile(filePath) {
     try {
         const mdContent = fs.readFileSync(filePath, 'utf8');
         const { data: frontMatter, content: challengeContent } = matter(mdContent);
 
+        // A valid challenge MUST have an id and a title in its front matter.
         if (!frontMatter.id || !frontMatter.title) {
-            return null; // Not a valid challenge file.
+            return null;
         }
 
-        // A more robust way to extract sections by splitting the content
-        const sections = challengeContent.split(/(?=^# --)/m);
-        let description = '';
-        let testCode = '';
-        let seedContents = '';
-
-        for (const section of sections) {
-            if (section.startsWith('# --description--')) {
-                description = section.replace('# --description--', '').trim();
-            } else if (section.startsWith('# --hints--')) {
-                testCode = section.replace('# --hints--', '').trim();
-            } else if (section.startsWith('# --tests--')) { // Legacy format support
-                testCode = section.replace('# --tests--', '').trim();
-            } else if (section.startsWith('# --seed--')) {
-                const seedMatch = section.match(/# --seed-contents--\n([\s\S]*)/);
-                if (seedMatch) {
-                    seedContents = seedMatch[1].trim();
-                }
-            }
-        }
-
-        // Parse the multiple files from the seed contents
-        const files = [];
-        const codeBlockRegex = /```(\w+)\n([\s\S]*?)```/g;
-        let match;
-        while ((match = codeBlockRegex.exec(seedContents)) !== null) {
-            const lang = match[1];
-            const code = match[2].trim();
-            let fileName = 'script.js';
-            if (lang === 'html') fileName = 'index.html';
-            if (lang === 'css') fileName = 'styles.css';
-            files.push({ name: fileName, language: lang, content: code });
-        }
+        const seedBlock = extractSection(challengeContent, 'seed-contents');
+        const solutionBlock = extractSection(challengeContent, 'solutions');
 
         return {
             title: frontMatter.title,
-            description,
-            files,
-            testCode,
+            description: extractSection(challengeContent, 'description'),
+            files: parseSeedOrSolution(seedBlock), // Boilerplate code
+            solutionFiles: parseSeedOrSolution(solutionBlock), // Solution code
+            testCode: extractSection(challengeContent, 'hints') || extractSection(challengeContent, 'tests'), // Support both formats
         };
-
     } catch (error) {
         console.warn(`[WARN] Could not parse file: ${filePath}. Error: ${error.message}`);
         return null;
     }
 }
+
+// THIS IS THE MOST IMPORTANT PART.
+// It makes the parseMarkdownFile function available for other files to import.
+module.exports = {
+    parseMarkdownFile
+};

@@ -1,75 +1,105 @@
-// hydrateDb.js
+// FILE: hydrateDb.js (Definitive, Corrected for Local Output Folder)
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
-const { query, pool } = require('./db.js'); // Assuming db.js exports pool
+const { pool } = require('./db.js');
 
+// This path is now correct and points to the folder INSIDE your project.
 const OUTPUT_DIR = path.join(process.cwd(), 'output');
 
 /**
- * The main function to populate the central lesson library from the JSON files.
+ * A recursive function to find all files named 'lesson.json' in a directory and its subdirectories.
  */
-async function main() {
-  const allFiles = fs.readdirSync(OUTPUT_DIR).filter(f => f.endsWith('.json'));
-  if (allFiles.length === 0) {
-      console.log("Output directory is empty. Run 'node runIngestor.js <language>' first.");
-      return;
-  }
-
-  console.log(`Found ${allFiles.length} source files. Populating lesson library...`);
-
-  const client = await pool.connect();
-  try {
-    for (const fileName of allFiles) {
-      const filePath = path.join(OUTPUT_DIR, fileName);
-      const courseData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-      
-      // Get the language directly from the JSON file, which was stamped by the ingestor.
-      const language = courseData.language || 'unknown';
-
-      if (courseData.lessons && Array.isArray(courseData.lessons)) {
-        for (const lesson of courseData.lessons) {
-          // This query uses the composite key (title, language) for conflict resolution.
-          // This is the key to allowing lessons with the same title but different languages.
-          const insertQuery = `
-            INSERT INTO ingested_lessons (
-              title,
-              description,
-              files,
-              test_code,
-              lesson_type,
-              source_file,
-              language
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (title, language) DO NOTHING;
-          `;
-
-          // Infer lesson_type for insertion if it doesn't exist on the lesson object
-          const lessonType = (lesson.files && lesson.files.some(f => f.name === 'index.html'))
-            ? 'frontend-project'
-            : 'algorithmic';
-          
-          await client.query(insertQuery, [
-            lesson.title,
-            lesson.description,
-            JSON.stringify(lesson.files),
-            lesson.testCode,
-            lessonType,
-            fileName,
-            language
-          ]);
+function findAllLessonFiles(dir) {
+    let results = [];
+    const list = fs.readdirSync(dir, { withFileTypes: true });
+    for (const file of list) {
+        const fullPath = path.join(dir, file.name);
+        if (file.isDirectory()) {
+            results = results.concat(findAllLessonFiles(fullPath));
+        } else if (file.name === 'lesson.json') {
+            results.push(fullPath);
         }
-        console.log(`  -> Processed ${courseData.lessons.length} lesson(s) from ${fileName}`);
-      }
     }
-  } catch (err) {
-      console.error("A critical error occurred during database hydration:", err);
-  } finally {
-      client.release();
-      await pool.end();
-  }
-  console.log('\n--- Lesson Library Hydration Complete ---');
+    return results;
+}
+
+function inferLanguage(challenge) {
+    const files = challenge.boilerplate || [];
+    if (files.some(f => f.language === 'javascript' || f.language === 'js')) return 'javascript';
+    if (files.some(f => f.language === 'python' || f.language === 'py')) return 'python';
+    if (files.some(f => f.language === 'css')) return 'css';
+    if (files.some(f => f.language === 'html')) return 'html';
+    if (files.some(f => f.language === 'csharp' || f.language === 'cs')) return 'csharp';
+    return 'unknown';
+}
+
+function inferLessonType(challenge) {
+    const files = challenge.boilerplate || [];
+    return files.some(f => f.language === 'html') ? 'frontend-project' : 'algorithmic';
+}
+
+async function main() {
+    if (!fs.existsSync(OUTPUT_DIR)) {
+        console.error(`FATAL ERROR: Output directory not found at the expected path: ${OUTPUT_DIR}`);
+        console.error("Please ensure you have copied the 'output' folder from the Python parser into your backend project root directory.");
+        return;
+    }
+
+    const allLessonFiles = findAllLessonFiles(OUTPUT_DIR);
+    if (allLessonFiles.length === 0) {
+        console.error("The output directory was found, but it contains no 'lesson.json' files. This is the source of the 'empty' error.");
+        console.error("Please re-run the Python parser scripts and copy the generated 'output' folder here again.");
+        return;
+    }
+
+    console.log(`Found ${allLessonFiles.length} lesson files to process. Populating the content library...`);
+    
+    const client = await pool.connect();
+    let totalChallengesProcessed = 0;
+
+    try {
+        await client.query('BEGIN');
+        for (const filePath of allLessonFiles) {
+            const lessonData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            
+            for (const challenge of lessonData.challenges) {
+                const language = inferLanguage(challenge);
+                if (language === 'unknown') continue;
+
+                const insertQuery = `
+                    INSERT INTO ingested_lessons (
+                        title, description, files, solution_files, test_code, 
+                        section_name, lesson_name, language, source_file, lesson_type
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    ON CONFLICT (title, language) DO NOTHING;
+                `;
+                
+                await client.query(insertQuery, [
+                    challenge.title,
+                    `${challenge.description}\n\n${challenge.instructions}`,
+                    JSON.stringify(challenge.boilerplate),
+                    JSON.stringify(challenge.solution),
+                    JSON.stringify(challenge.tests),
+                    challenge.section.name,
+                    challenge.lesson.name,
+                    language,
+                    path.relative(OUTPUT_DIR, filePath), // Use a relative path for the source file
+                    inferLessonType(challenge)
+                ]);
+                totalChallengesProcessed++;
+            }
+        }
+        await client.query('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("A critical error occurred during database hydration:", err);
+    } finally {
+        client.release();
+        await pool.end();
+    }
+    console.log(`\n--- Lesson Library Hydration Complete ---`);
+    console.log(`Successfully processed and inserted ${totalChallengesProcessed} unique challenges.`);
 }
 
 main();

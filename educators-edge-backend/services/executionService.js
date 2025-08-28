@@ -1,83 +1,146 @@
-// services/executionService.js (Multi-Language Version)
+// services/executionService.js (Definitive, Multi-Language Version)
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const executeCode = (code, language) => {
-    return new Promise((resolve, reject) => {
-        const tempDir = path.join(__dirname, 'temp');
+    return new Promise((resolve) => {
+        const tempDir = path.join(__dirname, 'temp_code');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
         }
 
         const uniqueId = crypto.randomUUID();
-        let fileExtension, command;
-        let filePath = path.join(tempDir, `temp_${uniqueId}`);
+        let command;
+        let filePath;
 
-        // This switch statement now knows how to handle all the new languages.
         switch (language.toLowerCase()) {
             case 'javascript':
-                fileExtension = 'js';
-                filePath += `.${fileExtension}`;
+                filePath = path.join(tempDir, `${uniqueId}.js`);
                 command = `node ${filePath}`;
                 break;
             case 'python':
-                fileExtension = 'py';
-                filePath += `.${fileExtension}`;
+                filePath = path.join(tempDir, `${uniqueId}.py`);
                 command = `python3 ${filePath}`;
                 break;
             case 'java':
-                fileExtension = 'java';
-                // Java is special: it needs to be compiled first, then run.
-                const javaFilePath = path.join(tempDir, 'Main.java'); // Java requires a specific class name
-                fs.writeFileSync(javaFilePath, code);
-                // The command is a chain: compile, then run.
-                command = `javac ${javaFilePath} && java -cp ${tempDir} Main`;
-                break;
-            case 'ruby':
-                fileExtension = 'rb';
-                filePath += `.${fileExtension}`;
-                command = `ruby ${filePath}`;
-                break;
-            case 'go':
-                fileExtension = 'go';
-                filePath += `.${fileExtension}`;
-                command = `go run ${filePath}`;
+                // Java is special: it needs a specific class name and a two-step compile/run process.
+                const className = "Main"; // Java entrypoint must be a class named Main
+                filePath = path.join(tempDir, `${className}.java`);
+                const compiledPath = path.join(tempDir, `${className}.class`);
+                // The command is a chain: compile first, then run.
+                command = `javac ${filePath} && java -cp ${tempDir} ${className}`;
                 break;
             default:
-                return reject(new Error(`Unsupported language: ${language}`));
+                // Immediately resolve with an error for unsupported languages.
+                return resolve({ success: false, output: `Error: Unsupported language "${language}"` });
         }
         
-        // Write the file only if it's not the special Java case
-        if (language.toLowerCase() !== 'java') {
-            fs.writeFileSync(filePath, code);
-        }
+        fs.writeFileSync(filePath, code);
 
-        exec(command, (error, stdout, stderr) => {
+        exec(command, { timeout: 10000 }, (error, stdout, stderr) => { // Added a 10-second timeout
             // Clean up all temporary files created
-            const filesToDelete = [filePath, path.join(tempDir, 'Main.java'), path.join(tempDir, 'Main.class')];
+            const filesToDelete = [filePath, path.join(tempDir, 'Main.class')];
             filesToDelete.forEach(file => {
                 if (fs.existsSync(file)) fs.unlinkSync(file);
             });
 
             if (error) {
+                // This catches execution errors (like compile errors or infinite loops)
                 resolve({ success: false, output: stderr || error.message });
-            } else if (stderr) {
-                // Some languages (like Java compiler warnings) use stderr for non-fatal output
-                resolve({ success: true, output: stdout || stderr });
             } else {
-                resolve({ success: true, output: stdout });
+                // If there's no hard error, the execution is considered a "success" from the runner's perspective.
+                // The test results are in stdout or stderr.
+                resolve({ success: true, output: stdout || stderr });
             }
         });
     });
 };
 
-// We need the crypto module for unique file names
-const crypto = require('crypto');
-
 module.exports = {
     executeCode
 };
+// // services/executionService.js (Multi-Language Version)
+// const { exec } = require('child_process');
+// const fs = require('fs');
+// const path = require('path');
+
+// const executeCode = (code, language) => {
+//     return new Promise((resolve, reject) => {
+//         const tempDir = path.join(__dirname, 'temp');
+//         if (!fs.existsSync(tempDir)) {
+//             fs.mkdirSync(tempDir, { recursive: true });
+//         }
+
+//         const uniqueId = crypto.randomUUID();
+//         let fileExtension, command;
+//         let filePath = path.join(tempDir, `temp_${uniqueId}`);
+
+//         // This switch statement now knows how to handle all the new languages.
+//         switch (language.toLowerCase()) {
+//             case 'javascript':
+//                 fileExtension = 'js';
+//                 filePath += `.${fileExtension}`;
+//                 command = `node ${filePath}`;
+//                 break;
+//             case 'python':
+//                 fileExtension = 'py';
+//                 filePath += `.${fileExtension}`;
+//                 command = `python3 ${filePath}`;
+//                 break;
+//             case 'java':
+//                 fileExtension = 'java';
+//                 // Java is special: it needs to be compiled first, then run.
+//                 const javaFilePath = path.join(tempDir, 'Main.java'); // Java requires a specific class name
+//                 fs.writeFileSync(javaFilePath, code);
+//                 // The command is a chain: compile, then run.
+//                 command = `javac ${javaFilePath} && java -cp ${tempDir} Main`;
+//                 break;
+//             case 'ruby':
+//                 fileExtension = 'rb';
+//                 filePath += `.${fileExtension}`;
+//                 command = `ruby ${filePath}`;
+//                 break;
+//             case 'go':
+//                 fileExtension = 'go';
+//                 filePath += `.${fileExtension}`;
+//                 command = `go run ${filePath}`;
+//                 break;
+//             default:
+//                 return reject(new Error(`Unsupported language: ${language}`));
+//         }
+        
+//         // Write the file only if it's not the special Java case
+//         if (language.toLowerCase() !== 'java') {
+//             fs.writeFileSync(filePath, code);
+//         }
+
+//         exec(command, (error, stdout, stderr) => {
+//             // Clean up all temporary files created
+//             const filesToDelete = [filePath, path.join(tempDir, 'Main.java'), path.join(tempDir, 'Main.class')];
+//             filesToDelete.forEach(file => {
+//                 if (fs.existsSync(file)) fs.unlinkSync(file);
+//             });
+
+//             if (error) {
+//                 resolve({ success: false, output: stderr || error.message });
+//             } else if (stderr) {
+//                 // Some languages (like Java compiler warnings) use stderr for non-fatal output
+//                 resolve({ success: true, output: stdout || stderr });
+//             } else {
+//                 resolve({ success: true, output: stdout });
+//             }
+//         });
+//     });
+// };
+
+// // We need the crypto module for unique file names
+// const crypto = require('crypto');
+
+// module.exports = {
+//     executeCode
+// };
 // /**
 //  * @file executionService.js
 //  * @description This version is updated to parse test runner output and return a structured list of failed tests.

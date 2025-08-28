@@ -1,0 +1,352 @@
+{
+  "section": {
+    "id": "29-semantic-html",
+    "name": "29-semantic-html"
+  },
+  "challenges": [
+    {
+      "id": "669aff9f5488f1bea056416d",
+      "title": "Step 1",
+      "challengeType": 0,
+      "dashedName": "step-1",
+      "description": "In this workshop, you will practice working with semantic HTML by building a blog page dedicated to Mr. Whiskers the cat. \n\nTo begin the project, add the `<!DOCTYPE html>`, and an `html` element with a `lang` attribute of `en`.\n\nRemember that you learned how to build a basic HTML boilerplate like this in the previous module.\n\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<!--all other elements go here-->\n</html>\n```",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "--fcc-editable-region--\n\n--fcc-editable-region--"
+        }
+      ],
+      "solution": [],
+      "tests": [
+        {
+          "text": "You should have the `<!DOCTYPE html>`.",
+          "testCode": "assert.match(code, /<!DOCTYPE\\s+html>/i);"
+        },
+        {
+          "text": "You should have an opening `html` tag with the language set to english.",
+          "testCode": "assert.match(code, /<html\\s+lang\\s*=\\s*('|\")en\\1\\s*>/gi);"
+        },
+        {
+          "text": "You should have a closing `html` tag.",
+          "testCode": "assert.match(code, /<\\/html>/i);"
+        },
+        {
+          "text": "Your `DOCTYPE` should come before the `html` element.",
+          "testCode": "assert.match(code, /<!DOCTYPE\\s+html>[.\\n\\s]*<html\\s+lang\\s*=\\s*('|\")en\\1\\s*>/im)"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\29-semantic-html\\cat-blog-page\\669aff9f5488f1bea056416d.md"
+      },
+      "section": {
+        "id": "29-semantic-html",
+        "name": "29-semantic-html"
+      },
+      "lesson": {
+        "id": "cat-blog-page",
+        "name": "Cat Blog Page"
+      }
+    },
+    {
+      "id": "669fc7e141e4703748c558bf",
+      "title": "Step 2",
+      "challengeType": 0,
+      "dashedName": "step-2",
+      "description": "Inside the `html` element, add a `head` element.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "<!DOCTYPE html>\n<html lang=\"en\">\n--fcc-editable-region--\n  \n--fcc-editable-region--\n</html>"
+        }
+      ],
+      "solution": [],
+      "tests": [
+        {
+          "text": "You should have an opening `head` tag.",
+          "testCode": "assert.match(code, /<head>/i);"
+        },
+        {
+          "text": "You should have a closing `head` tag.",
+          "testCode": "assert.match(code, /<\\/head>/i);"
+        },
+        {
+          "text": "Your opening `head` tag should come before the closing `head` tag.",
+          "testCode": "assert.match(code, /<head>[.\\n\\s]*<\\/head>/im)"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\29-semantic-html\\cat-blog-page\\669fc7e141e4703748c558bf.md"
+      },
+      "section": {
+        "id": "29-semantic-html",
+        "name": "29-semantic-html"
+      },
+      "lesson": {
+        "id": "cat-blog-page",
+        "name": "Cat Blog Page"
+      }
+    },
+    {
+      "id": "669fc938d38e6e38ace9251e",
+      "title": "Step 3",
+      "challengeType": 0,
+      "dashedName": "step-3",
+      "description": "Inside your `head` element, nest a `meta` element with the `charset` attribute set to the value `\"UTF-8\"`.\n\nBelow that `meta` element, add a `title` element. \n\nThe `title` element's text should be `Mr. Whiskers' Blog`.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "<!DOCTYPE html>\n<html lang=\"en\">\n  --fcc-editable-region--\n  <head>\n    \n  </head>\n  --fcc-editable-region--\n</html>"
+        }
+      ],
+      "solution": [],
+      "tests": [
+        {
+          "text": "You should have a `meta` element.",
+          "testCode": "assert.isNotNull(document.querySelector(\"meta\"));"
+        },
+        {
+          "text": "The `meta` element is a void element, it should not have an end tag `</meta>`.",
+          "testCode": "assert.notMatch(code, /<\\/meta>/i);"
+        },
+        {
+          "text": "Your `meta` tag should have a `charset` attribute.",
+          "testCode": "assert.match(code, /<meta\\s+charset\\s*/i);"
+        },
+        {
+          "text": "Your `charset` attribute should have a value of `\"UTF-8\"`.",
+          "testCode": "assert.match(code, /charset\\s*=\\s*('|\")UTF-8\\1/i);"
+        },
+        {
+          "text": "Your `meta` element should be nested inside your `head` element.",
+          "testCode": "const meta = document.querySelector('head > meta');\nassert.strictEqual(meta?.parentElement?.tagName, 'HEAD');"
+        },
+        {
+          "text": "You should have an opening `title` tag.",
+          "testCode": "assert.match(code, /<title>/i);"
+        },
+        {
+          "text": "You should have a closing `title` tag.",
+          "testCode": "assert.match(code, /<\\/title>/i);"
+        },
+        {
+          "text": "Your `title` element should be nested in your `head` element.",
+          "testCode": "assert.match(code, /<head>.*\\s*<title>.*<\\/title>.*\\s*<\\/head>/si);"
+        },
+        {
+          "text": "Your `title` element should have the text `Mr. Whiskers' Blog`. You may need to check your spelling.",
+          "testCode": "const titleText = document.querySelector('title')?.innerText\nassert.strictEqual(titleText, \"Mr. Whiskers' Blog\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\29-semantic-html\\cat-blog-page\\669fc938d38e6e38ace9251e.md"
+      },
+      "section": {
+        "id": "29-semantic-html",
+        "name": "29-semantic-html"
+      },
+      "lesson": {
+        "id": "cat-blog-page",
+        "name": "Cat Blog Page"
+      }
+    },
+    {
+      "id": "669fcb06c3034a39f5431a38",
+      "title": "Step 4",
+      "challengeType": 0,
+      "dashedName": "step-4",
+      "description": "To prepare creating some actual content, add a `body` element below the `head` element.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "<!DOCTYPE html>\n<html lang=\"en\">\n  --fcc-editable-region--\n  <head>\n    <title>Mr. Whiskers' Blog</title>\n    <meta charset=\"UTF-8\" />\n  </head>\n  \n  --fcc-editable-region--\n</html>"
+        }
+      ],
+      "solution": [
+        {
+          "language": "html",
+          "code": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <title>Mr. Whiskers' Blog</title>\n    <meta charset=\"UTF-8\" />\n  </head>\n  \n  <body></body>\n</html>"
+        }
+      ],
+      "tests": [
+        {
+          "text": "You should have an opening `<body>` tag.",
+          "testCode": "assert.match(code, /<body>/i);"
+        },
+        {
+          "text": "You should have a closing `</body>` tag.",
+          "testCode": "assert.match(code, /<\\/body>/i);"
+        },
+        {
+          "text": "You should not change your `head` element. Make sure you did not delete your closing tag.",
+          "testCode": "assert.match(code, /<head>/i);\nassert.match(code, /<\\/head>/i);"
+        },
+        {
+          "text": "Your `body` element should come after your `head` element.",
+          "testCode": "assert.match(code, /<\\/head>[.\\n\\s]*<body>/im)"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\29-semantic-html\\cat-blog-page\\669fcb06c3034a39f5431a38.md"
+      },
+      "section": {
+        "id": "29-semantic-html",
+        "name": "29-semantic-html"
+      },
+      "lesson": {
+        "id": "cat-blog-page",
+        "name": "Cat Blog Page"
+      }
+    },
+    {
+      "id": "66ebd4ae2812430bb883c787",
+      "title": "Build an Event Hub",
+      "challengeType": 25,
+      "dashedName": "lab-event-hub",
+      "description": "In this lab you will utilize the semantic HTML elements to create the structure of a web page. You'll add content and images to make it look like a real event hub.\n\nFulfill the user stories below and get all the tests to pass to complete the lab.\n\n**User Stories:**\n\n1. You should have a `header` element.\n1. Inside the `header` element, you should have an `h1` element that contains the text `Event Hub`, and a `nav` element.\n1. Inside the `nav` element, you should have an unordered list of two items containing links to different sections of the page. The first item should have the text `Upcoming Events`, and the second item should have the text `Past Events`.\n1. Each link should be represented by an `a` element with an `href` attribute that links to the corresponding section of the page, `#upcoming-events` and `#past-events` respectively.\n1. You should have a `main` element that contains the different sections of the page.\n1. Inside the `main` element, you should have two `section` elements.\n1. The first `section` element should have an `id` attribute with the value `upcoming-events`\n1. Inside the `#upcoming-events` section, you should have:\n   \n   - An `h2` element with the text `Upcoming Events`.\n   - Two `article` elements. Each article should represent an event, and it should have :\n      - An `h3` element for the event title.\n      - A `p` element for the event description. You can add a date at the bottom if you like.\n\n1. The second `section` element should have an `id` attribute with the value `past-events`.\n1. Inside the `#past-events` section, you should have:\n\n   - An `h2` element with the text `Past Events`.\n   - Two `article` elements. Each article element should represent a past event, and it should have:\n     - An `h3` element for the event title, \n     - A `p` element for the event description. You can add a date at the bottom if you like.\n     - An image element with the `src` attribute pointing to an image file and the `alt` attribute with a description of the image.\n\n**Note:** You can use any text for the event descriptions and dates. You can use the following image URLs for the images if you like:\n\n- `https://cdn.freecodecamp.org/curriculum/labs/past-event1.jpg`.\n- `https://cdn.freecodecamp.org/curriculum/labs/past-event2.jpg`.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "html",
+          "code": "<!DOCTYPE html>\n<html lang=\"en\">\n\n<head>\n    <meta charset=\"utf-8\">\n    <title>Event Hub</title>\n</head>\n\n<body>\n\n</body>\n\n</html>"
+        }
+      ],
+      "solution": [
+        {
+          "language": "html",
+          "code": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Event Hub</title>\n</head>\n<body>\n    <header>\n        <h1>Event Hub</h1>\n        <nav>\n            <ul>\n                <li><a href=\"#upcoming-events\">Upcoming Events</a></li>\n                <li><a href=\"#past-events\">Past Events</a></li>\n            </ul>\n        </nav>\n    </header>\n    <main>\n        <section id=\"upcoming-events\">\n            <h2>Upcoming Events</h2>\n            <article>\n                <h3>AI & Machine Learning Conference 2024</h3>\n                <p>Join us for a deep dive into the latest advancements in artificial intelligence and machine learning. Industry leaders will share insights and case studies on how AI is transforming various sectors.</p>\n                <p>Date: August 10, 2024</p>\n            </article>\n            <article>\n                <h3>Web Development Bootcamp</h3>\n                <p>A hands-on workshop designed for developers looking to enhance their skills in modern web technologies including React, Node.js, and GraphQL. Perfect for both beginners and experienced developers.</p>\n                <p>Date: September 5, 2024</p>\n            </article>\n        </section>\n        <section id=\"past-events\">\n            <h2>Past Events</h2>\n            <article>\n                <h3>Cybersecurity Summit 2024</h3>\n                <p>An event focusing on the latest trends and threats in cybersecurity. Experts discussed strategies for protecting data and ensuring privacy in an increasingly digital world.</p>\n                <p>Date: June 15, 2024</p>\n                <img src=\"https://cdn.freecodecamp.org/curriculum/labs/past-event1.jpg\" alt=\"Image from Cybersecurity Summit 2024\">\n            </article>\n            <article>\n                <h3>Blockchain Expo 2024</h3>\n                <p>A comprehensive event covering the future of blockchain technology. Topics included decentralized finance (DeFi), smart contracts, and the impact of blockchain on various industries.</p>\n                <p>Date: July 20, 2024</p>\n                <img src=\"https://cdn.freecodecamp.org/curriculum/labs/past-event2.jpg\" alt=\"Image from Blockchain Expo 2024\">\n            </article>\n        </section>\n    </main>\n</body>\n</html>"
+        }
+      ],
+      "tests": [
+        {
+          "text": "You should have a `header` element.",
+          "testCode": "assert.isNotNull(document.querySelector(\"header\"));"
+        },
+        {
+          "text": "Your `header` element should come after the opening `body` tag.",
+          "testCode": "assert.equal(document.querySelector(\"body\")?.firstElementChild?.tagName, \"HEADER\");"
+        },
+        {
+          "text": "Inside the `header` element, you should have an `h1` element that contains the text `Event Hub`.",
+          "testCode": "const h1Element = document.querySelector('header h1');\nassert.strictEqual(h1Element?.innerText, \"Event Hub\");"
+        },
+        {
+          "text": "Inside the `header` element, after the `h1` element, you should have a `nav` element.",
+          "testCode": "assert.isNotNull(document.querySelector(\"header>h1+nav\"));"
+        },
+        {
+          "text": "Your `nav` element should contain an unordered list of two items.\n\n```js\nconst liElements = document.querySelectorAll('header nav>ul>li');\n\nassert.isNotNull('header nav>ul');\nassert.strictEqual(liElements.length, 2);\n```\n\nThe first item in the unordered list should be a link.",
+          "testCode": "const firstLink = document.querySelectorAll('header nav ul li a')[0];\nassert.exists(firstLink);"
+        },
+        {
+          "text": "The second item in the unordered list should be a link.",
+          "testCode": "const secondLink = document.querySelectorAll('header nav ul li a')[1];\nassert.exists(secondLink);"
+        },
+        {
+          "text": "The text of the first item in the unordered list should be `Upcoming Events`.",
+          "testCode": "const firstLink = document.querySelectorAll('header nav>ul>li>a')[0];\nassert.strictEqual(firstLink.innerText, \"Upcoming Events\");"
+        },
+        {
+          "text": "The first item in the unordered list should have the `href` set to `#upcoming-events`.",
+          "testCode": "const anchorElement = document.querySelectorAll(\"header nav>ul>li>a\")[0];\nconst hrefAttribute = anchorElement?.getAttribute(\"href\");\nassert.strictEqual(hrefAttribute, \"#upcoming-events\");"
+        },
+        {
+          "text": "The text of the second item in the unordered list should be `Past Events`.",
+          "testCode": "const secondLink = document.querySelectorAll('header nav>ul>li>a')[1];\nassert.strictEqual(secondLink.innerText, \"Past Events\");"
+        },
+        {
+          "text": "The second item in the unordered list should have the `href` set to `#past-events`.",
+          "testCode": "const anchorElement = document.querySelectorAll(\"header nav>ul>li>a\")[1];\nconst hrefAttribute = anchorElement?.getAttribute(\"href\");\nassert.strictEqual(hrefAttribute, \"#past-events\");"
+        },
+        {
+          "text": "You should have a `main` element after the `header` element closing tag.",
+          "testCode": "const mainElement = document.querySelector(\"body>header+main\");\nassert.isNotNull(mainElement);"
+        },
+        {
+          "text": "Inside the `main` element, you should have two `section` elements.",
+          "testCode": "const sectionElements = document.querySelectorAll('body>header+main>section');\nassert.strictEqual(sectionElements.length, 2);"
+        },
+        {
+          "text": "Your first `section` element should have an `id` attribute with the value `upcoming-events`.",
+          "testCode": "const firstSection = document.querySelectorAll('body>header+main>section')[0];\nconst idAttribute = firstSection?.getAttribute(\"id\");\nassert.strictEqual(idAttribute, \"upcoming-events\");"
+        },
+        {
+          "text": "Your second `section` element should have an `id` attribute with the value `past-events`.",
+          "testCode": "const secondSection = document.querySelectorAll('body>header+main>section')[1];\nconst idAttribute = secondSection?.getAttribute(\"id\");\nassert.strictEqual(idAttribute, \"past-events\");"
+        },
+        {
+          "text": "Inside the `#upcoming-events` section, you should have an `h2` element with the text `Upcoming Events`.",
+          "testCode": "const h2Element = document.querySelector('#upcoming-events h2');\nassert.strictEqual(h2Element?.innerText, \"Upcoming Events\");"
+        },
+        {
+          "text": "Inside the `#upcoming-events` section, you should have two `article` elements below the `h2` element.",
+          "testCode": "const articleElements = document.querySelectorAll('#upcoming-events h2 ~ article');\nassert.strictEqual(articleElements.length, 2);"
+        },
+        {
+          "text": "Both of the `article` elements inside the `#upcoming-events` section should have an `h3` element for the event title.",
+          "testCode": "const h3Elements = document.querySelectorAll('#upcoming-events article h3');\nassert.strictEqual(h3Elements.length, 2);"
+        },
+        {
+          "text": "Both of the `article` elements inside the `#upcoming-events` section should have a paragraph element for the event description.",
+          "testCode": "const articles = document.querySelectorAll('#upcoming-events article');\nassert.isNotEmpty(articles);\narticles.forEach(article => {\n    assert.isAtLeast(article.querySelectorAll('h3 ~ p').length, 1);\n});"
+        },
+        {
+          "text": "Inside the `#past-events` section, you should have an `h2` element with the text `Past Events`.",
+          "testCode": "const h2Element = document.querySelector('#past-events h2');\nassert.strictEqual(h2Element?.innerText, \"Past Events\");"
+        },
+        {
+          "text": "Inside the `#past-events` section, you should have two `article` elements below the `h2` element.",
+          "testCode": "const articleElements = document.querySelectorAll('#past-events h2 ~ article');\nassert.strictEqual(articleElements.length, 2);"
+        },
+        {
+          "text": "Both of the `article` elements inside the `#past-events` section should have an `h3` element for the event title.",
+          "testCode": "const h3Elements = document.querySelectorAll('#past-events article h3');\nassert.strictEqual(h3Elements.length, 2);"
+        },
+        {
+          "text": "Both of the `article` elements inside the `#past-events` section should have a paragraph element for the event description.",
+          "testCode": "const articles = document.querySelectorAll('#past-events article');\nassert.isNotEmpty(articles);\narticles.forEach(article => {\n    assert.isAtLeast(article.querySelectorAll('h3 ~ p').length, 1);\n});"
+        },
+        {
+          "text": "Both of the `article` elements inside the `#past-events` section should have an image element.",
+          "testCode": "const imgElements = document.querySelectorAll('#past-events article img');\nassert.strictEqual(imgElements.length, 2);"
+        },
+        {
+          "text": "Both of the image elements inside the `#past-events` section should have the `src` attribute pointing to an image file.\n\n```js\nconst imgElements = document.querySelectorAll('#past-events article img');\nassert.strictEqual(imgElements.length, 2);\n\nfor (let img of imgElements) {\n    assert.exists(img.getAttribute(\"src\"));\n}\n```\n\nBoth of the image elements inside the `#past-events` section should have the `alt` attribute with a description of the image.\n\n```js\nconst imgElements = document.querySelectorAll('#past-events article img');\nassert.strictEqual(imgElements.length, 2);\n\nfor (let img of imgElements) {\n    assert.exists(img.getAttribute(\"alt\"));\n}\n```\n\nEach `h3` element should have the event title.",
+          "testCode": "const eventTitles = document.querySelectorAll('h3');\nassert.isNotEmpty(eventTitles);\neventTitles.forEach((eventTitle => assert.isNotEmpty(eventTitle.innerText)));"
+        },
+        {
+          "text": "Each `p` element should have the event description.",
+          "testCode": "const eventDescriptions = document.querySelectorAll('p');\nassert.isNotEmpty(eventDescriptions);\neventDescriptions.forEach((eventDescription => assert.isNotEmpty(eventDescription.innerText)));"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\29-semantic-html\\event-hub\\66ebd4ae2812430bb883c787.md"
+      },
+      "section": {
+        "id": "29-semantic-html",
+        "name": "29-semantic-html"
+      },
+      "lesson": {
+        "id": "event-hub",
+        "name": "Event Hub"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 5,
+    "challenges_with_content": 5
+  }
+}

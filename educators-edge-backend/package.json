@@ -9,10 +9,14 @@
     "worker": "dotenv -e .env -- node workers/apeWorker.js"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@google/generative-ai": "^0.24.1",
     "agora-token": "^2.0.5",
     "archiver": "^7.0.1",
     "axios": "^1.11.0",
+    "axios-http-adapter": "^0.0.3",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.56.9",
     "canvas-confetti": "^1.9.3",

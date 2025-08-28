@@ -1,0 +1,60 @@
+{
+  "section": {
+    "id": "26-a2-professional-spanish",
+    "name": "26-a2-professional-spanish"
+  },
+  "challenges": [
+    {
+      "id": "6823914bc8a5c9c820230d99",
+      "title": "Dialogue 1: PLACEHOLDER",
+      "challengeType": 21,
+      "dashedName": "dialogue-1-placeholder",
+      "description": "Watch the video below to understand the context of the upcoming lessons.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\26-a2-professional-spanish\\get-to-know-others-by-asking-simple-questions\\6823914bc8a5c9c820230d99.md"
+      },
+      "section": {
+        "id": "26-a2-professional-spanish",
+        "name": "26-a2-professional-spanish"
+      },
+      "lesson": {
+        "id": "get-to-know-others-by-asking-simple-questions",
+        "name": "Get To Know Others By Asking Simple Questions"
+      }
+    },
+    {
+      "id": "681a8796e5a782fe3459984b",
+      "title": "Dialogue 1: PLACEHOLDER",
+      "challengeType": 21,
+      "dashedName": "dialogue-1-placeholder",
+      "description": "Watch the video below to understand the context of the upcoming lessons.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\26-a2-professional-spanish\\talk-about-who-you-are-by-using-key-verbs\\681a8796e5a782fe3459984b.md"
+      },
+      "section": {
+        "id": "26-a2-professional-spanish",
+        "name": "26-a2-professional-spanish"
+      },
+      "lesson": {
+        "id": "talk-about-who-you-are-by-using-key-verbs",
+        "name": "Talk About Who You Are By Using Key Verbs"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 2,
+    "challenges_with_content": 2
+  }
+}

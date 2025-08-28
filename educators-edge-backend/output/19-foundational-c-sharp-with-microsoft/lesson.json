@@ -1,0 +1,1020 @@
+{
+  "section": {
+    "id": "19-foundational-c-sharp-with-microsoft",
+    "name": "19-foundational-c-sharp-with-microsoft"
+  },
+  "challenges": [
+    {
+      "id": "647e1f4e8acb466c97ccbedf",
+      "title": "Add Looping Logic to Your Code Using the do-while and while Statements in C#",
+      "challengeType": 19,
+      "dashedName": "add-looping-logic-to-your-code-using-the-do-while-and-while-statements-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-do-while/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-do-while/</a> and complete all the tasks for the \"Add Looping Logic to Your Code Using the do-while and while Statements in C#\" module. This is **required** to earn the \"Add Logic to C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\add-logic-to-c-sharp-console-applications\\add-looping-logic-to-your-code-using-the-do-while-and-while-statements-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "add-logic-to-c-sharp-console-applications",
+        "name": "Add Logic To C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e214b8acb466c97ccbee0",
+      "title": "Branch the Flow of Code Using the switch-case Construct in C#",
+      "challengeType": 19,
+      "dashedName": "branch-the-flow-of-code-using-the-switch-case-construct-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-switch-case/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-switch-case/</a> and complete all the tasks for the \"Branch the Flow of Code Using the switch-case Construct in C#\" module. This is **required** to earn the \"Add Logic to C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\add-logic-to-c-sharp-console-applications\\branch-the-flow-of-code-using-the-switch-case-construct-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "add-logic-to-c-sharp-console-applications",
+        "name": "Add Logic To C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e21598acb466c97ccbee1",
+      "title": "Challenge Project - Develop Branching and Looping Structures in C#",
+      "challengeType": 19,
+      "dashedName": "challenge-project-develop-branching-and-looping-structures-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/challenge-project-develop-branching-looping-structures-c-sharp/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/challenge-project-develop-branching-looping-structures-c-sharp/</a> and complete all the tasks for the \"Challenge Project - Develop Branching and Looping Structures in C#\" module. This is **required** to earn the \"Add Logic to C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\add-logic-to-c-sharp-console-applications\\challenge-project-develop-branching-and-looping-structures-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "add-logic-to-c-sharp-console-applications",
+        "name": "Add Logic To C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e21658acb466c97ccbee2",
+      "title": "Control Variable Scope and Logic Using Code Blocks in C#",
+      "challengeType": 19,
+      "dashedName": "control-variable-scope-and-logic-using-code-blocks-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-code-blocks/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-code-blocks/</a> and complete all the tasks for the \"Control Variable Scope and Logic Using Code Blocks in C#\" module. This is **required** to earn the \"Add Logic to C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\add-logic-to-c-sharp-console-applications\\control-variable-scope-and-logic-using-code-blocks-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "add-logic-to-c-sharp-console-applications",
+        "name": "Add Logic To C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e21708acb466c97ccbee3",
+      "title": "Evaluate Boolean Expressions to Make Decisions in C#",
+      "challengeType": 19,
+      "dashedName": "evaluate-boolean-expressions-to-make-decisions-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-evaluate-boolean-expressions/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-evaluate-boolean-expressions/</a> and complete all the tasks for the \"Evaluate Boolean Expressions to Make Decisions in C#\" module. This is **required** to earn the \"Add Logic to C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\add-logic-to-c-sharp-console-applications\\evaluate-boolean-expressions-to-make-decisions-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "add-logic-to-c-sharp-console-applications",
+        "name": "Add Logic To C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e217e8acb466c97ccbee4",
+      "title": "Guided Project - Develop Conditional Branching and Looping Structures in C#",
+      "challengeType": 19,
+      "dashedName": "guided-project-develop-conditional-branching-and-looping-structures-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/guided-project-develop-conditional-branching-looping/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/guided-project-develop-conditional-branching-looping/</a> and complete all the tasks for the \"Guided Project - Develop Conditional Branching and Looping Structures in C#\" module. This is **required** to earn the \"Add Logic to C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\add-logic-to-c-sharp-console-applications\\guided-project-develop-conditional-branching-and-looping-structures-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "add-logic-to-c-sharp-console-applications",
+        "name": "Add Logic To C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e218f8acb466c97ccbee5",
+      "title": "Iterate Through a Code Block Using the for Statement in C#",
+      "challengeType": 19,
+      "dashedName": "iterate-through-a-code-block-using-the-for-statement-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-for/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-for/</a> and complete all the tasks for the \"Iterate Through a Code Block Using the for Statement in C#\" module. This is **required** to earn the \"Add Logic to C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\add-logic-to-c-sharp-console-applications\\iterate-through-a-code-block-using-the-for-statement-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "add-logic-to-c-sharp-console-applications",
+        "name": "Add Logic To C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647f882207d29547b3bee1c0",
+      "title": "Trophy - Add Logic to C# Console Applications",
+      "challengeType": 18,
+      "dashedName": "trophy-add-logic-to-c-sharp-console-applications",
+      "description": "Now that you've completed all of the \"Add Logic to C# Console Applications\" challenges, you should have earned the trophy for it on the Microsoft Learn platform. If you don't see this trophy when viewing <a href=\"https://learn.microsoft.com/users/me/achievements#trophies-section\" target=\"_blank\" rel=\"noreferrer\">your achievements page</a>, you have not completed all the tasks and your trophy cannot be verified.\n\nLink your Microsoft username to your freeCodeCamp account and click the \"Verify Trophy\" button below to complete the challenge. This trophy is **required** to qualify for the certification exam.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\add-logic-to-c-sharp-console-applications\\trophy-add-logic-to-c-sharp-console-applications.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "add-logic-to-c-sharp-console-applications",
+        "name": "Add Logic To C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e21ba8acb466c97ccbee6",
+      "title": "Add Decision Logic to Your Code Using if, else, and else if statements in C#",
+      "challengeType": 19,
+      "dashedName": "add-decision-logic-to-your-code-using-if-else-and-else-if-statements-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-if-elseif-else/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-if-elseif-else/</a> and complete all the tasks for the \"Add Decision Logic to Your Code Using if, else, and else if statements in C#\" module. This is **required** to earn the \"Create and Run Simple C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-and-run-simple-c-sharp-console-applications\\add-decision-logic-to-your-code-using-if-else-and-else-if-statements-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-and-run-simple-c-sharp-console-applications",
+        "name": "Create And Run Simple C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e21c48acb466c97ccbee7",
+      "title": "Call Methods From the .NET Class Library Using C#",
+      "challengeType": 19,
+      "dashedName": "call-methods-from-the-dot-net-class-library-using-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-call-methods/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-call-methods/</a> and complete all the tasks for the \"Call Methods From the .NET Class Library Using C#\" module. This is **required** to earn the \"Create and Run Simple C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-and-run-simple-c-sharp-console-applications\\call-methods-from-the-dot-net-class-library-using-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-and-run-simple-c-sharp-console-applications",
+        "name": "Create And Run Simple C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e21df8acb466c97ccbee9",
+      "title": "Create Readable Code with Conventions, Whitespace, and Comments in C#",
+      "challengeType": 19,
+      "dashedName": "create-readable-code-with-conventions-whitespace-and-comments-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-readable-code/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-readable-code/</a> and complete all the tasks for the \"Create Readable Code with Conventions, Whitespace, and Comments in C#\" module. This is **required** to earn the \"Create and Run Simple C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-and-run-simple-c-sharp-console-applications\\create-readable-code-with-conventions-whitespace-and-comments-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-and-run-simple-c-sharp-console-applications",
+        "name": "Create And Run Simple C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e21f88acb466c97ccbeeb",
+      "title": "Install and Configure Visual Studio Code",
+      "challengeType": 19,
+      "dashedName": "install-and-configure-visual-studio-code",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/install-configure-visual-studio-code/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/install-configure-visual-studio-code/</a> and complete all the tasks for the \"Install and Configure Visual Studio Code\" module. This is **required** to earn the \"Create and Run Simple C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-and-run-simple-c-sharp-console-applications\\install-and-configure-visual-studio-code.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-and-run-simple-c-sharp-console-applications",
+        "name": "Create And Run Simple C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647f87dc07d29547b3bee1bf",
+      "title": "Trophy - Create and Run Simple C# Console Applications",
+      "challengeType": 18,
+      "dashedName": "trophy-create-and-run-simple-c-sharp-console-applications",
+      "description": "Now that you've completed all of the \"Create and Run Simple C# Console Applications\" challenges, you should have earned the trophy for it on the Microsoft Learn platform. If you don't see this trophy when viewing <a href=\"https://learn.microsoft.com/users/me/achievements#trophies-section\" target=\"_blank\" rel=\"noreferrer\">your achievements page</a>, you have not completed all the tasks and your trophy cannot be verified.\n\nLink your Microsoft username to your freeCodeCamp account and click the \"Verify Trophy\" button below to complete the challenge. This trophy is **required** to qualify for the certification exam.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-and-run-simple-c-sharp-console-applications\\trophy-create-and-run-simple-c-sharp-console-applications.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-and-run-simple-c-sharp-console-applications",
+        "name": "Create And Run Simple C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e22338acb466c97ccbeed",
+      "title": "Challenge Project - Create a Mini-Game",
+      "challengeType": 19,
+      "dashedName": "challenge-project-create-a-mini-game",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/challenge-project-create-mini-game/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/challenge-project-create-mini-game/</a> and complete all the tasks for the \"Challenge Project - Create a Mini-Game\" module. This is **required** to earn the \"Create Methods in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-methods-in-c-sharp-console-applications\\challenge-project-create-a-mini-game.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-methods-in-c-sharp-console-applications",
+        "name": "Create Methods In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e223c8acb466c97ccbeee",
+      "title": "Create C# Methods that Return Values",
+      "challengeType": 19,
+      "dashedName": "create-c-sharp-methods-that-return-values",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/create-c-sharp-methods-return-values/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/create-c-sharp-methods-return-values/</a> and complete all the tasks for the \"Create C# Methods that Return Values\" module. This is **required** to earn the \"Create Methods in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-methods-in-c-sharp-console-applications\\create-c-sharp-methods-that-return-values.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-methods-in-c-sharp-console-applications",
+        "name": "Create Methods In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e224b8acb466c97ccbeef",
+      "title": "Create C# Methods with Parameters",
+      "challengeType": 19,
+      "dashedName": "create-c-sharp-methods-with-parameters",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/create-c-sharp-methods-parameters/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/create-c-sharp-methods-parameters/</a> and complete all the tasks for the \"Create C# Methods with Parameters\" module. This is **required** to earn the \"Create Methods in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-methods-in-c-sharp-console-applications\\create-c-sharp-methods-with-parameters.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-methods-in-c-sharp-console-applications",
+        "name": "Create Methods In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e225e8acb466c97ccbef0",
+      "title": "Guided Project - Plan a Petting Zoo Visit",
+      "challengeType": 19,
+      "dashedName": "guided-project-plan-a-petting-zoo-visit",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/guided-project-visit-petting-zoo/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/guided-project-visit-petting-zoo/</a> and complete all the tasks for the \"Guided Project - Plan a Petting Zoo Visit\" module. This is **required** to earn the \"Create Methods in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-methods-in-c-sharp-console-applications\\guided-project-plan-a-petting-zoo-visit.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-methods-in-c-sharp-console-applications",
+        "name": "Create Methods In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647f877f07d29547b3bee1be",
+      "title": "Trophy - Create Methods in C# Console Applications",
+      "challengeType": 18,
+      "dashedName": "trophy-create-methods-in-c-sharp-console-applications",
+      "description": "Now that you've completed all of the \"Create Methods in C# Console Applications\" challenges, you should have earned the trophy for it on the Microsoft Learn platform. If you don't see this trophy when viewing <a href=\"https://learn.microsoft.com/users/me/achievements#trophies-section\" target=\"_blank\" rel=\"noreferrer\">your achievements page</a>, you have not completed all the tasks and your trophy cannot be verified.\n\nLink your Microsoft username to your freeCodeCamp account and click the \"Verify Trophy\" button below to complete the challenge. This trophy is **required** to qualify for the certification exam.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-methods-in-c-sharp-console-applications\\trophy-create-methods-in-c-sharp-console-applications.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-methods-in-c-sharp-console-applications",
+        "name": "Create Methods In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e226a8acb466c97ccbef1",
+      "title": "Write Your First C# Method",
+      "challengeType": 19,
+      "dashedName": "write-your-first-c-sharp-method",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/write-first-c-sharp-method/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/write-first-c-sharp-method/</a> and complete all the tasks for the \"Write Your First C# Method\" module. This is **required** to earn the \"Create Methods in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\create-methods-in-c-sharp-console-applications\\write-your-first-c-sharp-method.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "create-methods-in-c-sharp-console-applications",
+        "name": "Create Methods In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e22778acb466c97ccbef2",
+      "title": "Challenge Project - Debug a C# Console Application Using Visual Studio Code",
+      "challengeType": 19,
+      "dashedName": "challenge-project-debug-a-c-sharp-console-application-using-visual-studio-code",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/challenge-project-debug-c-sharp-console-application/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/challenge-project-debug-c-sharp-console-application/</a> and complete all the tasks for the \"Challenge Project - Debug a C# Console Application Using Visual Studio Code\" module. This is **required** to earn the \"Debug C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\debug-c-sharp-console-applications\\challenge-project-debug-a-c-sharp-console-application-using-visual-studio-code.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "debug-c-sharp-console-applications",
+        "name": "Debug C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e228a8acb466c97ccbef3",
+      "title": "Create and Throw Exceptions in C# Console Applications",
+      "challengeType": 19,
+      "dashedName": "create-and-throw-exceptions-in-c-sharp-console-applications",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/create-throw-exceptions-c-sharp/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/create-throw-exceptions-c-sharp/</a> and complete all the tasks for the \"Create and Throw Exceptions in C# Console Applications\" module. This is **required** earn to the \"Debug C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\debug-c-sharp-console-applications\\create-and-throw-exceptions-in-c-sharp-console-applications.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "debug-c-sharp-console-applications",
+        "name": "Debug C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e22958acb466c97ccbef4",
+      "title": "Guided Project - Debug and Handle Exceptions in a C# Console Application Using Visual Studio Code",
+      "challengeType": 19,
+      "dashedName": "guided-project-debug-and-handle-exceptions-in-a-c-sharp-console-application-using-visual-studio-code",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/guided-project-debug-handle-exceptions-c-sharp-console-application/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/guided-project-debug-handle-exceptions-c-sharp-console-application/</a> and complete all the tasks for the \"Guided Project - Debug and Handle Exceptions in a C# Console Application Using Visual Studio Code\" module. This is **required** to earn the \"Debug C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\debug-c-sharp-console-applications\\guided-project-debug-and-handle-exceptions-in-a-c-sharp-console-application-using-visual-studio-code.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "debug-c-sharp-console-applications",
+        "name": "Debug C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e22a08acb466c97ccbef5",
+      "title": "Implement Exception Handling in C# Console Applications",
+      "challengeType": 19,
+      "dashedName": "implement-exception-handling-in-c-sharp-console-applications",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/implement-exception-handling-c-sharp/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/implement-exception-handling-c-sharp/</a> and complete all the tasks for the \"Implement Exception Handling in C# Console Applications\" module. This is **required** to earn the \"Debug C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\debug-c-sharp-console-applications\\implement-exception-handling-in-c-sharp-console-applications.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "debug-c-sharp-console-applications",
+        "name": "Debug C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e22b38acb466c97ccbef6",
+      "title": "Implement the Visual Studio Code Debugging Tools for C#",
+      "challengeType": 19,
+      "dashedName": "implement-the-visual-studio-code-debugging-tools-for-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/implement-visual-studio-code-debugging-tools/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/implement-visual-studio-code-debugging-tools/</a> and complete all the tasks for the \"Implement the Visual Studio Code Debugging Tools for C#\" module. This is **required** to earn the \"Debug C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\debug-c-sharp-console-applications\\implement-the-visual-studio-code-debugging-tools-for-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "debug-c-sharp-console-applications",
+        "name": "Debug C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e22c08acb466c97ccbef7",
+      "title": "Review the Principles of Code Debugging and Exception Handling",
+      "challengeType": 19,
+      "dashedName": "review-the-principles-of-code-debugging-and-exception-handling",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/review-principles-code-debugging-exception-handling-c-sharp/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/review-principles-code-debugging-exception-handling-c-sharp/</a> and complete all the tasks for the \"Review the Principles of Code Debugging and Exception Handling\" module. This is **required** to earn the \"Debug C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\debug-c-sharp-console-applications\\review-the-principles-of-code-debugging-and-exception-handling.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "debug-c-sharp-console-applications",
+        "name": "Debug C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647f86ff07d29547b3bee1bd",
+      "title": "Trophy - Debug C# Console Applications",
+      "challengeType": 18,
+      "dashedName": "trophy-debug-c-sharp-console-applications",
+      "description": "Now that you've completed all of the \"Debug C# Console Applications\" challenges, you should have earned the trophy for it on the Microsoft Learn platform. If you don't see this trophy when viewing <a href=\"https://learn.microsoft.com/users/me/achievements#trophies-section\" target=\"_blank\" rel=\"noreferrer\">your achievements page</a>, you have not completed all the tasks and your trophy cannot be verified.\n\nLink your Microsoft username to your freeCodeCamp account and click the \"Verify Trophy\" button below to complete the challenge. This trophy is **required** to qualify for the certification exam.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\debug-c-sharp-console-applications\\trophy-debug-c-sharp-console-applications.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "debug-c-sharp-console-applications",
+        "name": "Debug C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e22d18acb466c97ccbef8",
+      "title": "Trophy - Debug C# Console Applications",
+      "challengeType": 17,
+      "dashedName": "foundational-c-sharp-with-microsoft-certification-exam",
+      "description": "Pass this exam to earn your Foundational C# with Microsoft Certification. Before starting the exam, please review the following guidelines:\n\n- You must complete the entire exam in one session.\n- Exiting the exam at any point before you are finished, will result in the loss of your progress.\n- There is no time limit, but your total time taken will be recorded.\n- The exam consists of 80 multiple-choice questions.\n- Complete the exam and correctly answer at least 70% of the questions to earn your certification.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\foundational-c-sharp-with-microsoft-certification-exam\\foundational-c-sharp-with-microsoft-certification-exam.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "foundational-c-sharp-with-microsoft-certification-exam",
+        "name": "Foundational C Sharp With Microsoft Certification Exam"
+      }
+    },
+    {
+      "id": "647e230c8acb466c97ccbef9",
+      "title": "Challenge Project - Work with Variable Data in C#",
+      "challengeType": 19,
+      "dashedName": "challenge-project-work-with-variable-data-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/challenge-project-work-variable-data-c-sharp/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/challenge-project-work-variable-data-c-sharp/</a> and complete all the tasks for the \"Challenge Project - Work with Variable Data in C#\" module. This is **required** to earn the \"Work with Variable Data in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\work-with-variable-data-in-c-sharp-console-applications\\challenge-project-work-with-variable-data-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "work-with-variable-data-in-c-sharp-console-applications",
+        "name": "Work With Variable Data In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e23188acb466c97ccbefa",
+      "title": "Choose the Correct Data Type in Your C# Code",
+      "challengeType": 19,
+      "dashedName": "choose-the-correct-data-type-in-your-c-sharp-code",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-choose-data-type/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-choose-data-type/</a> and complete all the tasks for the \"Choose the Correct Data Type in Your C# Code\" module. This is **required** to earn the \"Work with Variable Data in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\work-with-variable-data-in-c-sharp-console-applications\\choose-the-correct-data-type-in-your-c-sharp-code.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "work-with-variable-data-in-c-sharp-console-applications",
+        "name": "Work With Variable Data In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e23248acb466c97ccbefb",
+      "title": "Convert Data Types Using Casting and Conversion Techniques in C#",
+      "challengeType": 19,
+      "dashedName": "convert-data-types-using-casting-and-conversion-techniques-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-convert-cast/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-convert-cast/</a> and complete all the tasks for the \"Convert Data Types Using Casting and Conversion Techniques in C#\" module. This is **required** to earn the \"Work with Variable Data in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\work-with-variable-data-in-c-sharp-console-applications\\convert-data-types-using-casting-and-conversion-techniques-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "work-with-variable-data-in-c-sharp-console-applications",
+        "name": "Work With Variable Data In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e232c8acb466c97ccbefc",
+      "title": "Format Alphanumeric Data for Presentation in C#",
+      "challengeType": 19,
+      "dashedName": "format-alphanumeric-data-for-presentation-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-format-strings/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-format-strings/</a> and complete all the tasks for the \"Format Alphanumeric Data for Presentation in C#\" module. This is **required** to earn the \"Work with Variable Data in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\work-with-variable-data-in-c-sharp-console-applications\\format-alphanumeric-data-for-presentation-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "work-with-variable-data-in-c-sharp-console-applications",
+        "name": "Work With Variable Data In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e23368acb466c97ccbefd",
+      "title": "Guided Project - Work with Variable Data in C#",
+      "challengeType": 19,
+      "dashedName": "guided-project-work-with-variable-data-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/guided-project-work-variable-data-c-sharp/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/guided-project-work-variable-data-c-sharp/</a> and complete all the tasks for the \"Guided Project - Work with Variable Data in C#\" module. This is **required** to earn the \"Work with Variable Data in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\work-with-variable-data-in-c-sharp-console-applications\\guided-project-work-with-variable-data-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "work-with-variable-data-in-c-sharp-console-applications",
+        "name": "Work With Variable Data In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e23438acb466c97ccbefe",
+      "title": "Modify the Content of Strings Using Built-In String Data Type Methods in C#",
+      "challengeType": 19,
+      "dashedName": "modify-the-content-of-string-using-built-in-string-data-type-methods-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-modify-content/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-modify-content/</a> and complete all the tasks for the \"Modify the Content of Strings Using Built-In String Data Type Methods in C#\" module. This is **required** to earn the \"Work with Variable Data in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\work-with-variable-data-in-c-sharp-console-applications\\modify-the-content-of-string-using-built-in-string-data-type-methods-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "work-with-variable-data-in-c-sharp-console-applications",
+        "name": "Work With Variable Data In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e23508acb466c97ccbeff",
+      "title": "Perform Operations on Arrays Using Helper Methods in C#",
+      "challengeType": 19,
+      "dashedName": "perform-operations-on-arrays-using-helpers-methods-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-arrays-operations/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-arrays-operations/</a> and complete all the tasks for the \"Perform Operations on Arrays Using Helper Methods in C#\" module. This is **required** to earn the \"Work with Variable Data in C# Console Applications\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\work-with-variable-data-in-c-sharp-console-applications\\perform-operations-on-arrays-using-helpers-methods-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "work-with-variable-data-in-c-sharp-console-applications",
+        "name": "Work With Variable Data In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647f867a07d29547b3bee1bc",
+      "title": "Trophy - Work with Variable Data in C# Console Applications",
+      "challengeType": 18,
+      "dashedName": "trophy-work-with-variable-data-in-c-sharp-console-applications",
+      "description": "Now that you've completed all of the \"Work with Variable Data in C# Console Applications\" challenges, you should have earned the trophy for it on the Microsoft Learn platform. If you don't see this trophy when viewing <a href=\"https://learn.microsoft.com/users/me/achievements#trophies-section\" target=\"_blank\" rel=\"noreferrer\">your achievements page</a>, you have not completed all the tasks and your trophy cannot be verified.\n\nLink your Microsoft username to your freeCodeCamp account and click the \"Verify Trophy\" button below to complete the challenge. This trophy is **required** to qualify for the certification exam.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\work-with-variable-data-in-c-sharp-console-applications\\trophy-work-with-variable-data-in-c-sharp-console-applications.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "work-with-variable-data-in-c-sharp-console-applications",
+        "name": "Work With Variable Data In C Sharp Console Applications"
+      }
+    },
+    {
+      "id": "647e235a8acb466c97ccbf00",
+      "title": "Guided Project - Calculate and Print Student Grades",
+      "challengeType": 19,
+      "dashedName": "guided-project-calculate-and-print-student-grades",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/guided-project-calculate-print-student-grades/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/guided-project-calculate-print-student-grades/</a> and complete all the tasks for the \"Guided Project - Calculate and Print Student Grades\" module. This is **required** to earn the \"Write Your First Code Using C#\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\write-your-first-code-using-c-sharp\\guided-project-calculate-and-print-student-grades.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "write-your-first-code-using-c-sharp",
+        "name": "Write Your First Code Using C Sharp"
+      }
+    },
+    {
+      "id": "647e236d8acb466c97ccbf01",
+      "title": "Guided Project - Calculate Final GPA",
+      "challengeType": 19,
+      "dashedName": "guided-project-calculate-final-gpa",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/guided-project-calculate-final-gpa/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/guided-project-calculate-final-gpa/</a> and complete all the tasks for the \"Guided Project - Calculate Final GPA\" module. This is **required** to earn the \"Write Your First Code Using C#\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\write-your-first-code-using-c-sharp\\guided-project-calculate-final-gpa.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "write-your-first-code-using-c-sharp",
+        "name": "Write Your First Code Using C Sharp"
+      }
+    },
+    {
+      "id": "647e23788acb466c97ccbf02",
+      "title": "Perform Basic Operations on Numbers in C#",
+      "challengeType": 19,
+      "dashedName": "perform-basic-operations-on-numbers-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-basic-operations/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-basic-operations/</a> and complete all the tasks for the \"Perform Basic Operations on Numbers in C#\" module. This is **required** to earn the \"Write Your First Code Using C#\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\write-your-first-code-using-c-sharp\\perform-basic-operations-on-numbers-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "write-your-first-code-using-c-sharp",
+        "name": "Write Your First Code Using C Sharp"
+      }
+    },
+    {
+      "id": "647e23828acb466c97ccbf03",
+      "title": "Perform Basic String Formatting in C#",
+      "challengeType": 19,
+      "dashedName": "perform-basic-string-formatting-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-basic-formatting/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-basic-formatting/</a> and complete all the tasks for the \"Perform Basic String Formatting in C#\" module. This is **required** to earn the \"Write Your First Code Using C#\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\write-your-first-code-using-c-sharp\\perform-basic-string-formatting-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "write-your-first-code-using-c-sharp",
+        "name": "Write Your First Code Using C Sharp"
+      }
+    },
+    {
+      "id": "647e238f8acb466c97ccbf04",
+      "title": "Store and Retrieve Data Using Literal and Variable Values in C#",
+      "challengeType": 19,
+      "dashedName": "store-and-retrieve-data-using-literal-and-variable-values-in-c-sharp",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-literals-variables/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-literals-variables/</a> and complete all the tasks for the \"Store and Retrieve Data Using Literal and Variable Values in C#\" module. This is **required** to earn the \"Write Your First Code Using C#\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\write-your-first-code-using-c-sharp\\store-and-retrieve-data-using-literal-and-variable-values-in-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "write-your-first-code-using-c-sharp",
+        "name": "Write Your First Code Using C Sharp"
+      }
+    },
+    {
+      "id": "647f85d407d29547b3bee1bb",
+      "title": "Trophy - Write Your First Code Using C#",
+      "challengeType": 18,
+      "dashedName": "trophy-write-your-first-code-using-c-sharp",
+      "description": "Now that you've completed all of the \"Write Your First Code Using C#\" challenges, you should have earned the trophy for it on the Microsoft Learn platform. If you don't see this trophy when viewing <a href=\"https://learn.microsoft.com/users/me/achievements#trophies-section\" target=\"_blank\" rel=\"noreferrer\">your achievements page</a>, you have not completed all the tasks and your trophy cannot be verified.\n\nLink your Microsoft username to your freeCodeCamp account and click the \"Verify Trophy\" button below to complete the challenge. This trophy is **required** to qualify for the certification exam.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\write-your-first-code-using-c-sharp\\trophy-write-your-first-code-using-c-sharp.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "write-your-first-code-using-c-sharp",
+        "name": "Write Your First Code Using C Sharp"
+      }
+    },
+    {
+      "id": "647e239e8acb466c97ccbf05",
+      "title": "Write Your First C# Code",
+      "challengeType": 19,
+      "dashedName": "write-your-first-c-sharp-code",
+      "description": "This challenge will be partially completed on the Microsoft Learn platform. Follow these instructions to complete the challenge:\n\n1. Go to <a href=\"https://learn.microsoft.com/training/modules/csharp-write-first/\" target=\"_blank\" rel=\"noreferrer\">https://learn.microsoft.com/training/modules/csharp-write-first/</a> and complete all the tasks in the \"Write Your First C# Code\" module. This is **required** to earn the \"Write Your First Code Using C#\" trophy on Microsoft Learn, and qualify for the certification exam.\n1. When you are finished, come back and correctly answer the question below.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\19-foundational-c-sharp-with-microsoft\\write-your-first-code-using-c-sharp\\write-your-first-c-sharp-code.md"
+      },
+      "section": {
+        "id": "19-foundational-c-sharp-with-microsoft",
+        "name": "19-foundational-c-sharp-with-microsoft"
+      },
+      "lesson": {
+        "id": "write-your-first-code-using-c-sharp",
+        "name": "Write Your First Code Using C Sharp"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 42,
+    "challenges_with_content": 42
+  }
+}

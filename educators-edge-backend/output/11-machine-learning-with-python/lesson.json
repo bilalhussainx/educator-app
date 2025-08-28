@@ -1,0 +1,1046 @@
+{
+  "section": {
+    "id": "11-machine-learning-with-python",
+    "name": "11-machine-learning-with-python"
+  },
+  "challenges": [
+    {
+      "id": "5e9a0e9ef99a403d019610cc",
+      "title": "Deep Learning Demystified",
+      "challengeType": 11,
+      "dashedName": "deep-learning-demystified",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\how-neural-networks-work\\deep-learning-demystified.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "how-neural-networks-work",
+        "name": "How Neural Networks Work"
+      }
+    },
+    {
+      "id": "5e9a0e9ef99a403d019610cd",
+      "title": "How Convolutional Neural Networks work",
+      "challengeType": 11,
+      "dashedName": "how-convolutional-neural-networks-work",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\how-neural-networks-work\\how-convolutional-neural-networks-work.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "how-neural-networks-work",
+        "name": "How Neural Networks Work"
+      }
+    },
+    {
+      "id": "5e9a0e9ef99a403d019610ca",
+      "title": "How Deep Neural Networks Work",
+      "challengeType": 11,
+      "dashedName": "how-deep-neural-networks-work",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\how-neural-networks-work\\how-deep-neural-networks-work.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "how-neural-networks-work",
+        "name": "How Neural Networks Work"
+      }
+    },
+    {
+      "id": "5e9a0e9ef99a403d019610cb",
+      "title": "Recurrent Neural Networks RNN and Long Short Term Memory LSTM",
+      "challengeType": 11,
+      "dashedName": "recurrent-neural-networks-rnn-and-long-short-term-memory-lstm",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\how-neural-networks-work\\recurrent-neural-networks-rnn-and-long-short-term-memory-lstm.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "how-neural-networks-work",
+        "name": "How Neural Networks Work"
+      }
+    },
+    {
+      "id": "5e46f8e3ac417301a38fb92f",
+      "title": "Book Recommendation Engine using KNN",
+      "challengeType": 10,
+      "dashedName": "book-recommendation-engine-using-knn",
+      "description": "You will be <a href=\"https://colab.research.google.com/github/freeCodeCamp/boilerplate-book-recommendation-engine/blob/master/fcc_book_recommendation_knn.ipynb\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nAfter going to that link, create a copy of the notebook either in your own account or locally. Once you complete the project and it passes the test (included at that link), submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"\n\nWe are still developing the interactive instructional content for the machine learning curriculum. For now, you can go through the video challenges in this certification. You may also have to seek out additional learning resources, similar to what you would do when working on a real-world project.",
+      "instructions": "In this challenge, you will create a book recommendation algorithm using **K-Nearest Neighbors**.\n\nIn this project, you will use the Book-Crossings dataset, which contains 1.1 million ratings (scale of 1-10) of 270,000 books by 90,000 users. The dataset is already imported in the notebook, so no additional download is required.\n\nUse `NearestNeighbors` from `sklearn.neighbors` to develop a model that shows books that are similar to a given book. The Nearest Neighbors algorithm measures the distance to determine the “closeness” of instances.\n\nCreate a function named `get_recommends` that takes a book title (from the dataset) as an argument and returns a list of 5 similar books with their distances from the book argument.\n\nThis code:\n\n```py\nget_recommends(\"The Queen of the Damned (Vampire Chronicles (Paperback))\")\n```\n\nshould return:\n\n```py\n[\n  'The Queen of the Damned (Vampire Chronicles (Paperback))',\n  [\n    ['Catch 22', 0.793983519077301], \n    ['The Witching Hour (Lives of the Mayfair Witches)', 0.7448656558990479], \n    ['Interview with the Vampire', 0.7345068454742432],\n    ['The Tale of the Body Thief (Vampire Chronicles (Paperback))', 0.5376338362693787],\n    ['The Vampire Lestat (Vampire Chronicles, Book II)', 0.5178412199020386]\n  ]\n]\n```\n\nNotice that the data returned from `get_recommends()` is a list. The first element in the list is the book title passed into the function. The second element in the list is a list of five more lists. Each of the five lists contains a recommended book and the distance from the recommended book to the book passed into the function.\n\nIf you graph the dataset (optional), you will notice that most books are not rated frequently. To ensure statistical significance, remove from the dataset users with less than 200 ratings and books with less than 100 ratings.\n\nThe first three cells import libraries you may need and the data to use. The final cell is for testing. Write all your code in between those cells.",
+      "boilerplate": [],
+      "solution": [
+        {
+          "language": "py",
+          "code": "# Python challenges don't need solutions,\n  # because they would need to be tested against a full working project.\n  # Please check our contributing guidelines to learn more."
+        }
+      ],
+      "tests": [
+        {
+          "text": "It should pass all Python tests.\n\n```js\n\n```",
+          "testCode": ""
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": 462378,
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\machine-learning-with-python-projects\\book-recommendation-engine-using-knn.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "machine-learning-with-python-projects",
+        "name": "Machine Learning With Python Projects"
+      }
+    },
+    {
+      "id": "5e46f8dcac417301a38fb92e",
+      "title": "Cat and Dog Image Classifier",
+      "challengeType": 10,
+      "dashedName": "cat-and-dog-image-classifier",
+      "description": "You will be <a href=\"https://colab.research.google.com/github/freeCodeCamp/boilerplate-cat-and-dog-image-classifier/blob/master/fcc_cat_dog.ipynb\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nAfter going to that link, create a copy of the notebook either in your own account or locally. Once you complete the project and it passes the test (included at that link), submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"\n\nWe are still developing the interactive instructional content for the machine learning curriculum. For now, you can go through the video challenges in this certification. You may also have to seek out additional learning resources, similar to what you would do when working on a real-world project.",
+      "instructions": "For this challenge, you will complete the code  to classify images of dogs and cats. You will use TensorFlow 2.0 and Keras to create a convolutional neural network that correctly classifies images of cats and dogs at least 63% of the time. (Extra credit if you get it to 70% accuracy!)\n\nSome of the code is given to you but some code you must fill in to complete this challenge. Read the instruction in each text cell so you will know what you have to do in each code cell.\n\nThe first code cell imports the required libraries. The second code cell downloads the data and sets key variables. The third cell is the first place you will write your own code.\n\nThe structure of the dataset files that are downloaded looks like this (You will notice that the test directory has no subdirectories and the images are not labeled):\n\n```py\ncats_and_dogs\n|__ train:\n    |______ cats: [cat.0.jpg, cat.1.jpg ...]\n    |______ dogs: [dog.0.jpg, dog.1.jpg ...]\n|__ validation:\n    |______ cats: [cat.2000.jpg, cat.2001.jpg ...]\n    |______ dogs: [dog.2000.jpg, dog.2001.jpg ...]\n|__ test: [1.jpg, 2.jpg ...]\n```\n\nYou can tweak epochs and batch size if you like, but it is not required.\n\nThe following instructions correspond to specific cell numbers, indicated with a comment at the top of the cell (such as `# 3`).\n\n## Cell 3\n\nNow it is your turn! Set each of the variables in this cell correctly. (They should no longer equal `None`.)\n\nCreate image generators for each of the three image data sets (train, validation, test). Use `ImageDataGenerator` to read / decode the images and convert them into floating point tensors. Use the `rescale` argument (and no other arguments for now) to rescale the tensors from values between 0 and 255 to values between 0 and 1.\n\nFor the `*_data_gen` variables, use the `flow_from_directory` method. Pass in the batch size, directory, target size (`(IMG_HEIGHT, IMG_WIDTH)`), class mode, and anything else required. `test_data_gen` will be the trickiest one. For `test_data_gen`, make sure to pass in `shuffle=False` to the `flow_from_directory` method. This will make sure the final predictions stay in the order that our test expects. For `test_data_gen` it will also be helpful to observe the directory structure.\n\n\nAfter you run the code, the output should look like this:\n\n```py\nFound 2000 images belonging to 2 classes.\nFound 1000 images belonging to 2 classes.\nFound 50 images belonging to 1 class.\n```\n\n## Cell 4\n\nThe `plotImages` function will be used a few times to plot images. It takes an array of images and a probabilities list, although the probabilities list is optional. This code is given to you. If you created the `train_data_gen` variable correctly, then running this cell will plot five random training images.\n\n## Cell 5\n\nRecreate the `train_image_generator` using `ImageDataGenerator`. \n\nSince there are a small number of training examples, there is a risk of overfitting. One way to fix this problem is by creating more training data from existing training examples by using random transformations.\n\nAdd 4-6 random transformations as arguments to `ImageDataGenerator`. Make sure to rescale the same as before.\n\n## Cell 6\n\nYou don't have to do anything for this cell. `train_data_gen` is created just like before but with the new `train_image_generator`. Then, a single image is plotted five different times using different variations.\n\n## Cell 7\n\nIn this cell, create a model for the neural network that outputs class probabilities. It should use the Keras Sequential model. It will probably involve a stack of Conv2D and MaxPooling2D layers and then a fully connected layer on top that is activated by a ReLU activation function.\n\nCompile the model passing the arguments to set the optimizer and loss. Also pass in `metrics=['accuracy']` to view training and validation accuracy for each training epoch.\n\n## Cell 8\n\nUse the `fit` method on your `model` to train the network. Make sure to pass in arguments for `x`, `steps_per_epoch`, `epochs`, `validation_data`, and `validation_steps`.\n\n## Cell 9\n\nRun this cell to visualize the accuracy and loss of the model.\n\n## Cell 10\n\nNow it is time to use your model to predict whether a brand new image is a cat or a dog.\n\nIn this cell, get the probability that each test image (from `test_data_gen`) is a dog or a cat. `probabilities` should be a list of integers. \n\nCall the `plotImages` function and pass in the test images and the probabilities corresponding to each test image.\n\nAfter you run the cell, you should see all 50 test images with a label showing the percentage of \"sure\" that the image is a cat or a dog. The accuracy will correspond to the accuracy shown in the graph above (after running the previous cell). More training images could lead to a higher accuracy.\n\n## Cell 11\n\nRun this final cell to see if you passed the challenge or if you need to keep trying.",
+      "boilerplate": [],
+      "solution": [
+        {
+          "language": "py",
+          "code": "# Python challenges don't need solutions,\n  # because they would need to be tested against a full working project.\n  # Please check our contributing guidelines to learn more."
+        }
+      ],
+      "tests": [
+        {
+          "text": "It should pass all Python tests.\n\n```js\n\n```",
+          "testCode": ""
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": 462377,
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\machine-learning-with-python-projects\\cat-and-dog-image-classifier.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "machine-learning-with-python-projects",
+        "name": "Machine Learning With Python Projects"
+      }
+    },
+    {
+      "id": "5e46f8edac417301a38fb930",
+      "title": "Linear Regression Health Costs Calculator",
+      "challengeType": 10,
+      "dashedName": "linear-regression-health-costs-calculator",
+      "description": "You will be <a href=\"https://colab.research.google.com/github/freeCodeCamp/boilerplate-linear-regression-health-costs-calculator/blob/master/fcc_predict_health_costs_with_regression.ipynb\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nAfter going to that link, create a copy of the notebook either in your own account or locally. Once you complete the project and it passes the test (included at that link), submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"\n\nWe are still developing the interactive instructional content for the machine learning curriculum. For now, you can go through the video challenges in this certification. You may also have to seek out additional learning resources, similar to what you would do when working on a real-world project.",
+      "instructions": "In this challenge, you will predict healthcare costs using a regression algorithm.\n\nYou are given a dataset that contains information about different people including their healthcare costs. Use the data to predict healthcare costs based on new data.\n\nThe first two cells of this notebook import libraries and the data.\n\nMake sure to convert categorical data to numbers. Use 80% of the data as the `train_dataset` and 20% of the data as the `test_dataset`.\n\n`pop` off the \"expenses\" column from these datasets to create new datasets called `train_labels` and `test_labels`. Use these labels when training your model.\n\nCreate a model and train it with the `train_dataset`. Run the final cell in this notebook to check your model. The final cell will use the unseen `test_dataset` to check how well the model generalizes.\n\nTo pass the challenge, `model.evaluate` must return a Mean Absolute Error of under 3500. This means it predicts health care costs correctly within $3500.\n\nThe final cell will also predict expenses using the `test_dataset` and graph the results.",
+      "boilerplate": [],
+      "solution": [
+        {
+          "language": "py",
+          "code": "# Python challenges don't need solutions,\n  # because they would need to be tested against a full working project.\n  # Please check our contributing guidelines to learn more."
+        }
+      ],
+      "tests": [
+        {
+          "text": "It should pass all Python tests.\n\n```js\n\n```",
+          "testCode": ""
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": 462379,
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\machine-learning-with-python-projects\\linear-regression-health-costs-calculator.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "machine-learning-with-python-projects",
+        "name": "Machine Learning With Python Projects"
+      }
+    },
+    {
+      "id": "5e46f8edac417301a38fb931",
+      "title": "Neural Network SMS Text Classifier",
+      "challengeType": 10,
+      "dashedName": "neural-network-sms-text-classifier",
+      "description": "You will be <a href=\"https://colab.research.google.com/github/freeCodeCamp/boilerplate-neural-network-sms-text-classifier/blob/master/fcc_sms_text_classification.ipynb\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nAfter going to that link, create a copy of the notebook either in your own account or locally. Once you complete the project and it passes the test (included at that link), submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"\n\nWe are still developing the interactive instructional content for the machine learning curriculum. For now, you can go through the video challenges in this certification. You may also have to seek out additional learning resources, similar to what you would do when working on a real-world project.",
+      "instructions": "In this challenge, you need to create a machine learning model that will classify SMS messages as either \"ham\" or \"spam\". A \"ham\" message is a normal message sent by a friend. A \"spam\" message is an advertisement or a message sent by a company.\n\nYou should create a function called `predict_message` that takes a message string as an argument and returns a list. The first element in the list should be a number between zero and one that indicates the likeliness of \"ham\" (0) or \"spam\" (1). The second element in the list should be the word \"ham\" or \"spam\", depending on which is most likely.\n\nFor this challenge, you will use the <a href=\"http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">SMS Spam Collection</a> dataset. The dataset has already been grouped into train data and test data.\n\nThe first two cells import the libraries and data. The final cell tests your model and function. Add your code in between these cells.",
+      "boilerplate": [],
+      "solution": [
+        {
+          "language": "py",
+          "code": "# Python challenges don't need solutions,\n  # because they would need to be tested against a full working project.\n  # Please check our contributing guidelines to learn more."
+        }
+      ],
+      "tests": [
+        {
+          "text": "It should pass all Python tests.\n\n```js\n\n```",
+          "testCode": ""
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": 462380,
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\machine-learning-with-python-projects\\neural-network-sms-text-classifier.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "machine-learning-with-python-projects",
+        "name": "Machine Learning With Python Projects"
+      }
+    },
+    {
+      "id": "5e46f8d6ac417301a38fb92d",
+      "title": "Rock Paper Scissors",
+      "challengeType": 10,
+      "dashedName": "rock-paper-scissors",
+      "description": "For this challenge, you will create a program to play Rock, Paper, Scissors. A program that picks at random will usually win 50% of the time. To pass this challenge your program must play matches against four different bots, winning at least 60% of the games in each match.\n\nYou will be <a href=\"https://gitpod.io/?autostart=true#https://github.com/freeCodeCamp/boilerplate-rock-paper-scissors/\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with our Gitpod starter code</a>.\n\nWe are still developing the interactive instructional part of the machine learning curriculum. For now, you will have to use other resources to learn how to pass this challenge.",
+      "instructions": "In the file `RPS.py` you are provided with a function called `player`. The function takes an argument that is a string describing the last move of the opponent (\"R\", \"P\", or \"S\"). The function should return a string representing the next move for it to play (\"R\", \"P\", or \"S\").\n\nA player function will receive an empty string as an argument for the first game in a match since there is no previous play.\n\nThe file `RPS.py` shows an example function that you will need to update. The example function is defined with two arguments (`player(prev_play, opponent_history = [])`). The function is never called with a second argument so that one is completely optional. The reason why the example function contains a second argument (`opponent_history = []`) is because that is the only way to save state between consecutive calls of the `player` function. You only need the `opponent_history` argument if you want to keep track of the opponent_history.\n\n*Hint: To defeat all four opponents, your program may need to have multiple strategies that change depending on the plays of the opponent.*\n\n## Development\n\nDo not modify `RPS_game.py`. Write all your code in `RPS.py`. For development, you can use `main.py` to test your code. \n\n`main.py` imports the game function and bots from `RPS_game.py`.\n\nTo test your code, play a game with the `play` function. The `play` function takes four arguments:\n\n- two players to play against each other (the players are actually functions)\n- the number of games to play in the match\n- an optional argument to see a log of each game. Set it to `True` to see these messages.\n\n```py\nplay(player1, player2, num_games[, verbose])\n```\n\nFor example, here is how you would call the function if you want `player` and `quincy` to play 1000 games against each other and you want to see the results of each game:\n\n```py\nplay(player, quincy, 1000, verbose=True)\n```\n\n## Testing\n\nThe unit tests for this project are in `test_module.py`. We imported the tests from `test_module.py` to `main.py` for your convenience. If you uncomment the last line in `main.py`, the tests will run automatically whenever you run `python main.py` in the console.\n\n## Submitting\n\nCopy your project's URL and submit it to freeCodeCamp.",
+      "boilerplate": [],
+      "solution": [
+        {
+          "language": "py",
+          "code": "# Python challenges don't need solutions,\n  # because they would need to be tested against a full working project.\n  # Please check our contributing guidelines to learn more."
+        }
+      ],
+      "tests": [
+        {
+          "text": "It should pass all Python tests.\n\n```js\n\n```",
+          "testCode": ""
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": 462376,
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\machine-learning-with-python-projects\\rock-paper-scissors.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "machine-learning-with-python-projects",
+        "name": "Machine Learning With Python Projects"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72da6",
+      "title": "Conclusion",
+      "challengeType": 11,
+      "dashedName": "conclusion",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\conclusion.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d99",
+      "title": "Convolutional Neural Networks: Evaluating the Model",
+      "challengeType": 11,
+      "dashedName": "convolutional-neural-networks-evaluating-the-model",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\convolutional-neural-networks-evaluating-the-model.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d9a",
+      "title": "Convolutional Neural Networks: Picking a Pretrained Model",
+      "challengeType": 11,
+      "dashedName": "convolutional-neural-networks-picking-a-pretrained-model",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\convolutional-neural-networks-picking-a-pretrained-model.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d97",
+      "title": "Convolutional Neural Networks: The Convolutional Layer",
+      "challengeType": 11,
+      "dashedName": "convolutional-neural-networks-the-convolutional-layer",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\convolutional-neural-networks-the-convolutional-layer.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d96",
+      "title": "Convolutional Neural Networks",
+      "challengeType": 11,
+      "dashedName": "convolutional-neural-networks",
+      "description": "The next few video lessons will reference [this Colab notebook](https://colab.research.google.com/drive/1ZZXnCjFEOkp_KdNcNabd14yok0BAIuwS#forceEdit=true&sandboxMode=true).",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\convolutional-neural-networks.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d8e",
+      "title": "Core Learning Algorithms: Building the Model",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms-building-the-model",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms-building-the-model.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d8d",
+      "title": "Core Learning Algorithms: Classification",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms-classification",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms-classification.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d8f",
+      "title": "Core Learning Algorithms: Clustering",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms-clustering",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms-clustering.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d90",
+      "title": "Core Learning Algorithms: Hidden Markov Models",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms-hidden-markov-models",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms-hidden-markov-models.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d8c",
+      "title": "Core Learning Algorithms: The Training Process",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms-the-training-process",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms-the-training-process.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d8b",
+      "title": "Core Learning Algorithms: Training and Testing Data",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms-training-and-testing-data",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms-training-and-testing-data.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d91",
+      "title": "Core Learning Algorithms: Using Probabilities to make Predictions",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms-using-probabilities-to-make-predictions",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms-using-probabilities-to-make-predictions.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d8a",
+      "title": "Core Learning Algorithms: Working with Data",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms-working-with-data",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms-working-with-data.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d89",
+      "title": "Core Learning Algorithms",
+      "challengeType": 11,
+      "dashedName": "core-learning-algorithms",
+      "description": "The next few video lessons will reference [this Colab notebook](https://colab.research.google.com/drive/15Cyy2H7nT40sGR7TBN5wBvgTd57mVKay#forceEdit=true&sandboxMode=true).",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\core-learning-algorithms.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d98",
+      "title": "Creating a Convolutional Neural Network",
+      "challengeType": 11,
+      "dashedName": "creating-a-convolutional-neural-network",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\creating-a-convolutional-neural-network.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d87",
+      "title": "Introduction: Machine Learning Fundamentals",
+      "challengeType": 11,
+      "dashedName": "introduction-machine-learning-fundamentals",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\introduction-machine-learning-fundamentals.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d88",
+      "title": "Introduction to TensorFlow",
+      "challengeType": 11,
+      "dashedName": "introduction-to-tensorflow",
+      "description": "The next few video lessons will reference [this Colab notebook](https://colab.research.google.com/drive/1F_EWVKa8rbMXi3_fG0w7AtcscFq7Hi7B#forceEdit=true&sandboxMode=true).",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\introduction-to-tensorflow.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72da1",
+      "title": "Natural Language Processing With RNNs: Building the Model",
+      "challengeType": 11,
+      "dashedName": "natural-language-processing-with-rnns-building-the-model",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\natural-language-processing-with-rnns-building-the-model.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72da0",
+      "title": "Natural Language Processing With RNNs: Create a Play Generator",
+      "challengeType": 11,
+      "dashedName": "natural-language-processing-with-rnns-create-a-play-generator",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\natural-language-processing-with-rnns-create-a-play-generator.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d9f",
+      "title": "Natural Language Processing With RNNs: Making Predictions",
+      "challengeType": 11,
+      "dashedName": "natural-language-processing-with-rnns-making-predictions",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\natural-language-processing-with-rnns-making-predictions.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d9c",
+      "title": "Natural Language Processing With RNNs: Part 2",
+      "challengeType": 11,
+      "dashedName": "natural-language-processing-with-rnns-part-2",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\natural-language-processing-with-rnns-part-2.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d9d",
+      "title": "Natural Language Processing With RNNs: Recurring Neural Networks",
+      "challengeType": 11,
+      "dashedName": "natural-language-processing-with-rnns-recurring-neural-networks",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\natural-language-processing-with-rnns-recurring-neural-networks.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d9e",
+      "title": "Natural Language Processing With RNNs: Sentiment Analysis",
+      "challengeType": 11,
+      "dashedName": "natural-language-processing-with-rnns-sentiment-analysis",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\natural-language-processing-with-rnns-sentimental-analysis.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72da2",
+      "title": "Natural Language Processing With RNNs: Training the Model",
+      "challengeType": 11,
+      "dashedName": "natural-language-processing-with-rnns-training-the-model",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\natural-language-processing-with-rnns-training-the-model.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d9b",
+      "title": "Natural Language Processing With RNNs",
+      "challengeType": 11,
+      "dashedName": "natural-language-processing-with-rnns",
+      "description": "The next few video lessons will reference [this Colab notebook](https://colab.research.google.com/drive/1ysEKrw_LE2jMndo1snrZUh5w87LQsCxk#forceEdit=true&sandboxMode=true).",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\natural-language-processing-with-rnns.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d93",
+      "title": "Neural Networks: Activation Functions",
+      "challengeType": 11,
+      "dashedName": "neural-networks-activation-functions",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\neural-networks-activation-functions.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d95",
+      "title": "Neural Networks: Creating a Model",
+      "challengeType": 11,
+      "dashedName": "neural-networks-creating-a-model",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\neural-networks-creating-a-model.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d94",
+      "title": "Neural Networks: Optimizers",
+      "challengeType": 11,
+      "dashedName": "neural-networks-optimizers",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\neural-networks-optimizers.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72d92",
+      "title": "Neural Networks with TensorFlow",
+      "challengeType": 11,
+      "dashedName": "neural-networks-with-tensorflow",
+      "description": "The next few video lessons will reference [this Colab notebook](https://colab.research.google.com/drive/1m2cg3D1x3j5vrFc-Cu0gMvc48gWyCOuG#forceEdit=true&sandboxMode=true).",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\neural-networks-with-tensorflow.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72da5",
+      "title": "Reinforcement Learning With Q-Learning: Example",
+      "challengeType": 11,
+      "dashedName": "reinforcement-learning-with-q-learning-example",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\reinforcement-learning-with-q-learning-example.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72da4",
+      "title": "Reinforcement Learning With Q-Learning: Part 2",
+      "challengeType": 11,
+      "dashedName": "reinforcement-learning-with-q-learning-part-2",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\reinforcement-learning-with-q-learning-part-2.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    },
+    {
+      "id": "5e8f2f13c4cdbe86b5c72da3",
+      "title": "Reinforcement Learning With Q-Learning",
+      "challengeType": 11,
+      "dashedName": "reinforcement-learning-with-q-learning",
+      "description": "The next few video lessons will reference [this Colab notebook](https://colab.research.google.com/drive/1IlrlS3bB8t1Gd5Pogol4MIwUxlAjhWOQ#forceEdit=true&sandboxMode=true).",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\11-machine-learning-with-python\\tensorflow\\reinforcement-learning-with-q-learning.md"
+      },
+      "section": {
+        "id": "11-machine-learning-with-python",
+        "name": "11-machine-learning-with-python"
+      },
+      "lesson": {
+        "id": "tensorflow",
+        "name": "Tensorflow"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 41,
+    "challenges_with_content": 11
+  }
+}

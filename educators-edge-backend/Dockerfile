@@ -1,28 +1,18 @@
-# Dockerfile for CoreZenith - The Ultimate Multi-Language Environment
+# Dockerfile for CoreZenith - Definitive Multi-Language Environment
 
 # 1. Base Image
-# We start from a full Debian "bullseye" image to ensure all package managers
-# and build tools are available and compatible.
+# Use a full Debian "bullseye" image. It is stable and has a reliable package manager.
 FROM node:18-bullseye
 
 # 2. Set environment variable to prevent interactive prompts during installation.
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 3. Install all necessary language runtimes and compilers in a single, optimized layer.
-#    - build-essential: Provides tools like 'make' and 'g++' needed to compile some software.
-#    - python3 & python3-pip: For Python 3.
-#    - openjdk-17-jdk: A modern, stable Java Development Kit for compiling and running .java files.
-#    - ruby-full: The complete Ruby programming language interpreter.
-#    - golang-go: The Go programming language toolchain.
-#    - We clean up the apt cache at the end to significantly reduce the final image size.
+# 3. Install necessary language runtimes and compilers in a single, optimized layer.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    build-essential \
     python3 \
     python3-pip \
     openjdk-17-jdk \
-    ruby-full \
-    golang-go \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -42,5 +32,5 @@ COPY . .
 EXPOSE 10000
 
 # 9. Define the command to run your application when the container starts.
-#    This always starts your main Node.js server.
+#    This starts your main Node.js server. For the worker, Render will override this.
 CMD [ "node", "server.js" ]

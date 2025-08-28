@@ -1,0 +1,348 @@
+{
+  "section": {
+    "id": "13-relational-databases",
+    "name": "13-relational-databases"
+  },
+  "challenges": [
+    {
+      "id": "5f1a4ef5d5d6b5ab580fc6ae",
+      "title": "Build a Celestial Bodies Database",
+      "challengeType": 13,
+      "dashedName": "build-a-celestial-bodies-database",
+      "description": "This is one of the required projects to earn your certification. For this project, you will build a database of celestial bodies using PostgreSQL.",
+      "instructions": "**Important:** After you pass all the project tests, save a dump of your database into a `universe.sql` file so you can complete step 2. There will be instructions how to do that within the virtual machine.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\build-a-celestial-bodies-database-project\\build-a-celestial-bodies-database.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "build-a-celestial-bodies-database-project",
+        "name": "Build A Celestial Bodies Database Project"
+      }
+    },
+    {
+      "id": "602da04c22201c65d2a019f4",
+      "title": "Build a Number Guessing Game",
+      "challengeType": 13,
+      "dashedName": "build-a-number-guessing-game",
+      "description": "This is one of the required projects to earn your certification. For this project, you will use Bash scripting, PostgreSQL, and Git to create a number guessing game that runs in the terminal and saves user information.",
+      "instructions": "**Important:** After you pass all the project tests, save a dump of your database into a `number_guess.sql` file, as well as your `number_guess.sh` file, so you can complete step 2. There will be instructions on how to do that within the virtual machine.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\build-a-number-guessing-game-project\\build-a-number-guessing-game.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "build-a-number-guessing-game-project",
+        "name": "Build A Number Guessing Game Project"
+      }
+    },
+    {
+      "id": "602d9ff222201c65d2a019f2",
+      "title": "Build a Periodic Table Database",
+      "challengeType": 13,
+      "dashedName": "build-a-periodic-table-database",
+      "description": "This is one of the required projects to earn your certification. For this project, you will create a Bash script to get information about chemical elements from a periodic table database.",
+      "instructions": "**Important:** After you pass all the project tests, save a dump of your database into a `periodic_table.sql` file, as well as your `element.sh` file, so you can complete step 2. There will be instructions on how to do that within the virtual machine.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\build-a-periodic-table-database-project\\build-a-periodic-table-database.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "build-a-periodic-table-database-project",
+        "name": "Build A Periodic Table Database Project"
+      }
+    },
+    {
+      "id": "5f87ac112ae598023a42df1a",
+      "title": "Build a Salon Appointment Scheduler",
+      "challengeType": 13,
+      "dashedName": "build-a-salon-appointment-scheduler",
+      "description": "This is one of the required projects to earn your certification. For this project, you will create an interactive Bash program that uses PostgreSQL to track the customers and appointments for your salon.",
+      "instructions": "**Important:** After you pass all the project tests, save a dump of your database into a `salon.sql` file, as well as your `salon.sh` file, so you can complete step 2. There will be instructions how to do that within the virtual machine.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\build-a-salon-appointment-scheduler-project\\build-a-salon-appointment-scheduler.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "build-a-salon-appointment-scheduler-project",
+        "name": "Build A Salon Appointment Scheduler Project"
+      }
+    },
+    {
+      "id": "5f9771307d4d22b9d2b75a94",
+      "title": "Build a World Cup Database",
+      "challengeType": 13,
+      "dashedName": "build-a-world-cup-database",
+      "description": "This is one of the required projects to earn your certification. For this project, you will create a Bash script that enters information from World Cup games into PostgreSQL, then query the database for useful statistics.",
+      "instructions": "**Important:** After you pass all the project tests, save a dump of your database into a `worldcup.sql` file, as well as your `insert_data.sh` and `queries.sh` files, so you can complete step 2. There will be instructions how to do that within the virtual machine.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\build-a-world-cup-database-project\\build-a-world-cup-database.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "build-a-world-cup-database-project",
+        "name": "Build A World Cup Database Project"
+      }
+    },
+    {
+      "id": "602da0de22201c65d2a019f6",
+      "title": "Build a Kitty Ipsum Translator",
+      "challengeType": 12,
+      "dashedName": "build-a-kitty-ipsum-translator",
+      "description": "In this 140-lesson course, you will learn some more complex commands, and the details of how commands work.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-advanced-bash-by-building-a-kitty-ipsum-translator\\build-a-kitty-ipsum-translator.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-advanced-bash-by-building-a-kitty-ipsum-translator",
+        "name": "Learn Advanced Bash By Building A Kitty Ipsum Translator"
+      }
+    },
+    {
+      "id": "5f5b969a05380d2179fe6e18",
+      "title": "Build a Bike Rental Shop",
+      "challengeType": 12,
+      "dashedName": "build-a-bike-rental-shop",
+      "description": "In this 210-lesson course, you will build an interactive Bash program that stores rental information for your bike rental shop using PostgreSQL.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-bash-and-sql-by-building-a-bike-rental-shop\\build-a-bike-rental-shop.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-bash-and-sql-by-building-a-bike-rental-shop",
+        "name": "Learn Bash And Sql By Building A Bike Rental Shop"
+      }
+    },
+    {
+      "id": "5ea8adfab628f68d805bfc5e",
+      "title": "Build a Boilerplate",
+      "challengeType": 12,
+      "dashedName": "build-a-boilerplate",
+      "description": "In this 170-lesson course, you will learn terminal commands by creating a website boilerplate using only the command line.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-bash-by-building-a-boilerplate\\build-a-boilerplate.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-bash-by-building-a-boilerplate",
+        "name": "Learn Bash By Building A Boilerplate"
+      }
+    },
+    {
+      "id": "5f5904ac738bc2fa9efecf5a",
+      "title": "Build Five Programs",
+      "challengeType": 12,
+      "dashedName": "build-five-programs",
+      "description": "In this 220-lesson course, you will learn more terminal commands and how to use them within Bash scripts by creating five small programs.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-bash-scripting-by-building-five-programs\\build-five-programs.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-bash-scripting-by-building-five-programs",
+        "name": "Learn Bash Scripting By Building Five Programs"
+      }
+    },
+    {
+      "id": "5fa323cdaf6a73463d590659",
+      "title": "Build an SQL Reference Object",
+      "challengeType": 12,
+      "dashedName": "build-an-sql-reference-object",
+      "description": "In this 240-lesson course, you will learn how Git keeps track of your code by creating an object containing commonly used SQL commands.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-git-by-building-an-sql-reference-object\\build-an-sql-reference-object.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-git-by-building-an-sql-reference-object",
+        "name": "Learn Git By Building An Sql Reference Object"
+      }
+    },
+    {
+      "id": "5f32db63eb37f7e17323f459",
+      "title": "Build a Castle",
+      "challengeType": 12,
+      "dashedName": "build-a-castle",
+      "description": "In this 40-lesson course, you will learn how to edit files in the terminal with Nano while building a castle.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-nano-by-building-a-castle\\build-a-castle.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-nano-by-building-a-castle",
+        "name": "Learn Nano By Building A Castle"
+      }
+    },
+    {
+      "id": "5f2c289f164c29556da632fd",
+      "title": "Build a Database of Video Game Characters",
+      "challengeType": 12,
+      "dashedName": "build-a-database-of-video-game-characters",
+      "description": "In this 165-lesson course, you will learn the basics of a relational database by creating a PostgreSQL database filled with video game characters.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-relational-databases-by-building-a-database-of-video-game-characters\\build-a-database-of-video-game-characters.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-relational-databases-by-building-a-database-of-video-game-characters",
+        "name": "Learn Relational Databases By Building A Database Of Video Game Characters"
+      }
+    },
+    {
+      "id": "602da0c222201c65d2a019f5",
+      "title": "Build a Student Database: Part 1",
+      "challengeType": 12,
+      "dashedName": "build-a-student-database-part-1",
+      "description": "In this 140-lesson course, you will create a Bash script that uses SQL to enter information about your computer science students into PostgreSQL.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-sql-by-building-a-student-database-part-1\\build-a-student-database-part-1.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-sql-by-building-a-student-database-part-1",
+        "name": "Learn Sql By Building A Student Database Part 1"
+      }
+    },
+    {
+      "id": "618590adb0730ca724e37672",
+      "title": "Build a Student Database: Part 2",
+      "challengeType": 12,
+      "dashedName": "build-a-student-database-part-2",
+      "description": "In this 140-lesson course, you will complete your student database while diving deeper into SQL commands.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\13-relational-databases\\learn-sql-by-building-a-student-database-part-2\\build-a-student-database-part-2.md"
+      },
+      "section": {
+        "id": "13-relational-databases",
+        "name": "13-relational-databases"
+      },
+      "lesson": {
+        "id": "learn-sql-by-building-a-student-database-part-2",
+        "name": "Learn Sql By Building A Student Database Part 2"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 14,
+    "challenges_with_content": 14
+  }
+}

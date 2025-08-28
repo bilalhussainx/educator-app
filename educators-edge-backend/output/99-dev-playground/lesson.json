@@ -1,0 +1,2744 @@
+{
+  "section": {
+    "id": "99-dev-playground",
+    "name": "99-dev-playground"
+  },
+  "challenges": [
+    {
+      "id": "6814d8e1516e86b171929de4",
+      "title": "JavaScript Challenge 1: Vowel Balance",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-1",
+      "description": "Given a string, determine whether the number of vowels in the first half of the string is equal to the number of vowels in the second half.\n\n- The string can contain any characters.\n- The letters `a`, `e`, `i`, `o`, and `u`, in either uppercase or lowercase, are considered vowels.\n- If there's an odd number of characters in the string, ignore the center character.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function isBalanced(s) {\n\n  return s;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function isBalanced(s) {\n  const vowels = 'aeiou';\n  const half = Math.floor(s.length / 2);\n\n  let firstHalf = s.slice(0, half);\n  let secondHalf = s.length % 2 === 0 ? s.slice(half) : s.slice(half + 1);\n\n  const countVowels = str =>\n    str\n      .toLowerCase()\n      .split('')\n      .filter(c => vowels.includes(c))\n      .length;\n\n  return countVowels(firstHalf) === countVowels(secondHalf);\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`isBalanced(\"racecar\")` should return `true`.",
+          "testCode": "assert.isTrue(isBalanced(\"racecar\"));"
+        },
+        {
+          "text": "`isBalanced(\"Lorem Ipsum\")` should return `true`.",
+          "testCode": "assert.isTrue(isBalanced(\"Lorem Ipsum\"));"
+        },
+        {
+          "text": "`isBalanced(\"Kitty Ipsum\")` should return `false`.",
+          "testCode": "assert.isFalse(isBalanced(\"Kitty Ipsum\"));"
+        },
+        {
+          "text": "`isBalanced(\"string\")` should return `false`.",
+          "testCode": "assert.isFalse(isBalanced(\"string\"));"
+        },
+        {
+          "text": "`isBalanced(\" \")` should return `true`.",
+          "testCode": "assert.isTrue(isBalanced(\" \"));"
+        },
+        {
+          "text": "`isBalanced(\"abcdefghijklmnopqrstuvwxyz\")` should return `false`.",
+          "testCode": "assert.isFalse(isBalanced(\"abcdefghijklmnopqrstuvwxyz\"));"
+        },
+        {
+          "text": "`isBalanced(\"123A#b!E&#x26;*456-o.U\")` should return `true`.",
+          "testCode": "assert.isTrue(isBalanced(\"123A#b!E&*456-o.U\"));"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-1.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb1b0dab50c87ddb2e51b",
+      "title": "JavaScript Challenge 10: 3 Strikes",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-10",
+      "description": "Given an integer between 1 and 10,000, return a count of how many numbers from 1 up to that integer whose square contains at least one digit 3.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function squaresWithThree(n) {\n\n  return n;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function squaresWithThree(n) {\n  let count = 0;\n\n  for (let i = 1; i <= n; i++) {\n    const square = i * i;\n    if (square.toString().includes('3')) {\n      count++;\n    }\n  }\n\n  return count;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`squaresWithThree(1)` should return `0`.",
+          "testCode": "assert.equal(squaresWithThree(1), 0);"
+        },
+        {
+          "text": "`squaresWithThree(10)` should return `1`.",
+          "testCode": "assert.equal(squaresWithThree(10), 1);"
+        },
+        {
+          "text": "`squaresWithThree(100)` should return `19`.",
+          "testCode": "assert.equal(squaresWithThree(100), 19);"
+        },
+        {
+          "text": "`squaresWithThree(1000)` should return `326`.",
+          "testCode": "assert.equal(squaresWithThree(1000), 326);"
+        },
+        {
+          "text": "`squaresWithThree(10000)` should return `4531`.",
+          "testCode": "assert.equal(squaresWithThree(10000), 4531);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-10.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "68216eb60f957572e7c340c4",
+      "title": "JavaScript Challenge 11: Mile Pace",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-11",
+      "description": "Given a number of miles ran, and a time in `\"MM:SS\"` (minutes:seconds) it took to run those miles, return a string for the average time it took to run each mile in the format `\"MM:SS\"`.\n\n- Add leading zeros when needed.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function milePace(miles, duration) {\n\n  return miles;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function milePace(miles, duration) {\n  const [minutes, seconds] = duration.split(':').map(Number);\n  const totalSeconds = minutes * 60 + seconds;\n  const avgSecondsPerMile = totalSeconds / miles;\n\n  const avgMinutes = Math.floor(avgSecondsPerMile / 60);\n  const avgSeconds = Math.round(avgSecondsPerMile % 60);\n\n  const paddedMinutes = avgMinutes.toString().padStart(2, '0');\n  const paddedSeconds = avgSeconds.toString().padStart(2, '0');\n\n  return `${paddedMinutes}:${paddedSeconds}`;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`milePace(3, \"24:00\")` should return `\"08:00\"`.",
+          "testCode": "assert.equal(milePace(3, \"24:00\"), \"08:00\");"
+        },
+        {
+          "text": "`milePace(1, \"06:45\")` should return `\"06:45\"`.",
+          "testCode": "assert.equal(milePace(1, \"06:45\"), \"06:45\");"
+        },
+        {
+          "text": "`milePace(2, \"07:00\")` should return `\"03:30\"`.",
+          "testCode": "assert.equal(milePace(2, \"07:00\"), \"03:30\");"
+        },
+        {
+          "text": "`milePace(26.2, \"120:35\")` should return `\"04:36\"`.",
+          "testCode": "assert.equal(milePace(26.2, \"120:35\"), \"04:36\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-11.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "68216ef80f957572e7c340c5",
+      "title": "JavaScript Challenge 12: Message Decoder",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-12",
+      "description": "Given a secret message string, and an integer representing the number of letters that were used to shift the message to encode it, return the decoded string.\n\n- A positive number means the message was shifted forward in the alphabet.\n- A negative number means the message was shifted backward in the alphabet.\n- Case matters, decoded characters should retain the case of their encoded counterparts.\n- Non-alphabetical characters should not get decoded.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function decode(message, shift) {\n\n  return message;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function decode(message, shift) {\n  return message.split('').map(char => {\n    if (/[a-zA-Z]/.test(char)) {\n      const base = char === char.toLowerCase() ? 'a'.charCodeAt(0) : 'A'.charCodeAt(0);\n      const charCode = char.charCodeAt(0);\n      const offset = (charCode - base - shift + 26) % 26;\n      return String.fromCharCode(base + offset);\n    } else {\n      return char;\n    }\n  }).join('');\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`decode(\"Xlmw mw e wigvix qiwweki.\", 4)` should return `\"This is a secret message.\"`",
+          "testCode": "assert.equal(decode(\"Xlmw mw e wigvix qiwweki.\", 4), \"This is a secret message.\");"
+        },
+        {
+          "text": "`decode(\"Byffi Qilfx!\", 20)` should return `\"Hello World!\"`",
+          "testCode": "assert.equal(decode(\"Byffi Qilfx!\", 20), \"Hello World!\");"
+        },
+        {
+          "text": "`decode(\"Zqd xnt njzx?\", -1)` should return `\"Are you okay?\"`",
+          "testCode": "assert.equal(decode(\"Zqd xnt njzx?\", -1), \"Are you okay?\");"
+        },
+        {
+          "text": "`decode(\"oannLxmnLjvy\", 9)` should return `\"freeCodeCamp\"`",
+          "testCode": "assert.equal(decode(\"oannLxmnLjvy\", 9), \"freeCodeCamp\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-12.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebc9237de8297eaee78f",
+      "title": "JavaScript Challenge 13: Unnatural Prime",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-13",
+      "description": "Given an integer, determine if that number is a prime number or a negative prime number.\n\n- A prime number is a positive integer greater than 1 that is only divisible by 1 and itself.\n- A negative prime number is the negative version of a positive prime number.\n- `1` and `0` are not considered prime numbers.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function isUnnaturalPrime(n) {\n\n  return n;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function isUnnaturalPrime(n) {\n  const abs = Math.abs(n);\n\n  if (abs <= 1) return false;\n\n  for (let i = 2; i <= Math.sqrt(abs); i++) {\n    if (abs % i === 0) return false;\n  }\n\n  return true;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`isUnnaturalPrime(1)` should return `false`.",
+          "testCode": "assert.isFalse(isUnnaturalPrime(1));"
+        },
+        {
+          "text": "`isUnnaturalPrime(-1)` should return `false`.",
+          "testCode": "assert.isFalse(isUnnaturalPrime(-1));"
+        },
+        {
+          "text": "`isUnnaturalPrime(19)` should return `true`.",
+          "testCode": "assert.isTrue(isUnnaturalPrime(19));"
+        },
+        {
+          "text": "`isUnnaturalPrime(-23)` should return `true`.",
+          "testCode": "assert.isTrue(isUnnaturalPrime(-23));"
+        },
+        {
+          "text": "`isUnnaturalPrime(0)` should return `false`.",
+          "testCode": "assert.isFalse(isUnnaturalPrime(0));"
+        },
+        {
+          "text": "`isUnnaturalPrime(97)` should return `true`.",
+          "testCode": "assert.isTrue(isUnnaturalPrime(97));"
+        },
+        {
+          "text": "`isUnnaturalPrime(-61)` should return `true`.",
+          "testCode": "assert.isTrue(isUnnaturalPrime(-61));"
+        },
+        {
+          "text": "`isUnnaturalPrime(99)` should return `false`.",
+          "testCode": "assert.isFalse(isUnnaturalPrime(99));"
+        },
+        {
+          "text": "`isUnnaturalPrime(-44)` should return `false`.",
+          "testCode": "assert.isFalse(isUnnaturalPrime(-44));"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-13.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebce237de8297eaee790",
+      "title": "JavaScript Challenge 14: Character Battle",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-14",
+      "description": "Given two strings representing your army and an opposing army, each character from your army battles the character at the same position from the opposing army using the following rules:\n\n- Characters `a-z` have a strength of `1-26`, respectively.\n- Characters `A-Z` have a strength of `27-52`, respectively.\n- Digits `0-9` have a strength of their face value.\n- All other characters have a value of zero.\n- Each character can only fight one battle.\n\nFor each battle, the stronger character wins. The army with more victories, wins the war. Return the following values:\n\n- `\"Opponent retreated\"` if your army has more characters than the opposing army.\n- `\"We retreated\"` if the opposing army has more characters than yours.\n- `\"We won\"` if your army won more battles.\n- `\"We lost\"` if the opposing army won more battles.\n- `\"It was a tie\"` if both armies won the same number of battles.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function battle(myArmy, opposingArmy) {\n\n  return myArmy;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function getStrength(soldier) {\n  const soldiers = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';\n  let strength = 0;\n\n  if (/\\d/.test(soldier)) {\n    strength = parseInt(soldier);\n  } else if (soldiers.includes(soldier)) {\n    strength = soldiers.indexOf(soldier) + 1;\n  }\n\n  return strength;\n}\n\nfunction battle(myArmy, opposingArmy) {\n  if (myArmy.length > opposingArmy.length) return 'Opponent retreated';\n  if (opposingArmy.length > myArmy.length) return 'We retreated';\n\n  let myWins = 0;\n  let theirWins = 0;\n\n  for (let i = 0; i < myArmy.length; i++) {\n    const mySoldier = myArmy[i];\n    const theirSoldier = opposingArmy[i];\n\n    const myStrength = getStrength(mySoldier);\n    const theirStrength = getStrength(theirSoldier);\n\n    if (myStrength > theirStrength) myWins++;\n    if (theirStrength > myStrength) theirWins++;\n  }\n\n  return myWins > theirWins ? 'We won' : theirWins > myWins ? 'We lost' : 'It was a tie';\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`battle(\"Hello\", \"World\")` should return `\"We lost\"`.",
+          "testCode": "assert.equal(battle(\"Hello\", \"World\"), \"We lost\");"
+        },
+        {
+          "text": "`battle(\"pizza\", \"salad\")` should return `\"We won\"`.",
+          "testCode": "assert.equal(battle(\"pizza\", \"salad\"), \"We won\");"
+        },
+        {
+          "text": "`battle(\"C@T5\", \"D0G$\")` should return `\"We won\"`.",
+          "testCode": "assert.equal(battle(\"C@T5\", \"D0G$\"), \"We won\");"
+        },
+        {
+          "text": "`battle(\"kn!ght\", \"orc\")` should return `\"Opponent retreated\"`.",
+          "testCode": "assert.equal(battle(\"kn!ght\", \"orc\"), \"Opponent retreated\");"
+        },
+        {
+          "text": "`battle(\"PC\", \"Mac\")` should return `\"We retreated\"`.",
+          "testCode": "assert.equal(battle(\"PC\", \"Mac\"), \"We retreated\");"
+        },
+        {
+          "text": "`battle(\"Wizards\", \"Dragons\")` should return `\"It was a tie\"`.",
+          "testCode": "assert.equal(battle(\"Wizards\", \"Dragons\"), \"It was a tie\");"
+        },
+        {
+          "text": "`battle(\"Mr. Smith\", \"Dr. Jones\")` should return `\"It was a tie\"`.",
+          "testCode": "assert.equal(battle(\"Mr. Smith\", \"Dr. Jones\"), \"It was a tie\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-14.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebd4237de8297eaee791",
+      "title": "JavaScript Challenge 15: camelCase",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-15",
+      "description": "Given a string, return its camel case version using the following rules:\n\n- Words in the string argument are separated by one or more characters from the following set: space (` `), dash (`-`), or underscore (`_`). Treat any sequence of these as a word break.\n- The first word should be all lowercase.\n- Each subsequent word should start with an uppercase letter, with the rest of it lowercase.\n- All spaces and separators should be removed.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function toCamelCase(s) {\n\n  return s;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function toCamelCase(s) {\n  const words = s.replace(/[_\\- ]+/g, ' ').split(' ');\n\n  return words.map((word, i) => {\n    if (i === 0) {\n      return word.toLowerCase();\n    } else {\n      const tempWord = word.split('');\n      return tempWord.shift().toUpperCase() + tempWord.join('').toLowerCase();\n    }\n  }).join('')\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`toCamelCase(\"hello world\")` should return `\"helloWorld\"`.",
+          "testCode": "assert.equal(toCamelCase(\"hello world\"), \"helloWorld\");"
+        },
+        {
+          "text": "`toCamelCase(\"HELLO WORLD\")` should return `\"helloWorld\"`.",
+          "testCode": "assert.equal(toCamelCase(\"HELLO WORLD\"), \"helloWorld\");"
+        },
+        {
+          "text": "`toCamelCase(\"secret agent-X\")` should return `\"secretAgentX\"`.",
+          "testCode": "assert.equal(toCamelCase(\"secret agent-X\"), \"secretAgentX\");"
+        },
+        {
+          "text": "`toCamelCase(\"FREE cODE cAMP\")` should return `\"freeCodeCamp\"`.",
+          "testCode": "assert.equal(toCamelCase(\"FREE cODE cAMP\"), \"freeCodeCamp\");"
+        },
+        {
+          "text": "`toCamelCase(\"ye old-_-sea  faring_buccaneer_-_with a - peg__leg----and a_parrot_ _named- _squawk\")` should return `\"yeOldSeaFaringBuccaneerWithAPegLegAndAParrotNamedSquawk\"`.",
+          "testCode": "assert.equal(toCamelCase(\"ye old-_-sea  faring_buccaneer_-_with a - peg__leg----and a_parrot_ _named- _squawk\"), \"yeOldSeaFaringBuccaneerWithAPegLegAndAParrotNamedSquawk\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-15.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebda237de8297eaee792",
+      "title": "JavaScript Challenge 16: Reverse Parenthesis",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-16",
+      "description": "Given a string that contains properly nested parentheses, return the decoded version of the string using the following rules:\n\n- All characters inside each pair of parentheses should be reversed.\n- Parentheses should be removed from the final result.\n- If parentheses are nested, the innermost pair should be reversed first, and then its result should be included in the reversal of the outer pair.\n- Assume all parentheses are evenly balanced and correctly nested.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function decode(s) {\n\n  return s;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function decode(s) {\n  while (s.includes(')')) {\n    const closeIndex = s.indexOf(')');\n    const openIndex = s.lastIndexOf('(', closeIndex);\n    const before = s.slice(0, openIndex);\n    const group = s.slice(openIndex + 1, closeIndex).split('').reverse().join('');\n    const after = s.slice(closeIndex + 1);\n    s = before + group + after;\n  }\n\n  return s;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`decode(\"(f(b(dc)e)a)\")` should return `\"abcdef\"`.",
+          "testCode": "assert.equal(decode(\"(f(b(dc)e)a)\"), \"abcdef\");"
+        },
+        {
+          "text": "`decode(\"((is?)(a(t d)h)e(n y( uo)r)aC)\")` should return `\"Can you read this?\"`.",
+          "testCode": "assert.equal(decode(\"((is?)(a(t d)h)e(n y( uo)r)aC)\"), \"Can you read this?\");"
+        },
+        {
+          "text": "`decode(\"f(Ce(re))o((e(aC)m)d)p\")` should return `\"freeCodeCamp\"`.",
+          "testCode": "assert.equal(decode(\"f(Ce(re))o((e(aC)m)d)p\"), \"freeCodeCamp\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-16.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebdf237de8297eaee793",
+      "title": "JavaScript Challenge 17: Unorder of Operations",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-17",
+      "description": "Given an array of integers and an array of string operators, apply the operations to the numbers sequentially from left-to-right. Repeat the operations as needed until all numbers are used. Return the final result.\n\nFor example, given `[1, 2, 3, 4, 5]` and `['+', '*']`, return the result of evaluating `1 + 2 * 3 + 4 * 5` from left-to-right ignoring standard order of operations.\n\n- Valid operators are `+`, `-`, `*`, `/`, and `%`.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function evaluate(numbers, operators) {\n\n  return numbers;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function doMath(a, b, operator) {\n  switch (operator) {\n    case \"+\":\n      return a + b;\n    case \"-\":\n      return a - b;\n    case \"*\":\n      return a * b;\n    case \"/\":\n      return a / b;\n    default:\n      return a % b;\n  }\n}\n\nfunction evaluate(numbers, operators) { \n  let total = numbers[0];\n\n  for (let i = 1; i < numbers.length; i++) {\n    const operator = operators[(i - 1) % operators.length];\n    total = doMath(total, numbers[i], operator);\n  }\n\n  return total;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`evaluate([5, 6, 7, 8, 9], ['+', '-'])` should return `3`",
+          "testCode": "assert.equal(evaluate([5, 6, 7, 8, 9], ['+', '-']), 3);"
+        },
+        {
+          "text": "`evaluate([17, 61, 40, 24, 38, 14], ['+', '%'])` should return `38`",
+          "testCode": "assert.equal(evaluate([17, 61, 40, 24, 38, 14], ['+', '%']), 38);"
+        },
+        {
+          "text": "`evaluate([20, 2, 4, 24, 12, 3], ['*', '/'])` should return `60`",
+          "testCode": "assert.equal(evaluate([20, 2, 4, 24, 12, 3], ['*', '/']), 60);"
+        },
+        {
+          "text": "`evaluate([11, 4, 10, 17, 2], ['*', '*', '%'])` should return `30`",
+          "testCode": "assert.equal(evaluate([11, 4, 10, 17, 2], ['*', '*', '%']), 30);"
+        },
+        {
+          "text": "`evaluate([33, 11, 29, 13], ['/', '-'])` should return `-2`",
+          "testCode": "assert.equal(evaluate([33, 11, 29, 13], ['/', '-']), -2);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-17.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebe4237de8297eaee794",
+      "title": "JavaScript Challenge 18: Second Best",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-18",
+      "description": "Given an array of integers representing the price of different laptops, and an integer representing your budget, return:\n\n1. The second most expensive laptop if it is within your budget, or\n2. The most expensive laptop that is within your budget, or\n3. `0` if no laptops are within your budget.\n\n- Duplicate prices should be ignored.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function getLaptopCost(laptops, budget) {\n\n  return laptops;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function getLaptopCost(laptops, budget) {\n  laptops = [...new Set(laptops)].sort((a, b) => b - a);\n\n  if (budget >= laptops[1]) return laptops[1];\n  if (budget < laptops[laptops.length - 1]) return 0;\n\n  for (let i = 2; i < laptops.length; i++) {\n    if (budget >= laptops[i]) return laptops[i];\n  }\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`getLaptopCost([1500, 2000, 1800, 1400], 1900)` should return `1800`",
+          "testCode": "assert.equal(getLaptopCost([1500, 2000, 1800, 1400], 1900), 1800);"
+        },
+        {
+          "text": "`getLaptopCost([1500, 2000, 2000, 1800, 1400], 1900)` should return `1800`",
+          "testCode": "assert.equal(getLaptopCost([1500, 2000, 2000, 1800, 1400], 1900), 1800);"
+        },
+        {
+          "text": "`getLaptopCost([2099, 1599, 1899, 1499], 2200)` should return `1899`",
+          "testCode": "assert.equal(getLaptopCost([2099, 1599, 1899, 1499], 2200), 1899);"
+        },
+        {
+          "text": "`getLaptopCost([2099, 1599, 1899, 1499], 1000)` should return `0`",
+          "testCode": "assert.equal(getLaptopCost([2099, 1599, 1899, 1499], 1000), 0);"
+        },
+        {
+          "text": "`getLaptopCost([1200, 1500, 1600, 1800, 1400, 2000], 1450)` should return `1400`",
+          "testCode": "assert.equal(getLaptopCost([1200, 1500, 1600, 1800, 1400, 2000], 1450), 1400);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-18.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebea237de8297eaee795",
+      "title": "JavaScript Challenge 19: Candlelight",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-19",
+      "description": "Given an integer representing the number of candles you start with, and an integer representing how many burned candles it takes to create a new one, return the number of candles you will have used after creating and burning as many as you can.\n\nFor example, if given 7 candles and it takes 2 burned candles to make a new one:\n\n1. Burn 7 candles to get 7 leftovers,\n2. Recycle 6 leftovers into 3 new candles (1 leftover remains),\n3. Burn 3 candles to get 3 more leftovers (4 total),\n4. Recycle 4 leftovers into 2 new candles,\n5. Burn 2 candles to get 2 leftovers,\n6. Recycle 2 leftovers into 1 new candle,\n7. Burn 1 candle.\n\nYou will have burned 13 total candles in the example.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function burnCandles(candles, leftoversNeeded) {\n\n  return candles;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function burnCandles(candles, leftoversNeeded) {\n  let totalBurned = 0;\n  let unusedLeftovers = 0;\n\n  while (candles > 0) {\n    totalBurned += candles;\n    const leftovers = candles + unusedLeftovers;\n    candles = Math.floor(leftovers / leftoversNeeded);\n    unusedLeftovers = leftovers % leftoversNeeded;\n  }\n\n  return totalBurned;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`burnCandles(7, 2)` should return `13`",
+          "testCode": "assert.equal(burnCandles(7, 2), 13);"
+        },
+        {
+          "text": "`burnCandles(10, 5)` should return `12`",
+          "testCode": "assert.equal(burnCandles(10, 5), 12);"
+        },
+        {
+          "text": "`burnCandles(20, 3)` should return `29`",
+          "testCode": "assert.equal(burnCandles(20, 3), 29);"
+        },
+        {
+          "text": "`burnCandles(17, 4)` should return `22`",
+          "testCode": "assert.equal(burnCandles(17, 4), 22);"
+        },
+        {
+          "text": "`burnCandles(2345, 3)` should return `3517`",
+          "testCode": "assert.equal(burnCandles(2345, 3), 3517);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-19.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb05adab50c87ddb2e513",
+      "title": "JavaScript Challenge 2: Base Check",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-2",
+      "description": "Given a string representing a number, and an integer base from 2 to 36, determine whether the number is valid in that base.\n\n- The string may contain integers, and uppercase or lowercase characters.\n- The check should be case-insensitive.\n- The base can be any number 2-36.\n- A number is valid if every character is a valid digit in the given base.\n- Example of valid digits for bases:\n  - Base 2: 0-1\n  - Base 8: 0-7\n  - Base 10: 0-9\n  - Base 16: 0-9 and A-F\n  - Base 36: 0-9 and A-Z",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function isValidNumber(n, base) {\n\n  return n;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function isValidNumber(n, base) {\n  return new RegExp(`^[${'0123456789abcdefghijklmnopqrstuvwxyz'.substring(0, base)}]+\\$`, \"i\").test(n);\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`isValidNumber(\"10101\", 2)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"10101\", 2))"
+        },
+        {
+          "text": "`isValidNumber(\"10201\", 2)` should return `false`.",
+          "testCode": "assert.isFalse(isValidNumber(\"10201\", 2))"
+        },
+        {
+          "text": "`isValidNumber(\"76543210\", 8)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"76543210\", 8))"
+        },
+        {
+          "text": "`isValidCode(\"9876543210\", 8)` should return `false`.",
+          "testCode": "assert.isFalse(isValidNumber(\"9876543210\", 8))"
+        },
+        {
+          "text": "`isValidNumber(\"9876543210\", 10)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"9876543210\", 10))"
+        },
+        {
+          "text": "`isValidNumber(\"ABC\", 10)` should return `false`.",
+          "testCode": "assert.isFalse(isValidNumber(\"ABC\", 10))"
+        },
+        {
+          "text": "`isValidNumber(\"ABC\", 16)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"ABC\", 16))"
+        },
+        {
+          "text": "`isValidNumber(\"Z\", 36)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"Z\", 36))"
+        },
+        {
+          "text": "`isValidNumber(\"ABC\", 20)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"ABC\", 20))"
+        },
+        {
+          "text": "`isValidNumber(\"4B4BA9\", 16)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"4B4BA9\", 16))"
+        },
+        {
+          "text": "`isValidNumber(\"5G3F8F\", 16)` should return `false`.",
+          "testCode": "assert.isFalse(isValidNumber(\"5G3F8F\", 16))"
+        },
+        {
+          "text": "`isValidNumber(\"5G3F8F\", 17)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"5G3F8F\", 17))"
+        },
+        {
+          "text": "`isValidNumber(\"abc\", 10)` should return `false`.",
+          "testCode": "assert.isFalse(isValidNumber(\"abc\", 10))"
+        },
+        {
+          "text": "`isValidNumber(\"abc\", 16)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"abc\", 16))"
+        },
+        {
+          "text": "`isValidNumber(\"AbC\", 16)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"AbC\", 16))"
+        },
+        {
+          "text": "`isValidNumber(\"z\", 36)` should return `true`.",
+          "testCode": "assert.isTrue(isValidNumber(\"z\", 36))"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-2.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebee237de8297eaee796",
+      "title": "JavaScript Challenge 20: Array Duplicates",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-20",
+      "description": "Given an array of integers, return an array of integers that appear more than once in the initial array, sorted in ascending order. If no values appear more than once, return an empty array.\n\n- Only include one instance of each value in the returned array.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function findDuplicates(arr) {\n\n  return arr;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function findDuplicates(arr) {\n  const duplicates = [];\n  \n  for (let i = 0; i < arr.length - 1; i++) {\n    for (let j = i + 1; j < arr.length; j++) {\n      if (arr[i] === arr[j] && !duplicates.includes(arr[i])) {\n        duplicates.push(arr[i]);\n      }\n    }\n  }\n\n  return duplicates.sort((a, b) => a - b);\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`findDuplicates([1, 2, 3, 4, 5])` should return `[]`.",
+          "testCode": "assert.deepEqual(findDuplicates([1, 2, 3, 4, 5]), []);"
+        },
+        {
+          "text": "`findDuplicates([1, 2, 3, 4, 1, 2])` should return `[1, 2]`.",
+          "testCode": "assert.deepEqual(findDuplicates([1, 2, 3, 4, 1, 2]), [1, 2]);"
+        },
+        {
+          "text": "`findDuplicates([2, 34, 0, 1, -6, 23, 5, 3, 2, 5, 67, -6, 23, 2, 43, 2, 12, 0, 2, 4, 4])` should return `[-6, 0, 2, 4, 5, 23]`.",
+          "testCode": "assert.deepEqual(findDuplicates([2, 34, 0, 1, -6, 23, 5, 3, 2, 5, 67, -6, 23, 2, 43, 2, 12, 0, 2, 4, 4]), [-6, 0, 2, 4, 5, 23]);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-20.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebf3237de8297eaee797",
+      "title": "JavaScript Challenge 21: Hex Generator",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-21",
+      "description": "Given a named CSS color string, generate a random hexadecimal (hex) color code that is dominant in the given color.\n\n- The function should handle `\"red\"`, `\"green\"`, or `\"blue\"` as an input argument.\n- If the input is not one of those, the function should return `\"Invalid color\"`.\n- The function should return a random six-character hex color code where the input color value is greater than any of the others.\n- Example of valid outputs for a given input:\n\n| Input   | Output   |\n|---------|----------|\n| `\"red\"`   | `\"FF0000\"` |\n| `\"green\"` | `\"00FF00\"` |\n| `\"blue\"`  | `\"0000FF\"` |",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function generateHex(color) {\n\n  return color;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function generateHex(color) {\n  const toHex = n => n.toString(16).padStart(2, \"0\").toUpperCase();\n\n  const dominant = Math.floor(Math.random() * 86) + 170;\n  const weak1 = Math.floor(Math.random() * 170);\n  const weak2 = Math.floor(Math.random() * 170);\n\n  let r, g, b;\n\n  switch (color) {\n    case \"red\":\n      r = dominant;\n      g = weak1;\n      b = weak2;\n      break;\n    case \"green\":\n      r = weak1;\n      g = dominant;\n      b = weak2;\n      break;\n    case \"blue\":\n      r = weak1;\n      g = weak2;\n      b = dominant;\n      break;\n    default:\n      return \"Invalid color\";\n  }\n\n  return `${toHex(r)}${toHex(g)}${toHex(b)}`;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`generateHex(\"yellow\")` should return `\"Invalid color\"`.",
+          "testCode": "assert.equal(generateHex(\"yellow\"), \"Invalid color\");"
+        },
+        {
+          "text": "`generateHex(\"red\")` should return a six-character string.",
+          "testCode": "assert.lengthOf(generateHex(\"red\"), 6);"
+        },
+        {
+          "text": "`generateHex(\"red\")` should return a valid six-character hex color code.",
+          "testCode": "const hex = generateHex(\"red\").toUpperCase();\nconst isValidHex = /^[0-9A-F]{6}$/.test(hex);\nassert.isTrue(isValidHex);"
+        },
+        {
+          "text": "`generateHex(\"red\")` should return a valid hex color with a higher red value than other colors.\n\n```js\nconst hex = generateHex(\"red\").toUpperCase();\nconst isValidHex = /^[0-9A-F]{6}$/.test(hex);\nassert.isTrue(isValidHex);\n\nconst r = parseInt(hex.slice(0, 2), 16);\nconst g = parseInt(hex.slice(2, 4), 16);\nconst b = parseInt(hex.slice(4, 6), 16);\n\nassert.isAbove(r, g);\nassert.isAbove(r, b);\n```\n\nCalling `generateHex(\"red\")` twice should return two different hex color values where red is dominant.\n\n```js\nconst hex1 = generateHex(\"red\").toUpperCase();\nconst isValidHex1 = /^[0-9A-F]{6}$/.test(hex1)\nassert.isTrue(isValidHex1);\n\nconst r1 = parseInt(hex1.slice(0, 2), 16);\nconst g1 = parseInt(hex1.slice(2, 4), 16);\nconst b1 = parseInt(hex1.slice(4, 6), 16);\n\nassert.isAbove(r1, g1);\nassert.isAbove(r1, b1);\n\nconst hex2 = generateHex(\"red\").toUpperCase();\nconst isValidHex2 = /^[0-9A-F]{6}$/.test(hex2);\nassert.isTrue(isValidHex2);\n\nconst r2 = parseInt(hex2.slice(0, 2), 16);\nconst g2 = parseInt(hex2.slice(2, 4), 16);\nconst b2 = parseInt(hex2.slice(4, 6), 16);\n\nassert.isAbove(r2, g2);\nassert.isAbove(r2, b2);\nassert.notEqual(hex1, hex2);\n```\n\nCalling `generateHex(\"green\")` twice should return two different hex color values where green is dominant.\n\n```js\nconst hex1 = generateHex(\"green\").toUpperCase();\nconst isValidHex1 = /^[0-9A-F]{6}$/.test(hex1)\nassert.isTrue(isValidHex1);\n\nconst r1 = parseInt(hex1.slice(0, 2), 16);\nconst g1 = parseInt(hex1.slice(2, 4), 16);\nconst b1 = parseInt(hex1.slice(4, 6), 16);\n\nassert.isAbove(g1, r1);\nassert.isAbove(g1, b1);\n\nconst hex2 = generateHex(\"green\").toUpperCase();\nconst isValidHex2 = /^[0-9A-F]{6}$/.test(hex2);\nassert.isTrue(isValidHex2);\n\nconst r2 = parseInt(hex2.slice(0, 2), 16);\nconst g2 = parseInt(hex2.slice(2, 4), 16);\nconst b2 = parseInt(hex2.slice(4, 6), 16);\n\nassert.isAbove(g2, r2);\nassert.isAbove(g2, b2);\nassert.notEqual(hex1, hex2);\n```\n\nCalling `generateHex(\"blue\")` twice should return two different hex color values where blue is dominant.\n\n```js\nconst hex1 = generateHex(\"blue\").toUpperCase();\nconst isValidHex1 = /^[0-9A-F]{6}$/.test(hex1)\nassert.isTrue(isValidHex1);\n\nconst r1 = parseInt(hex1.slice(0, 2), 16);\nconst g1 = parseInt(hex1.slice(2, 4), 16);\nconst b1 = parseInt(hex1.slice(4, 6), 16);\n\nassert.isAbove(b1, r1);\nassert.isAbove(b1, g1);\n\nconst hex2 = generateHex(\"blue\").toUpperCase();\nconst isValidHex2 = /^[0-9A-F]{6}$/.test(hex2);\nassert.isTrue(isValidHex2);\n\nconst r2 = parseInt(hex2.slice(0, 2), 16);\nconst g2 = parseInt(hex2.slice(2, 4), 16);\nconst b2 = parseInt(hex2.slice(4, 6), 16);\n\nassert.isAbove(b2, r2);\nassert.isAbove(b2, g2);\nassert.notEqual(hex1, hex2);\n```",
+          "testCode": ""
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-21.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebf8237de8297eaee798",
+      "title": "JavaScript Challenge 22: Tribonacci Sequence",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-22",
+      "description": "The Tribonacci sequence is a series of numbers where each number is the sum of the three preceding ones. When starting with `0`, `0` and `1`, the first 10 numbers in the sequence are `0`, `0`, `1`, `1`, `2`, `4`, `7`, `13`, `24`, `44`.\n\nGiven an array containing the first three numbers of a Tribonacci sequence, and an integer representing the length of the sequence, return an array containing the sequence of the given length.\n\n- Your function should handle sequences of any length greater than or equal to zero.\n- If the length is zero, return an empty array.\n- Note that the starting numbers are part of the sequence.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function tribonacciSequence(startSequence, length) {\n\n  return length;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function tribonacciSequence(startSequence, length) {\n  if (length === 0) return [];\n  if (length === 1) return [startSequence[0]];\n  if (length === 2) return [startSequence[0], startSequence[1]];\n  if (length === 3) return [...startSequence];\n\n  const sequence = [...startSequence];\n  while (sequence.length < length) {\n    const nextValue = sequence[sequence.length - 1] + sequence[sequence.length - 2] + + sequence[sequence.length - 3];\n    sequence.push(nextValue);\n  }\n  return sequence;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`tribonacciSequence([0, 0, 1], 20)` should return `[0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81, 149, 274, 504, 927, 1705, 3136, 5768, 10609, 19513]`.",
+          "testCode": "assert.deepEqual(tribonacciSequence([0, 0, 1], 20), [0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81, 149, 274, 504, 927, 1705, 3136, 5768, 10609, 19513]);"
+        },
+        {
+          "text": "`tribonacciSequence([21, 32, 43], 1)` should return `[21]`.",
+          "testCode": "assert.deepEqual(tribonacciSequence([21, 32, 43], 1), [21]);"
+        },
+        {
+          "text": "`tribonacciSequence([0, 0, 1], 0)` should return `[]`.",
+          "testCode": "assert.deepEqual(tribonacciSequence([0, 0, 1], 0), []);"
+        },
+        {
+          "text": "`tribonacciSequence([10, 20, 30], 2)` should return `[10, 20]`.",
+          "testCode": "assert.deepEqual(tribonacciSequence([10, 20, 30], 2), [10, 20]);"
+        },
+        {
+          "text": "`tribonacciSequence([10, 20, 30], 3)` should return `[10, 20, 30]`.",
+          "testCode": "assert.deepEqual(tribonacciSequence([10, 20, 30], 3), [10, 20, 30]);"
+        },
+        {
+          "text": "`tribonacciSequence([123, 456, 789], 8)` should return `[123, 456, 789, 1368, 2613, 4770, 8751, 16134]`.",
+          "testCode": "assert.deepEqual(tribonacciSequence([123, 456, 789], 8), [123, 456, 789, 1368, 2613, 4770, 8751, 16134]);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-22.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ebfd237de8297eaee799",
+      "title": "JavaScript Challenge 23: RGB to Hex",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-23",
+      "description": "Given a CSS `rgb(r, g, b)` color string, return its hexadecimal equivalent.\n\nHere are some example outputs for a given input:\n\n| Input   | Output   |\n|---------|----------|\n| `\"rgb(255, 255, 255)\"`| `\"#ffffff\"` |\n| `\"rgb(1, 2, 3)\"` | `\"#010203\"` |\n\n- Make any letters lowercase.\n- Return a `#` followed by six characters. Don't use any shorthand values.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function rgbToHex(rgb) {\n\n  return rgb;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function rgbToHex(rgb) {\n  const match = rgb.match(/\\d+/g);\n  const [r, g, b] = match.map(num =>\n    Math.max(0, Math.min(255, parseInt(num)))\n      .toString(16)\n      .padStart(2, '0')\n  );\n\n  return `#${r}${g}${b}`;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`rgbToHex(\"rgb(255, 255, 255)\")` should return `\"#ffffff\"`.",
+          "testCode": "assert.equal(rgbToHex(\"rgb(255, 255, 255)\"), \"#ffffff\");"
+        },
+        {
+          "text": "`rgbToHex(\"rgb(1, 11, 111)\")` should return `\"#010b6f\"`.",
+          "testCode": "assert.equal(rgbToHex(\"rgb(1, 11, 111)\"), \"#010b6f\");"
+        },
+        {
+          "text": "`rgbToHex(\"rgb(173, 216, 230)\")` should return `\"#add8e6\"`.",
+          "testCode": "assert.equal(rgbToHex(\"rgb(173, 216, 230)\"), \"#add8e6\");"
+        },
+        {
+          "text": "`rgbToHex(\"rgb(79, 123, 201)\")` should return `\"#4f7bc9\"`.",
+          "testCode": "assert.equal(rgbToHex(\"rgb(79, 123, 201)\"), \"#4f7bc9\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-23.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6821ec02237de8297eaee79a",
+      "title": "JavaScript Challenge 24: Pangram",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-24",
+      "description": "Given a word or sentence and a string of lowercase letters, determine if the word or sentence uses all the letters from the given set at least once and no other letters.\n\n- Ignore non-alphabetical characters in the word or sentence.\n- Ignore letter casing in the word or sentence.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function isPangram(sentence, letters) {\n\n  return sentence;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function isPangram(sentence, letters) {\n  const usedLetters = [];\n  for (let i = 0; i < sentence.length; i++) {\n    const letter = sentence[i].toLowerCase();\n    if (!usedLetters.includes(letter) && /[a-z]/.test(letter)) {\n      usedLetters.push(letter);\n    }\n  }\n\n  const sortedLetters = letters.split('').sort().join('');\n  const sortedUsedLetters = usedLetters.sort().join('');\n\n  return sortedLetters === sortedUsedLetters;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`isPangram(\"hello\", \"helo\")` should return `true`",
+          "testCode": "assert.isTrue(isPangram(\"hello\", \"helo\"));"
+        },
+        {
+          "text": "`isPangram(\"hello\", \"hel\")` should return `false`",
+          "testCode": "assert.isFalse(isPangram(\"hello\", \"hel\"));"
+        },
+        {
+          "text": "`isPangram(\"hello\", \"helow\")` should return `false`",
+          "testCode": "assert.isFalse(isPangram(\"hello\", \"helow\"));"
+        },
+        {
+          "text": "`isPangram(\"hello world\", \"helowrd\")` should return `true`",
+          "testCode": "assert.isTrue(isPangram(\"hello world\", \"helowrd\"));"
+        },
+        {
+          "text": "`isPangram(\"Hello World!\", \"helowrd\")` should return `true`",
+          "testCode": "assert.isTrue(isPangram(\"Hello World!\", \"helowrd\"));"
+        },
+        {
+          "text": "`isPangram(\"Hello World!\", \"heliowrd\")` should return `false`",
+          "testCode": "assert.isFalse(isPangram(\"Hello World!\", \"heliowrd\"));"
+        },
+        {
+          "text": "`isPangram(\"freeCodeCamp\", \"frcdmp\")` should return `false`",
+          "testCode": "assert.isFalse(isPangram(\"freeCodeCamp\", \"frcdmp\"));"
+        },
+        {
+          "text": "`isPangram(\"The quick brown fox jumps over the lazy dog.\", \"abcdefghijklmnopqrstuvwxyz\")` should return `true`",
+          "testCode": "assert.isTrue(isPangram(\"The quick brown fox jumps over the lazy dog.\", \"abcdefghijklmnopqrstuvwxyz\"));"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-24.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb1a2dab50c87ddb2e514",
+      "title": "JavaScript Challenge 3: Fibonacci Sequence",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-3",
+      "description": "The Fibonacci sequence is a series of numbers where each number is the sum of the two preceding ones. When starting with `0` and `1`, the first 10 numbers in the sequence are `0`, `1`, `1`, `2`, `3`, `5`, `8`, `13`, `21`, `34`.\n\nGiven an array containing the first two numbers of a Fibonacci sequence, and an integer representing the length of the sequence, return an array containing the sequence of the given length.\n\n- Your function should handle sequences of any length greater than or equal to zero.\n- If the length is zero, return an empty array.\n- Note that the starting numbers are part of the sequence.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function fibonacciSequence(startSequence, length) {\n\n  return length;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function fibonacciSequence(startSequence, length) {\n  if (length === 0) return [];\n  if (length === 1) return [startSequence[0]];\n  if (length === 2) return [...startSequence];\n\n  const sequence = [...startSequence];\n  while (sequence.length < length) {\n    const nextValue = sequence[sequence.length - 1] + sequence[sequence.length - 2];\n    sequence.push(nextValue);\n  }\n  return sequence;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`fibonacciSequence([0, 1], 20)` should return `[0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181]`.",
+          "testCode": "assert.deepEqual(fibonacciSequence([0, 1], 20), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181]);"
+        },
+        {
+          "text": "`fibonacciSequence([21, 32], 1)` should return `[21]`.",
+          "testCode": "assert.deepEqual(fibonacciSequence([21, 32], 1), [21]);"
+        },
+        {
+          "text": "`fibonacciSequence([0, 1], 0)` should return `[]`.",
+          "testCode": "assert.deepEqual(fibonacciSequence([0, 1], 0), []);"
+        },
+        {
+          "text": "`fibonacciSequence([10, 20], 2)` should return `[10, 20]`.",
+          "testCode": "assert.deepEqual(fibonacciSequence([10, 20], 2), [10, 20]);"
+        },
+        {
+          "text": "`fibonacciSequence([123456789, 987654321], 5)` should return `[123456789, 987654321, 1111111110, 2098765431, 3209876541]`.",
+          "testCode": "assert.deepEqual(fibonacciSequence([123456789, 987654321], 5), [123456789, 987654321, 1111111110, 2098765431, 3209876541]);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-3.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb1afdab50c87ddb2e515",
+      "title": "JavaScript Challenge 4: S  P  A  C  E  J  A  M",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-4",
+      "description": "Given a string, remove all spaces from the string, insert two spaces between every character, convert all alphabetical letters to uppercase, and return the result.\n\n- Non-alphabetical characters should remain unchanged (except for spaces).",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function spaceJam(s) {\n\n  return s;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function spaceJam(s) {\n  return s.toUpperCase().replace(/\\s+/g, '').split('').join('  ');\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`spaceJam(\"freeCodeCamp\")` should return `\"F  R  E  E  C  O  D  E  C  A  M  P\"`.",
+          "testCode": "assert.equal(spaceJam(\"freeCodeCamp\"), \"F  R  E  E  C  O  D  E  C  A  M  P\");"
+        },
+        {
+          "text": "`spaceJam(\"   free   Code   Camp   \")` should return `\"F  R  E  E  C  O  D  E  C  A  M  P\"`.",
+          "testCode": "assert.equal(spaceJam(\"   free   Code   Camp   \"), \"F  R  E  E  C  O  D  E  C  A  M  P\");"
+        },
+        {
+          "text": "`spaceJam(\"Hello World?!\")` should return `\"H  E  L  L  O  W  O  R  L  D  ?  !\"`.",
+          "testCode": "assert.equal(spaceJam(\"Hello World?!\"), \"H  E  L  L  O  W  O  R  L  D  ?  !\");"
+        },
+        {
+          "text": "`spaceJam(\"C@t$ & D0g$\")` should return `\"C  @  T  $  &  D  0  G  $\"`.",
+          "testCode": "assert.equal(spaceJam(\"C@t$ & D0g$\"), \"C  @  T  $  &  D  0  G  $\");"
+        },
+        {
+          "text": "`spaceJam(\"allyourbase\")` should return `\"A  L  L  Y  O  U  R  B  A  S  E\"`.",
+          "testCode": "assert.equal(spaceJam(\"all your base\"), \"A  L  L  Y  O  U  R  B  A  S  E\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-4.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb1afdab50c87ddb2e516",
+      "title": "JavaScript Challenge 5: Jbelmud Text",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-5",
+      "description": "Given a string, return a jumbled version of that string where each word is transformed using the following constraints:\n\n- The first and last letters of the words remain in place\n- All letters between the first and last letter are sorted alphabetically.\n- The input strings will contain no punctuation, and will be entirely lowercase.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function jbelmu(text) {\n\n  return text;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function jbelmu(text) {\n  return text\n    .split(' ')\n    .map((word) => {\n      if (word.length <= 3) return word;\n      const first = word[0];\n      const last = word[word.length - 1];\n      const middle = word\n        .slice(1, -1)\n        .split('')\n        .sort()\n        .join('');\n      return first + middle + last;\n    })\n    .join(' ');\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`jbelmu(\"hello world\")` should return `\"hello wlord\"`.",
+          "testCode": "assert.equal(jbelmu(\"hello world\"), \"hello wlord\");"
+        },
+        {
+          "text": "`jbelmu(\"i love jumbled text\")` should return `\"i love jbelmud text\"`.",
+          "testCode": "assert.equal(jbelmu(\"i love jumbled text\"), \"i love jbelmud text\");"
+        },
+        {
+          "text": "`jbelmu(\"freecodecamp is my favorite place to learn to code\")` should return `\"faccdeeemorp is my faiortve pacle to laern to cdoe\"`.",
+          "testCode": "assert.equal(jbelmu(\"freecodecamp is my favorite place to learn to code\"), \"faccdeeemorp is my faiortve pacle to laern to cdoe\");"
+        },
+        {
+          "text": "`jbelmu(\"the quick brown fox jumps over the lazy dog\")` should return `\"the qciuk borwn fox jmpus oevr the lazy dog\"`.",
+          "testCode": "assert.equal(jbelmu(\"the quick brown fox jumps over the lazy dog\"), \"the qciuk borwn fox jmpus oevr the lazy dog\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-5.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb1afdab50c87ddb2e517",
+      "title": "JavaScript Challenge 6: Anagram Checker",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-6",
+      "description": "Given two strings, determine if they are anagrams of each other (contain the same characters in any order).\n\n- Ignore casing and white space.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function areAnagrams(str1, str2) {\n\n  return str1;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function areAnagrams(str1, str2) {\n  const clean = (str) =>\n    str.replace(/\\s+/g, '').toLowerCase().split('').sort().join('');\n    \n  return clean(str1) === clean(str2);\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`areAnagrams(\"listen\", \"silent\")` should return `true`.",
+          "testCode": "assert.isTrue(areAnagrams(\"listen\", \"silent\"));"
+        },
+        {
+          "text": "`areAnagrams(\"School master\", \"The classroom\")` should return `true`.",
+          "testCode": "assert.isTrue(areAnagrams(\"School master\", \"The classroom\"));"
+        },
+        {
+          "text": "`areAnagrams(\"A gentleman\", \"Elegant man\")` should return `true`.",
+          "testCode": "assert.isTrue(areAnagrams(\"A gentleman\", \"Elegant man\"));"
+        },
+        {
+          "text": "`areAnagrams(\"Hello\", \"World\")` should return `false`.",
+          "testCode": "assert.isFalse(areAnagrams(\"Hello\", \"World\"));"
+        },
+        {
+          "text": "`areAnagrams(\"apple\", \"banana\")` should return `false`.",
+          "testCode": "assert.isFalse(areAnagrams(\"apple\", \"banana\"));"
+        },
+        {
+          "text": "`areAnagrams(\"cat\", \"dog\")` should return `false`.",
+          "testCode": "assert.isFalse(areAnagrams(\"cat\", \"dog\"));"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-6.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb1b0dab50c87ddb2e518",
+      "title": "JavaScript Challenge 7: Targeted Sum",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-7",
+      "description": "Given an array of numbers and an integer target, find two unique numbers in the array that add up to the target value. Return an array with the indices of those two numbers, or `\"Target not found\"` if no two numbers sum up to the target.\n\n- The returned array should have the indices in ascending order.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function findTarget(arr, target) {\n\n  return arr;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function findTarget(arr, target) {\n  for (let i = 0; i < arr.length; i++) {\n    for (let j = i + 1; j < arr.length; j++) {\n      if (arr[i] + arr[j] === target) {\n        return [i, j];\n      }\n    }\n  }\n  return 'Target not found'\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`findTarget([2, 7, 11, 15], 9)` should return `[0, 1]`.",
+          "testCode": "assert.deepEqual(findTarget([2, 7, 11, 15], 9), [0, 1]);"
+        },
+        {
+          "text": "`findTarget([3, 2, 4, 5], 6)` should return `[1, 2]`.",
+          "testCode": "assert.deepEqual(findTarget([3, 2, 4, 5], 6), [1, 2]);"
+        },
+        {
+          "text": "`findTarget([1, 3, 5, 6, 7, 8], 15)` should return `[4, 5]`.",
+          "testCode": "assert.deepEqual(findTarget([1, 3, 5, 6, 7, 8], 15), [4, 5]);"
+        },
+        {
+          "text": "`findTarget([1, 3, 5, 7], 14)` should return `\"Target not found\"`.",
+          "testCode": "assert.equal(findTarget([1, 3, 5, 7], 14), \"Target not found\");"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-7.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb1b0dab50c87ddb2e519",
+      "title": "JavaScript Challenge 8: Factorializer",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-8",
+      "description": "Given an integer from zero to 20, return the factorial of that number. The factorial of a number is the product of all the numbers between 1 and the given number.\n\n- The factorial of zero is 1.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function factorial(n) {\n\n  return n;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function factorial(n) {\n  return n == 0 ? 1 : n * factorial(n - 1);\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`factorial(0)` should return `1`.",
+          "testCode": "assert.equal(factorial(0), 1);"
+        },
+        {
+          "text": "`factorial(5)` should return `120`.",
+          "testCode": "assert.equal(factorial(5), 120);"
+        },
+        {
+          "text": "`factorial(20)` should return `2432902008176640000`.",
+          "testCode": "assert.equal(factorial(20), 2432902008176640000);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-8.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "681cb1b0dab50c87ddb2e51a",
+      "title": "JavaScript Challenge 9: Sum of Squares",
+      "challengeType": 28,
+      "dashedName": "javascript-challenge-9",
+      "description": "Given a positive integer up to 1,000, return the sum of all the integers squared from 1 up to the number.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "js",
+          "code": "function sumOfSquares(n) {\n\n  return n;\n}"
+        }
+      ],
+      "solution": [
+        {
+          "language": "js",
+          "code": "function sumOfSquares(n) {\n  let total = 1;\n  for(let i = 2; i <= n; i++) {\n      total += i * i;\n  }\n  return total;\n}"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`sumOfSquares(5)` should return `55`.",
+          "testCode": "assert.equal(sumOfSquares(5), 55);"
+        },
+        {
+          "text": "`sumOfSquares(10)` should return `385`.",
+          "testCode": "assert.equal(sumOfSquares(10), 385);"
+        },
+        {
+          "text": "`sumOfSquares(25)` should return `5525`.",
+          "testCode": "assert.equal(sumOfSquares(25), 5525);"
+        },
+        {
+          "text": "`sumOfSquares(500)` should return `41791750`.",
+          "testCode": "assert.equal(sumOfSquares(500), 41791750);"
+        },
+        {
+          "text": "`sumOfSquares(1000)` should return `333833500`.",
+          "testCode": "assert.equal(sumOfSquares(1000), 333833500);"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-javascript\\javascript-challenge-9.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-javascript",
+        "name": "Daily Coding Challenges Javascript"
+      }
+    },
+    {
+      "id": "6814d93d516e86b171929de5",
+      "title": "Python Challenge 1: Vowel Balance",
+      "challengeType": 29,
+      "dashedName": "python-challenge-1",
+      "description": "Given a string, determine whether the number of vowels in the first half of the string is equal to the number of vowels in the second half.\n\n- The string can contain any characters.\n- The letters `a`, `e`, `i`, `o`, and `u`, in either uppercase or lowercase, are considered vowels.\n- If there's an odd number of characters in the string, ignore the center character.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def is_balanced(s):\n\n    return s"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def is_balanced(s):\n    vowels = set(\"aeiouAEIOU\")\n    n = len(s)\n    half = n // 2\n\n    first_half = s[:half]\n    second_half = s[-half:]\n\n    def count_vowels(sub):\n        return sum(1 for char in sub if char in vowels)\n\n    return count_vowels(first_half) == count_vowels(second_half)"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`is_balanced(\"racecar\")` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_balanced(\"racecar\"))`)\n}})"
+        },
+        {
+          "text": "`is_balanced(\"Lorem Ipsum\")` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_balanced(\"Lorem Ipsum\"))`)\n}})"
+        },
+        {
+          "text": "`is_balanced(\"Kitty Ipsum\")` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_balanced(\"Kitty Ipsum\"))`)\n}})"
+        },
+        {
+          "text": "`is_balanced(\"string\")` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_balanced(\"string\"))`)\n}})"
+        },
+        {
+          "text": "`is_balanced(\" \")` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_balanced(\" \"))`)\n}})"
+        },
+        {
+          "text": "`is_balanced(\"abcdefghijklmnopqrstuvwxyz\")` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_balanced(\"abcdefghijklmnopqrstuvwxyz\"))`)\n}})"
+        },
+        {
+          "text": "`is_balanced(\"123A#b!E&#x26;*456-o.U\")` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_balanced(\"123A#b!E&*456-o.U\"))`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-1.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b3dab50c87ddb2e524",
+      "title": "Python Challenge 10: 3 Strikes",
+      "challengeType": 29,
+      "dashedName": "python-challenge-10",
+      "description": "Given an integer between 1 and 10,000, return a count of how many numbers from 1 up to that integer whose square contains at least one digit 3.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def squares_with_three(n):\n\n    return n"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def squares_with_three(n):\n    count = 0\n    for i in range(1, n + 1):\n        square = i * i\n        if '3' in str(square):\n            count += 1\n    return count"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`squares_with_three(1)` should return `0`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(squares_with_three(1), 0)`)\n}})"
+        },
+        {
+          "text": "`squares_with_three(10)` should return `1`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(squares_with_three(10), 1)`)\n}})"
+        },
+        {
+          "text": "`squares_with_three(100)` should return `19`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(squares_with_three(100), 19)`)\n}})"
+        },
+        {
+          "text": "`squares_with_three(1000)` should return `326`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(squares_with_three(1000), 326)`)\n}})"
+        },
+        {
+          "text": "`squares_with_three(10000)` should return `4531`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(squares_with_three(10000), 4531)`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-10.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "68216eff0f957572e7c340c6",
+      "title": "Python Challenge 11: Mile Pace",
+      "challengeType": 29,
+      "dashedName": "python-challenge-11",
+      "description": "Given a number of miles ran, and a time in `\"MM:SS\"` (minutes:seconds) it took to run those miles, return a string for the average time it took to run each mile in the format `\"MM:SS\"`.\n\n- Add leading zeros when needed.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def mile_pace(miles, duration):\n\n    return miles"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def mile_pace(miles, duration):\n    minutes, seconds = map(int, duration.split(\":\"))\n    total_seconds = minutes * 60 + seconds\n    avg_seconds_per_mile = total_seconds / miles\n\n    avg_minutes = int(avg_seconds_per_mile // 60)\n    avg_seconds = round(avg_seconds_per_mile % 60)\n\n    return f\"{avg_minutes:02d}:{avg_seconds:02d}\""
+        }
+      ],
+      "tests": [
+        {
+          "text": "`mile_pace(3, \"24:00\")` should return `\"08:00\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(mile_pace(3, \"24:00\"), \"08:00\")`)\n}})"
+        },
+        {
+          "text": "`mile_pace(1, \"06:45\")` should return `\"06:45\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(mile_pace(1, \"06:45\"), \"06:45\")`)\n}})"
+        },
+        {
+          "text": "`mile_pace(2, \"07:00\")` should return `\"03:30\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(mile_pace(2, \"07:00\"), \"03:30\")`)\n}})"
+        },
+        {
+          "text": "`mile_pace(26.2, \"120:35\")` should return `\"04:36\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(mile_pace(26.2, \"120:35\"), \"04:36\")`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-11.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "68216f040f957572e7c340c7",
+      "title": "Python Challenge 12: Message Decoder",
+      "challengeType": 29,
+      "dashedName": "python-challenge-12",
+      "description": "Given a secret message string, and an integer representing the number of letters that were used to shift the message to encode it, return the decoded string.\n\n- A positive number means the message was shifted forward in the alphabet.\n- A negative number means the message was shifted backward in the alphabet.\n- Case matters, decoded characters should retain the case of their encoded counterparts.\n- Non-alphabetical characters should not get decoded.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def decode(message, shift):\n\n    return message"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def decode(message, shift):\n    decoded_message = []\n    for char in message:\n        if char.isalpha():\n            base = ord('a') if char.islower() else ord('A')\n            new_char = chr((ord(char) - base - shift) % 26 + base)\n            decoded_message.append(new_char)\n        else:\n            decoded_message.append(char)\n    return ''.join(decoded_message)"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`decode(\"Xlmw mw e wigvix qiwweki.\", 4)` should return `\"This is a secret message.\"`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(decode(\"Xlmw mw e wigvix qiwweki.\", 4), \"This is a secret message.\")`)\n}})"
+        },
+        {
+          "text": "`decode(\"Byffi Qilfx!\", 20)` should return `\"Hello World!\"`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(decode(\"Byffi Qilfx!\", 20), \"Hello World!\")`)\n}})"
+        },
+        {
+          "text": "`decode(\"Zqd xnt njzx?\", -1)` should return `\"Are you okay?\"`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(decode(\"Zqd xnt njzx?\", -1), \"Are you okay?\")`)\n}})"
+        },
+        {
+          "text": "`decode(\"oannLxmnLjvy\", 9)` should return `\"freeCodeCamp\"`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(decode(\"oannLxmnLjvy\", 9), \"freeCodeCamp\")`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-12.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ec92237de8297eaee79b",
+      "title": "Python Challenge 13: Unnatural Prime",
+      "challengeType": 29,
+      "dashedName": "python-challenge-13",
+      "description": "Given an integer, determine if that number is a prime number or a negative prime number.\n\n- A prime number is a positive integer greater than 1 that is only divisible by 1 and itself.\n- A negative prime number is the negative version of a positive prime number.\n- `1` and `0` are not considered prime numbers.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def is_unnatural_prime(n):\n\n    return n"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def is_unnatural_prime(n):\n    abs_n = abs(n)\n\n    if abs_n <= 1:\n        return False\n\n    for i in range(2, int(abs_n ** 0.5) + 1):\n        if abs_n % i == 0:\n            return False\n\n    return True"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`is_unnatural_prime(1)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_unnatural_prime(1))`)\n}})"
+        },
+        {
+          "text": "`is_unnatural_prime(-1)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_unnatural_prime(-1))`)\n}})"
+        },
+        {
+          "text": "`is_unnatural_prime(19)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_unnatural_prime(19))`)\n}})"
+        },
+        {
+          "text": "`is_unnatural_prime(-23)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_unnatural_prime(-23))`)\n}})"
+        },
+        {
+          "text": "`is_unnatural_prime(0)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_unnatural_prime(0))`)\n}})"
+        },
+        {
+          "text": "`is_unnatural_prime(97)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_unnatural_prime(97))`)\n}})"
+        },
+        {
+          "text": "`is_unnatural_prime(-61)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_unnatural_prime(-61))`)\n}})"
+        },
+        {
+          "text": "`is_unnatural_prime(99)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_unnatural_prime(99))`)\n}})"
+        },
+        {
+          "text": "`is_unnatural_prime(-44)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_unnatural_prime(-44))`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-13.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ec98237de8297eaee79c",
+      "title": "Python Challenge 14: Character Battle",
+      "challengeType": 29,
+      "dashedName": "python-challenge-14",
+      "description": "Given two strings representing your army and an opposing army, each character from your army battles the character at the same position from the opposing army using the following rules:\n\n- Characters `a-z` have a strength of `1-26`, respectively.\n- Characters `A-Z` have a strength of `27-52`, respectively.\n- Digits `0-9` have a strength of their face value.\n- All other characters have a value of zero.\n- Each character can only fight one battle.\n\nFor each battle, the stronger character wins. The army with more victories, wins the war. Return the following values:\n\n- `\"Opponent retreated\"` if your army has more characters than the opposing army.\n- `\"We retreated\"` if the opposing army has more characters than yours.\n- `\"We won\"` if your army won more battles.\n- `\"We lost\"` if the opposing army won more battles.\n- `\"It was a tie\"` if both armies won the same number of battles.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def battle(my_army, opposing_army):\n\n    return my_army"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def get_strength(soldier):\n    letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\n\n    if soldier.isdigit():\n        return int(soldier)\n    elif soldier in letters:\n        return letters.index(soldier) + 1\n    else:\n        return 0\n\ndef battle(my_army, opposing_army):\n    if len(my_army) > len(opposing_army):\n        return 'Opponent retreated'\n    if len(opposing_army) > len(my_army):\n        return 'We retreated'\n\n    my_wins = 0\n    their_wins = 0\n\n    for my_soldier, their_soldier in zip(my_army, opposing_army):\n        my_strength = get_strength(my_soldier)\n        their_strength = get_strength(their_soldier)\n\n        if my_strength > their_strength:\n            my_wins += 1\n        elif their_strength > my_strength:\n            their_wins += 1\n\n    if my_wins > their_wins:\n        return 'We won'\n    elif their_wins > my_wins:\n        return 'We lost'\n    else:\n        return 'It was a tie'"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`battle(\"Hello\", \"World\")` should return `\"We lost\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(battle(\"Hello\", \"World\"), \"We lost\")`)\n}})"
+        },
+        {
+          "text": "`battle(\"pizza\", \"salad\")` should return `\"We won\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(battle(\"pizza\", \"salad\"), \"We won\")`)\n}})"
+        },
+        {
+          "text": "`battle(\"C@T5\", \"D0G$\")` should return `\"We won\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(battle(\"C@T5\", \"D0G$\"), \"We won\")`)\n}})"
+        },
+        {
+          "text": "`battle(\"kn!ght\", \"orc\")` should return `\"Opponent retreated\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(battle(\"kn!ght\", \"orc\"), \"Opponent retreated\")`)\n}})"
+        },
+        {
+          "text": "`battle(\"PC\", \"Mac\")` should return `\"We retreated\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(battle(\"PC\", \"Mac\"), \"We retreated\")`)\n}})"
+        },
+        {
+          "text": "`battle(\"Wizards\", \"Dragons\")` should return `\"It was a tie\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(battle(\"Wizards\", \"Dragons\"), \"It was a tie\")`)\n}})"
+        },
+        {
+          "text": "`battle(\"Mr. Smith\", \"Dr. Jones\")` should return `\"It was a tie\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(battle(\"Mr. Smith\", \"Dr. Jones\"), \"It was a tie\")`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-14.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ec9d237de8297eaee79d",
+      "title": "Python Challenge 15: camelCase",
+      "challengeType": 29,
+      "dashedName": "python-challenge-15",
+      "description": "Given a string, return its camel case version using the following rules:\n\n- Words in the string argument are separated by one or more characters from the following set: space (` `), dash (`-`), or underscore (`_`). Treat any sequence of these as a word break.\n- The first word should be all lowercase.\n- Each subsequent word should start with an uppercase letter, with the rest of it lowercase.\n- All spaces and separators should be removed.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def to_camel_case(s):\n\n    return s"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "import re\ndef to_camel_case(s):\n    words = re.split(r'[_\\- ]+', s)\n\n    camel = [\n        words[0].lower() if words else ''\n    ] + [\n        word.capitalize() for word in words[1:]\n    ]\n\n    return ''.join(camel)"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`to_camel_case(\"hello world\")` should return `\"helloWorld\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(to_camel_case(\"hello world\"), \"helloWorld\")`)\n}})"
+        },
+        {
+          "text": "`to_camel_case(\"HELLO WORLD\")` should return `\"helloWorld\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(to_camel_case(\"HELLO WORLD\"), \"helloWorld\")`)\n}})"
+        },
+        {
+          "text": "`to_camel_case(\"secret agent-X\")` should return `\"secretAgentX\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(to_camel_case(\"secret agent-X\"), \"secretAgentX\")`)\n}})"
+        },
+        {
+          "text": "`to_camel_case(\"FREE cODE cAMP\")` should return `\"freeCodeCamp\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(to_camel_case(\"FREE cODE cAMP\"), \"freeCodeCamp\")`)\n}})"
+        },
+        {
+          "text": "`to_camel_case(\"ye old-_-sea  faring_buccaneer_-_with a - peg__leg----and a_parrot_ _named- _squawk\")` should return `\"yeOldSeaFaringBuccaneerWithAPegLegAndAParrotNamedSquawk\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(to_camel_case(\"ye old-_-sea  faring_buccaneer_-_with a - peg__leg----and a_parrot_ _named- _squawk\"), \"yeOldSeaFaringBuccaneerWithAPegLegAndAParrotNamedSquawk\")`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-15.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821eca2237de8297eaee79e",
+      "title": "Python Challenge 16: Reverse Parenthesis",
+      "challengeType": 29,
+      "dashedName": "python-challenge-16",
+      "description": "Given a string that contains properly nested parentheses, return the decoded version of the string using the following rules:\n\n- All characters inside each pair of parentheses should be reversed.\n- Parentheses should be removed from the final result.\n- If parentheses are nested, the innermost pair should be reversed first, and then its result should be included in the reversal of the outer pair.\n- Assume all parentheses are evenly balanced and correctly nested.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def decode(s):\n\n    return s"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def decode(s):\n    while ')' in s:\n        close_index = s.index(')')\n        open_index = s.rindex('(', 0, close_index)\n        inner = s[open_index + 1:close_index][::-1]\n        s = s[:open_index] + inner + s[close_index + 1:]\n    return s"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`decode(\"(f(b(dc)e)a)\")` should return `\"abcdef\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(decode(\"(f(b(dc)e)a)\"), \"abcdef\")`)\n}})"
+        },
+        {
+          "text": "`decode(\"((is?)(a(t d)h)e(n y( uo)r)aC)\")` should return `\"Can you read this?\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(decode(\"((is?)(a(t d)h)e(n y( uo)r)aC)\"), \"Can you read this?\")`)\n}})"
+        },
+        {
+          "text": "`decode(\"f(Ce(re))o((e(aC)m)d)p\")` should return `\"freeCodeCamp\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(decode(\"f(Ce(re))o((e(aC)m)d)p\"), \"freeCodeCamp\")`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-16.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821eca7237de8297eaee79f",
+      "title": "Python Challenge 17: Unorder of Operations",
+      "challengeType": 29,
+      "dashedName": "python-challenge-17",
+      "description": "Given an array of integers and an array of string operators, apply the operations to the numbers sequentially from left-to-right. Repeat the operations as needed until all numbers are used. Return the final result.\n\nFor example, given `[1, 2, 3, 4, 5]` and `['+', '*']`, return the result of evaluating `1 + 2 * 3 + 4 * 5` from left-to-right ignoring standard order of operations.\n\n- Valid operators are `+`, `-`, `*`, `/`, and `%`.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def evaluate(numbers, operators):\n\n    return numbers"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def do_math(a, b, operator):\n    if operator == '+':\n        return a + b\n    elif operator == '-':\n        return a - b\n    elif operator == '*':\n        return a * b\n    elif operator == '/':\n        return a / b\n    else:\n        return a % b\n\ndef evaluate(numbers, operators):\n    total = numbers[0]\n\n    for i in range(1, len(numbers)):\n        operator = operators[(i - 1) % len(operators)]\n        total = do_math(total, numbers[i], operator)\n\n    return total"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`evaluate([5, 6, 7, 8, 9], ['+', '-'])` should return `3`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(evaluate([5, 6, 7, 8, 9], ['+', '-']), 3)`)\n}})"
+        },
+        {
+          "text": "`evaluate([17, 61, 40, 24, 38, 14], ['+', '%'])` should return `38`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(evaluate([17, 61, 40, 24, 38, 14], ['+', '%']), 38)`)\n}})"
+        },
+        {
+          "text": "`evaluate([20, 2, 4, 24, 12, 3], ['*', '/'])` should return `60`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(evaluate([20, 2, 4, 24, 12, 3], ['*', '/']), 60)`)\n}})"
+        },
+        {
+          "text": "`evaluate([11, 4, 10, 17, 2], ['*', '*', '%'])` should return `30`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(evaluate([11, 4, 10, 17, 2], ['*', '*', '%']), 30)`)\n}})"
+        },
+        {
+          "text": "`evaluate([33, 11, 29, 13], ['/', '-'])` should return `-2`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(evaluate([33, 11, 29, 13], ['/', '-']), -2)`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-17.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ecab237de8297eaee7a0",
+      "title": "Python Challenge 18: Second Best",
+      "challengeType": 29,
+      "dashedName": "python-challenge-18",
+      "description": "Given an array of integers representing the price of different laptops, and an integer representing your budget, return:\n\n1. The second most expensive laptop if it is within your budget, or\n2. The most expensive laptop that is within your budget, or\n3. `0` if no laptops are within your budget.\n\n- Duplicate prices should be ignored.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def get_laptop_cost(laptops, budget):\n\n    return laptops"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def get_laptop_cost(laptops, budget):\n    laptops = sorted(set(laptops), reverse=True)\n\n    if len(laptops) >= 2 and budget >= laptops[1]:\n        return laptops[1]\n    if not laptops or budget < laptops[-1]:\n        return 0\n\n    for price in laptops[2:]:\n        if budget >= price:\n            return price\n\n    return 0"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`get_laptop_cost([1500, 2000, 1800, 1400], 1900)` should return `1800`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(get_laptop_cost([1500, 2000, 1800, 1400], 1900), 1800)`)\n}})"
+        },
+        {
+          "text": "`get_laptop_cost([1500, 2000, 2000, 1800, 1400], 1900)` should return `1800`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(get_laptop_cost([1500, 2000, 2000, 1800, 1400], 1900), 1800)`)\n}})"
+        },
+        {
+          "text": "`get_laptop_cost([2099, 1599, 1899, 1499], 2200)` should return `1899`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(get_laptop_cost([2099, 1599, 1899, 1499], 2200), 1899)`)\n}})"
+        },
+        {
+          "text": "`get_laptop_cost([2099, 1599, 1899, 1499], 1000)` should return `0`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(get_laptop_cost([2099, 1599, 1899, 1499], 1000), 0)`)\n}})"
+        },
+        {
+          "text": "`get_laptop_cost([1200, 1500, 1600, 1800, 1400, 2000], 1450)` should return `1400`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(get_laptop_cost([1200, 1500, 1600, 1800, 1400, 2000], 1450), 1400)`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-18.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ecb1237de8297eaee7a1",
+      "title": "Python Challenge 19: Candlelight",
+      "challengeType": 29,
+      "dashedName": "python-challenge-19",
+      "description": "Given an integer representing the number of candles you start with, and an integer representing how many burned candles it takes to create a new one, return the number of candles you will have used after creating and burning as many as you can.\n\nFor example, if given 7 candles and it takes 2 burned candles to make a new one:\n\n1. Burn 7 candles to get 7 leftovers,\n2. Recycle 6 leftovers into 3 new candles (1 leftover remains),\n3. Burn 3 candles to get 3 more leftovers (4 total),\n4. Recycle 4 leftovers into 2 new candles,\n5. Burn 2 candles to get 2 leftovers,\n6. Recycle 2 leftovers into 1 new candle,\n7. Burn 1 candle.\n\nYou will have burned 13 total candles in the example.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def burn_candles(candles, leftovers_needed):\n\n    return candles"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def burn_candles(candles, leftovers_needed):\n    total_burned = 0\n    unused_leftovers = 0\n\n    while candles > 0:\n        total_burned += candles\n        leftovers = candles + unused_leftovers\n        candles = leftovers // leftovers_needed\n        unused_leftovers = leftovers % leftovers_needed\n\n    return total_burned"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`burn_candles(7, 2)` should return `13`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(burn_candles(7, 2), 13)`)\n}})"
+        },
+        {
+          "text": "`burn_candles(10, 5)` should return `12`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(burn_candles(10, 5), 12)`)\n}})"
+        },
+        {
+          "text": "`burn_candles(20, 3)` should return `29`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(burn_candles(20, 3), 29)`)\n}})"
+        },
+        {
+          "text": "`burn_candles(17, 4)` should return `22`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(burn_candles(17, 4), 22)`)\n}})"
+        },
+        {
+          "text": "`burn_candles(2345, 3)` should return `3517`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(burn_candles(2345, 3), 3517)`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-19.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b1dab50c87ddb2e51c",
+      "title": "Python Challenge 2: Base Check",
+      "challengeType": 29,
+      "dashedName": "python-challenge-2",
+      "description": "Given a string representing a number, and an integer base from 2 to 36, determine whether the number is valid in that base.\n\n- The string may contain integers, and uppercase or lowercase characters.\n- The check should be case-insensitive.\n- The base can be any number 2-36.\n- A number is valid if every character is a valid digit in the given base.\n- Example of valid digits for bases:\n  - Base 2: 0-1\n  - Base 8: 0-7\n  - Base 10: 0-9\n  - Base 16: 0-9 and A-F\n  - Base 36: 0-9 and A-Z",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def is_valid_number(n, base):\n\n    return n"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def is_valid_number(n, base):\n    allChars = \"0123456789abcdefghijklmnopqrstuvwxyz\"\n    newN = n.lower()\n\n    availableChars = allChars[0:base]\n\n    for char in newN:\n        if char not in availableChars:\n            return False\n\n    return True"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`is_valid_number(\"10101\", 2)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"10101\", 2))`);\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"10201\", 2)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_valid_number(\"10201\", 2))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"76543210\", 8)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"76543210\", 8))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"9876543210\", 8)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_valid_number(\"9876543210\", 8))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"9876543210\", 10)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"9876543210\", 10))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"ABC\", 10)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_valid_number(\"ABC\", 10))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"ABC\", 16)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"ABC\", 16))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"Z\", 36)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"Z\", 36))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"ABC\", 20)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"ABC\", 20))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"4B4BA9\", 16)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"4B4BA9\", 16))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"5G3F8F\", 16)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_valid_number(\"5G3F8F\", 16))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"5G3F8F\", 17)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"5G3F8F\", 17))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"abc\", 10)` should return `False`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_valid_number(\"abc\", 10))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"abc\", 16)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"abc\", 16))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"AbC\", 16)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"AbC\", 16))`)\n}})"
+        },
+        {
+          "text": "`is_valid_number(\"z\", 36)` should return `True`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_valid_number(\"z\", 36))`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-2.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ecb5237de8297eaee7a2",
+      "title": "Python Challenge 20: Array Duplicates",
+      "challengeType": 29,
+      "dashedName": "python-challenge-20",
+      "description": "Given an array of integers, return an array of integers that appear more than once in the initial array, sorted in ascending order. If no values appear more than once, return an empty array.\n\n- Only include one instance of each value in the returned array.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def find_duplicates(arr):\n\n    return arr"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def find_duplicates(arr):\n    seen = set()\n    duplicates = set()\n\n    for num in arr:\n        if num in seen:\n            duplicates.add(num)\n        else:\n            seen.add(num)\n\n    return sorted(duplicates)"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`find_duplicates([1, 2, 3, 4, 5])` should return `[]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(find_duplicates([1, 2, 3, 4, 5]), [])`)\n}})"
+        },
+        {
+          "text": "`find_duplicates([1, 2, 3, 4, 1, 2])` should return `[1, 2]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(find_duplicates([1, 2, 3, 4, 1, 2]), [1, 2])`)\n}})"
+        },
+        {
+          "text": "`find_duplicates([2, 34, 0, 1, -6, 23, 5, 3, 2, 5, 67, -6, 23, 2, 43, 2, 12, 0, 2, 4, 4])` should return `[-6, 0, 2, 4, 5, 23]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(find_duplicates([2, 34, 0, 1, -6, 23, 5, 3, 2, 5, 67, -6, 23, 2, 43, 2, 12, 0, 2, 4, 4]), [-6, 0, 2, 4, 5, 23])`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-20.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ecb9237de8297eaee7a3",
+      "title": "Python Challenge 21: Hex Generator",
+      "challengeType": 29,
+      "dashedName": "python-challenge-21",
+      "description": "Given a named CSS color string, generate a random hexadecimal (hex) color code that is dominant in the given color.\n\n- The function should handle `\"red\"`, `\"green\"`, or `\"blue\"` as an input argument.\n- If the input is not one of those, the function should return `\"Invalid color\"`.\n- The function should return a random six-character hex color code where the input color value is greater than any of the others.\n- Example of valid outputs for a given input:\n\n| Input   | Output   |\n|---------|----------|\n| `\"red\"`   | `\"FF0000\"` |\n| `\"green\"` | `\"00FF00\"` |\n| `\"blue\"`  | `\"0000FF\"` |",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def generate_hex(color):\n\n    return color"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "import random\ndef generate_hex(color):\n    def to_hex(n):\n        return hex(n)[2:].upper().zfill(2)\n\n    dominant = random.randint(170, 255)\n    weak1 = random.randint(0, 169)\n    weak2 = random.randint(0, 169)\n\n    if color.lower() == \"red\":\n        r = dominant\n        g = weak1\n        b = weak2\n    elif color.lower() == \"green\":\n        r = weak1\n        g = dominant\n        b = weak2\n    elif color.lower() == \"blue\":\n        r = weak1\n        g = weak2\n        b = dominant\n    else:\n        return \"Invalid color\"\n\n    return f'{to_hex(r)}{to_hex(g)}{to_hex(b)}'"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`generate_hex(\"yellow\")` should return `\"Invalid color\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(generate_hex(\"yellow\"), \"Invalid color\")`);\n}})"
+        },
+        {
+          "text": "`generate_hex(\"red\")` should return a six-character string.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(len(generate_hex(\"red\")), 6)`);\n}})"
+        },
+        {
+          "text": "`generate_hex(\"red\")` should return a valid six-character hex color code.\n\n```js\n({test: () => { runPython(`\nfrom unittest import TestCase\n\nhex = generate_hex(\"red\").upper()\nis_valid_hex = len(hex) == 6 and all(c in \"0123456789ABCDEF\" for c in hex)\nTestCase().assertTrue(is_valid_hex)`)\n}})\n```\n\n`generate_hex(\"red\")` should return a valid hex color with a higher red value than other colors.\n\n```js\n({test: () => { runPython(`\nfrom unittest import TestCase\n\nhex = generate_hex(\"red\").upper()\nis_valid_hex = len(hex) == 6 and all(c in \"0123456789ABCDEF\" for c in hex)\nTestCase().assertTrue(is_valid_hex)\n\nr = int(hex[:2], 16)\ng = int(hex[2:4], 16)\nb = int(hex[4:], 16)\n\nTestCase().assertGreater(r, g)\nTestCase().assertGreater(r, b)`)\n}})\n```\n\nCalling `generate_hex(\"red\")` twice should return two different hex color values where red is dominant.\n\n```js\n({test: () => { runPython(`\nfrom unittest import TestCase\n\nhex1 = generate_hex(\"red\").upper()\nis_valid_hex1 = len(hex1) == 6 and all(c in \"0123456789ABCDEF\" for c in hex1)\nTestCase().assertTrue(is_valid_hex1)\n\nr1 = int(hex1[:2], 16)\ng1 = int(hex1[2:4], 16)\nb1 = int(hex1[4:], 16)\n\nTestCase().assertGreater(r1, g1)\nTestCase().assertGreater(r1, b1)\n\nhex2 = generate_hex(\"red\").upper()\nis_valid_hex2 = len(hex2) == 6 and all(c in \"0123456789ABCDEF\" for c in hex2)\nTestCase().assertTrue(is_valid_hex2)\n\nr2 = int(hex2[:2], 16)\ng2 = int(hex2[2:4], 16)\nb2 = int(hex2[4:], 16)\n\nTestCase().assertGreater(r2, g2)\nTestCase().assertGreater(r2, b2)\nTestCase().assertNotEqual(hex1, hex2)`);\n}})\n```\n\nCalling `generate_hex(\"green\")` twice should return two different hex color values where green is dominant.\n\n```js\n({test: () => { runPython(`\nfrom unittest import TestCase\n\nhex1 = generate_hex(\"green\").upper()\nis_valid_hex1 = len(hex1) == 6 and all(c in \"0123456789ABCDEF\" for c in hex1)\nTestCase().assertTrue(is_valid_hex1)\n\nr1 = int(hex1[:2], 16)\ng1 = int(hex1[2:4], 16)\nb1 = int(hex1[4:], 16)\n\nTestCase().assertGreater(g1, r1)\nTestCase().assertGreater(g1, b1)\n\nhex2 = generate_hex(\"green\").upper()\nis_valid_hex2 = len(hex2) == 6 and all(c in \"0123456789ABCDEF\" for c in hex2)\nTestCase().assertTrue(is_valid_hex2)\n\nr2 = int(hex2[:2], 16)\ng2 = int(hex2[2:4], 16)\nb2 = int(hex2[4:], 16)\n\nTestCase().assertGreater(g2, r2)\nTestCase().assertGreater(g2, b2)\nTestCase().assertNotEqual(hex1, hex2)`);\n}})\n```\n\nCalling `generate_hex(\"blue\")` twice should return two different hex color values where blue is dominant.\n\n```js\n({test: () => { runPython(`\nfrom unittest import TestCase\n\nhex1 = generate_hex(\"blue\").upper()\nis_valid_hex1 = len(hex1) == 6 and all(c in \"0123456789ABCDEF\" for c in hex1)\nTestCase().assertTrue(is_valid_hex1)\n\nr1 = int(hex1[:2], 16)\ng1 = int(hex1[2:4], 16)\nb1 = int(hex1[4:], 16)\n\nTestCase().assertGreater(b1, r1)\nTestCase().assertGreater(b1, g1)\n\nhex2 = generate_hex(\"blue\").upper()\nis_valid_hex2 = len(hex2) == 6 and all(c in \"0123456789ABCDEF\" for c in hex2)\nTestCase().assertTrue(is_valid_hex2)\n\nr2 = int(hex2[:2], 16)\ng2 = int(hex2[2:4], 16)\nb2 = int(hex2[4:], 16)\n\nTestCase().assertGreater(b2, r2)\nTestCase().assertGreater(b2, g2)\nTestCase().assertNotEqual(hex1, hex2)`);\n}})\n```",
+          "testCode": ""
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-21.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ecbf237de8297eaee7a4",
+      "title": "Python Challenge 22: Tribonacci Sequence",
+      "challengeType": 29,
+      "dashedName": "python-challenge-22",
+      "description": "The Tribonacci sequence is a series of numbers where each number is the sum of the three preceding ones. When starting with `0`, `0` and `1`, the first 10 numbers in the sequence are `0`, `0`, `1`, `1`, `2`, `4`, `7`, `13`, `24`, `44`.\n\nGiven an array containing the first three numbers of a Tribonacci sequence, and an integer representing the length of the sequence, return an array containing the sequence of the given length.\n\n- Your function should handle sequences of any length greater than or equal to zero.\n- If the length is zero, return an empty array.\n- Note that the starting numbers are part of the sequence.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def tribonacci_sequence(start_sequence, length):\n\n    return length"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def tribonacci_sequence(start_sequence, length):\n    if length == 0:\n        return []\n    if length == 1:\n        return [start_sequence[0]]\n    if length == 2:\n        return [start_sequence[0], start_sequence[1]]\n    if length == 3:\n        return start_sequence[:]\n\n    sequence = start_sequence[:]\n    while len(sequence) < length:\n        next_value = sequence[-1] + sequence[-2] + sequence[-3]\n        sequence.append(next_value)\n\n    return sequence"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`tribonacci_sequence([0, 0, 1], 20)` should return `[0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81, 149, 274, 504, 927, 1705, 3136, 5768, 10609, 19513]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(tribonacci_sequence([0, 0, 1], 20), [0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81, 149, 274, 504, 927, 1705, 3136, 5768, 10609, 19513])`)\n}})"
+        },
+        {
+          "text": "`tribonacci_sequence([21, 32, 43], 1)` should return `[21]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(tribonacci_sequence([21, 32, 43], 1), [21])`)\n}})"
+        },
+        {
+          "text": "`tribonacci_sequence([0, 0, 1], 0)` should return `[]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(tribonacci_sequence([0, 0, 1], 0), [])`)\n}})"
+        },
+        {
+          "text": "`tribonacci_sequence([10, 20, 30], 2)` should return `[10, 20]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(tribonacci_sequence([10, 20, 30], 2), [10, 20])`)\n}})"
+        },
+        {
+          "text": "`tribonacci_sequence([10, 20, 30], 3)` should return `[10, 20, 30]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(tribonacci_sequence([10, 20, 30], 3), [10, 20, 30])`)\n}})"
+        },
+        {
+          "text": "`tribonacci_sequence([123, 456, 789], 8)` should return `[123, 456, 789, 1368, 2613, 4770, 8751, 16134]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(tribonacci_sequence([123, 456, 789], 8), [123, 456, 789, 1368, 2613, 4770, 8751, 16134])`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-22.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821ecc5237de8297eaee7a5",
+      "title": "Python Challenge 23: RGB to Hex",
+      "challengeType": 29,
+      "dashedName": "python-challenge-23",
+      "description": "Given a CSS `rgb(r, g, b)` color string, return its hexadecimal equivalent.\n\nHere are some example outputs for a given input:\n\n| Input   | Output   |\n|---------|----------|\n| `\"rgb(255, 255, 255)\"`| `\"#ffffff\"` |\n| `\"rgb(1, 2, 3)\"` | `\"#010203\"` |\n\n- Make any letters lowercase.\n- Return a `#` followed by six characters. Don't use any shorthand values.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def rgb_to_hex(rgb):\n\n    return rgb"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def rgb_to_hex(rgb):\n    import re\n    match = re.findall(r'\\d+', rgb)\n    r, g, b = [max(0, min(255, int(x))) for x in match[:3]]\n    return f'#{r:02x}{g:02x}{b:02x}'"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`rgb_to_hex(\"rgb(255, 255, 255)\")` should return `\"#ffffff\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(rgb_to_hex(\"rgb(255, 255, 255)\"), \"#ffffff\")`)\n}})"
+        },
+        {
+          "text": "`rgb_to_hex(\"rgb(1, 11, 111)\")` should return `\"#010b6f\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(rgb_to_hex(\"rgb(1, 11, 111)\"), \"#010b6f\")`)\n}})"
+        },
+        {
+          "text": "`rgb_to_hex(\"rgb(173, 216, 230)\")` should return `\"#add8e6\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(rgb_to_hex(\"rgb(173, 216, 230)\"), \"#add8e6\")`)\n}})"
+        },
+        {
+          "text": "`rgb_to_hex(\"rgb(79, 123, 201)\")` should return `\"#4f7bc9\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(rgb_to_hex(\"rgb(79, 123, 201)\"), \"#4f7bc9\")`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-23.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "6821eccb237de8297eaee7a6",
+      "title": "Python Challenge 24: Pangram",
+      "challengeType": 29,
+      "dashedName": "python-challenge-24",
+      "description": "Given a word or sentence and a string of lowercase letters, determine if the word or sentence uses all the letters from the given set at least once and no other letters.\n\n- Ignore non-alphabetical characters in the word or sentence.\n- Ignore letter casing in the word or sentence.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def is_pangram(sentence, letters):\n\n    return sentence"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "import re\ndef is_pangram(sentence, letters):\n    used_letters = []\n    for char in sentence.lower():\n        if re.match(r'[a-z]', char) and char not in used_letters:\n            used_letters.append(char)\n\n    sorted_letters = ''.join(sorted(letters.lower()))\n    sorted_used_letters = ''.join(sorted(used_letters))\n\n    return sorted_letters == sorted_used_letters"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`is_pangram(\"hello\", \"helo\")` should return `True`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_pangram(\"hello\", \"helo\"))`)\n}})"
+        },
+        {
+          "text": "`is_pangram(\"hello\", \"hel\")` should return `False`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_pangram(\"hello\", \"hel\"))`)\n}})"
+        },
+        {
+          "text": "`is_pangram(\"hello\", \"helow\")` should return `False`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_pangram(\"hello\", \"helow\"))`)\n}})"
+        },
+        {
+          "text": "`is_pangram(\"hello world\", \"helowrd\")` should return `True`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_pangram(\"hello world\", \"helowrd\"))`)\n}})"
+        },
+        {
+          "text": "`is_pangram(\"Hello World!\", \"helowrd\")` should return `True`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_pangram(\"Hello World!\", \"helowrd\"))`)\n}})"
+        },
+        {
+          "text": "`is_pangram(\"Hello World!\", \"heliowrd\")` should return `False`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_pangram(\"Hello World!\", \"heliowrd\"))`)\n}})"
+        },
+        {
+          "text": "`is_pangram(\"freeCodeCamp\", \"frcdmp\")` should return `False`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(is_pangram(\"freeCodeCamp\", \"frcdmp\"))`)\n}})"
+        },
+        {
+          "text": "`is_pangram(\"The quick brown fox jumps over the lazy dog.\", \"abcdefghijklmnopqrstuvwxyz\")` should return `True`",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(is_pangram(\"The quick brown fox jumps over the lazy dog.\", \"abcdefghijklmnopqrstuvwxyz\"))`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-24.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b1dab50c87ddb2e51d",
+      "title": "Python Challenge 3: Fibonacci Sequence",
+      "challengeType": 29,
+      "dashedName": "python-challenge-3",
+      "description": "The Fibonacci sequence is a series of numbers where each number is the sum of the two preceding ones. When starting with `0` and `1`, the first 10 numbers in the sequence are `0`, `1`, `1`, `2`, `3`, `5`, `8`, `13`, `21`, `34`.\n\nGiven an array containing the first two numbers of a Fibonacci sequence, and an integer representing the length of the sequence, return an array containing the sequence of the given length.\n\n- Your function should handle sequences of any length greater than or equal to zero.\n- If the length is zero, return an empty array.\n- Note that the starting numbers are part of the sequence.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def fibonacci_sequence(start_sequence, length):\n\n    return length"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def fibonacci_sequence(start_sequence, length):\n    if length == 0:\n        return []\n    if length == 1:\n        return [start_sequence[0]]\n    if length == 2:\n        return start_sequence[:]\n\n    sequence = start_sequence[:]\n    while len(sequence) < length:\n        next_value = sequence[-1] + sequence[-2]\n        sequence.append(next_value)\n\n    return sequence"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`fibonacci_sequence([0, 1], 20)` should return `[0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(fibonacci_sequence([0, 1], 20), [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181])`)\n}})"
+        },
+        {
+          "text": "`fibonacci_sequence([21, 32], 1)` should return `[21]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(fibonacci_sequence([21, 32], 1), [21])`)\n}})"
+        },
+        {
+          "text": "`fibonacci_sequence([0, 1], 0)` should return `[]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(fibonacci_sequence([0, 1], 0), [])`)\n}})"
+        },
+        {
+          "text": "`fibonacci_sequence([10, 20], 2)` should return `[10, 20]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(fibonacci_sequence([10, 20], 2), [10, 20])`)\n}})"
+        },
+        {
+          "text": "`fibonacci_sequence([123456789, 987654321], 5)` should return `[123456789, 987654321, 1111111110, 2098765431, 3209876541]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(fibonacci_sequence([123456789, 987654321], 5), [123456789, 987654321, 1111111110, 2098765431, 3209876541])`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-3.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b1dab50c87ddb2e51e",
+      "title": "Python Challenge 4: S  P  A  C  E  J  A  M",
+      "challengeType": 29,
+      "dashedName": "python-challenge-4",
+      "description": "Given a string, remove all spaces from the string, insert two spaces between every character, convert all alphabetical letters to uppercase, and return the result.\n\n- Non-alphabetical characters should remain unchanged (except for spaces).",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def space_jam(s):\n\n    return s"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def space_jam(s):\n    s = s.replace(\" \", \"\")\n    s = \"  \".join(s)\n    return s.upper()"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`space_jam(\"freeCodeCamp\")` should return `\"F  R  E  E  C  O  D  E  C  A  M  P\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(space_jam(\"freeCodeCamp\"), \"F  R  E  E  C  O  D  E  C  A  M  P\")`)\n}})"
+        },
+        {
+          "text": "`space_jam(\"   free   Code   Camp   \")` should return `\"F  R  E  E  C  O  D  E  C  A  M  P\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(space_jam(\"   free   Code   Camp   \"), \"F  R  E  E  C  O  D  E  C  A  M  P\")`)\n}})"
+        },
+        {
+          "text": "`space_jam(\"Hello World?!\")` should return `\"H  E  L  L  O  W  O  R  L  D  ?  !\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(space_jam(\"Hello World?!\"), \"H  E  L  L  O  W  O  R  L  D  ?  !\")`)\n}})"
+        },
+        {
+          "text": "`space_jam(\"C@t$ & D0g$\")` should return `\"C  @  T  $  &  D  0  G  $\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(space_jam(\"C@t$ & D0g$\"), \"C  @  T  $  &  D  0  G  $\")`)\n}})"
+        },
+        {
+          "text": "`space_jam(\"allyourbase\")` should return `\"A  L  L  Y  O  U  R  B  A  S  E\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(space_jam(\"all your base\"), \"A  L  L  Y  O  U  R  B  A  S  E\")`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-4.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b1dab50c87ddb2e51f",
+      "title": "Python Challenge 5: Jbelmud Text",
+      "challengeType": 29,
+      "dashedName": "python-challenge-5",
+      "description": "Given a string, return a jumbled version of that string where each word is transformed using the following constraints:\n\n- The first and last letters of the words remain in place\n- All letters between the first and last letter are sorted alphabetically.\n- The input strings will contain no punctuation, and will be entirely lowercase.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def jbelmu(text):\n\n    return text"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def jbelmu(text):\n    words = text.split()\n    jumbled = []\n\n    for word in words:\n        if len(word) <= 3:\n            jumbled.append(word)\n        else:\n            first = word[0]\n            last = word[-1]\n            middle = ''.join(sorted(word[1:-1]))\n            jumbled.append(first + middle + last)\n    \n    return ' '.join(jumbled)"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`jbelmu(\"hello world\")` should return `\"hello wlord\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(jbelmu(\"hello world\"), \"hello wlord\")`)\n}})"
+        },
+        {
+          "text": "`jbelmu(\"i love jumbled text\")` should return `\"i love jbelmud text\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(jbelmu(\"i love jumbled text\"), \"i love jbelmud text\")`)\n}})"
+        },
+        {
+          "text": "`jbelmu(\"freecodecamp is my favorite place to learn to code\")` should return `\"faccdeeemorp is my faiortve pacle to laern to cdoe\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(jbelmu(\"freecodecamp is my favorite place to learn to code\"), \"faccdeeemorp is my faiortve pacle to laern to cdoe\")`)\n}})"
+        },
+        {
+          "text": "`jbelmu(\"the quick brown fox jumps over the lazy dog\")` should return `\"the qciuk borwn fox jmpus oevr the lazy dog\"`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(jbelmu(\"the quick brown fox jumps over the lazy dog\"), \"the qciuk borwn fox jmpus oevr the lazy dog\")`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-5.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b2dab50c87ddb2e520",
+      "title": "Python Challenge 6: Anagram Checker",
+      "challengeType": 29,
+      "dashedName": "python-challenge-6",
+      "description": "Given two strings, determine if they are anagrams of each other (contain the same characters in any order).\n\n- Ignore casing and white space.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def are_anagrams(str1, str2):\n\n    return str1"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def are_anagrams(str1, str2):\n    def clean(s):\n        return sorted(s.replace(\" \", \"\").lower())\n    \n    return clean(str1) == clean(str2)"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`are_anagrams(\"listen\", \"silent\")` should return `true`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(are_anagrams(\"listen\", \"silent\"))`)\n}})"
+        },
+        {
+          "text": "`are_anagrams(\"School master\", \"The classroom\")` should return `true`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(are_anagrams(\"School master\", \"The classroom\"))`)\n}})"
+        },
+        {
+          "text": "`are_anagrams(\"A gentleman\", \"Elegant man\")` should return `true`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertTrue(are_anagrams(\"A gentleman\", \"Elegant man\"))`)\n}})"
+        },
+        {
+          "text": "`are_anagrams(\"Hello\", \"World\")` should return `false`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(are_anagrams(\"Hello\", \"World\"))`)\n}})"
+        },
+        {
+          "text": "`are_anagrams(\"apple\", \"banana\")` should return `false`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(are_anagrams(\"apple\", \"banana\"))`)\n}})"
+        },
+        {
+          "text": "`are_anagrams(\"cat\", \"dog\")` should return `false`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertFalse(are_anagrams(\"cat\", \"dog\"))`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-6.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b2dab50c87ddb2e521",
+      "title": "Python Challenge 7: Targeted Sum",
+      "challengeType": 29,
+      "dashedName": "python-challenge-7",
+      "description": "Given an array of numbers and an integer target, find two unique numbers in the array that add up to the target value. Return an array with the indices of those two numbers, or `\"Target not found\"` if no two numbers sum up to the target.\n\n- The returned array should have the indices in ascending order.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def find_target(arr, target):\n\n    return arr"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def find_target(arr, target):\n    for i in range(len(arr)):\n        for j in range(i + 1, len(arr)):\n            if arr[i] + arr[j] == target:\n                return [i, j]\n    return 'Target not found'"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`find_target([2, 7, 11, 15], 9)` should return `[0, 1]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(find_target([2, 7, 11, 15], 9), [0, 1])`)\n}})"
+        },
+        {
+          "text": "`find_target([3, 2, 4, 5], 6)` should return `[1, 2]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(find_target([3, 2, 4, 5], 6), [1, 2])`)\n}})"
+        },
+        {
+          "text": "`find_target([1, 3, 5, 6, 7, 8], 15)` should return `[4, 5]`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(find_target([1, 3, 5, 6, 7, 8], 15), [4, 5])`)\n}})"
+        },
+        {
+          "text": "`find_target([1, 3, 5, 7], 14)` should return `'Target not found'`.\n\n```js\n\n({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(find_target([1, 3, 5, 7], 14), \"Target not found\")`)\n}})\n```",
+          "testCode": ""
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-7.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b2dab50c87ddb2e522",
+      "title": "Python Challenge 8: Factorializer",
+      "challengeType": 29,
+      "dashedName": "python-challenge-8",
+      "description": "Given an integer from zero to 20, return the factorial of that number. The factorial of a number is the product of all the numbers between 1 and the given number.\n\n- The factorial of zero is 1.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def factorial(n):\n\n    return n"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def factorial(n):\n    result = 1\n    for i in range(1, n + 1):\n        result *= i\n    return result"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`factorial(0)` should return `1`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(factorial(0), 1)`)\n}})"
+        },
+        {
+          "text": "`factorial(5)` should return `120`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(factorial(5), 120)`)\n}})"
+        },
+        {
+          "text": "`factorial(20)` should return `2432902008176640000`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(factorial(20), 2432902008176640000)`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-8.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    },
+    {
+      "id": "681cb1b2dab50c87ddb2e523",
+      "title": "Python Challenge 9: Sum of Squares",
+      "challengeType": 29,
+      "dashedName": "python-challenge-9",
+      "description": "Given a positive integer up to 1,000, return the sum of all the integers squared from 1 up to the number.",
+      "instructions": "",
+      "boilerplate": [
+        {
+          "language": "py",
+          "code": "def sum_of_squares(n):\n\n    return n"
+        }
+      ],
+      "solution": [
+        {
+          "language": "py",
+          "code": "def sum_of_squares(n):\n    sum = ((n)*(n+1)*(2*n+1))//6\n    return sum"
+        }
+      ],
+      "tests": [
+        {
+          "text": "`sum_of_squares(5)` should return `55`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(sum_of_squares(5), 55)`)\n}})"
+        },
+        {
+          "text": "`sum_of_squares(10)` should return `385`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(sum_of_squares(10), 385)`)\n}})"
+        },
+        {
+          "text": "`sum_of_squares(25)` should return `5525`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(sum_of_squares(25), 5525)`)\n}})"
+        },
+        {
+          "text": "`sum_of_squares(500)` should return `41791750`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(sum_of_squares(500), 41791750)`)\n}})"
+        },
+        {
+          "text": "`sum_of_squares(1000)` should return `333833500`.",
+          "testCode": "({test: () => { runPython(`\nfrom unittest import TestCase\nTestCase().assertEqual(sum_of_squares(1000), 333833500)`)\n}})"
+        }
+      ],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\99-dev-playground\\daily-coding-challenges-python\\python-challenge-9.md"
+      },
+      "section": {
+        "id": "99-dev-playground",
+        "name": "99-dev-playground"
+      },
+      "lesson": {
+        "id": "daily-coding-challenges-python",
+        "name": "Daily Coding Challenges Python"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 48,
+    "challenges_with_content": 48
+  }
+}

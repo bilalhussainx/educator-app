@@ -1,0 +1,60 @@
+{
+  "section": {
+    "id": "27-a2-professional-chinese",
+    "name": "27-a2-professional-chinese"
+  },
+  "challenges": [
+    {
+      "id": "682c2671d8010bef0a79f466",
+      "title": "Dialogue 1: PLACEHOLDER",
+      "challengeType": 21,
+      "dashedName": "dialogue-1-placeholder",
+      "description": "Watch the video below to understand the context of the upcoming lessons.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\27-a2-professional-chinese\\get-to-know-colleagues-by-asking-simple-questions\\682c2671d8010bef0a79f466.md"
+      },
+      "section": {
+        "id": "27-a2-professional-chinese",
+        "name": "27-a2-professional-chinese"
+      },
+      "lesson": {
+        "id": "get-to-know-colleagues-by-asking-simple-questions",
+        "name": "Get To Know Colleagues By Asking Simple Questions"
+      }
+    },
+    {
+      "id": "682c2753317b88f1ecdad894",
+      "title": "Dialogue 1: PLACEHOLDER",
+      "challengeType": 21,
+      "dashedName": "dialogue-1-placeholder",
+      "description": "Watch the video below to understand the context of the upcoming lessons.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\27-a2-professional-chinese\\talk-about-what-you-do-by-using-key-verbs\\682c2753317b88f1ecdad894.md"
+      },
+      "section": {
+        "id": "27-a2-professional-chinese",
+        "name": "27-a2-professional-chinese"
+      },
+      "lesson": {
+        "id": "talk-about-what-you-do-by-using-key-verbs",
+        "name": "Talk About What You Do By Using Key Verbs"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 2,
+    "challenges_with_content": 2
+  }
+}

@@ -1,0 +1,1356 @@
+{
+  "section": {
+    "id": "23-python-for-everybody",
+    "name": "23-python-for-everybody"
+  },
+  "challenges": [
+    {
+      "id": "5e7b9f060b6c005b0e76f05b",
+      "title": "Build your own Functions",
+      "challengeType": 11,
+      "dashedName": "build-your-own-functions",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=ksvGhDsjtpw\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\build-your-own-functions.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0b0b6c005b0e76f06d",
+      "title": "Comparing and Sorting Tuples",
+      "challengeType": 11,
+      "dashedName": "comparing-and-sorting-tuples",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=EhQxwzyT16E\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\comparing-and-sorting-tuples.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f050b6c005b0e76f058",
+      "title": "Conditional Execution",
+      "challengeType": 11,
+      "dashedName": "conditional-execution",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\conditional-execution.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f6a0b6c005b0e76f097",
+      "title": "Data Visualization: Mailing Lists",
+      "challengeType": 11,
+      "dashedName": "data-visualization-mailing-lists",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=KfhslNzopxo\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Geodata</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=wSpl1-7afAk\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Gmane Model</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=H3w4lOFBUOI\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Gmane Spider</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=LRqVPMEXByw\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Gmane Viz</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=yFRAZBkBDBs\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Page Rank</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=sXedPQ_AnWA\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Page Spider</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=Fm0hpkxsZoo\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Page Viz</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\data-visualization-mailing-lists.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f6a0b6c005b0e76f096",
+      "title": "Data Visualization: Page Rank",
+      "challengeType": 11,
+      "dashedName": "data-visualization-page-rank",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\data-visualization-page-rank.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0a0b6c005b0e76f069",
+      "title": "Dictionaries and Loops",
+      "challengeType": 11,
+      "dashedName": "dictionaries-and-loops",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=PrhZ9qwBDD8\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\dictionaries-and-loops.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f090b6c005b0e76f068",
+      "title": "Dictionaries: Common Applications",
+      "challengeType": 11,
+      "dashedName": "dictionaries-common-applications",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\dictionaries-common-applications.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f080b6c005b0e76f063",
+      "title": "Files as a Sequence",
+      "challengeType": 11,
+      "dashedName": "files-as-a-sequence",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=il1j4wkte2E\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\files-as-a-sequence.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f050b6c005b0e76f057",
+      "title": "Intermediate Expressions",
+      "challengeType": 11,
+      "dashedName": "intermediate-expressions",
+      "description": "More resources:\n\n\\- <a href=\"https://youtu.be/t_4DPwsaGDY\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise 1</a>\n\n\\- <a href=\"https://youtu.be/wgkC8SxraAQ\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise 2</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\intermediate-expressions.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f070b6c005b0e76f061",
+      "title": "Intermediate Strings",
+      "challengeType": 11,
+      "dashedName": "intermediate-strings",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=1bSqHot-KwE\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\intermediate-strings.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e6a54c358d3af90110a60a3",
+      "title": "Introduction: Elements of Python",
+      "challengeType": 11,
+      "dashedName": "introduction-elements-of-python",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\introduction-elements-of-python.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e6a54af58d3af90110a60a1",
+      "title": "Introduction: Hardware Architecture",
+      "challengeType": 11,
+      "dashedName": "introduction-hardware-architecture",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\introduction-hardware-achitecture.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e6a54ba58d3af90110a60a2",
+      "title": "Introduction: Python as a Language",
+      "challengeType": 11,
+      "dashedName": "introduction-python-as-a-language",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\introduction-python-as-a-language.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e6a54a558d3af90110a60a0",
+      "title": "Introduction: Why Program?",
+      "challengeType": 11,
+      "dashedName": "introduction-why-program",
+      "description": "More resources:\n\n\\- <a href=\"https://youtu.be/F7mtLrYzZP8\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Install Python on Windows</a>\n\n\\- <a href=\"https://youtu.be/wfLnZP-4sZw\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Install Python on MacOS</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\introduction-why-program.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f070b6c005b0e76f05d",
+      "title": "Iterations: Definite Loops",
+      "challengeType": 11,
+      "dashedName": "iterations-definite-loops",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\iterations-definite-loops.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f070b6c005b0e76f05e",
+      "title": "Iterations: Loop Idioms",
+      "challengeType": 11,
+      "dashedName": "iterations-loop-idioms",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\iterations-loop-idioms.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f070b6c005b0e76f05f",
+      "title": "Iterations: More Patterns",
+      "challengeType": 11,
+      "dashedName": "iterations-more-patterns",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=kjxXZQw0uPg\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\iterations-more-patterns.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f060b6c005b0e76f05c",
+      "title": "Loops and Iterations",
+      "challengeType": 11,
+      "dashedName": "loops-and-iterations",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\loops-and-iterations.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f170b6c005b0e76f08b",
+      "title": "Make a Relational Database",
+      "challengeType": 11,
+      "dashedName": "make-a-relational-database",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\make-a-relational-database.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f060b6c005b0e76f059",
+      "title": "More Conditional Structures",
+      "challengeType": 11,
+      "dashedName": "more-conditional-structures",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=crLerB4ZxMI\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise 1</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=KJN3-7HH6yk\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise 2</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\more-conditional-structures.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0c0b6c005b0e76f072",
+      "title": "Networking Protocol",
+      "challengeType": 11,
+      "dashedName": "networking-protocol",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\networking-protocol.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0c0b6c005b0e76f074",
+      "title": "Networking: Text Processing",
+      "challengeType": 11,
+      "dashedName": "networking-text-processing",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\networking-text-processing.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0d0b6c005b0e76f075",
+      "title": "Networking: Using urllib in Python",
+      "challengeType": 11,
+      "dashedName": "networking-using-urllib-in-python",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\networking-using-urllib-in-python.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0d0b6c005b0e76f076",
+      "title": "Networking: Web Scraping with Python",
+      "challengeType": 11,
+      "dashedName": "networking-web-scraping-with-python",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=dWLdI143W-g\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: socket1</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=8yis2DvbBkI\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: urllib</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=g9flPDG9nnY\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: urllinks</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\networking-web-scraping-with-python.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0c0b6c005b0e76f071",
+      "title": "Networking with Python",
+      "challengeType": 11,
+      "dashedName": "networking-with-python",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\networking-with-python.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0c0b6c005b0e76f073",
+      "title": "Networking: Write a Web Browser",
+      "challengeType": 11,
+      "dashedName": "networking-write-a-web-browser",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\networking-write-a-web-browser.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f170b6c005b0e76f087",
+      "title": "Object Lifecycle",
+      "challengeType": 11,
+      "dashedName": "object-lifecycle",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\object-lifecycle.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f160b6c005b0e76f086",
+      "title": "Objects: A Sample Class",
+      "challengeType": 11,
+      "dashedName": "objects-a-sample-class",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\objects-a-sample-class.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f170b6c005b0e76f088",
+      "title": "Objects: Inheritance",
+      "challengeType": 11,
+      "dashedName": "objects-inheritance",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\objects-inheritance.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f090b6c005b0e76f067",
+      "title": "Python Dictionaries",
+      "challengeType": 11,
+      "dashedName": "python-dictionaries",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\python-dictionaries.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f060b6c005b0e76f05a",
+      "title": "Python Functions",
+      "challengeType": 11,
+      "dashedName": "python-functions",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\python-functions.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f080b6c005b0e76f064",
+      "title": "Python Lists",
+      "challengeType": 11,
+      "dashedName": "python-lists",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\python-lists.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f160b6c005b0e76f085",
+      "title": "Python Objects",
+      "challengeType": 11,
+      "dashedName": "python-objects",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\python-objects.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f080b6c005b0e76f062",
+      "title": "Reading Files",
+      "challengeType": 11,
+      "dashedName": "reading-files",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\reading-files.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0b0b6c005b0e76f06f",
+      "title": "Regular Expressions: Matching and Extracting Data",
+      "challengeType": 11,
+      "dashedName": "regular-expressions-matching-and-extracting-data",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\regular-expressions-matching-and-extracting-data.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0b0b6c005b0e76f070",
+      "title": "Regular Expressions: Practical Applications",
+      "challengeType": 11,
+      "dashedName": "regular-expressions-practical-applications",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\regular-expressions-practical-applications.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0b0b6c005b0e76f06e",
+      "title": "Regular Expressions",
+      "challengeType": 11,
+      "dashedName": "regular-expressions",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\regular-expressions.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f180b6c005b0e76f08c",
+      "title": "Relational Database Design",
+      "challengeType": 11,
+      "dashedName": "relational-database-design",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\relational-database-design.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f170b6c005b0e76f08a",
+      "title": "Relational Databases and SQLite",
+      "challengeType": 11,
+      "dashedName": "relational-databases-and-sqlite",
+      "description": "More resources:\n\n\\- <a href=\"https://www.sqlite.org/download.html\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Download SQLite</a>\n\n\\- <a href=\"https://sqlitebrowser.org/dl/\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Download DB Browser for SQLite</a>\n\n\\- <a href=\"https://www.sqlite.org/famous.html\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">SQLite usage</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\relational-databases-and-sqlite.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f180b6c005b0e76f08f",
+      "title": "Relational Databases: Join Operation",
+      "challengeType": 11,
+      "dashedName": "relational-databases-join-operation",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\relational-databases-join-operation.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f190b6c005b0e76f090",
+      "title": "Relational Databases: Many-to-many Relationships",
+      "challengeType": 11,
+      "dashedName": "relational-databases-many-to-many-relationships",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=uQ3Qv1z_Vao\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Email</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=qEkUEAz8j3o\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Roster</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=I-E7avcPeSE\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Tracks</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=RZRAoBFIH6A\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Twfriends</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=xBaJddvJL4A\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Twspider</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\relational-databases-many-to-many-relationships.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f180b6c005b0e76f08e",
+      "title": "Relational Databases: Relationship Building",
+      "challengeType": 11,
+      "dashedName": "relational-databases-relationship-building",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\relational-databases-relationship-building.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f180b6c005b0e76f08d",
+      "title": "Representing Relationships in a Relational Database",
+      "challengeType": 11,
+      "dashedName": "representing-relationships-in-a-relational-database",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\representing-relationships-in-a-relational-database.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f090b6c005b0e76f066",
+      "title": "Strings and Lists",
+      "challengeType": 11,
+      "dashedName": "strings-and-lists",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=-9TfJF2dwHI\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\strings-and-lists.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f070b6c005b0e76f060",
+      "title": "Strings in Python",
+      "challengeType": 11,
+      "dashedName": "strings-in-python",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\strings-in-python.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0a0b6c005b0e76f06c",
+      "title": "The Tuples Collection",
+      "challengeType": 11,
+      "dashedName": "the-tuples-collection",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\the-tuples-collection.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0e0b6c005b0e76f07a",
+      "title": "Using Web Services",
+      "challengeType": 11,
+      "dashedName": "using-web-services",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\using-web-services.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f050b6c005b0e76f056",
+      "title": "Variables, Expressions, and Statements",
+      "challengeType": 11,
+      "dashedName": "variables-expressions-and-statements",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\variables-expressions-and-statements.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f690b6c005b0e76f095",
+      "title": "Visualizing Data with Python",
+      "challengeType": 11,
+      "dashedName": "visualizing-data-with-python",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\visualizing-data-with-python.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f150b6c005b0e76f080",
+      "title": "Web Services: API Rate Limiting and Security",
+      "challengeType": 11,
+      "dashedName": "web-services-api-rate-limiting-and-security",
+      "description": "More resources:\n\n\\- <a href=\"https://www.youtube.com/watch?v=TJGJN0T8tak\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: GeoJSON</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=vTmw5RtfGMY\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: JSON</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=2c7YwhvpCro\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: Twitter</a>\n\n\\- <a href=\"https://www.youtube.com/watch?v=AopYOlDa-vY\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Exercise: XML</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\web-services-api-rate-limiting-and-security.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f150b6c005b0e76f07f",
+      "title": "Web Services: APIs",
+      "challengeType": 11,
+      "dashedName": "web-services-apis",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\web-services-apis.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f140b6c005b0e76f07d",
+      "title": "Web Services: JSON",
+      "challengeType": 11,
+      "dashedName": "web-services-json",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\web-services-json.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f140b6c005b0e76f07e",
+      "title": "Web Services: Service Oriented Approach",
+      "challengeType": 11,
+      "dashedName": "web-services-service-oriented-approach",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\web-services-service-oriented-approach.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0e0b6c005b0e76f07c",
+      "title": "Web Services: XML Schema",
+      "challengeType": 11,
+      "dashedName": "web-services-xml-schema",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\web-services-xml-schema.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f0e0b6c005b0e76f07b",
+      "title": "Web Services: XML",
+      "challengeType": 11,
+      "dashedName": "web-services-xml",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\web-services-xml.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    },
+    {
+      "id": "5e7b9f090b6c005b0e76f065",
+      "title": "Working with Lists",
+      "challengeType": 11,
+      "dashedName": "working-with-lists",
+      "description": "",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\23-python-for-everybody\\python-for-everybody\\working-with-lists.md"
+      },
+      "section": {
+        "id": "23-python-for-everybody",
+        "name": "23-python-for-everybody"
+      },
+      "lesson": {
+        "id": "python-for-everybody",
+        "name": "Python For Everybody"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 56,
+    "challenges_with_content": 15
+  }
+}

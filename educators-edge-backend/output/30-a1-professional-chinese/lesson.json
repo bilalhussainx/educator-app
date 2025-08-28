@@ -1,0 +1,36 @@
+{
+  "section": {
+    "id": "30-a1-professional-chinese",
+    "name": "30-a1-professional-chinese"
+  },
+  "challenges": [
+    {
+      "id": "688f1daf0133dbe2a36b140b",
+      "title": "Dialogue 1: PLACEHOLDER",
+      "challengeType": 21,
+      "dashedName": "dialogue-1-placeholder",
+      "description": "Watch the video below to understand the context of the upcoming lessons.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\30-a1-professional-chinese\\learn-essential-courtesies-at-the-office\\688f1daf0133dbe2a36b140b.md"
+      },
+      "section": {
+        "id": "30-a1-professional-chinese",
+        "name": "30-a1-professional-chinese"
+      },
+      "lesson": {
+        "id": "learn-essential-courtesies-at-the-office",
+        "name": "Learn Essential Courtesies At The Office"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 1,
+    "challenges_with_content": 1
+  }
+}

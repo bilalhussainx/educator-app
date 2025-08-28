@@ -1,0 +1,852 @@
+{
+  "section": {
+    "id": "17-college-algebra-with-python",
+    "name": "17-college-algebra-with-python"
+  },
+  "challenges": [
+    {
+      "id": "63d8402e39c73468b059cd43",
+      "title": "Build a Data Graph Explorer",
+      "challengeType": 10,
+      "dashedName": "build-a-data-graph-explorer",
+      "description": "You will be <a href=\"https://colab.research.google.com/#create=true\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nOnce you complete the project, submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"",
+      "instructions": "For this challenge, you need to create a data graph explorer using Python that take input and do the following:\n\n- Get a .csv file in three ways\n  - uploading it from the local computer\n  - getting a url from user input\n  - putting the url in the code\n- Use the Pandas library to save the .csv as a dataframe\n- Print headings and the first two rows\n- Store the column names as a list\n- Choose one or two columns and convert the data to Numpy arrays\n- Display data as a scatter plot or a line graph\n- Be able to do this for different column combinations, and interpret the graphs\n\nOnce you're done, submit the URL to the public Colab notebook on your Google drive.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\build-a-data-graph-explorer-project\\build-a-data-graph-explorer.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "build-a-data-graph-explorer-project",
+        "name": "Build A Data Graph Explorer Project"
+      }
+    },
+    {
+      "id": "63d8401e39c73468b059cd42",
+      "title": "Build a Financial Calculator",
+      "challengeType": 10,
+      "dashedName": "build-a-financial-calculator",
+      "description": "You will be <a href=\"https://colab.research.google.com/drive/1zUAVAkwyjat4Z-8nfrajM1ut9UcO18We?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nAfter going to that link, create a copy of the notebook either in your own account or locally. Once you complete the project and it passes the test (included at that link), submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"",
+      "instructions": "For this challenge, you need to create a financial calculator using Python that take input and do the following:\n\n- Calculate annuity with monthly or continuous growth\n- Calculate monthly mortgage payment\n- Estimate retirement investment balance\n- Determine how long until an amount doubles, given the rate\n- Solve logarithmic equations\n- Convert to (and from) scientific notation\n\nIf you are struggling, you can follow the <a href=\"https://www.youtube.com/embed/c2AhGd6srJ0\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">video walkthrough for this project.</a>\n\nOnce you're done, submit the URL to the public Colab notebook on your Google drive.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\build-a-financial-calculator-project\\build-a-financial-calculator.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "build-a-financial-calculator-project",
+        "name": "Build A Financial Calculator Project"
+      }
+    },
+    {
+      "id": "63d83ffd39c73468b059cd40",
+      "title": "Build a Graphing Calculator",
+      "challengeType": 10,
+      "dashedName": "build-a-graphing-calculator",
+      "description": "You will be <a href=\"https://colab.research.google.com/drive/1BHKshb67jWVVZQ9VlzQOpdFA-gzJkSUF?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nAfter going to that link, create a copy of the notebook either in your own account or locally. Once you complete the project and it passes the test (included at that link), submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"",
+      "instructions": "For this challenge, you need to create a graphing calculator using Python that can take input and do the following:\n\n- Graph one or more functions\n- Create a table of (x,y) values\n- Shade above or below the line\n- Solve and graph a system of equations\n- Zoom in or out on a graph\n- Solve quadratic equations\n\nIf you are struggling, you can follow the <a href=\"https://www.youtube.com/embed/EM0yNdZBdfQ\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">video walkthrough for this project.</a>\n\nOnce you're done, submit the URL to the public Colab notebook on your Google drive.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\build-a-graphing-calculator-project\\build-a-graphing-calculator.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "build-a-graphing-calculator-project",
+        "name": "Build A Graphing Calculator Project"
+      }
+    },
+    {
+      "id": "63d83ff239c73468b059cd3f",
+      "title": "Build a Multi-Function Calculator",
+      "challengeType": 10,
+      "dashedName": "build-a-multi-function-calculator",
+      "description": "You will be <a href=\"https://colab.research.google.com/drive/1jT7atuRCOnkdPyDmlgKVJqxouDSx7Ioh?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nAfter going to that link, create a copy of the notebook either in your own account or locally. Once you complete the project and it passes the test (included at that link), submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"",
+      "instructions": "For this challenge, you need to create a multi-function calculator using Python that take input and do the following:\n\n- solve proportions\n- solve for x in equations\n- factor square roots\n- convert decimals to fractions and percents\n- convert fractions to decimals and percents\n- convert percents to decimals and fractions\n\nIf you are struggling, you can follow the <a href=\"https://www.youtube.com/embed/PdsvcZNPEEs\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">video walkthrough for this project.</a>\n\nOnce you're done, submit the URL to the public Colab notebook on your Google drive.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\build-a-multi-function-calculator-project\\build-a-multi-function-calculator.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "build-a-multi-function-calculator-project",
+        "name": "Build A Multi Function Calculator Project"
+      }
+    },
+    {
+      "id": "63d8401039c73468b059cd41",
+      "title": "Build Three Math Games",
+      "challengeType": 10,
+      "dashedName": "build-three-math-games",
+      "description": "You will be <a href=\"https://colab.research.google.com/#create=true\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">working on this project with Google Colaboratory</a>.\n\nOnce you complete the project, submit your project link below. If you are submitting a Google Colaboratory link, make sure to turn on link sharing for \"anyone with the link.\"",
+      "instructions": "For this challenge, you need to create three math games using Python that do the following:\n\n- Scatter plot game\n  - Randomly generate points on a graph and the player has to input the (x,y) coordinates\n  - For added difficulty, make the graph larger\n- Algebra practice game\n  - Generate one-step and two-step problems with random integer values and the player has to input the answer\n  - Use positive and negative values. For added difficulty, make the numbers larger\n- Projectile game\n  - Display a \"wall\" with random height and location. Player has to move sliders to adjust a parabolic path to clear the wall\n  - For added difficulty, make a second level where players enter a, b, and c without sliders\n\nOnce you're done, submit the URL to the public Colab notebook on your Google drive.",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\build-three-math-games-project\\build-three-math-games.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "build-three-math-games-project",
+        "name": "Build Three Math Games Project"
+      }
+    },
+    {
+      "id": "6363d2959078df117ce4c408",
+      "title": "More Resources in Colab",
+      "challengeType": 15,
+      "dashedName": "more-resources-in-colab",
+      "description": "One more thing... This brief video will show you some of the resources available to you in Google Colab notebooks.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\college-algebra-with-python-conclusion\\more-resources-in-colab.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "college-algebra-with-python-conclusion",
+        "name": "College Algebra With Python Conclusion"
+      }
+    },
+    {
+      "id": "6363d2899078df117ce4c407",
+      "title": "Spreadsheets and Additional Resources",
+      "challengeType": 15,
+      "dashedName": "spreadsheets-and-additional-resources",
+      "description": "Let's look at how you can connect your Math and Python knowledge with external data. This video will show you how to get data from other sources, then transform it so that you can graph it and interpret it.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\college-algebra-with-python-conclusion\\spreadsheets-and-additional-resources.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "college-algebra-with-python-conclusion",
+        "name": "College Algebra With Python Conclusion"
+      }
+    },
+    {
+      "id": "6363d23a9078df117ce4c3ff",
+      "title": "Applications of Linear Systems: Extra",
+      "challengeType": 15,
+      "dashedName": "applications-of-linear-systems-extra",
+      "description": "The next video contains more examples of how to set up equations and use your Colab notebook to solve them.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-applications-of-linear-systems\\applications-of-linear-systems-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-applications-of-linear-systems",
+        "name": "Learn Applications Of Linear Systems"
+      }
+    },
+    {
+      "id": "6363d2019078df117ce4c3fe",
+      "title": "Word Problems",
+      "challengeType": 15,
+      "dashedName": "word-problems",
+      "description": "This first video will look at key words that tell you what math operation to use. Then you will see how to apply some of your code to different problems.\n\n**Here are links to the textbooks you will need to complete the assignments for this video:**\n\n\\- <a href=\"https://lyryx.com/subjects/business/business-mathematics/\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Business Math, a Step-by-Step Handbook (2021) by Jean-Paul Oliver</a>\n\n\\- <a href=\"https://cdn.freecodecamp.org/curriculum/college-algebra/AlgebraAndTrigonometry-OP_1tE6R5r.pdf\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Algebra and Trigonometry by Jay Abramson</a> - sourced from OpenStax under <a href=\"https://creativecommons.org/licenses/by/4.0/\" target=\"_blank\">Creative Commons Attribution 4.0 International (CC BY 4.0)</a>\n\nIt is also possible to download the Algebra and Trigonometry textbook from the <a href=\"https://openstax.org/details/books/algebra-and-trigonometry\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">OpenStax website</a>. You will need to find the correct textbook and then download the PDF. The page numbers for the assignment are based on the first link for this book.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-applications-of-linear-systems\\word-problems.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-applications-of-linear-systems",
+        "name": "Learn Applications Of Linear Systems"
+      }
+    },
+    {
+      "id": "63dbd0375d93712ff177d969",
+      "title": "Business Applications of College Algebra: Extra",
+      "challengeType": 15,
+      "dashedName": "business-applications-of-college-algebra-extra",
+      "description": "This video is showing you some economics applications, and creating graphs and formulas.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-business-applications-of-college-algebra\\business-applications-of-college-algebra-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-business-applications-of-college-algebra",
+        "name": "Learn Business Applications Of College Algebra"
+      }
+    },
+    {
+      "id": "6363d2649078df117ce4c404",
+      "title": "Demand and Revenue",
+      "challengeType": 15,
+      "dashedName": "demand-and-revenue",
+      "description": "In this video, you will write code to develop a demand function from two points. You will see how price affects the profit graph and how all of these equations relate to each other.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1foxkSd90q1tHCSqyY6NFAEnMfH0nNwXe?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a>\n\n**Here is a link to the textbook you will need to complete the assignment for this video:**\n\n\\- <a href=\"https://lyryx.com/subjects/business/business-mathematics/\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Business Math, a Step-by-Step Handbook (2021) by Jean-Paul Oliver</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-business-applications-of-college-algebra\\demand-and-revenue.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-business-applications-of-college-algebra",
+        "name": "Learn Business Applications Of College Algebra"
+      }
+    },
+    {
+      "id": "6331d251b51aeedd1a2bd648",
+      "title": "Factoring",
+      "challengeType": 15,
+      "dashedName": "factoring",
+      "description": "This first video will show you how to find common factors and divide them out - in writing, then in code using loops and modulus operations.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1tB7N3QqHEbGk33v0BdTwZTVkS9ju9yn6?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-common-factors-and-square-roots\\factoring.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-common-factors-and-square-roots",
+        "name": "Learn Common Factors And Square Roots"
+      }
+    },
+    {
+      "id": "6363d2769078df117ce4c406",
+      "title": "Exponents and Logarithms",
+      "challengeType": 15,
+      "dashedName": "exponents-and-logarithms",
+      "description": "Here is the <a href=\"https://colab.research.google.com/drive/1hg7ecxGT20B8HR2mV75HzMylj9SHIWH8?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-exponents-and-logarithms\\exponents-and-logarithms.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-exponents-and-logarithms",
+        "name": "Learn Exponents And Logarithms"
+      }
+    },
+    {
+      "id": "6331d258b51aeedd1a2bd649",
+      "title": "Converting Fractions and Decimals",
+      "challengeType": 15,
+      "dashedName": "converting-fractions-and-decimals",
+      "description": "The first video will show you how to convert between fractions, decimals, and percents on paper. Then, it will show you how to do it with Python code.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1dgeEEODP7cwm_96_JqbjxxJhVpZcFfGe?usp=sharing#scrollTo=NkMTAVF0BlqE\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in the video.</a> Use this code as a model, and write your own code to convert fractions and decimals.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-fractions-and-decimals\\converting-fractions-and-decimals.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-fractions-and-decimals",
+        "name": "Learn Fractions And Decimals"
+      }
+    },
+    {
+      "id": "6331d260b51aeedd1a2bd64a",
+      "title": "Fractions and Decimals: Extra",
+      "challengeType": 15,
+      "dashedName": "fractions-and-decimals-extra",
+      "description": "The following video will show you one way to set up your Google Colaboratory notebook, so that you can continue to build your personalized algebra calculator.\n\nHere is <a href=\"https://colab.research.google.com/drive/1a_RtRtVfeO0m2528T4V-bCXozWf3HpM7?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">the Colab notebook used in this video</a> so you can use it as a model.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-fractions-and-decimals\\fractions-and-decimals-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-fractions-and-decimals",
+        "name": "Learn Fractions And Decimals"
+      }
+    },
+    {
+      "id": "63e1798f811fda1bc546bba0",
+      "title": "Functions and Graphing: Extra",
+      "challengeType": 15,
+      "dashedName": "functions-and-graphing-extra",
+      "description": "This next video will show you the connection between functions and graphing. Notice how the graph is a way to represent the inputs and outputs of a function. Then the video will show you how to graph a function with Python.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1UYorWd9-Btf_ZQyA9YdUzxzKR8rnVrSV\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go with this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-functions-and-graphing\\functions-and-graphing-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-functions-and-graphing",
+        "name": "Learn Functions And Graphing"
+      }
+    },
+    {
+      "id": "6331d266b51aeedd1a2bd64b",
+      "title": "Functions",
+      "challengeType": 15,
+      "dashedName": "functions",
+      "description": "This first video will show you what it means to be a function, and then it will show you how math functions and Python functions are similar.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1d0e55NoKjKILIum34POv04h0OLpE_pkn\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in this and the next videos.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-functions-and-graphing\\functions.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-functions-and-graphing",
+        "name": "Learn Functions And Graphing"
+      }
+    },
+    {
+      "id": "6331d26fb51aeedd1a2bd64c",
+      "title": "Graphing",
+      "challengeType": 15,
+      "dashedName": "graphing",
+      "description": "This next video will show you the connection between functions and graphing. Notice how the graph is a way to represent the inputs and outputs of a function. Then the video will show you how to graph a function with Python.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1UYorWd9-Btf_ZQyA9YdUzxzKR8rnVrSV#scrollTo=yJiVB8wdHRxS\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go with the last two videos</a> so you can start making your own graphs.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-functions-and-graphing\\graphing.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-functions-and-graphing",
+        "name": "Learn Functions And Graphing"
+      }
+    },
+    {
+      "id": "6331d276b51aeedd1a2bd64d",
+      "title": "Graphing Systems of Equations: Extra",
+      "challengeType": 15,
+      "dashedName": "graphing-systems-of-equations-extra",
+      "description": "This next video will give you a deeper dive into what you can do with graphing systems of equations, graphing inequalities, and shading above or below the line. You will also see how to download the graph to your computer or your Google Drive.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1m5oG62NzUHRzBghGCPRfr1SzvbywRWPV?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-how-to-graph-systems-of-equations\\graphing-systems-of-equations-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-how-to-graph-systems-of-equations",
+        "name": "Learn How To Graph Systems Of Equations"
+      }
+    },
+    {
+      "id": "6331d27db51aeedd1a2bd64e",
+      "title": "Graphing Systems",
+      "challengeType": 15,
+      "dashedName": "graphing-systems",
+      "description": "This first video will show you how to graph systems of equations with written math, then code.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1N1JEZJctODxsntROnmg0VqMSHXYdIlFD?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-how-to-graph-systems-of-equations\\graphing-systems.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-how-to-graph-systems-of-equations",
+        "name": "Learn How To Graph Systems Of Equations"
+      }
+    },
+    {
+      "id": "6331d233b51aeedd1a2bd645",
+      "title": "How to Solve for X: Extra",
+      "challengeType": 15,
+      "dashedName": "how-to-solve-for-x-extra",
+      "description": "This video will go deeper, with more examples of how to use SymPy solve. It will also explain how the practice functions generate the random problems.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1Jv6WxW93J_1GZao8DkNb4X0D93oVibbs\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a> Use it to add more to the algebra Colab notebook that you are building.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-how-to-solve-for-x\\how-to-solve-for-x-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-how-to-solve-for-x",
+        "name": "Learn How To Solve For X"
+      }
+    },
+    {
+      "id": "6331d23eb51aeedd1a2bd646",
+      "title": "Solving for X",
+      "challengeType": 15,
+      "dashedName": "solving-for-x",
+      "description": "This first video will show you the essence of algebra and then how Python code does the same task in a different way.\n\nHere is the <a href=\"https://colab.research.google.com/drive/11Zi77gs1FKoEqfPqYa2HtTENiWZyQAO2?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a> Add the code from the video to your algebra Colab notebook to see how to solve for X using Python. Then change the code if you want, test it, and compare it to paper-and-pencil solving. Remember the equation input needs to be in Python syntax.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-how-to-solve-for-x\\solving-for-x.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-how-to-solve-for-x",
+        "name": "Learn How To Solve For X"
+      }
+    },
+    {
+      "id": "6331d2a9b51aeedd1a2bd654",
+      "title": "Solving Systems of Equations: Extra",
+      "challengeType": 15,
+      "dashedName": "solving-systems-of-equations-extra",
+      "description": "This video will show you one way to create a calculator that solves and graphs. It will also show you how to zoom in or zoom out on the graph and write the code to build that feature.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1a_RtRtVfeO0m2528T4V-bCXozWf3HpM7?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in this video.</a> This will give you an example of what your notebook could look like so far, as you have some functions in there and create headings for the next few functions.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-how-to-solve-systems-of-equations\\solving-systems-of-equations-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-how-to-solve-systems-of-equations",
+        "name": "Learn How To Solve Systems Of Equations"
+      }
+    },
+    {
+      "id": "6331d2b0b51aeedd1a2bd655",
+      "title": "Solving Systems",
+      "challengeType": 15,
+      "dashedName": "solving-systems",
+      "description": "The first video will show you the math behind solving a system of two equations without graphing, how you can factor an equation, and solve for a certain variable.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1UfyQiXCedAAv5kcqgi_pGYV-HkSgN8YD?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-how-to-solve-systems-of-equations\\solving-systems.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-how-to-solve-systems-of-equations",
+        "name": "Learn How To Solve Systems Of Equations"
+      }
+    },
+    {
+      "id": "6331d28ab51aeedd1a2bd650",
+      "title": "Linear Equations",
+      "challengeType": 15,
+      "dashedName": "linear-equations",
+      "description": "This video will show you the math behind finding the y-intercept in a linear function, so you can develop the whole equation. Then the video will show you how to graph the whole function. You will also see how to do the whole process with Python code.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1UJ1w-XFTuCfK6FI3H2GT0lbxd2HO3tQ6?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go with the last two videos,</a> so you can see the formulas.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-linear-functions\\linear-equations.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-linear-functions",
+        "name": "Learn Linear Functions"
+      }
+    },
+    {
+      "id": "6331d283b51aeedd1a2bd64f",
+      "title": "Linear Functions: Extra",
+      "challengeType": 15,
+      "dashedName": "linear-functions-extra",
+      "description": "This video will give you a deeper look into developing equations from word problems (so then you can write the code to solve or graph those equations). The video will also begin to look at data points as (x,y) coordinates. With this, you will begin to see the connection between Algebra and data science.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1OzC7gqCNWNzwv50ziNeG2IJhbXm88-XK?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-linear-functions\\linear-functions-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-linear-functions",
+        "name": "Learn Linear Functions"
+      }
+    },
+    {
+      "id": "6331d291b51aeedd1a2bd651",
+      "title": "Slope",
+      "challengeType": 15,
+      "dashedName": "slope",
+      "description": "This first video will focus on the slope of a line and how to calculate it.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1UJ1w-XFTuCfK6FI3H2GT0lbxd2HO3tQ6?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook used in this and the next videos.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-linear-functions\\slope.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-linear-functions",
+        "name": "Learn Linear Functions"
+      }
+    },
+    {
+      "id": "6363d25c9078df117ce4c403",
+      "title": "Parent Graphs and Polynomials: Extra",
+      "challengeType": 15,
+      "dashedName": "parent-graphs-and-polynomials-extra",
+      "description": "This next video will show you how to add sliders to your graphs, to see them change in real time. You will also see ways to use loops to find the roots of a graph, and how this method is different from factoring.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1bspkmQVcKOXUuk-Orb0Mwl0GUGbqMpka?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-parent-graphs-and-polynomials\\parent-graphs-and-polynomials-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-parent-graphs-and-polynomials",
+        "name": "Learn Parent Graphs And Polynomials"
+      }
+    },
+    {
+      "id": "6363d2529078df117ce4c402",
+      "title": "Parent Graphs",
+      "challengeType": 15,
+      "dashedName": "parent-graphs",
+      "description": "In this video, you will see what these parent graphs look like, how to modify them, and how to do this all with Python code.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1uwKuaHCC2WCUFKmXW-5NqWUlEP9ak7Pz?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-parent-graphs-and-polynomials\\parent-graphs.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-parent-graphs-and-polynomials",
+        "name": "Learn Parent Graphs And Polynomials"
+      }
+    },
+    {
+      "id": "6363d2429078df117ce4c400",
+      "title": "Quadratics",
+      "challengeType": 15,
+      "dashedName": "quadratics",
+      "description": "This video show you how to solve quadratic equations, and explain the coefficients (\"A,\" \"B,\" and \"C\") in the standard form and how to use them to find the roots and vertex.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1jr_k4awSSW1CBs9ma9oS_WnDblDjX3pc?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a>",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-quadratic-equations\\quadratics.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-quadratic-equations",
+        "name": "Learn Quadratic Equations"
+      }
+    },
+    {
+      "id": "6331caa1b51aeedd1a2bd644",
+      "title": "Introduction to College Algebra with Python",
+      "challengeType": 15,
+      "dashedName": "introduction-to-college-algebra-with-python",
+      "description": "This first video includes an introduction to the course, how it will work, and how to use Google Colaboratory. Follow along to create your first Colab notebook.\n\n**Videos throughout these courses will reference problems from these two textbooks:**\n\n\\- <a href=\"https://lyryx.com/subjects/business/business-mathematics/\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Business Math, a Step-by-Step Handbook (2021) by Jean-Paul Oliver</a>\n\n\\- <a href=\"https://cdn.freecodecamp.org/curriculum/college-algebra/AlgebraAndTrigonometry-OP_1tE6R5r.pdf\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Algebra and Trigonometry by Jay Abramson</a> - sourced from OpenStax under <a href=\"https://creativecommons.org/licenses/by/4.0/\" target=\"_blank\">Creative Commons Attribution 4.0 International (CC BY 4.0)</a>\n\nIt is also possible to download the Algebra and Trigonometry textbook from the <a href=\"https://openstax.org/details/books/algebra-and-trigonometry\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">OpenStax website</a>. You will need to find the correct textbook and then download the PDF. The page numbers for the assignment are based on the first link for this book.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-ratios-and-proportions\\introduction-to-college-algebra-with-python.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-ratios-and-proportions",
+        "name": "Learn Ratios And Proportions"
+      }
+    },
+    {
+      "id": "6331d298b51aeedd1a2bd652",
+      "title": "Ratios and Proportions: Extra",
+      "challengeType": 15,
+      "dashedName": "ratios-and-proportions-extra",
+      "description": "The last video in this section will show you how to use proportions in other applications, such as currency exchange rates and unit conversion. It will also show you more about setting up your notebook and working through the practice assignment.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-ratios-and-proportions\\ratios-and-proportions-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-ratios-and-proportions",
+        "name": "Learn Ratios And Proportions"
+      }
+    },
+    {
+      "id": "6331d29fb51aeedd1a2bd653",
+      "title": "Solving Proportions",
+      "challengeType": 15,
+      "dashedName": "solving-proportions",
+      "description": "Now we get to the math content. This video will show you how to set up and solve proportions and write code to solve for variables.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1Q7nCcbrnoYttkwiHB_nQ-X1JuLpUmtRD?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a> If you have not done so yet, set up your algebra Colab notebook from the last video. Then, add the code from this video to it.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-ratios-and-proportions\\solving-proportions.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-ratios-and-proportions",
+        "name": "Learn Ratios And Proportions"
+      }
+    },
+    {
+      "id": "63dbd1335d93712ff177d96a",
+      "title": "Simple and Compound Interest: Extra",
+      "challengeType": 15,
+      "dashedName": "simple-and-compound-interest-extra",
+      "description": "Here is a detour from the Python code, as this video shows you how to create mortgage payment amortization tables in Google Sheets. You will also learn about how to use a very similar setup to estimate retirement account investment returns. This is the video that shows you where your money is going.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-simple-and-compound-interest\\simple-and-compound-interest-extra.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-simple-and-compound-interest",
+        "name": "Learn Simple And Compound Interest"
+      }
+    },
+    {
+      "id": "6363d26c9078df117ce4c405",
+      "title": "Simple and Compound Interest",
+      "challengeType": 15,
+      "dashedName": "simple-and-compound-interest",
+      "description": "This video will help you understand the equations of simple and compound interest, and what it all means.\n\nHere is the <a href=\"https://colab.research.google.com/drive/1IVBaeX84arJXS73raRROaxbz4qMyFVb6?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook to go along with this video.</a>\n\nHere is an additional <a href=\"https://colab.research.google.com/drive/1-HWYmzKn6HmEUWMBv7G525CpoQpm8TnN?usp=sharing\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Colab notebook that shows you one way to put many of these interest and payment formulas into Python functions.</a> Also you will see an example of using some formulas to output results, notice a trend, and follow up with other formulas to analyze patterns.",
+      "instructions": "",
+      "boilerplate": [],
+      "solution": [],
+      "tests": [],
+      "metadata": {
+        "videoUrl": "",
+        "forumTopicId": "",
+        "filePath": "freeCodeCamp\\curriculum\\challenges\\english\\17-college-algebra-with-python\\learn-simple-and-compound-interest\\simple-and-compound-interest.md"
+      },
+      "section": {
+        "id": "17-college-algebra-with-python",
+        "name": "17-college-algebra-with-python"
+      },
+      "lesson": {
+        "id": "learn-simple-and-compound-interest",
+        "name": "Learn Simple And Compound Interest"
+      }
+    }
+  ],
+  "metadata": {
+    "total_challenges": 35,
+    "challenges_with_content": 35
+  }
+}

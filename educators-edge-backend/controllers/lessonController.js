@@ -141,6 +141,32 @@ exports.getStudentLessonState = async (req, res) => {
         res.status(500).json({ error: 'Server Error' });
     }
 };
+
+exports.getLessonSolution = async (req, res) => {
+    const { lessonId } = req.params;
+    const studentId = req.user.id; // Or teacherId, depending on your auth
+
+    try {
+        // Future Enhancement: You could add a check here to see if the student
+        // has correctly solved the problem before allowing them to see the solution.
+        // For now, we'll allow access.
+
+        const solutionFilesResult = await db.query(
+            'SELECT filename, content FROM lesson_solution_files WHERE lesson_id = $1',
+            [lessonId]
+        );
+
+        if (solutionFilesResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Solution not found for this lesson.' });
+        }
+        
+        res.json(solutionFilesResult.rows);
+
+    } catch (err) {
+        console.error("Error in getLessonSolution:", err.message);
+        res.status(500).send('Server Error');
+    }
+};
 // exports.getStudentLessonState = async (req, res) => {
 //     const studentId = req.user.id;
 //     const { lessonId } = req.params; 
