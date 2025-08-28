@@ -1072,6 +1072,51 @@ exports.getAscentIdeData = async (req, res) => {
     }
 };
 
+// --- Add lesson to course ---
+exports.addLessonToCourse = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const teacherId = req.user.id;
+        const { lessonId } = req.body;
+
+        if (!lessonId) {
+            return res.status(400).json({ error: 'lessonId is required' });
+        }
+
+        // Verify the teacher owns the course
+        const courseResult = await db.query(
+            'SELECT id FROM courses WHERE id = $1 AND teacher_id = $2',
+            [courseId, teacherId]
+        );
+
+        if (courseResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Course not found or you do not have permission to modify it.' });
+        }
+
+        // Verify the lesson exists and teacher owns it
+        const lessonResult = await db.query(
+            'SELECT id FROM lessons WHERE id = $1 AND teacher_id = $2',
+            [lessonId, teacherId]
+        );
+
+        if (lessonResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Lesson not found or you do not have permission to modify it.' });
+        }
+
+        // Update the lesson to belong to the course
+        const updatedLessonResult = await db.query(
+            'UPDATE lessons SET course_id = $1 WHERE id = $2 RETURNING *',
+            [courseId, lessonId]
+        );
+
+        res.json(updatedLessonResult.rows[0]);
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
 // mvp
 // exports.getAscentIdeData = async (req, res) => {
 //     const { lessonId } = req.params;
