@@ -11,14 +11,14 @@
 
 // // --- Lesson Routes ---
 // router.get('/', verifyToken, lessonController.getAllLessons);
-// router.post('/', verifyToken, isTeacher, lessonController.createLesson);
+// // router.post('/', verifyToken, isTeacher, lessonController.createLesson);
 // router.get('/:id', verifyToken, lessonController.getLessonById);
 
 // // --- Submission & Testing Routes (related to a specific lesson) ---
-// router.post('/:id/submit', verifyToken, lessonController.createSubmission);
+// // router.post('/:id/submit', verifyToken, lessonController.createSubmission);
 // router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLessonSubmissions);
 // router.get('/:id/mysubmission', verifyToken, lessonController.getStudentSubmissionForLesson);
-// router.post('/:id/run-tests', verifyToken, lessonController.runLessonTests);
+// // router.post('/:id/run-tests', verifyToken, lessonController.runLessonTests);
 
 // // The PATCH route for a specific submission has been moved to submissionRoutes.js
 
@@ -38,7 +38,7 @@ const { isTeacher } = require('../middleware/roleMiddleware');
 
 // --- Lesson Routes ---
 router.get('/', verifyToken, lessonController.getAllLessons);
-router.post('/', verifyToken, isTeacher, lessonController.createLesson);
+// router.post('/', verifyToken, isTeacher, lessonController.createLesson);
 router.get('/:id', verifyToken, lessonController.getLessonById);
 
 
@@ -46,24 +46,24 @@ router.get('/:id', verifyToken, lessonController.getLessonById);
 router.get('/:lessonId/student-state', verifyToken, lessonController.getStudentLessonState);
 
 // POST to save a student's progress on a lesson
-router.post('/:lessonId/save-progress', verifyToken, lessonController.saveStudentProgress);
+// router.post('/:lessonId/save-progress', verifyToken, lessonController.saveStudentProgress);
 
 
 // --- Submission & Testing Routes ---
-router.post('/:id/submit', verifyToken, lessonController.createSubmission);
+// router.post('/:id/submit', verifyToken, lessonController.createSubmission);
 router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLessonSubmissions);
 router.get('/:id/mysubmission', verifyToken, lessonController.getStudentSubmissionForLesson);
 router.get('/teacher/list', verifyToken, isTeacher, lessonController.getTeacherLessons);
 router.get('/:lessonId/ascent-ide', verifyToken, lessonController.getAscentIdeData);
 router.get('/:lessonId/solution', verifyToken, lessonController.getLessonSolution);
-router.post('/add-to-course/:courseId', verifyToken, isTeacher, lessonController.addLessonToCourse);
+// router.post('/add-to-course/:courseId', verifyToken, isTeacher, lessonController.addLessonToCourse);
 
-router.post('/:courseId/sort-with-ai', verifyToken, isTeacher, courseController.sortCourseLessonsWithAI);
+// router.post('/:courseId/sort-with-ai', verifyToken, isTeacher, courseController.sortCourseLessonsWithAI);
 
 // ...
 
 // THIS IS THE FIX: The parameter is now ':id' to be consistent.
-router.post('/:id/run-tests', verifyToken, lessonController.runLessonTests);
+// router.post('/:id/run-tests', verifyToken, lessonController.runLessonTests);
 
 // --- Grading Route ---
 router.patch('/submissions/:submissionId', verifyToken, isTeacher, lessonController.updateSubmission);
@@ -81,11 +81,11 @@ module.exports = router;
 
 // // --- Lesson Routes ---
 // router.get('/', verifyToken, lessonController.getAllLessons);
-// router.post('/', verifyToken, isTeacher, lessonController.createLesson);
+// // router.post('/', verifyToken, isTeacher, lessonController.createLesson);
 // router.get('/:id', verifyToken, lessonController.getLessonById);
 
 // // --- Submission Routes ---
-// router.post('/:id/submit', verifyToken, lessonController.createSubmission);
+// // router.post('/:id/submit', verifyToken, lessonController.createSubmission);
 // router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLessonSubmissions);
 // router.patch('/submissions/:submissionId', verifyToken, isTeacher, lessonController.updateSubmission);
 // router.get('/:id/mysubmission', verifyToken, lessonController.getStudentSubmissionForLesson);
@@ -103,11 +103,11 @@ module.exports = router;
 
 // // --- Lesson Routes ---
 // router.get('/', verifyToken, lessonController.getAllLessons);
-// router.post('/', verifyToken, isTeacher, lessonController.createLesson);
+// // router.post('/', verifyToken, isTeacher, lessonController.createLesson);
 // router.get('/:id', verifyToken, lessonController.getLessonById);
 
 // // --- Submission Routes ---
-// router.post('/:id/submit', verifyToken, lessonController.createSubmission);
+// // router.post('/:id/submit', verifyToken, lessonController.createSubmission);
 // router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLessonSubmissions);
 // router.patch('/submissions/:submissionId', verifyToken, isTeacher, lessonController.updateSubmission);
 
@@ -125,11 +125,11 @@ module.exports = router;
 
 // // --- Lesson Routes ---
 // router.get('/', verifyToken, lessonController.getAllLessons);
-// router.post('/', verifyToken, isTeacher, lessonController.createLesson);
+// // router.post('/', verifyToken, isTeacher, lessonController.createLesson);
 // router.get('/:id', verifyToken, lessonController.getLessonById);
 
 // // --- Submission Routes ---
-// router.post('/:id/submit', verifyToken, lessonController.createSubmission);
+// // router.post('/:id/submit', verifyToken, lessonController.createSubmission);
 // router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLessonSubmissions);
 
 // // NEW: Route for updating a submission with feedback/grade
@@ -157,10 +157,10 @@ module.exports = router;
 // // 1. `verifyToken` checks if the user is logged in.
 // // 2. `isTeacher` checks if the logged-in user has the 'teacher' role.
 // // The request will only proceed to `createLesson` if both checks pass.
-// router.post('/', verifyToken, isTeacher, lessonController.createLesson);
+// // router.post('/', verifyToken, isTeacher, lessonController.createLesson);
 
 // router.get('/:id', verifyToken, lessonController.getLessonById);
-// router.post('/:id/submit', verifyToken, lessonController.createSubmission);
+// // router.post('/:id/submit', verifyToken, lessonController.createSubmission);
 // router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLessonSubmissions);
 
 // module.exports = router;
@@ -175,7 +175,7 @@ module.exports = router;
 // // router.get('/:id', verifyToken, lessonController.getLessonById);
 
 // // // --- Submission Routes ---
-// // router.post('/:id/submit', verifyToken, lessonController.createSubmission);
+// // // router.post('/:id/submit', verifyToken, lessonController.createSubmission);
 // // router.get('/:id/submissions', verifyToken, lessonController.getLessonSubmissions);
 
 // // module.exports = router;
