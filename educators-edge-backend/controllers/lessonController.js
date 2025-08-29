@@ -537,37 +537,67 @@ exports.createLesson = async (req, res) => {
 exports.addLessonToCourse = async (req, res) => {
     const { courseId } = req.params;
     const { ingestedLessonId } = req.body;
-    const teacherId = req.user.id;
+    
+    console.log('=== addLessonToCourse START ===');
+    console.log('courseId:', courseId);
+    console.log('ingestedLessonId:', ingestedLessonId);
+    console.log('req.user:', req.user);
 
+    // Validate inputs
+    if (!courseId) {
+        return res.status(400).json({ error: 'Course ID is required.' });
+    }
+    
     if (!ingestedLessonId) {
         return res.status(400).json({ error: 'Ingested Lesson ID is required.' });
     }
 
-    const client = await db.pool.connect(); 
+    if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: 'User not authenticated or missing user ID.' });
+    }
 
+    const teacherId = req.user.id;
+
+    let client;
     try {
-        await client.query('BEGIN'); // START THE TRANSACTION
+        console.log('Getting database client...');
+        client = await db.pool.connect();
+        console.log('Database client acquired successfully');
+        
+        console.log('Starting transaction...');
+        await client.query('BEGIN');
+        console.log('Transaction started successfully');
 
+        console.log('Checking course ownership...');
         const courseCheck = await client.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
+        console.log('Course check result:', courseCheck.rows);
         if (courseCheck.rows.length === 0) {
             throw new Error('Course not found or user is not authorized.');
         }
 
+        console.log('Fetching lesson data from ingested_lessons...');
         const lessonDataResult = await client.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId]);
+        console.log('Lesson data query result rows count:', lessonDataResult.rows.length);
         if (lessonDataResult.rows.length === 0) {
             throw new Error('Lesson not found in the library.');
         }
         const lessonData = lessonDataResult.rows[0];
+        console.log('Lesson data:', lessonData);
 
+        console.log('Getting next order index...');
         const orderQuery = await client.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
+        console.log('Next order index:', nextOrderIndex);
 
         const newLessonId = uuidv4();
+        console.log('Generated new lesson ID:', newLessonId);
+        console.log('Inserting main lesson record...');
         await client.query(
             `INSERT INTO lessons (id, course_id, title, description, lesson_type, order_index, teacher_id) 
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex, teacherId]
         );
+        console.log('Main lesson record inserted successfully');
 
         console.log('lessonData.files raw:', lessonData.files);
         if (lessonData.files) {
@@ -630,11 +660,37 @@ exports.addLessonToCourse = async (req, res) => {
         res.status(201).json({ message: 'Lesson added successfully', lessonId: newLessonId });
 
     } catch (err) {
-        await client.query('ROLLBACK'); // ROLLBACK ON FAILURE
-        console.error("CRITICAL ERROR in addLessonToCourse:", err.message);
-        res.status(500).json({ error: 'An error occurred while adding the lesson.', details: err.message });
+        console.error("=== CRITICAL ERROR in addLessonToCourse ===");
+        console.error("Error message:", err.message);
+        console.error("Error stack:", err.stack);
+        console.error("Full error object:", err);
+        
+        if (client) {
+            try {
+                console.log('Rolling back transaction...');
+                await client.query('ROLLBACK');
+                console.log('Transaction rolled back successfully');
+            } catch (rollbackErr) {
+                console.error('Error during rollback:', rollbackErr);
+            }
+        }
+        
+        res.status(500).json({ 
+            error: 'An error occurred while adding the lesson.', 
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     } finally {
-        client.release(); // ALWAYS RELEASE THE CLIENT
+        if (client) {
+            try {
+                console.log('Releasing database client...');
+                client.release();
+                console.log('Database client released successfully');
+            } catch (releaseErr) {
+                console.error('Error releasing client:', releaseErr);
+            }
+        }
+        console.log('=== addLessonToCourse END ===');
     }
 };
 
