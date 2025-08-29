@@ -1,24 +1,3 @@
-// /**
-//  * @file lessonRoutes.js
-//  * @description This version is cleaned up to only handle routes directly
-//  * related to lessons. Submission-specific routes have been moved.
-//  */
-// const express = require('express');
-// const router = express.Router();
-// const lessonController = require('../controllers/lessonController');
-// const { verifyToken } = require('../middleware/authMiddleware');
-// const { isTeacher } = require('../middleware/roleMiddleware');
-
-// // --- Lesson Routes ---
-// router.get('/', verifyToken, lessonController.getAllLessons);
-// // router.post('/', verifyToken, isTeacher, lessonController.createLesson);
-// router.get('/:id', verifyToken, lessonController.getLessonById);
-
-// // --- Submission & Testing Routes (related to a specific lesson) ---
-// router.post('/:id/submit', verifyToken, lessonController.createSubmission);
-// router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLessonSubmissions);
-// router.get('/:id/mysubmission', verifyToken, lessonController.getStudentSubmissionForLesson);
-// router.post('/:id/run-tests', verifyToken, lessonController.runLessonTests);
 
 // // The PATCH route for a specific submission has been moved to submissionRoutes.js
 
@@ -56,20 +35,47 @@ router.get('/:id/mysubmission', verifyToken, lessonController.getStudentSubmissi
 router.get('/teacher/list', verifyToken, isTeacher, lessonController.getTeacherLessons);
 router.get('/:lessonId/ascent-ide', verifyToken, lessonController.getAscentIdeData);
 router.get('/:lessonId/solution', verifyToken, lessonController.getLessonSolution);
-router.post('/add-to-course/:courseId', verifyToken, isTeacher, lessonController.addLessonToCourse);
+// router.post('/add-to-course/:courseId', verifyToken, isTeacher, courseController.addLessonToCourse);
 
-router.post('/:courseId/sort-with-ai', verifyToken, isTeacher, courseController.sortCourseLessonsWithAI);
+// router.post('/:courseId/sort-with-ai', verifyToken, isTeacher, courseController.sortCourseLessonsWithAI);
 
 // ...
+router.post('/chapter', verifyToken, isTeacher, lessonController.createChapter);
+
 
 // THIS IS THE FIX: The parameter is now ':id' to be consistent.
 router.post('/:id/run-tests', verifyToken, lessonController.runLessonTests);
 
 // --- Grading Route ---
 router.patch('/submissions/:submissionId', verifyToken, isTeacher, lessonController.updateSubmission);
+router.delete('/:id', verifyToken, isTeacher, lessonController.removeLessonFromCourse);
 
 
 module.exports = router;
+
+
+// /**
+//  * @file lessonRoutes.js
+//  * @description This version is cleaned up to only handle routes directly
+//  * related to lessons. Submission-specific routes have been moved.
+//  */
+// const express = require('express');
+// const router = express.Router();
+// const lessonController = require('../controllers/lessonController');
+// const { verifyToken } = require('../middleware/authMiddleware');
+// const { isTeacher } = require('../middleware/roleMiddleware');
+
+// // --- Lesson Routes ---
+// router.get('/', verifyToken, lessonController.getAllLessons);
+// // router.post('/', verifyToken, isTeacher, lessonController.createLesson);
+// router.get('/:id', verifyToken, lessonController.getLessonById);
+
+// // --- Submission & Testing Routes (related to a specific lesson) ---
+// router.post('/:id/submit', verifyToken, lessonController.createSubmission);
+// router.get('/:id/submissions', verifyToken, isTeacher, lessonController.getLessonSubmissions);
+// router.get('/:id/mysubmission', verifyToken, lessonController.getStudentSubmissionForLesson);
+// router.post('/:id/run-tests', verifyToken, lessonController.runLessonTests);
+
 // // =================================================================
 // // FILE: routes/lessonRoutes.js (CORRECTED)
 // // =================================================================

@@ -6,6 +6,8 @@
  * including time to solve, code churn, and parsed error types.
  */
 const db = require('../db');
+const { v4: uuidv4 } = require('uuid'); // <-- FIX #1: Added the missing import
+
 const { executeCode } = require('../services/executionService'); 
 const { getConceptualHint } = require('../services/aiFeedbackService');
 const apeQueue = require('../queues/apeQueue'); // Adjust the path if necessary
@@ -211,105 +213,9 @@ exports.getAscentIdeData = async (req, res) => {
     }
 };
 
-// exports.getLessonSolution = async (req, res) => {
-//     const { lessonId } = req.params;
-//     try {
-//         const solutionFilesResult = await db.query(
-//             'SELECT filename, content FROM lesson_solution_files WHERE lesson_id = $1',
-//             [lessonId]
-//         );
-//         if (solutionFilesResult.rows.length === 0) {
-//             return res.status(404).json({ error: 'Solution not found for this lesson.' });
-//         }
-//         res.json(solutionFilesResult.rows);
-//     } catch (err) {
-//         console.error("Error in getLessonSolution:", err.message);
-//         res.status(500).send('Server Error');
-//     }
-// };
+// removing lessons and creating  for the course creator (teacher specific)
 
-// exports.createLesson = async (req, res) => {
-//   // Get a client from the pool to run multiple queries in a single transaction.
-//   // This is crucial for data integrity.
-//   const client = await db.pool.connect(); 
 
-//   try {
-//     // Start the transaction block
-//     await client.query('BEGIN');
-
-//     const teacherId = req.user.id;
-//     // Destructure all expected fields from the request body
-//     const { title, description, objective, files, courseId, testCode, concepts, lesson_type = 'algorithmic' } = req.body;
-
-//     // --- 1. Validation Logic ---
-//     if (!title || !files || !Array.isArray(files) || files.length === 0 || !courseId) {
-//         // If validation fails, we don't need to roll back, just release the client.
-//         client.release();
-//         return res.status(400).json({ error: 'Title, files, and courseId are required.' });
-//     }
-    
-//     // --- 2. Determine Lesson Language ---
-//     const extension = files[0]?.filename.split('.').pop();
-//     const languageMap = { js: 'javascript', py: 'python', java: 'java' };
-//     const lessonLanguage = languageMap[extension] || 'plaintext';
-
-//     // --- 3. Insert the main lesson record ---
-//     const newLessonResult = await client.query(
-//       'INSERT INTO lessons (title, description, objective, teacher_id, course_id, language, lesson_type) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-//       [title, description, objective, teacherId, courseId, lessonLanguage, lesson_type]
-//     );
-//     const newLesson = newLessonResult.rows[0];
-
-//     // --- 4. Insert all boilerplate files ---
-//     const filePromises = files.map(file => {
-//         return client.query(
-//             'INSERT INTO lesson_files (filename, content, lesson_id) VALUES ($1, $2, $3)',
-//             [file.filename, file.content, newLesson.id]
-//         );
-//     });
-//     await Promise.all(filePromises);
-
-//     // --- 5. Insert the test code ---
-//     if (testCode) {
-//         await client.query(
-//             'INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)',
-//             [newLesson.id, testCode]
-//         );
-//     }
-
-//     // --- 6. Insert the lesson-concept links ---
-//     if (concepts && Array.isArray(concepts) && concepts.length > 0) {
-//         const conceptPromises = concepts.map(concept => {
-//             // Validate that the concept object has the required properties
-//             if (concept.id && concept.mastery_level) {
-//                 const query = `
-//                     INSERT INTO lesson_concepts (lesson_id, concept_id, mastery_level)
-//                     VALUES ($1, $2, $3) ON CONFLICT (lesson_id, concept_id) DO NOTHING
-//                 `;
-//                 return client.query(query, [newLesson.id, concept.id, concept.mastery_level]);
-//             }
-//             return Promise.resolve(); // Ignore invalid concept objects in the array
-//         });
-//         await Promise.all(conceptPromises);
-//     }
-
-//     // If all queries were successful, commit the transaction to save the changes.
-//     await client.query('COMMIT');
-    
-//     res.status(201).json(newLesson);
-
-//   } catch (err) {
-//     // If any query within the 'try' block fails, roll back the entire transaction.
-//     // This prevents partial data from being saved to the database.
-//     await client.query('ROLLBACK');
-//     console.error("Error in createLesson, transaction rolled back:", err.message);
-//     res.status(500).json({ error: 'Server Error: Could not create lesson.' });
-//   } finally {
-//     // ALWAYS release the client back to the pool in a 'finally' block
-//     // to ensure the connection is returned, even if an error occurred.
-//     client.release();
-//   }
-// };
 
 // Library for the teacher to browse and choose lessons from
 // controllers/lessonController.js
@@ -357,7 +263,82 @@ exports.addLessonToCourse = async (req, res) => {
 
 
 
+export const createChapter = async (req, res) => {
+    const { title, content, courseId } = req.body;
+    const { userId, role } = req.user;
 
+    if (!title || !content || !courseId) {
+        return res.status(400).json({ error: 'Title, content, and courseId are required.' });
+    }
+
+    try {
+        const courseQuery = await db.query('SELECT teacher_id FROM courses WHERE id = $1', [courseId]);
+        if (courseQuery.rows.length === 0) {
+            return res.status(404).json({ error: 'Course not found.' });
+        }
+        if (courseQuery.rows[0].teacher_id !== userId && role !== 'admin') {
+            return res.status(403).json({ error: 'You are not authorized to add a chapter to this course.' });
+        }
+
+        const orderQuery = await db.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
+        const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
+
+        const newChapter = {
+            id: uuidv4(), // Generate a unique ID
+            title,
+            description: content,
+            course_id: courseId,
+            lesson_type: 'chapter',
+            order_index: nextOrderIndex,
+        };
+
+        const { rows } = await db.query(
+            'INSERT INTO lessons (id, title, description, course_id, lesson_type, order_index) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [newChapter.id, newChapter.title, newChapter.description, newChapter.course_id, newChapter.lesson_type, newChapter.order_index]
+        );
+
+        res.status(201).json(rows[0]);
+    } catch (error) {
+        console.error('Error creating chapter:', error);
+        res.status(500).json({ error: 'Server error while creating chapter.' });
+    }
+};
+
+/**
+ * @desc    Remove a lesson or chapter from a course
+ * @route   DELETE /api/lessons/:lessonId
+ * @access  Private (Teacher)
+ */
+export const removeLessonFromCourse = async (req, res) => {
+    const { lessonId } = req.params;
+    const { userId, role } = req.user;
+
+    try {
+        const lessonQuery = await db.query(
+            `SELECT c.teacher_id 
+             FROM lessons l
+             JOIN courses c ON l.course_id = c.id
+             WHERE l.id = $1`,
+            [lessonId]
+        );
+
+        if (lessonQuery.rows.length === 0) {
+            return res.status(404).json({ error: 'Lesson not found.' });
+        }
+
+        const teacherId = lessonQuery.rows[0].teacher_id;
+        if (teacherId !== userId && role !== 'admin') {
+            return res.status(403).json({ error: 'You are not authorized to remove this lesson.' });
+        }
+
+        await db.query('DELETE FROM lessons WHERE id = $1', [lessonId]);
+
+        res.status(200).json({ message: 'Lesson removed successfully.' });
+    } catch (error) {
+        console.error('Error removing lesson:', error);
+        res.status(500).json({ error: 'Server error while removing lesson.' });
+    }
+};
 
 
 // --- 
