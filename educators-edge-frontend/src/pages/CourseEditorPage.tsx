@@ -1,5 +1,5 @@
 
-MVP
+// MVP
 // FILE: src/pages/CourseEditorPage.tsx (Definitive, No-DND, Fully Functional)
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
