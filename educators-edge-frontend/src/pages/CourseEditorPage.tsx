@@ -1,9 +1,18 @@
-
-// FILE: src/pages/CourseEditorPage.tsx (Definitive, Fully Implemented Version)
+// FILE: src/pages/CourseEditorPage.tsx (Definitive, UX-Focused & Fully Functional)
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+    DragStartEvent,
+    DragOverlay
+} from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -11,21 +20,21 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Toaster, toast } from 'sonner';
 import { Search, Sparkles, Trash2, GripVertical, Eye, ChevronLeft, Loader2, BookCopy } from 'lucide-react';
-import { Badge } from '@/components/ui/badge'; // Correctly imported
 import { cn } from "@/lib/utils";
 
 // --- TYPE DEFINITIONS ---
 interface IngestedLesson {
-    id: string;
+    id: string; // The UUID from the ingested_lessons table
     title: string;
     description: string;
     lesson_type: 'algorithmic' | 'frontend-project';
     section_name: string;
 }
 interface CourseLesson {
-    id: string; // The unique ID from the `lessons` table
+    id: string; // The unique ID from the main `lessons` table
     title: string;
     order_index: number;
 }
@@ -37,7 +46,10 @@ const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...
 
 // --- Draggable Item for the Course Blueprint ---
 const SortableLessonItem = ({ lesson, onRemove, onPreview }: { lesson: CourseLesson, onRemove: (id: string) => void, onPreview: (id: string) => void }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lesson.id });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: lesson.id,
+        data: { type: 'courseItem' } // Identify this as a course item
+    });
     const style = { transform: CSS.Transform.toString(transform), transition };
     
     return (
@@ -56,8 +68,12 @@ const SortableLessonItem = ({ lesson, onRemove, onPreview }: { lesson: CourseLes
 };
 
 // --- Draggable Item for the Lesson Library ---
-const DraggableLibraryItem = ({ lesson }: { lesson: IngestedLesson }) => {
-    const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id: lesson.id, data: { type: 'libraryItem', lesson } });
+const DraggableLibraryItem = ({ lesson, onPreview }: { lesson: IngestedLesson, onPreview: (id: string) => void }) => {
+    const { attributes, listeners, setNodeRef, isDragging } = useSortable({
+        id: lesson.id,
+        data: { type: 'libraryItem', lesson } // Identify this as a library item
+    });
+
     return (
         <div ref={setNodeRef} {...attributes} {...listeners} className={cn("p-3 border border-slate-700/60 bg-slate-800/30 rounded-lg flex justify-between items-start gap-3 touch-none cursor-grab", isDragging && "opacity-30")}>
             <div className="flex-grow">
@@ -65,6 +81,9 @@ const DraggableLibraryItem = ({ lesson }: { lesson: IngestedLesson }) => {
                 <p className="text-xs text-slate-400 mt-1 line-clamp-2">{lesson.description}</p>
                 <Badge variant="outline" className="mt-2 text-xs text-slate-400 border-slate-600">{lesson.section_name}</Badge>
             </div>
+            <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0" onClick={(e) => { e.stopPropagation(); onPreview(lesson.id); }}>
+                <Eye className="h-4 w-4" />
+            </Button>
         </div>
     );
 };
@@ -80,7 +99,7 @@ const CourseEditorPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSorting, setIsSorting] = useState(false);
     const [courseTitle, setCourseTitle] = useState('');
-    const [activeDragItem, setActiveDragItem] = useState<IngestedLesson | null>(null);
+    const [activeDragItem, setActiveDragItem] = useState<IngestedLesson | CourseLesson | null>(null);
     
     const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -125,6 +144,7 @@ const CourseEditorPage: React.FC = () => {
             toast.success(`"${lessonToAdd.title}" added to course.`);
         } catch (error) {
             toast.error("Failed to add lesson.");
+            await fetchCourseData(); // Re-sync to remove optimistic item if it failed
         }
     };
 
@@ -133,7 +153,7 @@ const CourseEditorPage: React.FC = () => {
         setCourseLessons(prev => prev.filter(l => l.id !== lessonIdToRemove));
         try {
             await apiClient.delete(`/api/lessons/${lessonIdToRemove}`);
-            await fetchCourseData(); // Re-sync order indexes
+            await fetchCourseData();
             toast.success("Lesson removed.");
         } catch (error) {
             toast.error("Failed to remove lesson.");
@@ -148,10 +168,7 @@ const CourseEditorPage: React.FC = () => {
             apiClient.post(`/api/courses/${courseId}/sort-with-ai`),
             {
                 loading: 'AI is organizing your curriculum...',
-                success: async (res) => {
-                    await fetchCourseData();
-                    return res.data.message;
-                },
+                success: async (res) => { await fetchCourseData(); return res.data.message; },
                 error: (err) => err.response?.data?.error || 'AI sorting failed.',
                 finally: () => setIsSorting(false),
             }
@@ -161,6 +178,8 @@ const CourseEditorPage: React.FC = () => {
     const handleDragStart = (event: DragStartEvent) => {
         if (event.active.data.current?.type === 'libraryItem') {
             setActiveDragItem(event.active.data.current.lesson);
+        } else if (event.active.data.current?.type === 'courseItem') {
+            setActiveDragItem(courseLessons.find(l => l.id === event.active.id) || null);
         }
     };
 
@@ -168,7 +187,10 @@ const CourseEditorPage: React.FC = () => {
         const { active, over } = event;
         setActiveDragItem(null);
 
-        if (active.data.current?.type === 'libraryItem' && over?.id === 'course-blueprint-droppable') {
+        // This checks if we are dropping something (anything) over the course blueprint area
+        const isOverCourseBlueprint = over?.id === 'course-blueprint-droppable' || over?.data.current?.type === 'courseItem';
+
+        if (active.data.current?.type === 'libraryItem' && isOverCourseBlueprint) {
             const lessonToAdd = active.data.current.lesson as IngestedLesson;
             handleAddLesson(lessonToAdd);
             return;
@@ -181,20 +203,15 @@ const CourseEditorPage: React.FC = () => {
                 const newOrder = arrayMove(items, oldIndex, newIndex);
                 return newOrder.map((item, index) => ({ ...item, order_index: index }));
             });
-            // NOTE: Here you would call a backend endpoint to save the new manual order.
-            // Example: apiClient.post(`/api/courses/${courseId}/reorder`, { orderedIds: newOrder.map(l => l.id) });
+            // NOTE: You would call an API endpoint here to save the new manual order.
         }
     };
 
-    const handlePreviewLesson = (lessonId: string) => {
-        window.open(`/lesson/${lessonId}`, '_blank');
-    };
-
+    const handlePreviewLesson = (lessonId: string) => window.open(`/lesson/${lessonId}`, '_blank');
+    
     const courseLessonTitles = useMemo(() => new Set(courseLessons.map(l => l.title)), [courseLessons]);
 
-    if (isLoading) {
-        return <div className="h-screen w-full flex items-center justify-center bg-[#0a091a] text-white">Loading Curriculum Studio...</div>;
-    }
+    if (isLoading) return <div className="h-screen w-full flex items-center justify-center bg-[#0a091a] text-white">Loading Curriculum Studio...</div>;
 
     return (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -221,7 +238,7 @@ const CourseEditorPage: React.FC = () => {
                                 <SortableContext items={libraryLessons} strategy={verticalListSortingStrategy}>
                                     <ul className="space-y-2">
                                         {libraryLessons.filter(l => !courseLessonTitles.has(l.title)).map(lesson => (
-                                            <DraggableLibraryItem key={lesson.id} lesson={lesson} />
+                                            <DraggableLibraryItem key={lesson.id} lesson={lesson} onPreview={handlePreviewLesson} />
                                         ))}
                                     </ul>
                                 </SortableContext>
