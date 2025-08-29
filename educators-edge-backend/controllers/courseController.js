@@ -55,23 +55,23 @@ exports.getAllCourses = async (req, res) => {
     }
 };
 
-exports.createCourse = async (req, res) => {
-    try {
-        const teacherId = req.user.id;
-        const { title, description } = req.body;
-        if (!title) {
-            return res.status(400).json({ error: 'Title is required.' });
-        }
-        const newCourseResult = await db.query(
-            'INSERT INTO courses (title, description, teacher_id) VALUES ($1, $2, $3) RETURNING *',
-            [title, description, teacherId]
-        );
-        res.status(201).json(newCourseResult.rows[0]);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-};
+// exports.createCourse = async (req, res) => {
+//     try {
+//         const teacherId = req.user.id;
+//         const { title, description } = req.body;
+//         if (!title) {
+//             return res.status(400).json({ error: 'Title is required.' });
+//         }
+//         const newCourseResult = await db.query(
+//             'INSERT INTO courses (title, description, teacher_id) VALUES ($1, $2, $3) RETURNING *',
+//             [title, description, teacherId]
+//         );
+//         res.status(201).json(newCourseResult.rows[0]);
+//     } catch (err) {
+//         console.error(err.message);
+//         res.status(500).send('Server Error');
+//     }
+// };
 
 exports.getCourseById = async (req, res) => {
     try {
@@ -221,6 +221,8 @@ exports.createCourse = async (req, res) => {
     }
 };
 
+
+
 // Get a single course by ID (for the teacher managing it)
 exports.getCourseById = async (req, res) => {
     try {
@@ -362,31 +364,169 @@ exports.enrollInCourse = async (req, res) => {
     }
 };
 
-// --- NEW: Sort course lessons with AI ---
 exports.sortCourseLessonsWithAI = async (req, res) => {
+    const { id: courseId } = req.params; // The route will be /:id/sort-with-ai
+    const teacherId = req.user.id;
+
+    console.log(`[AI Sorter] Received request to sort course ID: ${courseId}`);
+
+    const client = await db.pool.connect();
     try {
-        const { courseId } = req.params;
-        const teacherId = req.user.id;
-
-        // Verify the teacher owns the course
-        const courseResult = await db.query(
-            'SELECT id FROM courses WHERE id = $1 AND teacher_id = $2',
-            [courseId, teacherId]
-        );
-
-        if (courseResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Course not found or you do not have permission to modify it.' });
+        // 1. Verify the teacher owns this course for security
+        const courseResult = await client.query('SELECT teacher_id FROM courses WHERE id = $1', [courseId]);
+        if (courseResult.rows.length === 0 || courseResult.rows[0].teacher_id !== teacherId) {
+            client.release();
+            return res.status(403).json({ error: 'You are not authorized to modify this course.' });
         }
 
-        // For now, return a placeholder response
-        // TODO: Implement AI sorting logic
-        res.json({ message: 'AI sorting functionality coming soon' });
+        // 2. Fetch all lessons for the given course
+        const lessonsResult = await client.query(
+            'SELECT id, title, description FROM lessons WHERE course_id = $1',
+            [courseId]
+        );
+        const lessons = lessonsResult.rows;
 
+        if (lessons.length < 2) {
+            client.release();
+            return res.status(400).json({ message: 'Course has fewer than 2 lessons. No sorting needed.' });
+        }
+
+        // 3. Ask Gemini for the precise order with a powerful prompt
+        const prompt = `
+            You are an expert JavaScript curriculum designer with a PhD in pedagogy.
+            Your task is to re-order the following list of JavaScript lessons for a course to create the most effective and logical learning path, from easiest to most difficult.
+
+            CRITICAL PRINCIPLES FOR ORDERING:
+            1.  **Foundations First:** Lessons on basic syntax (variables, data types) MUST come before lessons on logic (loops, conditionals), which MUST come before lessons on functions and objects.
+            2.  **Build Sequentially:** Ensure each lesson builds upon knowledge from the previous ones. For example, a lesson on '.map()' should come after a lesson on basic arrays.
+            3.  **Simple to Complex:** Simple, single-concept lessons should come before complex, multi-concept projects (like 'Build a Palindrome Checker').
+
+            Here is the list of JavaScript lessons to sort, each with its unique ID, title, and description:
+            ${JSON.stringify(lessons, null, 2)}
+
+            Your response MUST be ONLY a single, raw JSON array of the lesson IDs, in the new, correct order.
+            Example Response: ["uuid-for-easiest-lesson", "uuid-for-next-lesson", "uuid-for-hardest-lesson"]
+        `;
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        const sortedIds = sanitizeAndParseJson(responseText);
+
+        if (!Array.isArray(sortedIds) || sortedIds.length !== lessons.length) {
+            throw new Error(`AI returned an invalid or incomplete list of sorted IDs.`);
+        }
+
+        // 4. Update the database with the new order in a single transaction
+        await client.query('BEGIN');
+        const updatePromises = sortedIds.map((lessonId, index) => {
+            return client.query('UPDATE lessons SET order_index = $1 WHERE id = $2', [index, lessonId]);
+        });
+        await Promise.all(updatePromises);
+        await client.query('COMMIT');
+        
+        console.log(`[AI Sorter] Successfully sorted ${sortedIds.length} lessons for course ${courseId}.`);
+        res.status(200).json({ message: 'Course lessons have been successfully organized with AI.' });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error(`[AI Sorter] FAILED to sort course ${courseId}:`, error.message);
+        res.status(500).json({ error: 'An internal server error occurred while sorting the course.' });
+    } finally {
+        client.release();
+    }
+};
+
+// Create a New "Discover Templates" Endpoint:
+// You will create a new controller function and route, very similar to your existing getDiscoverableCourses.
+exports.getCourseTemplates = async (req, res) => {
+    try {
+        // It fetches all courses created by your special "CoreZenith Admin" user.
+        const adminTeacherId = 'the-uuid-of-your-admin-user';
+        const query = `
+            SELECT c.id, c.title, c.description, COUNT(l.id) as lesson_count
+            FROM courses c
+            JOIN lessons l ON c.id = l.course_id
+            WHERE c.teacher_id = $1
+            GROUP BY c.id
+            ORDER BY c.title;
+        `;
+        const templatesResult = await db.query(query, [adminTeacherId]);
+        res.json(templatesResult.rows);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 };
+
+exports.cloneCourseForTeacher = async (req, res) => {
+    const { templateCourseId } = req.params;
+    const newTeacherId = req.user.id; // The currently logged-in teacher
+
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Get the template course and its lessons
+        const templateCourse = (await client.query('SELECT * FROM courses WHERE id = $1', [templateCourseId])).rows[0];
+        const templateLessons = (await client.query('SELECT * FROM lessons WHERE course_id = $1 ORDER BY order_index ASC', [templateCourseId])).rows;
+        
+        // 2. Create a new course owned by the current teacher
+        const newCourseResult = await client.query(
+            'INSERT INTO courses (title, description, teacher_id) VALUES ($1, $2, $3) RETURNING id',
+            [templateCourse.title, templateCourse.description, newTeacherId]
+        );
+        const newCourseId = newCourseResult.rows[0].id;
+
+        // 3. Loop and clone each lesson, file, and test
+        for (const lesson of templateLessons) {
+            // Create a new lesson linked to the new course
+            const newLessonResult = await client.query(
+                `INSERT INTO lessons (title, description, course_id, teacher_id, lesson_type, language, objective, order_index)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+                [lesson.title, lesson.description, newCourseId, newTeacherId, lesson.lesson_type, lesson.language, lesson.objective, lesson.order_index]
+            );
+            const newLessonId = newLessonResult.rows[0].id;
+
+            // Find and copy all files and tests from the original lesson
+            // ... (logic to SELECT from lesson_files, etc. where lesson_id = lesson.id and INSERT with newLessonId)
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Course successfully cloned!', newCourseId: newCourseId });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Error cloning course:", err.message);
+        res.status(500).send('Server Error');
+    } finally {
+        client.release();
+    }
+};
+// --- NEW: Sort course lessons with AI ---
+// exports.sortCourseLessonsWithAI = async (req, res) => {
+//     try {
+//         const { courseId } = req.params;
+//         const teacherId = req.user.id;
+
+//         // Verify the teacher owns the course
+//         const courseResult = await db.query(
+//             'SELECT id FROM courses WHERE id = $1 AND teacher_id = $2',
+//             [courseId, teacherId]
+//         );
+
+//         if (courseResult.rows.length === 0) {
+//             return res.status(404).json({ error: 'Course not found or you do not have permission to modify it.' });
+//         }
+
+//         // For now, return a placeholder response
+//         // TODO: Implement AI sorting logic
+//         res.json({ message: 'AI sorting functionality coming soon' });
+
+//     } catch (err) {
+//         console.error(err.message);
+//         res.status(500).send('Server Error');
+//     }
+// };
 // // =================================================================
 // // FILE: controllers/courseController.js (UPDATED)
 // // =================================================================

@@ -19,6 +19,7 @@ router.get('/', verifyToken, isTeacher, courseController.getAllCourses);
 router.post('/', verifyToken, isTeacher, courseController.createCourse);
 router.get('/:id', verifyToken, isTeacher, courseController.getCourseById);
 router.patch('/:id/publish', verifyToken, isTeacher, courseController.updateCoursePublicationStatus);
+router.post('/:id/sort-with-ai', verifyToken, isTeacher, courseController.sortCourseLessonsWithAI);
 
 module.exports = router;
 
