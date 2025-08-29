@@ -91,11 +91,14 @@ const CourseEditorPage: React.FC = () => {
     const handleAddLesson = async (lessonToAdd: IngestedLesson) => {
         setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: true }));
         try {
-            await apiClient.post(`/api/lessons/add-to-course/${courseId}`, { ingestedLessonId: lessonToAdd.id });
+            const response = await apiClient.post(`/api/lessons/add-to-course/${courseId}`, { ingestedLessonId: lessonToAdd.id });
+            console.log('Add lesson response:', response);
             await fetchCourseData(); // Re-sync with the database
             toast.success(`"${lessonToAdd.title}" added to course.`);
-        } catch (error) {
-            toast.error("Failed to add lesson.");
+        } catch (error: any) {
+            console.error('Add lesson error:', error);
+            console.error('Error response:', error.response);
+            toast.error(error.response?.data?.error || error.message || "Failed to add lesson.");
         } finally {
             setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: false }));
         }
