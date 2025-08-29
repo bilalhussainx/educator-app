@@ -501,23 +501,22 @@ exports.addLessonToCourse = async (req, res) => {
         return res.status(400).json({ error: 'Ingested Lesson ID is required.' });
     }
 
-    const client = await db.pool.connect(); 
-
     try {
-        await client.query('BEGIN');
-
-        const courseCheck = await client.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
+        // Validate course ownership
+        const courseCheck = await db.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
         if (courseCheck.rows.length === 0) {
-            throw new Error('Course not found or user is not authorized.');
+            return res.status(403).json({ error: 'Course not found or user is not authorized.' });
         }
 
-        const lessonDataResult = await client.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId]);
+        // Get lesson data from ingested_lessons
+        const lessonDataResult = await db.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId]);
         if (lessonDataResult.rows.length === 0) {
-            throw new Error('Lesson not found in the library.');
+            return res.status(404).json({ error: 'Lesson not found in the library.' });
         }
         const lessonData = lessonDataResult.rows[0];
 
-        const orderQuery = await client.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
+        // Get next order index
+        const orderQuery = await db.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
 
         // Additional validation before INSERT
@@ -527,58 +526,55 @@ exports.addLessonToCourse = async (req, res) => {
         }
 
         const newLessonId = uuidv4();
-        await client.query(
+        await db.query(
             `INSERT INTO lessons (id, course_id, title, description, lesson_type, order_index, teacher_id) 
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex, teacherId]
         );
 
-        // [THE FIX - PART 1] Defensively handle the 'files' column.
-        if (lessonData.files) { // Only proceed if the column is not NULL
+        // Handle the 'files' column
+        if (lessonData.files) {
             const boilerplateFiles = JSON.parse(lessonData.files);
             if (Array.isArray(boilerplateFiles)) {
                 for (const file of boilerplateFiles) {
                     const filename = file.filename || 'index.js'; 
                     const content = file.content || file.code || file.text || '';
-                    await client.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
+                    await db.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
                 }
             }
         }
 
-        // [THE FIX - PART 2] Defensively handle the 'solution_files' column.
-        if (lessonData.solution_files) { // Only proceed if the column is not NULL
+        // Handle the 'solution_files' column
+        if (lessonData.solution_files) {
             const solutionFiles = JSON.parse(lessonData.solution_files);
             if (Array.isArray(solutionFiles)) {
                 for (const file of solutionFiles) {
                     const filename = file.filename || 'solution.js';
                     const content = file.content || file.code || file.text || '';
-                    await client.query('INSERT INTO lesson_solution_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
+                    await db.query('INSERT INTO lesson_solution_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
                 }
             }
         }
 
-        // [THE FIX - PART 3] Defensively handle the 'test_code' column.
-        if (lessonData.test_code) { // Only proceed if the column is not NULL
+        // Handle the 'test_code' column
+        if (lessonData.test_code) {
             const tests = JSON.parse(lessonData.test_code);
             if (Array.isArray(tests)) {
                 const testString = tests.flat()
                     .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
                     .join('\n');
                 if (testString) {
-                     await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
+                     await db.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
                 }
             }
         }
         
-        await client.query('COMMIT');
         res.status(201).json({ message: 'Lesson added successfully', lessonId: newLessonId });
 
     } catch (err) {
-        await client.query('ROLLBACK');
         console.error("CRITICAL ERROR in addLessonToCourse:", err.message);
-        res.status(500).json({ error: 'An error occurred while adding the lesson. The operation was safely rolled back.' });
-    } finally {
-        client.release();
+        console.error("Full error:", err);
+        res.status(500).json({ error: 'An error occurred while adding the lesson.', details: err.message });
     }
 };
 
