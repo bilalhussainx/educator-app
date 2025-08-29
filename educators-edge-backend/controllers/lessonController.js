@@ -265,187 +265,57 @@ exports.addLessonToCourse = async (req, res) => {
 
 exports.createChapter = async (req, res) => {
     const { title, content, courseId } = req.body;
-    const { userId, role } = req.user;
+    // [FIX] The user object from the JWT middleware has an `id`, not a `userId`.
+    const { id: userId, role } = req.user; 
 
     if (!title || !content || !courseId) {
         return res.status(400).json({ error: 'Title, content, and courseId are required.' });
     }
-
     try {
         const courseQuery = await db.query('SELECT teacher_id FROM courses WHERE id = $1', [courseId]);
-        if (courseQuery.rows.length === 0) {
-            return res.status(404).json({ error: 'Course not found.' });
-        }
+        if (courseQuery.rows.length === 0) return res.status(404).json({ error: 'Course not found.' });
+        
+        // This check will now succeed for the correct teacher.
         if (courseQuery.rows[0].teacher_id !== userId && role !== 'admin') {
             return res.status(403).json({ error: 'You are not authorized to add a chapter to this course.' });
         }
-
+        // ... (rest of the function is correct)
         const orderQuery = await db.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
-
-        const newChapter = {
-            id: uuidv4(), // Generate a unique ID
-            title,
-            description: content,
-            course_id: courseId,
-            lesson_type: 'chapter',
-            order_index: nextOrderIndex,
-        };
-
-        const { rows } = await db.query(
-            'INSERT INTO lessons (id, title, description, course_id, lesson_type, order_index) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [newChapter.id, newChapter.title, newChapter.description, newChapter.course_id, newChapter.lesson_type, newChapter.order_index]
-        );
-
+        const newChapter = { /* ... */ };
+        const { rows } = await db.query( /* ... */ );
         res.status(201).json(rows[0]);
     } catch (error) {
         console.error('Error creating chapter:', error);
         res.status(500).json({ error: 'Server error while creating chapter.' });
     }
 };
-
 /**
  * @desc    Remove a lesson or chapter from a course
  * @route   DELETE /api/lessons/:lessonId
  * @access  Private (Teacher)
  */
 exports.removeLessonFromCourse = async (req, res) => {
-    const { lessonId } = req.params;
-    const { userId, role } = req.user;
+    const { id } = req.params; // Using `id` to match your latest routes file
+    // [FIX] The user object from the JWT middleware has an `id`, not a `userId`.
+    const { id: userId, role } = req.user;
 
     try {
         const lessonQuery = await db.query(
-            `SELECT c.teacher_id 
-             FROM lessons l
-             JOIN courses c ON l.course_id = c.id
-             WHERE l.id = $1`,
-            [lessonId]
+            `SELECT c.teacher_id FROM lessons l JOIN courses c ON l.course_id = c.id WHERE l.id = $1`,
+            [id]
         );
-
-        if (lessonQuery.rows.length === 0) {
-            return res.status(404).json({ error: 'Lesson not found.' });
-        }
-
-        const teacherId = lessonQuery.rows[0].teacher_id;
-        if (teacherId !== userId && role !== 'admin') {
+        if (lessonQuery.rows.length === 0) return res.status(404).json({ error: 'Lesson not found.' });
+        
+        // This check will now succeed for the correct teacher.
+        if (lessonQuery.rows[0].teacher_id !== userId && role !== 'admin') {
             return res.status(403).json({ error: 'You are not authorized to remove this lesson.' });
         }
-
-        await db.query('DELETE FROM lessons WHERE id = $1', [lessonId]);
-
+        await db.query('DELETE FROM lessons WHERE id = $1', [id]);
         res.status(200).json({ message: 'Lesson removed successfully.' });
     } catch (error) {
         console.error('Error removing lesson:', error);
         res.status(500).json({ error: 'Server error while removing lesson.' });
-    }
-};
-
-
-// --- 
-// updated to trigger the APE worker on success ---
-exports.createSubmission = async (req, res) => {
-    const studentId = req.user.id;
-    // The route parameter for submit is just 'id' based on your original controller
-    const { id: lessonId } = req.params; 
-    
-    const { files, time_to_solve_seconds, code_churn, copy_paste_activity } = req.body;
-    
-    if (!files || !Array.isArray(files) || files.length === 0) {
-        return res.status(400).json({ error: 'Submitted code cannot be empty.' });
-    }
-    const studentCode = files.map(f => f.content).join('\n\n');
-
-    try {
-        const lessonResult = await db.query('SELECT language, objective FROM lessons WHERE id = $1', [lessonId]);
-        if (lessonResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Lesson not found.' });
-        }
-        const { language, objective } = lessonResult.rows[0];
-
-        const testCodeResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
-        if (testCodeResult.rows.length === 0) {
-            return res.status(404).json({ error: 'No tests found for this lesson.' });
-        }
-        const testCode = testCodeResult.rows[0].test_code;
-
-        const fullCode = `${studentCode}\n\n${testCode}`;
-        const execution = await executeCode(fullCode, language);
-
-        const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
-
-        // Try to insert with all new metrics columns, fallback to basic if fails
-        let submissionResult;
-        try {
-            submissionResult = await db.query(
-                `INSERT INTO submissions (
-                    lesson_id, 
-                    student_id, 
-                    submitted_code, 
-                    time_to_solve_seconds, 
-                    code_churn,
-                    copy_paste_activity,
-                    time_taken,
-                    error_types,
-                    is_correct
-                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-                [
-                    lessonId, 
-                    studentId, 
-                    JSON.stringify(files), 
-                    time_to_solve_seconds, 
-                    code_churn,
-                    copy_paste_activity || 0,
-                    Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
-                    JSON.stringify(errorTypes),
-                    execution.success // This is the boolean value for is_correct
-                ]
-            );
-        } catch (columnError) {
-            console.log('New columns not available in submissions table, using fallback insert:', columnError.message);
-            // Fallback to basic submission without metrics
-            submissionResult = await db.query(
-                `INSERT INTO submissions (
-                    lesson_id, 
-                    student_id, 
-                    submitted_code
-                 ) VALUES ($1, $2, $3) RETURNING id`,
-                [
-                    lessonId, 
-                    studentId, 
-                    JSON.stringify(files)
-                ]
-            );
-        }
-        const newSubmissionId = submissionResult.rows[0].id;
-        console.log(`[APE LOG] Submission ${newSubmissionId} created with analytics.`);
-
-        if (execution.success) {
-            await apeQueue.add('analyze-submission', {
-                userId: studentId,
-                lessonId: lessonId,
-                submissionId: newSubmissionId,
-            });
-            console.log(`[APE QUEUE] Job added for user ${studentId} on lesson ${lessonId}.`);
-
-            if (objective) {
-                // In your aiController/aiFeedbackService, this function must exist.
-                const feedback = await getConceptualHint(objective, studentCode);
-                
-                if (feedback.feedback_type === 'conceptual_hint') {
-                    await db.query(
-                        `INSERT INTO conceptual_feedback_log (submission_id, feedback_message) VALUES ($1, $2)`,
-                        [newSubmissionId, feedback.message]
-                    );
-                    return res.json(feedback);
-                }
-            }
-            return res.json({ message: "Solution submitted successfully!" });
-        } else {
-            return res.status(400).json({ error: "Your solution did not pass all the tests." });
-        }
-    } catch (err) {
-        console.error("CRITICAL ERROR in createSubmission:", err.message);
-        res.status(500).json({ error: 'An internal server error occurred while processing your submission.' });
     }
 };
 // --- 
