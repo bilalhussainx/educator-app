@@ -478,37 +478,69 @@ exports.createLesson = async (req, res) => {
  * Adds an existing lesson from the library to a specific course.
  */
 exports.addLessonToCourse = async (req, res) => {
+    const { courseId } = req.params;
+    const { ingestedLessonId } = req.body;
+    const teacherId = req.user.id;
+
+    if (!ingestedLessonId) {
+        return res.status(400).json({ error: 'Ingested Lesson ID is required.' });
+    }
+
+    // Establish a single client connection for a safe database transaction
+    const client = await db.pool.connect(); 
+
     try {
-        const { courseId } = req.params;
-        const { ingestedLessonId } = req.body;
-        const teacherId = req.user.id;
+        await client.query('BEGIN'); // Start the transaction
 
-        if (!ingestedLessonId) {
-            return res.status(400).json({ error: 'ingestedLessonId is required' });
+        // Step 1: Authorize that the teacher owns the target course.
+        const courseCheck = await client.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
+        if (courseCheck.rows.length === 0) {
+            throw new Error('Course not found or user is not authorized.');
         }
 
-        // Verify the teacher owns the course
-        const courseResult = await db.query(
-            'SELECT id FROM courses WHERE id = $1 AND teacher_id = $2',
-            [courseId, teacherId]
+        // Step 2: Fetch the complete source lesson data from the ingested_lessons table.
+        const lessonDataResult = await client.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId]);
+        if (lessonDataResult.rows.length === 0) {
+            throw new Error('Lesson not found in the library.');
+        }
+        const lessonData = lessonDataResult.rows[0];
+
+        // Step 3: Determine the correct order_index for the new lesson.
+        const orderQuery = await client.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
+        const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
+
+        // Step 4: Create the new lesson by copying the REAL data into the `lessons` table.
+        const newLessonId = uuidv4();
+        
+        // [THE FIX - PART 1] The INSERT statement now uses the actual title and description
+        // from the ingested lesson, not placeholder text.
+        await client.query(
+            `INSERT INTO lessons (id, course_id, title, description, lesson_type, order_index) 
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex]
         );
 
-        if (courseResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Course not found or you do not have permission to modify it.' });
+        // [THE FIX - PART 2] The function now iterates and copies all associated files,
+        // ensuring the lesson has its content when opened in an IDE.
+        const filesResult = await client.query('SELECT * FROM ingested_lesson_files WHERE ingested_lesson_id = $1', [ingestedLessonId]);
+        for (const file of filesResult.rows) {
+            await client.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, file.filename, file.content]);
         }
 
-        // Get the ingested lesson data (this might be from a different table/source)
-        // For now, we'll create a basic lesson. You may need to adjust this based on your data structure
-        const newLessonResult = await db.query(
-            'INSERT INTO lessons (title, description, course_id, teacher_id, lesson_type, language, objective, order_index) VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT COALESCE(MAX(order_index), -1) + 1 FROM lessons WHERE course_id = $3)) RETURNING *',
-            [`Lesson from Library ${ingestedLessonId}`, `Added from library`, courseId, teacherId, 'algorithmic', 'javascript', 'Learning objective']
-        );
-
-        res.status(201).json(newLessonResult.rows[0]);
+        const solutionsResult = await client.query('SELECT * FROM ingested_lesson_solution_files WHERE ingested_lesson_id = $1', [ingestedLessonId]);
+        for (const solution of solutionsResult.rows) {
+            await client.query('INSERT INTO lesson_solution_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, solution.filename, solution.content]);
+        }
+        
+        await client.query('COMMIT'); // Commit the transaction if all steps succeed.
+        res.status(201).json({ message: 'Lesson added successfully', lessonId: newLessonId });
 
     } catch (err) {
-        console.error("Error in addLessonToCourse:", err.message);
-        res.status(500).json({ error: 'Server Error' });
+        await client.query('ROLLBACK'); // Abort the entire operation on any error.
+        console.error("CRITICAL ERROR in addLessonToCourse:", err.message);
+        res.status(500).json({ error: 'An error occurred while adding the lesson. The operation was safely rolled back.' });
+    } finally {
+        client.release(); // Always release the client back to the pool.
     }
 };
 
