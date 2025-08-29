@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Toaster, toast } from 'sonner';
-// Corrected and enhanced Icon set
+// Corrected and all-inclusive Icon set
 import { Search, Plus, Sparkles, Trash2, Eye, ChevronLeft, Loader2, BookCopy, FilePlus2, BookText, FileCode } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,7 @@ interface CourseLesson {
     lesson_type: 'algorithmic' | 'frontend-project' | 'chapter';
 }
 
-// --- REUSABLE & STYLED COMPONENTS (Unchanged) ---
+// --- REUSABLE & STYLED COMPONENTS (Unchanged from MVP) ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
     <Card className={cn("bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white flex flex-col", className)} {...props} />
 );
@@ -51,7 +51,7 @@ const CourseEditorPage: React.FC = () => {
     
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    // --- DATA FETCHING ---
+    // --- DATA FETCHING (Same logic as MVP) ---
     const fetchCourseData = useCallback(async () => {
         if (!courseId) return;
         try {
@@ -64,8 +64,6 @@ const CourseEditorPage: React.FC = () => {
         }
     }, [courseId, navigate]);
 
-    // [CORRECTED] This effect perfectly mirrors your MVP's logic, ensuring the library
-    // loads correctly on mount and filters properly, fixing the regression.
     useEffect(() => {
         const fetchLibraryData = async () => {
             try {
@@ -77,20 +75,18 @@ const CourseEditorPage: React.FC = () => {
         };
         fetchLibraryData();
     }, [debouncedSearchTerm]);
-
+    
     useEffect(() => {
         const fetchInitialData = async () => {
             setIsLoading(true);
-            // We now fetch library data on initial load as well, as per the MVP's implicit behavior.
-            const libraryRes = await apiClient.get(`/api/library/search?language=javascript&searchTerm=`);
-            setLibraryLessons(libraryRes.data);
             await fetchCourseData();
             setIsLoading(false);
         };
         fetchInitialData();
     }, [courseId, fetchCourseData]);
 
-    // --- HANDLERS ---
+
+    // --- HANDLERS (Corrected and Enhanced) ---
     const handleAddLesson = async (lessonToAdd: IngestedLesson) => {
         setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: true }));
         try {
@@ -104,8 +100,6 @@ const CourseEditorPage: React.FC = () => {
         }
     };
 
-    // [UPGRADED] The remove functionality now uses toast.promise for a superior UX,
-    // handling loading, success, and error states gracefully.
     const handleRemoveLesson = async (lessonIdToRemove: string) => {
         const lessonToRemove = courseLessons.find(l => l.id === lessonIdToRemove);
         toast.promise(
@@ -113,7 +107,7 @@ const CourseEditorPage: React.FC = () => {
             {
                 loading: `Removing "${lessonToRemove?.title || 'item'}"...`,
                 success: () => {
-                    fetchCourseData(); // Re-sync with the DB as the single source of truth.
+                    fetchCourseData();
                     return `"${lessonToRemove?.title || 'Item'}" removed.`;
                 },
                 error: (err) => err.response?.data?.error || "Failed to remove item.",
@@ -121,10 +115,19 @@ const CourseEditorPage: React.FC = () => {
         );
     };
     
+    // [FIXED] Corrected the toast.promise call to pass the promise as the first argument.
     const handleSortWithAI = async () => {
         if (!courseId) return;
         setIsSorting(true);
-        toast.promise( /* ... same as MVP ... */ );
+        toast.promise(
+            apiClient.post(`/api/courses/${courseId}/sort-with-ai`),
+            {
+                loading: 'AI is organizing your curriculum...',
+                success: async (res) => { await fetchCourseData(); return res.data.message; },
+                error: (err) => err.response?.data?.error || 'AI sorting failed.',
+                finally: () => setIsSorting(false),
+            }
+        );
     };
 
     const handlePreviewLesson = (lessonId: string) => {
@@ -135,7 +138,6 @@ const CourseEditorPage: React.FC = () => {
         navigate(`/lessons/new?courseId=${courseId}`);
     };
 
-    // [NEW] Handler to navigate to the dedicated chapter creation page.
     const handleCreateNewChapter = () => {
         navigate(`/chapters/new?courseId=${courseId}`);
     };
@@ -151,19 +153,50 @@ const CourseEditorPage: React.FC = () => {
             <Toaster theme="dark" richColors position="top-right" />
             <div className="container mx-auto p-4 sm:p-6 lg:p-8">
                 <header className="mb-8">
-                    {/* ... header is same as MVP ... */}
+                    <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4 text-slate-400 hover:bg-slate-800"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Dashboard</Button>
+                    <h1 className="text-4xl font-bold tracking-tighter text-white">{courseTitle}</h1>
+                    <p className="text-lg text-slate-400 mt-2">Curriculum Design Studio</p>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    {/* [RESTORED] This entire GlassCard JSX is restored from your MVP to fix all related TS6133 errors. */}
                     <GlassCard>
-                        {/* ... Library card is same as MVP ... */}
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><BookCopy /> Lesson Library</CardTitle>
+                            <CardDescription>Search the library and add pre-built lessons to your course.</CardDescription>
+                            <div className="relative pt-2">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                <Input placeholder="Search by title, keyword, or chapter..." className="pl-10 bg-slate-950/60 border-slate-700" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-grow max-h-[60vh] overflow-y-auto pr-3">
+                            <ul className="space-y-3">
+                                {libraryLessons.filter(l => !courseLessonTitles.has(l.title)).map(lesson => (
+                                    <li key={lesson.id} className="p-3 border border-slate-700/60 bg-slate-800/30 rounded-lg flex justify-between items-center gap-3">
+                                        <div className="flex-grow min-w-0">
+                                            <h4 className="font-medium text-slate-200 truncate">{lesson.title}</h4>
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {lesson.chapter && <Badge variant="secondary">{lesson.chapter}</Badge>}
+                                                {lesson.sub_chapter && <Badge variant="outline">{lesson.sub_chapter}</Badge>}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-2 flex-shrink-0">
+                                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Preview Lesson" onClick={() => handlePreviewLesson(lesson.id)}><Eye className="h-4 w-4" /></Button>
+                                            <Button size="icon" variant="outline" className="h-7 w-7 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200" title="Add Lesson to Course" onClick={() => handleAddLesson(lesson)} disabled={isAddingMap[lesson.id]}>
+                                                {isAddingMap[lesson.id] ? <Loader2 className="h-4 w-4 animate-spin"/> : <Plus className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
                     </GlassCard>
 
                     <GlassCard>
                         <CardHeader>
                             <div className="flex justify-between items-center">
                                 <CardTitle>Course Blueprint ({courseLessons.length} items)</CardTitle>
-                                {/* [ENHANCED] Clearer, more descriptive buttons for content creation. */}
+                                {/* [ENHANCED] The button group is updated for clarity and new features. */}
                                 <div className="flex items-center gap-2">
                                     <Button onClick={handleCreateNewChapter} variant="outline" size="sm" className="h-8"><BookText className="mr-2 h-4 w-4" />Create Chapter</Button>
                                     <Button onClick={handleCreateNewLesson} variant="outline" size="sm" className="h-8"><FilePlus2 className="mr-2 h-4 w-4" />Create Lesson</Button>
@@ -181,13 +214,11 @@ const CourseEditorPage: React.FC = () => {
                                     <li key={lesson.id} className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-3">
                                             <span className="font-mono text-sm text-slate-500">{String(lesson.order_index + 1).padStart(2, '0')}</span>
-                                            
-                                            {/* [NEW & TYPE-SAFE] Conditional icon rendering with correct tooltip implementation. */}
+                                            {/* [TYPE-SAFE & ENHANCED] Conditional icons with correct tooltip implementation. */}
                                             {lesson.lesson_type === 'chapter' 
                                                 ? <span title="Chapter"><BookText className="h-4 w-4 text-cyan-400 flex-shrink-0" /></span>
                                                 : <span title="Lesson"><FileCode className="h-4 w-4 text-slate-500 flex-shrink-0" /></span>
                                             }
-                                            
                                             <span className="font-medium text-slate-200">{lesson.title}</span>
                                         </div>
                                         <div className="flex items-center gap-1">
@@ -206,6 +237,7 @@ const CourseEditorPage: React.FC = () => {
     );
 };
 export default CourseEditorPage;
+
 // // MVP
 // // FILE: src/pages/CourseEditorPage.tsx (Definitive, No-DND, Fully Functional)
 // import React, { useState, useEffect, useCallback, useMemo } from 'react';
