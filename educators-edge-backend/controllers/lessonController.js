@@ -480,7 +480,7 @@ exports.createLesson = async (req, res) => {
 exports.addLessonToCourse = async (req, res) => {
     const { courseId } = req.params;
     const { ingestedLessonId } = req.body;
-    const teacherId = req.user.id; // The teacher's ID is available from the auth middleware
+    const teacherId = req.user.id;
 
     if (!ingestedLessonId) {
         return res.status(400).json({ error: 'Ingested Lesson ID is required.' });
@@ -509,18 +509,15 @@ exports.addLessonToCourse = async (req, res) => {
         const orderQuery = await client.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
 
-        // Step 4: Create the new lesson, now including the required teacher_id.
+        // Step 4: Create the new lesson, including the required teacher_id.
         const newLessonId = uuidv4();
-        
-        // [THE FIX] The 'teacher_id' column and its corresponding value ($7) have been added
-        // to the INSERT statement, satisfying the NOT NULL constraint.
         await client.query(
             `INSERT INTO lessons (id, course_id, title, description, lesson_type, order_index, teacher_id) 
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex, teacherId]
         );
 
-        // Step 5: Safely copy all associated boilerplate files from the 'files' JSON column.
+        // Step 5: Safely copy all associated boilerplate files.
         if (lessonData.files) {
             const boilerplateFiles = JSON.parse(lessonData.files);
             if (Array.isArray(boilerplateFiles)) {
@@ -532,7 +529,7 @@ exports.addLessonToCourse = async (req, res) => {
             }
         }
 
-        // Step 6: Safely copy all associated solution files from the 'solution_files' JSON column.
+        // Step 6: Safely copy all associated solution files.
         if (lessonData.solution_files) {
             const solutionFiles = JSON.parse(lessonData.solution_files);
             if (Array.isArray(solutionFiles)) {
@@ -544,12 +541,16 @@ exports.addLessonToCourse = async (req, res) => {
             }
         }
 
-        // Step 7: Safely copy all associated tests from the 'test_code' JSON column.
+        // Step 7: Safely copy all associated tests.
         if (lessonData.test_code) {
             const tests = JSON.parse(lessonData.test_code);
+
+            // [THE FIX] The TypeScript type annotation '(t: { text: string })' has been removed.
+            // This is now valid, executable JavaScript.
             const testString = tests.flat()
-                .map((t: { text: string }) => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
+                .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
                 .join('\n');
+
             if (testString) {
                  await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
             }
