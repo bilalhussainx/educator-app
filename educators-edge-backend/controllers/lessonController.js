@@ -547,7 +547,7 @@ exports.addLessonToCourse = async (req, res) => {
             const tests = JSON.parse(lessonData.test_code);
             // This robustly handles nested arrays and transforms test descriptions into runnable code.
             const testString = tests.flat()
-                .map((t: { text: string }) => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
+                .map((t) => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
                 .join('\n');
             if (testString) {
                  await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
