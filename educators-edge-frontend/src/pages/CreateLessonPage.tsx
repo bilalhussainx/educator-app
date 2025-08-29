@@ -1,572 +1,357 @@
-// FILE: src/pages/CourseEditorPage.tsx (Definitive, UX-Focused, No-DND Version)
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+// 
+// export default CreateLessonPage;
+
+/*
+ * =================================================================
+ * FOLDER: src/pages/
+ * FILE:   CreateLessonPage.tsx (REDESIGNED - Final, Complete Code)
+ * =================================================================
+ * DESCRIPTION: This is the complete and fully functional Lesson Foundry.
+ * It uses a robust PanelGroup layout to solve all scrolling issues and
+ * integrates all original logic for a seamless creation experience.
+ */
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import Editor from '@monaco-editor/react';
+import { Terminal } from 'xterm';
+import { FitAddon } from 'xterm-addon-fit';
+import 'xterm/css/xterm.css';
+import type { LessonFile } from '../types';
+// import { cn } from "@/lib/utils";
+
+// --- APE Component ---
+import { ConceptTagger, TaggedConcept } from '../components/ConceptTagger';
+import { getWebSocketUrl } from '../config/websocket';
+
+// --- UI Components & Icons ---
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { FilePlus2, XCircle, Terminal as TerminalIcon, ChevronLeft, BeakerIcon, Lightbulb, Play, X } from 'lucide-react';
+import { toast, Toaster } from 'sonner';
 import apiClient from '../services/apiClient';
-import { useDebounce } from '../hooks/useDebounce'; // You will need to create this simple custom hook
 
-// --- UI IMPORTS ---
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Toaster, toast } from 'sonner';
-import { Search, Plus, Sparkles, Trash2, Eye, ChevronLeft, Loader2, BookCopy } from 'lucide-react';
-import { cn } from "@/lib/utils";
+// --- Type Definitions ---
+type DiagnosticsTabKey = 'tests' | 'terminal';
 
-// --- TYPE DEFINITIONS ---
-interface IngestedLesson {
-    id: string;
-    title: string;
-    description: string;
-    lesson_type: 'algorithmic' | 'frontend-project';
-    chapter: string | null;
-    sub_chapter: string | null;
-}
-interface CourseLesson {
-    id: string; // This is the unique ID from the `lessons` table
-    title: string;
-    order_index: number;
-}
+// =================================================================
+// --- Sub-Components for the Foundry Layout ---
+// =================================================================
 
-// --- REUSABLE & STYLED COMPONENTS ---
-const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
-    <Card className={cn("bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white flex flex-col", className)} {...props} />
-);
+const InspectorPanel: React.FC<{
+    title: string; setTitle: (v: string) => void;
+    description: string; setDescription: (v: string) => void;
+    objective: string; setObjective: (v: string) => void;
+    taggedConcepts: TaggedConcept[]; setTaggedConcepts: (v: TaggedConcept[]) => void;
+}> = ({ title, setTitle, description, setDescription, objective, setObjective, taggedConcepts, setTaggedConcepts }) => {
+    return (
+        <div className="h-full flex flex-col gap-4 p-4">
+            <h2 className="text-xl font-bold text-slate-200 flex-shrink-0">Inspector</h2>
+            <Accordion type="multiple" defaultValue={['details', 'ai']} className="w-full">
+                <AccordionItem value="details" className="border-slate-700">
+                    <AccordionTrigger className="text-base hover:no-underline">Lesson Details</AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="title" className="text-slate-300">Title</Label>
+                            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Understanding Recursion" className="bg-black/30 border-slate-600 focus:border-cyan-400" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="description" className="text-slate-300">Instructions</Label>
+                            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Explain the task for the student..." className="bg-black/30 border-slate-600 focus:border-cyan-400 resize-none" rows={8} />
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="ai" className="border-slate-700">
+                    <AccordionTrigger className="text-base hover:no-underline text-amber-300">AI & Concepts</AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-6">
+                         <div className="space-y-2">
+                            <Label htmlFor="objective" className="text-slate-300 flex items-center gap-2"><Lightbulb size={16}/> AI Directive</Label>
+                            <Textarea id="objective" value={objective} onChange={(e) => setObjective(e.target.value)} placeholder="e.g., The student must solve this problem by having a function call itself." className="bg-black/30 border-slate-600 focus:border-amber-400 resize-none" rows={4}/>
+                        </div>
+                        <ConceptTagger value={taggedConcepts} onChange={setTaggedConcepts} />
+                    </AccordionContent>
+                </AccordionItem>
+                 <AccordionItem value="config" className="border-slate-700">
+                    <AccordionTrigger className="text-base hover:no-underline">Configuration</AccordionTrigger>
+                    <AccordionContent className="pt-4 space-y-4">
+                       <p className="text-sm text-slate-500">Advanced settings like difficulty and prerequisites will be available here in a future update.</p>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </div>
+    );
+};
 
-// --- MAIN PAGE COMPONENT ---
-const CourseEditorPage: React.FC = () => {
-    const { courseId } = useParams<{ courseId: string }>();
-    const navigate = useNavigate();
-    
-    const [libraryLessons, setLibraryLessons] = useState<IngestedLesson[]>([]);
-    const [courseLessons, setCourseLessons] = useState<CourseLesson[]>([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSorting, setIsSorting] = useState(false);
-    const [isAddingMap, setIsAddingMap] = useState<Record<string, boolean>>({});
-    const [courseTitle, setCourseTitle] = useState('');
-    
-    const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
-    // --- DATA FETCHING ---
-    const fetchCourseData = useCallback(async () => {
-        if (!courseId) return;
-        try {
-            const courseRes = await apiClient.get(`/api/courses/${courseId}`);
-            setCourseTitle(courseRes.data.title);
-            setCourseLessons(courseRes.data.lessons.sort((a: CourseLesson, b: CourseLesson) => a.order_index - b.order_index));
-        } catch (error) {
-            toast.error("Failed to load course data.");
-            navigate('/dashboard');
-        }
-    }, [courseId, navigate]);
-
-    useEffect(() => {
-        const fetchLibraryData = async () => {
-            try {
-                const libraryRes = await apiClient.get(`/api/library/search?language=javascript&searchTerm=${debouncedSearchTerm}`);
-                setLibraryLessons(libraryRes.data);
-            } catch (error) {
-                toast.error("Failed to load lesson library.");
-            }
-        };
-        fetchLibraryData();
-    }, [debouncedSearchTerm]);
-
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            setIsLoading(true);
-            await fetchCourseData();
-            setIsLoading(false);
-        };
-        fetchInitialData();
-    }, [courseId, fetchCourseData]);
-
-    // --- HANDLERS ---
-    const handleAddLesson = async (lessonToAdd: IngestedLesson) => {
-        setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: true }));
-        try {
-            await apiClient.post(`/api/lessons/add-to-course/${courseId}`, { ingestedLessonId: lessonToAdd.id });
-            await fetchCourseData();
-            toast.success(`"${lessonToAdd.title}" added to course.`);
-        } catch (error) {
-            toast.error("Failed to add lesson.");
-        } finally {
-            setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: false }));
+const WorkspacePanel: React.FC<{
+    files: LessonFile[]; setFiles: (v: LessonFile[]) => void;
+    activeFileId: string | null; setActiveFileId: (id: string | null) => void;
+}> = ({ files, setFiles, activeFileId, setActiveFileId }) => {
+    const handleAddFile = () => {
+        const newFileName = prompt("Enter new boilerplate file name (e.g., helpers.js):");
+        if (newFileName && !files.some(f => f.filename === newFileName)) {
+            const newFile: LessonFile = { id: crypto.randomUUID(), filename: newFileName, content: `// ${newFileName}\n` };
+            setFiles([...files, newFile]);
+            setActiveFileId(newFile.id);
+        } else if (newFileName) {
+            toast.error("A file with that name already exists.");
         }
     };
 
-    const handleRemoveLesson = async (lessonIdToRemove: string) => {
-        const originalLessons = [...courseLessons];
-        setCourseLessons(prev => prev.filter(l => l.id !== lessonIdToRemove));
-        try {
-            await apiClient.delete(`/api/lessons/${lessonIdToRemove}`);
-            await fetchCourseData();
-            toast.success("Lesson removed.");
-        } catch (error) {
-            toast.error("Failed to remove lesson.");
-            setCourseLessons(originalLessons);
+    const handleRemoveFile = (fileIdToRemove: string) => {
+        if (files.length <= 1) {
+            toast.warning("A lesson must have at least one boilerplate file.");
+            return;
+        }
+        const newFiles = files.filter(f => f.id !== fileIdToRemove);
+        setFiles(newFiles);
+        if (activeFileId === fileIdToRemove) {
+            setActiveFileId(newFiles[0].id);
         }
     };
-    
-    const handleSortWithAI = async () => {
-        if (!courseId) return;
-        setIsSorting(true);
-        toast.promise(
-            apiClient.post(`/api/courses/${courseId}/sort-with-ai`),
-            {
-                loading: 'AI is organizing your curriculum...',
-                success: async (res) => { await fetchCourseData(); return res.data.message; },
-                error: (err) => err.response?.data?.error || 'AI sorting failed.',
-                finally: () => setIsSorting(false),
-            }
-        );
-    };
 
-    const handlePreviewLesson = (lessonId: string) => {
-        window.open(`/lesson/${lessonId}`, '_blank');
-    };
-
-    const handleCreateNewLesson = () => {
-        navigate(`/lessons/new?courseId=${courseId}`);
-    };
-
-    const courseLessonTitles = useMemo(() => new Set(courseLessons.map(l => l.title)), [courseLessons]);
-
-    if (isLoading) {
-        return <div className="h-screen w-full flex items-center justify-center bg-[#0a091a] text-white">Loading Curriculum Studio...</div>;
-    }
+    const activeFile = files.find(f => f.id === activeFileId);
 
     return (
-        <div className="w-full min-h-screen bg-[#0a091a] text-white font-sans">
-            <Toaster theme="dark" richColors position="top-right" />
-            <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-                <header className="mb-8">
-                    <Button variant="ghost" onClick={() => navigate('/dashboard')} className="mb-4 text-slate-400 hover:bg-slate-800"><ChevronLeft className="mr-2 h-4 w-4" /> Back to Dashboard</Button>
-                    <h1 className="text-4xl font-bold tracking-tighter text-white">{courseTitle}</h1>
-                    <p className="text-lg text-slate-400 mt-2">Curriculum Design Studio</p>
-                </header>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                    <GlassCard>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><BookCopy /> Lesson Library</CardTitle>
-                            <CardDescription>Search the library and add pre-built lessons to your course.</CardDescription>
-                            <div className="relative pt-2">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                                <Input placeholder="Search by title, keyword, or chapter..." className="pl-10 bg-slate-950/60 border-slate-700" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-grow max-h-[60vh] overflow-y-auto pr-3">
-                            <ul className="space-y-3">
-                                {libraryLessons.filter(l => !courseLessonTitles.has(l.title)).map(lesson => (
-                                    <li key={lesson.id} className="p-3 border border-slate-700/60 bg-slate-800/30 rounded-lg flex justify-between items-center gap-3">
-                                        <div className="flex-grow min-w-0">
-                                            <h4 className="font-medium text-slate-200 truncate">{lesson.title}</h4>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {lesson.chapter && <Badge variant="secondary">{lesson.chapter}</Badge>}
-                                                {lesson.sub_chapter && <Badge variant="outline">{lesson.sub_chapter}</Badge>}
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col gap-2 flex-shrink-0">
-                                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Preview Lesson" onClick={() => handlePreviewLesson(lesson.id)}><Eye className="h-4 w-4" /></Button>
-                                            <Button size="icon" variant="outline" className="h-7 w-7 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200" title="Add Lesson to Course" onClick={() => handleAddLesson(lesson)} disabled={isAddingMap[lesson.id]}>
-                                                {isAddingMap[lesson.id] ? <Loader2 className="h-4 w-4 animate-spin"/> : <Plus className="h-4 w-4" />}
-                                            </Button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </GlassCard>
-
-                    <GlassCard>
-                        <CardHeader>
-                            <div className="flex justify-between items-center">
-                                <CardTitle>Course Blueprint ({courseLessons.length} lessons)</CardTitle>
-                                <div className="flex items-center gap-2">
-                                    <Button onClick={handleCreateNewLesson} variant="outline" size="sm" className="h-8"><Plus className="mr-2 h-4 w-4" />Create New</Button>
-                                    <Button onClick={handleSortWithAI} disabled={isSorting || courseLessons.length < 2} className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold h-8">
-                                        {isSorting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />} Organize with AI
-                                    </Button>
-                                </div>
-                            </div>
-                            <CardDescription>Review and reorder the lessons in your course.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow max-h-[60vh] overflow-y-auto pr-3">
-                            <ul className="space-y-2">
-                                {courseLessons.map(lesson => (
-                                    <li key={lesson.id} className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-3">
-                                            <span className="font-mono text-sm text-slate-500">{String(lesson.order_index + 1).padStart(2, '0')}</span>
-                                            <span className="font-medium text-slate-200">{lesson.title}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Preview Lesson" onClick={() => handlePreviewLesson(lesson.id)}><Eye className="h-4 w-4" /></Button>
-                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-500 hover:bg-red-500/10 hover:text-red-400" title="Remove Lesson" onClick={() => handleRemoveLesson(lesson.id)}><Trash2 className="h-4 w-4" /></Button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                            {courseLessons.length === 0 && <div className="text-center py-16 border-2 border-dashed border-slate-700 rounded-xl"><p className="text-slate-400">Your course is empty.</p><p className="text-sm text-slate-500 mt-1">Add lessons from the library to begin.</p></div>}
-                        </CardContent>
-                    </GlassCard>
-                </div>
+        <div className="h-full flex flex-col bg-slate-950/20">
+            <div className="flex-shrink-0 flex items-center justify-between border-b border-slate-800 px-2">
+                <Tabs value={activeFileId || ''} onValueChange={setActiveFileId} className="w-full">
+                    <TabsList className="bg-transparent border-none p-0 h-10">
+                        {files.map(file => (
+                            <TabsTrigger key={file.id} value={file.id} className="relative group data-[state=active]:bg-slate-800/50 data-[state=active]:text-cyan-300">
+                                {file.filename}
+                                <button onClick={(e) => { e.stopPropagation(); handleRemoveFile(file.id); }} className="absolute top-1.5 right-1 p-0.5 rounded-full hover:bg-slate-600 opacity-0 group-hover:opacity-100"><X className="h-3 w-3"/></button>
+                            </TabsTrigger>
+                        ))}
+                         <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={handleAddFile}><FilePlus2 className="h-4 w-4"/></Button>
+                    </TabsList>
+                </Tabs>
+            </div>
+            <div className="flex-grow overflow-hidden">
+                 <Editor
+                    height="100%"
+                    path={activeFile?.filename}
+                    value={activeFile?.content}
+                    onChange={(content) => setFiles(files.map(f => f.id === activeFileId ? { ...f, content: content || '' } : f))}
+                    theme="vs-dark"
+                    options={{ fontSize: 14, minimap: { enabled: false } }}
+                />
             </div>
         </div>
     );
 };
-// /*
-//  * =================================================================
-//  * FOLDER: src/pages/
-//  * FILE:   CreateLessonPage.tsx (REDESIGNED - Final, Complete Code)
-//  * =================================================================
-//  * DESCRIPTION: This is the complete and fully functional Lesson Foundry.
-//  * It uses a robust PanelGroup layout to solve all scrolling issues and
-//  * integrates all original logic for a seamless creation experience.
-//  */
-// import React, { useState, useRef, useEffect } from 'react';
-// import { useNavigate, useSearchParams } from 'react-router-dom';
-// import Editor from '@monaco-editor/react';
-// import { Terminal } from 'xterm';
-// import { FitAddon } from 'xterm-addon-fit';
-// import 'xterm/css/xterm.css';
-// import type { LessonFile } from '../types';
-// // import { cn } from "@/lib/utils";
 
-// // --- APE Component ---
-// import { ConceptTagger, TaggedConcept } from '../components/ConceptTagger';
-// import { getWebSocketUrl } from '../config/websocket';
-
-// // --- UI Components & Icons ---
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label";
-// import { Textarea } from "@/components/ui/textarea";
-// import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-// import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-// import { FilePlus2, XCircle, Terminal as TerminalIcon, ChevronLeft, BeakerIcon, Lightbulb, Play, X } from 'lucide-react';
-// import { toast, Toaster } from 'sonner';
-// import apiClient from '../services/apiClient';
-
-// // --- Type Definitions ---
-// type DiagnosticsTabKey = 'tests' | 'terminal';
-
-// // =================================================================
-// // --- Sub-Components for the Foundry Layout ---
-// // =================================================================
-
-// const InspectorPanel: React.FC<{
-//     title: string; setTitle: (v: string) => void;
-//     description: string; setDescription: (v: string) => void;
-//     objective: string; setObjective: (v: string) => void;
-//     taggedConcepts: TaggedConcept[]; setTaggedConcepts: (v: TaggedConcept[]) => void;
-// }> = ({ title, setTitle, description, setDescription, objective, setObjective, taggedConcepts, setTaggedConcepts }) => {
-//     return (
-//         <div className="h-full flex flex-col gap-4 p-4">
-//             <h2 className="text-xl font-bold text-slate-200 flex-shrink-0">Inspector</h2>
-//             <Accordion type="multiple" defaultValue={['details', 'ai']} className="w-full">
-//                 <AccordionItem value="details" className="border-slate-700">
-//                     <AccordionTrigger className="text-base hover:no-underline">Lesson Details</AccordionTrigger>
-//                     <AccordionContent className="pt-4 space-y-4">
-//                         <div className="space-y-2">
-//                             <Label htmlFor="title" className="text-slate-300">Title</Label>
-//                             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Understanding Recursion" className="bg-black/30 border-slate-600 focus:border-cyan-400" />
-//                         </div>
-//                         <div className="space-y-2">
-//                             <Label htmlFor="description" className="text-slate-300">Instructions</Label>
-//                             <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Explain the task for the student..." className="bg-black/30 border-slate-600 focus:border-cyan-400 resize-none" rows={8} />
-//                         </div>
-//                     </AccordionContent>
-//                 </AccordionItem>
-//                 <AccordionItem value="ai" className="border-slate-700">
-//                     <AccordionTrigger className="text-base hover:no-underline text-amber-300">AI & Concepts</AccordionTrigger>
-//                     <AccordionContent className="pt-4 space-y-6">
-//                          <div className="space-y-2">
-//                             <Label htmlFor="objective" className="text-slate-300 flex items-center gap-2"><Lightbulb size={16}/> AI Directive</Label>
-//                             <Textarea id="objective" value={objective} onChange={(e) => setObjective(e.target.value)} placeholder="e.g., The student must solve this problem by having a function call itself." className="bg-black/30 border-slate-600 focus:border-amber-400 resize-none" rows={4}/>
-//                         </div>
-//                         <ConceptTagger value={taggedConcepts} onChange={setTaggedConcepts} />
-//                     </AccordionContent>
-//                 </AccordionItem>
-//                  <AccordionItem value="config" className="border-slate-700">
-//                     <AccordionTrigger className="text-base hover:no-underline">Configuration</AccordionTrigger>
-//                     <AccordionContent className="pt-4 space-y-4">
-//                        <p className="text-sm text-slate-500">Advanced settings like difficulty and prerequisites will be available here in a future update.</p>
-//                     </AccordionContent>
-//                 </AccordionItem>
-//             </Accordion>
-//         </div>
-//     );
-// };
-
-// const WorkspacePanel: React.FC<{
-//     files: LessonFile[]; setFiles: (v: LessonFile[]) => void;
-//     activeFileId: string | null; setActiveFileId: (id: string | null) => void;
-// }> = ({ files, setFiles, activeFileId, setActiveFileId }) => {
-//     const handleAddFile = () => {
-//         const newFileName = prompt("Enter new boilerplate file name (e.g., helpers.js):");
-//         if (newFileName && !files.some(f => f.filename === newFileName)) {
-//             const newFile: LessonFile = { id: crypto.randomUUID(), filename: newFileName, content: `// ${newFileName}\n` };
-//             setFiles([...files, newFile]);
-//             setActiveFileId(newFile.id);
-//         } else if (newFileName) {
-//             toast.error("A file with that name already exists.");
-//         }
-//     };
-
-//     const handleRemoveFile = (fileIdToRemove: string) => {
-//         if (files.length <= 1) {
-//             toast.warning("A lesson must have at least one boilerplate file.");
-//             return;
-//         }
-//         const newFiles = files.filter(f => f.id !== fileIdToRemove);
-//         setFiles(newFiles);
-//         if (activeFileId === fileIdToRemove) {
-//             setActiveFileId(newFiles[0].id);
-//         }
-//     };
-
-//     const activeFile = files.find(f => f.id === activeFileId);
-
-//     return (
-//         <div className="h-full flex flex-col bg-slate-950/20">
-//             <div className="flex-shrink-0 flex items-center justify-between border-b border-slate-800 px-2">
-//                 <Tabs value={activeFileId || ''} onValueChange={setActiveFileId} className="w-full">
-//                     <TabsList className="bg-transparent border-none p-0 h-10">
-//                         {files.map(file => (
-//                             <TabsTrigger key={file.id} value={file.id} className="relative group data-[state=active]:bg-slate-800/50 data-[state=active]:text-cyan-300">
-//                                 {file.filename}
-//                                 <button onClick={(e) => { e.stopPropagation(); handleRemoveFile(file.id); }} className="absolute top-1.5 right-1 p-0.5 rounded-full hover:bg-slate-600 opacity-0 group-hover:opacity-100"><X className="h-3 w-3"/></button>
-//                             </TabsTrigger>
-//                         ))}
-//                          <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={handleAddFile}><FilePlus2 className="h-4 w-4"/></Button>
-//                     </TabsList>
-//                 </Tabs>
-//             </div>
-//             <div className="flex-grow overflow-hidden">
-//                  <Editor
-//                     height="100%"
-//                     path={activeFile?.filename}
-//                     value={activeFile?.content}
-//                     onChange={(content) => setFiles(files.map(f => f.id === activeFileId ? { ...f, content: content || '' } : f))}
-//                     theme="vs-dark"
-//                     options={{ fontSize: 14, minimap: { enabled: false } }}
-//                 />
-//             </div>
-//         </div>
-//     );
-// };
-
-// const DiagnosticsPanel: React.FC<{
-//     testCode: string; setTestCode: (v: string) => void;
-//     terminalRef: React.RefObject<HTMLDivElement>;
-//     activeTab: DiagnosticsTabKey;
-//     setActiveTab: (tab: DiagnosticsTabKey) => void;
-// }> = ({ testCode, setTestCode, terminalRef, activeTab, setActiveTab }) => {
-//     return (
-//         <div className="h-full flex flex-col bg-slate-900/40 border-l border-slate-800">
-//              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DiagnosticsTabKey)} className="flex flex-col h-full">
-//                 <TabsList className="grid w-full grid-cols-2 bg-slate-900">
-//                     <TabsTrigger value="tests"><BeakerIcon className="mr-2 h-4 w-4"/>Tests</TabsTrigger>
-//                     <TabsTrigger value="terminal"><TerminalIcon className="mr-2 h-4 w-4"/>Terminal</TabsTrigger>
-//                 </TabsList>
-//                 <TabsContent value="tests" className="flex-grow overflow-hidden">
-//                     <Editor
-//                         height="100%"
-//                         path="tests.js"
-//                         value={testCode}
-//                         onChange={(content) => setTestCode(content || '')}
-//                         theme="vs-dark"
-//                         options={{ fontSize: 14, minimap: { enabled: false }, wordWrap: 'on' }}
-//                     />
-//                 </TabsContent>
-//                 <TabsContent value="terminal" className="flex-grow overflow-hidden">
-//                     <div ref={terminalRef} className="h-full w-full p-2 bg-[#0D1117]" />
-//                 </TabsContent>
-//             </Tabs>
-//         </div>
-//     );
-// };
+const DiagnosticsPanel: React.FC<{
+    testCode: string; setTestCode: (v: string) => void;
+    terminalRef: React.RefObject<HTMLDivElement>;
+    activeTab: DiagnosticsTabKey;
+    setActiveTab: (tab: DiagnosticsTabKey) => void;
+}> = ({ testCode, setTestCode, terminalRef, activeTab, setActiveTab }) => {
+    return (
+        <div className="h-full flex flex-col bg-slate-900/40 border-l border-slate-800">
+             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DiagnosticsTabKey)} className="flex flex-col h-full">
+                <TabsList className="grid w-full grid-cols-2 bg-slate-900">
+                    <TabsTrigger value="tests"><BeakerIcon className="mr-2 h-4 w-4"/>Tests</TabsTrigger>
+                    <TabsTrigger value="terminal"><TerminalIcon className="mr-2 h-4 w-4"/>Terminal</TabsTrigger>
+                </TabsList>
+                <TabsContent value="tests" className="flex-grow overflow-hidden">
+                    <Editor
+                        height="100%"
+                        path="tests.js"
+                        value={testCode}
+                        onChange={(content) => setTestCode(content || '')}
+                        theme="vs-dark"
+                        options={{ fontSize: 14, minimap: { enabled: false }, wordWrap: 'on' }}
+                    />
+                </TabsContent>
+                <TabsContent value="terminal" className="flex-grow overflow-hidden">
+                    <div ref={terminalRef} className="h-full w-full p-2 bg-[#0D1117]" />
+                </TabsContent>
+            </Tabs>
+        </div>
+    );
+};
 
 
-// // =================================================================
-// // --- Main CreateLessonPage Component ---
-// // =================================================================
-// const CreateLessonPage: React.FC = () => {
-//     const navigate = useNavigate();
-//     const [searchParams] = useSearchParams();
-//     const courseId = searchParams.get('courseId');
+// =================================================================
+// --- Main CreateLessonPage Component ---
+// =================================================================
+const CreateLessonPage: React.FC = () => {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const courseId = searchParams.get('courseId');
 
-//     const [title, setTitle] = useState('');
-//     const [description, setDescription] = useState('');
-//     const [objective, setObjective] = useState('');
-//     const [files, setFiles] = useState<LessonFile[]>([{ id: crypto.randomUUID(), filename: 'index.js', content: 'function solve() {\n  // Your code here\n}' }]);
-//     const [testCode, setTestCode] = useState('// Use console.assert for testing\n// console.assert(solve() === "expected", "Test Case 1 Failed");');
-//     const [activeFileId, setActiveFileId] = useState<string | null>(files[0]?.id || null);
-//     const [formError, setFormError] = useState<string | null>(null);
-//     const [isLoading, setIsLoading] = useState(false);
-//     const [taggedConcepts, setTaggedConcepts] = useState<TaggedConcept[]>([]);
-//     const [diagnosticsTab, setDiagnosticsTab] = useState<DiagnosticsTabKey>('terminal');
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [objective, setObjective] = useState('');
+    const [files, setFiles] = useState<LessonFile[]>([{ id: crypto.randomUUID(), filename: 'index.js', content: 'function solve() {\n  // Your code here\n}' }]);
+    const [testCode, setTestCode] = useState('// Use console.assert for testing\n// console.assert(solve() === "expected", "Test Case 1 Failed");');
+    const [activeFileId, setActiveFileId] = useState<string | null>(files[0]?.id || null);
+    const [formError, setFormError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [taggedConcepts, setTaggedConcepts] = useState<TaggedConcept[]>([]);
+    const [diagnosticsTab, setDiagnosticsTab] = useState<DiagnosticsTabKey>('terminal');
 
-//     const terminalRef = useRef<HTMLDivElement>(null);
-//     const term = useRef<Terminal | null>(null);
-//     const ws = useRef<WebSocket | null>(null);
+    const terminalRef = useRef<HTMLDivElement>(null);
+    const term = useRef<Terminal | null>(null);
+    const ws = useRef<WebSocket | null>(null);
 
-//     useEffect(() => {
-//         const wsBaseUrl = getWebSocketUrl();
-//         const wsInstance = new WebSocket(`${wsBaseUrl}?sessionId=${crypto.randomUUID()}`);
-//         ws.current = wsInstance;
+    useEffect(() => {
+        const wsBaseUrl = getWebSocketUrl();
+        const wsInstance = new WebSocket(`${wsBaseUrl}?sessionId=${crypto.randomUUID()}`);
+        ws.current = wsInstance;
 
-//         wsInstance.onmessage = (event) => {
-//             try {
-//                 const message = JSON.parse(event.data);
-//                 if (message.type === 'TERMINAL_OUT') {
-//                     term.current?.write(message.payload);
-//                 }
-//             } catch (error) { console.error('WS Error:', error); }
-//         };
+        wsInstance.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                if (message.type === 'TERMINAL_OUT') {
+                    term.current?.write(message.payload);
+                }
+            } catch (error) { console.error('WS Error:', error); }
+        };
 
-//         if (terminalRef.current && !term.current) {
-//             const fitAddon = new FitAddon();
-//             const newTerm = new Terminal({
-//                 cursorBlink: true,
-//                 theme: { background: '#0D1117', foreground: '#c9d1d9' },
-//                 fontSize: 14,
-//                 fontFamily: 'Menlo, "DejaVu Sans Mono", Consolas, "Lucida Console", monospace',
-//             });
-//             newTerm.loadAddon(fitAddon);
-//             newTerm.open(terminalRef.current);
-//             fitAddon.fit();
-//             term.current = newTerm;
+        if (terminalRef.current && !term.current) {
+            const fitAddon = new FitAddon();
+            const newTerm = new Terminal({
+                cursorBlink: true,
+                theme: { background: '#0D1117', foreground: '#c9d1d9' },
+                fontSize: 14,
+                fontFamily: 'Menlo, "DejaVu Sans Mono", Consolas, "Lucida Console", monospace',
+            });
+            newTerm.loadAddon(fitAddon);
+            newTerm.open(terminalRef.current);
+            fitAddon.fit();
+            term.current = newTerm;
             
-//             const resizeObserver = new ResizeObserver(() => { setTimeout(() => fitAddon.fit(), 0); });
-//             if (terminalRef.current) {
-//                 resizeObserver.observe(terminalRef.current);
-//             }
+            const resizeObserver = new ResizeObserver(() => { setTimeout(() => fitAddon.fit(), 0); });
+            if (terminalRef.current) {
+                resizeObserver.observe(terminalRef.current);
+            }
 
-//             return () => {
-//                 resizeObserver.disconnect();
-//                 wsInstance.close();
-//                 newTerm.dispose();
-//                 term.current = null;
-//             };
-//         }
+            return () => {
+                resizeObserver.disconnect();
+                wsInstance.close();
+                newTerm.dispose();
+                term.current = null;
+            };
+        }
 
-//         return () => { wsInstance.close(); };
-//     }, []);
+        return () => { wsInstance.close(); };
+    }, []);
 
-//     const handleRunCode = () => {
-//         if (ws.current?.readyState !== WebSocket.OPEN) {
-//             toast.error("Connection to execution service not available.");
-//             return;
-//         }
+    const handleRunCode = () => {
+        if (ws.current?.readyState !== WebSocket.OPEN) {
+            toast.error("Connection to execution service not available.");
+            return;
+        }
         
-//         setDiagnosticsTab('terminal');
-//         term.current?.clear();
+        setDiagnosticsTab('terminal');
+        term.current?.clear();
         
-//         const fullCode = files.map(f => f.content).join('\n\n') + '\n\n' + testCode;
-//         const language = files[0]?.filename.endsWith('.py') ? 'python' : 'javascript';
+        const fullCode = files.map(f => f.content).join('\n\n') + '\n\n' + testCode;
+        const language = files[0]?.filename.endsWith('.py') ? 'python' : 'javascript';
         
-//         ws.current.send(JSON.stringify({ 
-//             type: 'RUN_CODE', 
-//             payload: { language, code: fullCode } 
-//         }));
-//     };
+        ws.current.send(JSON.stringify({ 
+            type: 'RUN_CODE', 
+            payload: { language, code: fullCode } 
+        }));
+    };
 
 
 
-//     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-//         e.preventDefault();
-//         if (!courseId) {
-//             setFormError("Missing course context. Please navigate from a course management page.");
-//             return;
-//         }
-//         if (taggedConcepts.length === 0) {
-//             toast.warning("For the best adaptive experience, please tag at least one concept.");
-//         }
-//         setIsLoading(true);
-//         setFormError(null);
-//         try {
-//             await apiClient.post('/api/lessons', { title, description, objective, files, courseId, testCode, concepts: taggedConcepts });
-//             toast.success("Lesson created successfully!");
-//             navigate(`/courses/${courseId}/manage`);
-//         } catch (err: any) {
-//             const errorMessage = err.response?.data?.error || err.message || 'Failed to create lesson';
-//             setFormError(errorMessage);
-//         } finally {
-//             setIsLoading(false);
-//         }
-//     };
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!courseId) {
+            setFormError("Missing course context. Please navigate from a course management page.");
+            return;
+        }
+        if (taggedConcepts.length === 0) {
+            toast.warning("For the best adaptive experience, please tag at least one concept.");
+        }
+        setIsLoading(true);
+        setFormError(null);
+        try {
+            await apiClient.post('/api/lessons', { title, description, objective, files, courseId, testCode, concepts: taggedConcepts });
+            toast.success("Lesson created successfully!");
+            navigate(`/courses/${courseId}/manage`);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.error || err.message || 'Failed to create lesson';
+            setFormError(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
     
-//     return (
-//         <div className="w-full h-screen flex flex-col bg-[#0a091a] text-white font-sans overflow-hidden">
-//              <Toaster theme="dark" richColors position="bottom-right" />
-//              <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(ellipse_at_center,white,transparent_70%)]"></div>
+    return (
+        <div className="w-full h-screen flex flex-col bg-[#0a091a] text-white font-sans overflow-hidden">
+             <Toaster theme="dark" richColors position="bottom-right" />
+             <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:radial-gradient(ellipse_at_center,white,transparent_70%)]"></div>
             
-//             <form onSubmit={handleSubmit} className="relative z-10 flex-grow flex flex-col">
-//                 <header className="flex-shrink-0 flex justify-between items-center p-2 border-b border-slate-800">
-//                     <div className="flex items-center gap-2">
-//                         <Button variant="ghost" type="button" size="sm" onClick={() => navigate(courseId ? `/courses/${courseId}/manage` : '/dashboard')} className="hover:bg-slate-800 hover:text-white">
-//                             <ChevronLeft className="h-4 w-4 mr-1" /> Back to Course
-//                         </Button>
-//                         <span className="text-slate-500">/</span>
-//                         <span className="text-md font-semibold text-slate-300">Lesson Foundry</span>
-//                     </div>
-//                     <div className="flex items-center gap-2">
-//                         <Button variant="outline" type="button" onClick={handleRunCode} className="border-fuchsia-400/50 text-fuchsia-300 hover:bg-fuchsia-500/10 hover:text-fuchsia-200">
-//                             <Play className="mr-2 h-4 w-4" /> Run Tests
-//                         </Button>
-//                         <Button type="submit" disabled={isLoading || !courseId} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
-//                             {isLoading ? 'Saving...' : 'Save & Finalize Lesson'}
-//                         </Button>
-//                     </div>
-//                 </header>
+            <form onSubmit={handleSubmit} className="relative z-10 flex-grow flex flex-col">
+                <header className="flex-shrink-0 flex justify-between items-center p-2 border-b border-slate-800">
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" type="button" size="sm" onClick={() => navigate(courseId ? `/courses/${courseId}/manage` : '/dashboard')} className="hover:bg-slate-800 hover:text-white">
+                            <ChevronLeft className="h-4 w-4 mr-1" /> Back to Course
+                        </Button>
+                        <span className="text-slate-500">/</span>
+                        <span className="text-md font-semibold text-slate-300">Lesson Foundry</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" type="button" onClick={handleRunCode} className="border-fuchsia-400/50 text-fuchsia-300 hover:bg-fuchsia-500/10 hover:text-fuchsia-200">
+                            <Play className="mr-2 h-4 w-4" /> Run Tests
+                        </Button>
+                        <Button type="submit" disabled={isLoading || !courseId} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
+                            {isLoading ? 'Saving...' : 'Save & Finalize Lesson'}
+                        </Button>
+                    </div>
+                </header>
                 
-//                 {formError && (
-//                     <Alert variant="destructive" className="m-2 bg-red-950/40 border-red-500/30 text-red-300">
-//                         <XCircle className="h-5 w-5 text-red-400" />
-//                         <AlertTitle>Creation Error</AlertTitle>
-//                         <AlertDescription>{formError}</AlertDescription>
-//                     </Alert>
-//                 )}
+                {formError && (
+                    <Alert variant="destructive" className="m-2 bg-red-950/40 border-red-500/30 text-red-300">
+                        <XCircle className="h-5 w-5 text-red-400" />
+                        <AlertTitle>Creation Error</AlertTitle>
+                        <AlertDescription>{formError}</AlertDescription>
+                    </Alert>
+                )}
                 
-//                 <div className="flex-grow flex overflow-hidden">
-//                     <PanelGroup direction="horizontal">
-//                         <Panel defaultSize={30} minSize={25} className="overflow-y-auto">
-//                            <InspectorPanel
-//                                 title={title} setTitle={setTitle}
-//                                 description={description} setDescription={setDescription}
-//                                 objective={objective} setObjective={setObjective}
-//                                 taggedConcepts={taggedConcepts} setTaggedConcepts={setTaggedConcepts}
-//                             />
-//                         </Panel>
-//                         <PanelResizeHandle className="w-1 bg-slate-800 hover:bg-slate-700 transition-colors" />
-//                         <Panel defaultSize={45} minSize={30}>
-//                             <WorkspacePanel
-//                                 files={files} setFiles={setFiles}
-//                                 activeFileId={activeFileId} setActiveFileId={setActiveFileId}
-//                             />
-//                         </Panel>
-//                         <PanelResizeHandle className="w-1 bg-slate-800 hover:bg-slate-700 transition-colors" />
-//                         <Panel defaultSize={25} minSize={20}>
-//                             <DiagnosticsPanel
-//                                 testCode={testCode} setTestCode={setTestCode}
-//                                 terminalRef={terminalRef}
-//                                 activeTab={diagnosticsTab}
-//                                 setActiveTab={setDiagnosticsTab}
-//                             />
-//                         </Panel>
-//                     </PanelGroup>
-//                 </div>
-//             </form>
-//         </div>
-//     );
-// };
+                <div className="flex-grow flex overflow-hidden">
+                    <PanelGroup direction="horizontal">
+                        <Panel defaultSize={30} minSize={25} className="overflow-y-auto">
+                           <InspectorPanel
+                                title={title} setTitle={setTitle}
+                                description={description} setDescription={setDescription}
+                                objective={objective} setObjective={setObjective}
+                                taggedConcepts={taggedConcepts} setTaggedConcepts={setTaggedConcepts}
+                            />
+                        </Panel>
+                        <PanelResizeHandle className="w-1 bg-slate-800 hover:bg-slate-700 transition-colors" />
+                        <Panel defaultSize={45} minSize={30}>
+                            <WorkspacePanel
+                                files={files} setFiles={setFiles}
+                                activeFileId={activeFileId} setActiveFileId={setActiveFileId}
+                            />
+                        </Panel>
+                        <PanelResizeHandle className="w-1 bg-slate-800 hover:bg-slate-700 transition-colors" />
+                        <Panel defaultSize={25} minSize={20}>
+                            <DiagnosticsPanel
+                                testCode={testCode} setTestCode={setTestCode}
+                                terminalRef={terminalRef}
+                                activeTab={diagnosticsTab}
+                                setActiveTab={setDiagnosticsTab}
+                            />
+                        </Panel>
+                    </PanelGroup>
+                </div>
+            </form>
+        </div>
+    );
+};
 
-// export default CreateLessonPage;
+export default CreateLessonPage;
 // /*
 //  * =================================================================
 //  * FOLDER: src/pages/
