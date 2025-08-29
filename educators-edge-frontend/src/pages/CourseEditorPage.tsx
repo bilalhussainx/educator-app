@@ -1,10 +1,10 @@
 
 // // MVP
 // // FILE: src/pages/CourseEditorPage.tsx (Definitive, No-DND, Fully Functional)
-// import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// import { useParams, useNavigate } from 'react-router-dom';
-// import apiClient from '../services/apiClient';
-// import { useDebounce } from '../hooks/useDebounce'; // You will need to create this simple custom hook
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import apiClient from '../services/apiClient';
+import { useDebounce } from '../hooks/useDebounce'; // You will need to create this simple custom hook
 
 // // --- UI IMPORTS ---
 import { Button } from '@/components/ui/button';
