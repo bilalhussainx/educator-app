@@ -20,6 +20,8 @@ import { AppLayout } from './components/layout/AppLayout';
 
 // --- Page Components ---
 import CourseEditorPage from './pages/CourseEditorPage.tsx';
+import CourseLearnPage from './pages/CourseLearnPage'; // <-- 1. IMPORT THE NEW PAGE
+
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
