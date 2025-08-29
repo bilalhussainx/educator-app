@@ -480,6 +480,21 @@ exports.createLesson = async (req, res) => {
 exports.addLessonToCourse = async (req, res) => {
     const { courseId } = req.params;
     const { ingestedLessonId } = req.body;
+    
+    // Debug logging to see what we're getting from req.user
+    console.log('req.user:', req.user);
+    console.log('courseId:', courseId);
+    console.log('ingestedLessonId:', ingestedLessonId);
+    
+    // Check if req.user exists and has an id
+    if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    if (!req.user.id) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+    }
+    
     const teacherId = req.user.id;
 
     if (!ingestedLessonId) {
@@ -504,6 +519,12 @@ exports.addLessonToCourse = async (req, res) => {
 
         const orderQuery = await client.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
+
+        // Additional validation before INSERT
+        console.log('About to insert lesson with teacherId:', teacherId);
+        if (!teacherId) {
+            throw new Error('Teacher ID is null or undefined');
+        }
 
         const newLessonId = uuidv4();
         await client.query(
