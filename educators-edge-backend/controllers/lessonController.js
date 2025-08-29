@@ -512,7 +512,8 @@ exports.addLessonToCourse = async (req, res) => {
             [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex, teacherId]
         );
 
-        if (lessonData.files) {
+        // [THE FIX - PART 1] Defensively handle the 'files' column.
+        if (lessonData.files) { // Only proceed if the column is not NULL
             const boilerplateFiles = JSON.parse(lessonData.files);
             if (Array.isArray(boilerplateFiles)) {
                 for (const file of boilerplateFiles) {
@@ -523,7 +524,8 @@ exports.addLessonToCourse = async (req, res) => {
             }
         }
 
-        if (lessonData.solution_files) {
+        // [THE FIX - PART 2] Defensively handle the 'solution_files' column.
+        if (lessonData.solution_files) { // Only proceed if the column is not NULL
             const solutionFiles = JSON.parse(lessonData.solution_files);
             if (Array.isArray(solutionFiles)) {
                 for (const file of solutionFiles) {
@@ -534,17 +536,16 @@ exports.addLessonToCourse = async (req, res) => {
             }
         }
 
-        if (lessonData.test_code) {
+        // [THE FIX - PART 3] Defensively handle the 'test_code' column.
+        if (lessonData.test_code) { // Only proceed if the column is not NULL
             const tests = JSON.parse(lessonData.test_code);
-            
-            // [THE FIX] The TypeScript type annotation `(t: { text: string })` has been removed.
-            // This is now valid, executable JavaScript that the Node.js runtime will parse correctly.
-            const testString = tests.flat()
-                .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
-                .join('\n');
-
-            if (testString) {
-                 await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
+            if (Array.isArray(tests)) {
+                const testString = tests.flat()
+                    .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
+                    .join('\n');
+                if (testString) {
+                     await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
+                }
             }
         }
         
@@ -557,117 +558,6 @@ exports.addLessonToCourse = async (req, res) => {
         res.status(500).json({ error: 'An error occurred while adding the lesson. The operation was safely rolled back.' });
     } finally {
         client.release();
-    }
-};
-
-
-
-
-// --- 
-// updated to trigger the APE worker on success ---
-exports.createSubmission = async (req, res) => {
-    const studentId = req.user.id;
-    // The route parameter for submit is just 'id' based on your original controller
-    const { id: lessonId } = req.params; 
-    
-    const { files, time_to_solve_seconds, code_churn, copy_paste_activity } = req.body;
-    
-    if (!files || !Array.isArray(files) || files.length === 0) {
-        return res.status(400).json({ error: 'Submitted code cannot be empty.' });
-    }
-    const studentCode = files.map(f => f.content).join('\n\n');
-
-    try {
-        const lessonResult = await db.query('SELECT language, objective FROM lessons WHERE id = $1', [lessonId]);
-        if (lessonResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Lesson not found.' });
-        }
-        const { language, objective } = lessonResult.rows[0];
-
-        const testCodeResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
-        if (testCodeResult.rows.length === 0) {
-            return res.status(404).json({ error: 'No tests found for this lesson.' });
-        }
-        const testCode = testCodeResult.rows[0].test_code;
-
-        const fullCode = `${studentCode}\n\n${testCode}`;
-        const execution = await executeCode(fullCode, language);
-
-        const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
-
-        // Try to insert with all new metrics columns, fallback to basic if fails
-        let submissionResult;
-        try {
-            submissionResult = await db.query(
-                `INSERT INTO submissions (
-                    lesson_id, 
-                    student_id, 
-                    submitted_code, 
-                    time_to_solve_seconds, 
-                    code_churn,
-                    copy_paste_activity,
-                    time_taken,
-                    error_types,
-                    is_correct
-                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-                [
-                    lessonId, 
-                    studentId, 
-                    JSON.stringify(files), 
-                    time_to_solve_seconds, 
-                    code_churn,
-                    copy_paste_activity || 0,
-                    Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
-                    JSON.stringify(errorTypes),
-                    execution.success // This is the boolean value for is_correct
-                ]
-            );
-        } catch (columnError) {
-            console.log('New columns not available in submissions table, using fallback insert:', columnError.message);
-            // Fallback to basic submission without metrics
-            submissionResult = await db.query(
-                `INSERT INTO submissions (
-                    lesson_id, 
-                    student_id, 
-                    submitted_code
-                 ) VALUES ($1, $2, $3) RETURNING id`,
-                [
-                    lessonId, 
-                    studentId, 
-                    JSON.stringify(files)
-                ]
-            );
-        }
-        const newSubmissionId = submissionResult.rows[0].id;
-        console.log(`[APE LOG] Submission ${newSubmissionId} created with analytics.`);
-
-        if (execution.success) {
-            await apeQueue.add('analyze-submission', {
-                userId: studentId,
-                lessonId: lessonId,
-                submissionId: newSubmissionId,
-            });
-            console.log(`[APE QUEUE] Job added for user ${studentId} on lesson ${lessonId}.`);
-
-            if (objective) {
-                // In your aiController/aiFeedbackService, this function must exist.
-                const feedback = await getConceptualHint(objective, studentCode);
-                
-                if (feedback.feedback_type === 'conceptual_hint') {
-                    await db.query(
-                        `INSERT INTO conceptual_feedback_log (submission_id, feedback_message) VALUES ($1, $2)`,
-                        [newSubmissionId, feedback.message]
-                    );
-                    return res.json(feedback);
-                }
-            }
-            return res.json({ message: "Solution submitted successfully!" });
-        } else {
-            return res.status(400).json({ error: "Your solution did not pass all the tests." });
-        }
-    } catch (err) {
-        console.error("CRITICAL ERROR in createSubmission:", err.message);
-        res.status(500).json({ error: 'An internal server error occurred while processing your submission.' });
     }
 };
 
