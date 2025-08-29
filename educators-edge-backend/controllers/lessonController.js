@@ -486,30 +486,25 @@ exports.addLessonToCourse = async (req, res) => {
         return res.status(400).json({ error: 'Ingested Lesson ID is required.' });
     }
 
-    // Establish a single client connection for a safe database transaction
     const client = await db.pool.connect(); 
 
     try {
-        await client.query('BEGIN'); // Start the transaction
+        await client.query('BEGIN');
 
-        // Step 1: Authorize that the teacher owns the target course.
         const courseCheck = await client.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
         if (courseCheck.rows.length === 0) {
             throw new Error('Course not found or user is not authorized.');
         }
 
-        // Step 2: Fetch the complete source lesson data from the ingested_lessons table.
         const lessonDataResult = await client.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId]);
         if (lessonDataResult.rows.length === 0) {
             throw new Error('Lesson not found in the library.');
         }
         const lessonData = lessonDataResult.rows[0];
 
-        // Step 3: Determine the correct order_index for the new lesson.
         const orderQuery = await client.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
 
-        // Step 4: Create the new lesson, including the required teacher_id.
         const newLessonId = uuidv4();
         await client.query(
             `INSERT INTO lessons (id, course_id, title, description, lesson_type, order_index, teacher_id) 
@@ -517,7 +512,6 @@ exports.addLessonToCourse = async (req, res) => {
             [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex, teacherId]
         );
 
-        // Step 5: Safely copy all associated boilerplate files.
         if (lessonData.files) {
             const boilerplateFiles = JSON.parse(lessonData.files);
             if (Array.isArray(boilerplateFiles)) {
@@ -529,7 +523,6 @@ exports.addLessonToCourse = async (req, res) => {
             }
         }
 
-        // Step 6: Safely copy all associated solution files.
         if (lessonData.solution_files) {
             const solutionFiles = JSON.parse(lessonData.solution_files);
             if (Array.isArray(solutionFiles)) {
@@ -541,12 +534,11 @@ exports.addLessonToCourse = async (req, res) => {
             }
         }
 
-        // Step 7: Safely copy all associated tests.
         if (lessonData.test_code) {
             const tests = JSON.parse(lessonData.test_code);
-
-            // [THE FIX] The TypeScript type annotation '(t: { text: string })' has been removed.
-            // This is now valid, executable JavaScript.
+            
+            // [THE FIX] The TypeScript type annotation `(t: { text: string })` has been removed.
+            // This is now valid, executable JavaScript that the Node.js runtime will parse correctly.
             const testString = tests.flat()
                 .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
                 .join('\n');
@@ -556,18 +548,17 @@ exports.addLessonToCourse = async (req, res) => {
             }
         }
         
-        await client.query('COMMIT'); // Commit the transaction if all steps succeed.
+        await client.query('COMMIT');
         res.status(201).json({ message: 'Lesson added successfully', lessonId: newLessonId });
 
     } catch (err) {
-        await client.query('ROLLBACK'); // Abort the entire operation on any error.
+        await client.query('ROLLBACK');
         console.error("CRITICAL ERROR in addLessonToCourse:", err.message);
         res.status(500).json({ error: 'An error occurred while adding the lesson. The operation was safely rolled back.' });
     } finally {
-        client.release(); // Always release the client back to the pool.
+        client.release();
     }
 };
-
 
 
 
