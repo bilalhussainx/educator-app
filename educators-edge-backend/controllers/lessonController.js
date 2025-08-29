@@ -1,4 +1,5 @@
 /**
+ * please read line 670-73 for context
  * @file lessonController.js
  * @description This version is updated to support the Adaptive Path Engine (APE).
  * It now receives and stores granular analytics data with each submission,
@@ -13,7 +14,7 @@ const apeQueue = require('../queues/apeQueue'); // Adjust the path if necessary
 /**
  * Parses a standard error string to identify common error types.
  * @param {string} stderr The standard error output from a code execution.
- * @returns {string[]} An array of unique error types found (e.g., ['SyntaxError', 'AssertionError']).
+ * @returns {string[\} An array of unique error types found (e.g., ['SyntaxError', 'AssertionError']).
  */
 const parseErrorTypes = (stderr = '') => {
     const errors = new Set(); // Use a Set to avoid duplicates
@@ -167,6 +168,830 @@ exports.getLessonSolution = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
+exports.getAscentIdeData = async (req, res) => {
+    const { lessonId } = req.params;
+    const studentId = req.user.id;
+    try {
+        const lessonResult = await db.query('SELECT *, lesson_type FROM lessons WHERE id = $1', [lessonId]);
+        if (lessonResult.rows.length === 0) return res.status(404).json({ error: 'Lesson not found.' });
+        const lesson = lessonResult.rows[0];
+        
+        let files = [];
+        const savedProgressResult = await db.query('SELECT files FROM saved_progress WHERE student_id = $1 AND lesson_id = $2 ORDER BY saved_at DESC LIMIT 1', [studentId, lessonId]);
+        if (savedProgressResult.rows.length > 0) {
+            files = savedProgressResult.rows[0].files;
+        } else {
+            const lastSubmissionResult = await db.query('SELECT submitted_code FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC LIMIT 1', [studentId, lessonId]);
+            if (lastSubmissionResult.rows.length > 0) {
+                files = lastSubmissionResult.rows[0].submitted_code;
+            } else {
+                const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
+                files = templateFilesResult.rows;
+            }
+        }
+        
+        const gradedSubmissionResult = await db.query(`SELECT id, feedback, grade, submitted_at FROM submissions WHERE student_id = $1 AND lesson_id = $2 AND grade IS NOT NULL ORDER BY submitted_at DESC LIMIT 1`, [studentId, lessonId]);
+        const gradedSubmission = gradedSubmissionResult.rows[0] || null;
+
+        const historyResult = await db.query('SELECT id, submitted_at, is_correct FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC', [studentId, lessonId]);
+        const submissionHistory = historyResult.rows;
+
+        // Simplified placeholder data
+        const testCases = []; 
+        const officialSolution = { explanation: "The official solution is available after you pass all tests." };
+
+        res.json({
+            lesson, files, gradedSubmission, testCases, submissionHistory, officialSolution,
+            courseId: lesson.course_id, previousLessonId: null, nextLessonId: null,
+        });
+
+    } catch (err) {
+        console.error("Error in getAscentIdeData:", err.message);
+        res.status(500).json({ error: 'A server error occurred.' });
+    }
+};
+
+// exports.getLessonSolution = async (req, res) => {
+//     const { lessonId } = req.params;
+//     try {
+//         const solutionFilesResult = await db.query(
+//             'SELECT filename, content FROM lesson_solution_files WHERE lesson_id = $1',
+//             [lessonId]
+//         );
+//         if (solutionFilesResult.rows.length === 0) {
+//             return res.status(404).json({ error: 'Solution not found for this lesson.' });
+//         }
+//         res.json(solutionFilesResult.rows);
+//     } catch (err) {
+//         console.error("Error in getLessonSolution:", err.message);
+//         res.status(500).send('Server Error');
+//     }
+// };
+
+// exports.createLesson = async (req, res) => {
+//   // Get a client from the pool to run multiple queries in a single transaction.
+//   // This is crucial for data integrity.
+//   const client = await db.pool.connect(); 
+
+//   try {
+//     // Start the transaction block
+//     await client.query('BEGIN');
+
+//     const teacherId = req.user.id;
+//     // Destructure all expected fields from the request body
+//     const { title, description, objective, files, courseId, testCode, concepts, lesson_type = 'algorithmic' } = req.body;
+
+//     // --- 1. Validation Logic ---
+//     if (!title || !files || !Array.isArray(files) || files.length === 0 || !courseId) {
+//         // If validation fails, we don't need to roll back, just release the client.
+//         client.release();
+//         return res.status(400).json({ error: 'Title, files, and courseId are required.' });
+//     }
+    
+//     // --- 2. Determine Lesson Language ---
+//     const extension = files[0]?.filename.split('.').pop();
+//     const languageMap = { js: 'javascript', py: 'python', java: 'java' };
+//     const lessonLanguage = languageMap[extension] || 'plaintext';
+
+//     // --- 3. Insert the main lesson record ---
+//     const newLessonResult = await client.query(
+//       'INSERT INTO lessons (title, description, objective, teacher_id, course_id, language, lesson_type) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+//       [title, description, objective, teacherId, courseId, lessonLanguage, lesson_type]
+//     );
+//     const newLesson = newLessonResult.rows[0];
+
+//     // --- 4. Insert all boilerplate files ---
+//     const filePromises = files.map(file => {
+//         return client.query(
+//             'INSERT INTO lesson_files (filename, content, lesson_id) VALUES ($1, $2, $3)',
+//             [file.filename, file.content, newLesson.id]
+//         );
+//     });
+//     await Promise.all(filePromises);
+
+//     // --- 5. Insert the test code ---
+//     if (testCode) {
+//         await client.query(
+//             'INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)',
+//             [newLesson.id, testCode]
+//         );
+//     }
+
+//     // --- 6. Insert the lesson-concept links ---
+//     if (concepts && Array.isArray(concepts) && concepts.length > 0) {
+//         const conceptPromises = concepts.map(concept => {
+//             // Validate that the concept object has the required properties
+//             if (concept.id && concept.mastery_level) {
+//                 const query = `
+//                     INSERT INTO lesson_concepts (lesson_id, concept_id, mastery_level)
+//                     VALUES ($1, $2, $3) ON CONFLICT (lesson_id, concept_id) DO NOTHING
+//                 `;
+//                 return client.query(query, [newLesson.id, concept.id, concept.mastery_level]);
+//             }
+//             return Promise.resolve(); // Ignore invalid concept objects in the array
+//         });
+//         await Promise.all(conceptPromises);
+//     }
+
+//     // If all queries were successful, commit the transaction to save the changes.
+//     await client.query('COMMIT');
+    
+//     res.status(201).json(newLesson);
+
+//   } catch (err) {
+//     // If any query within the 'try' block fails, roll back the entire transaction.
+//     // This prevents partial data from being saved to the database.
+//     await client.query('ROLLBACK');
+//     console.error("Error in createLesson, transaction rolled back:", err.message);
+//     res.status(500).json({ error: 'Server Error: Could not create lesson.' });
+//   } finally {
+//     // ALWAYS release the client back to the pool in a 'finally' block
+//     // to ensure the connection is returned, even if an error occurred.
+//     client.release();
+//   }
+// };
+
+// Library for the teacher to browse and choose lessons from
+// controllers/lessonController.js
+/**
+ * Adds an existing lesson from the library to a specific course.
+ */
+exports.addLessonToCourse = async (req, res) => {
+    const { courseId } = req.params;
+    const { ingestedLessonId } = req.body;
+    const teacherId = req.user.id;
+    
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+        const courseCheck = await client.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
+        if (courseCheck.rows.length === 0) throw new Error('Course not found or not owned by user.');
+
+        const lessonData = (await client.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId])).rows[0];
+        if (!lessonData) throw new Error('Lesson not found in library.');
+
+        const newLessonResult = await client.query(
+            `INSERT INTO lessons (title, description, course_id, teacher_id, lesson_type, language, objective)
+             VALUES ($1, $2, $3, $4, $5, $6, 'AI Objective Pending') RETURNING id, title, order_index`,
+            [lessonData.title, lessonData.description, courseId, teacherId, lessonData.lesson_type, lessonData.language]
+        );
+        const newLesson = newLessonResult.rows[0];
+
+        if (lessonData.files) for (const file of lessonData.files) await client.query(`INSERT INTO lesson_files (filename, content, lesson_id) VALUES ($1, $2, $3)`, [file.name || file.language, file.content || file.code, newLesson.id]);
+        if (lessonData.solution_files) for (const file of lessonData.solution_files) await client.query(`INSERT INTO lesson_solution_files (filename, content, lesson_id) VALUES ($1, $2, $3)`, [file.name || file.language, file.content || file.code, newLesson.id]);
+        if (lessonData.test_code) {
+            const testCode = Array.isArray(JSON.parse(lessonData.test_code)) ? JSON.parse(lessonData.test_code).map(t => t.testCode).join('\n') : lessonData.test_code;
+            await client.query(`INSERT INTO lesson_tests (test_code, lesson_id) VALUES ($1, $2)`, [testCode, newLesson.id]);
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json(newLesson);
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Error in addLessonToCourse:", err.message);
+        res.status(500).send('Server Error');
+    } finally {
+        client.release();
+    }
+};
+
+
+
+
+
+
+// --- 
+// updated to trigger the APE worker on success ---
+exports.createSubmission = async (req, res) => {
+    const studentId = req.user.id;
+    // The route parameter for submit is just 'id' based on your original controller
+    const { id: lessonId } = req.params; 
+    
+    const { files, time_to_solve_seconds, code_churn, copy_paste_activity } = req.body;
+    
+    if (!files || !Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({ error: 'Submitted code cannot be empty.' });
+    }
+    const studentCode = files.map(f => f.content).join('\n\n');
+
+    try {
+        const lessonResult = await db.query('SELECT language, objective FROM lessons WHERE id = $1', [lessonId]);
+        if (lessonResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Lesson not found.' });
+        }
+        const { language, objective } = lessonResult.rows[0];
+
+        const testCodeResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
+        if (testCodeResult.rows.length === 0) {
+            return res.status(404).json({ error: 'No tests found for this lesson.' });
+        }
+        const testCode = testCodeResult.rows[0].test_code;
+
+        const fullCode = `${studentCode}\n\n${testCode}`;
+        const execution = await executeCode(fullCode, language);
+
+        const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
+
+        // Try to insert with all new metrics columns, fallback to basic if fails
+        let submissionResult;
+        try {
+            submissionResult = await db.query(
+                `INSERT INTO submissions (
+                    lesson_id, 
+                    student_id, 
+                    submitted_code, 
+                    time_to_solve_seconds, 
+                    code_churn,
+                    copy_paste_activity,
+                    time_taken,
+                    error_types,
+                    is_correct
+                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+                [
+                    lessonId, 
+                    studentId, 
+                    JSON.stringify(files), 
+                    time_to_solve_seconds, 
+                    code_churn,
+                    copy_paste_activity || 0,
+                    Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
+                    JSON.stringify(errorTypes),
+                    execution.success // This is the boolean value for is_correct
+                ]
+            );
+        } catch (columnError) {
+            console.log('New columns not available in submissions table, using fallback insert:', columnError.message);
+            // Fallback to basic submission without metrics
+            submissionResult = await db.query(
+                `INSERT INTO submissions (
+                    lesson_id, 
+                    student_id, 
+                    submitted_code
+                 ) VALUES ($1, $2, $3) RETURNING id`,
+                [
+                    lessonId, 
+                    studentId, 
+                    JSON.stringify(files)
+                ]
+            );
+        }
+        const newSubmissionId = submissionResult.rows[0].id;
+        console.log(`[APE LOG] Submission ${newSubmissionId} created with analytics.`);
+
+        if (execution.success) {
+            await apeQueue.add('analyze-submission', {
+                userId: studentId,
+                lessonId: lessonId,
+                submissionId: newSubmissionId,
+            });
+            console.log(`[APE QUEUE] Job added for user ${studentId} on lesson ${lessonId}.`);
+
+            if (objective) {
+                // In your aiController/aiFeedbackService, this function must exist.
+                const feedback = await getConceptualHint(objective, studentCode);
+                
+                if (feedback.feedback_type === 'conceptual_hint') {
+                    await db.query(
+                        `INSERT INTO conceptual_feedback_log (submission_id, feedback_message) VALUES ($1, $2)`,
+                        [newSubmissionId, feedback.message]
+                    );
+                    return res.json(feedback);
+                }
+            }
+            return res.json({ message: "Solution submitted successfully!" });
+        } else {
+            return res.status(400).json({ error: "Your solution did not pass all the tests." });
+        }
+    } catch (err) {
+        console.error("CRITICAL ERROR in createSubmission:", err.message);
+        res.status(500).json({ error: 'An internal server error occurred while processing your submission.' });
+    }
+};
+// --- 
+// // updated to trigger the APE worker on success ---
+// exports.createSubmission = async (req, res) => {
+//     const studentId = req.user.id;
+//     // The route parameter for submit is just 'id' based on your original controller
+//     const { id: lessonId } = req.params; 
+    
+//     const { files, time_to_solve_seconds, code_churn, copy_paste_activity } = req.body;
+    
+//     if (!files || !Array.isArray(files) || files.length === 0) {
+//         return res.status(400).json({ error: 'Submitted code cannot be empty.' });
+//     }
+//     const studentCode = files.map(f => f.content).join('\n\n');
+
+//     try {
+//         const lessonResult = await db.query('SELECT language, objective FROM lessons WHERE id = $1', [lessonId]);
+//         if (lessonResult.rows.length === 0) {
+//             return res.status(404).json({ error: 'Lesson not found.' });
+//         }
+//         const { language, objective } = lessonResult.rows[0];
+
+//         const testCodeResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
+//         if (testCodeResult.rows.length === 0) {
+//             return res.status(404).json({ error: 'No tests found for this lesson.' });
+//         }
+//         const testCode = testCodeResult.rows[0].test_code;
+
+//         const fullCode = `${studentCode}\n\n${testCode}`;
+//         const execution = await executeCode(fullCode, language);
+
+//         const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
+
+//         // Try to insert with all new metrics columns, fallback to basic if fails
+//         let submissionResult;
+//         try {
+//             submissionResult = await db.query(
+//                 `INSERT INTO submissions (
+//                     lesson_id, 
+//                     student_id, 
+//                     submitted_code, 
+//                     time_to_solve_seconds, 
+//                     code_churn,
+//                     copy_paste_activity,
+//                     time_taken,
+//                     error_types,
+//                     is_correct
+//                  ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+//                 [
+//                     lessonId, 
+//                     studentId, 
+//                     JSON.stringify(files), 
+//                     time_to_solve_seconds, 
+//                     code_churn,
+//                     copy_paste_activity || 0,
+//                     Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
+//                     JSON.stringify(errorTypes),
+//                     execution.success // This is the boolean value for is_correct
+//                 ]
+//             );
+//         } catch (columnError) {
+//             console.log('New columns not available in submissions table, using fallback insert:', columnError.message);
+//             // Fallback to basic submission without metrics
+//             submissionResult = await db.query(
+//                 `INSERT INTO submissions (
+//                     lesson_id, 
+//                     student_id, 
+//                     submitted_code
+//                  ) VALUES ($1, $2, $3) RETURNING id`,
+//                 [
+//                     lessonId, 
+//                     studentId, 
+//                     JSON.stringify(files)
+//                 ]
+//             );
+//         }
+//         const newSubmissionId = submissionResult.rows[0].id;
+//         console.log(`[APE LOG] Submission ${newSubmissionId} created with analytics.`);
+
+//         if (execution.success) {
+//             await apeQueue.add('analyze-submission', {
+//                 userId: studentId,
+//                 lessonId: lessonId,
+//                 submissionId: newSubmissionId,
+//             });
+//             console.log(`[APE QUEUE] Job added for user ${studentId} on lesson ${lessonId}.`);
+
+//             if (objective) {
+//                 // In your aiController/aiFeedbackService, this function must exist.
+//                 const feedback = await getConceptualHint(objective, studentCode);
+                
+//                 if (feedback.feedback_type === 'conceptual_hint') {
+//                     await db.query(
+//                         `INSERT INTO conceptual_feedback_log (submission_id, feedback_message) VALUES ($1, $2)`,
+//                         [newSubmissionId, feedback.message]
+//                     );
+//                     return res.json(feedback);
+//                 }
+//             }
+//             return res.json({ message: "Solution submitted successfully!" });
+//         } else {
+//             return res.status(400).json({ error: "Your solution did not pass all the tests." });
+//         }
+//     } catch (err) {
+//         console.error("CRITICAL ERROR in createSubmission:", err.message);
+//         res.status(500).json({ error: 'An internal server error occurred while processing your submission.' });
+//     }
+// };
+
+exports.createLesson = async (req, res) => {
+  // Get a client from the pool to run multiple queries in a single transaction.
+  // This is crucial for data integrity.
+  const client = await db.pool.connect(); 
+
+  try {
+    // Start the transaction block
+    await client.query('BEGIN');
+
+    const teacherId = req.user.id;
+    // Destructure all expected fields from the request body
+    const { title, description, objective, files, courseId, testCode, concepts, lesson_type = 'algorithmic' } = req.body;
+
+    // --- 1. Validation Logic ---
+    if (!title || !files || !Array.isArray(files) || files.length === 0 || !courseId) {
+        // If validation fails, we don't need to roll back, just release the client.
+        client.release();
+        return res.status(400).json({ error: 'Title, files, and courseId are required.' });
+    }
+    
+    // --- 2. Determine Lesson Language ---
+    const extension = files[0]?.filename.split('.').pop();
+    const languageMap = { js: 'javascript', py: 'python', java: 'java' };
+    const lessonLanguage = languageMap[extension] || 'plaintext';
+
+    // --- 3. Insert the main lesson record ---
+    const newLessonResult = await client.query(
+      'INSERT INTO lessons (title, description, objective, teacher_id, course_id, language, lesson_type) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [title, description, objective, teacherId, courseId, lessonLanguage, lesson_type]
+    );
+    const newLesson = newLessonResult.rows[0];
+
+    // --- 4. Insert all boilerplate files ---
+    const filePromises = files.map(file => {
+        return client.query(
+            'INSERT INTO lesson_files (filename, content, lesson_id) VALUES ($1, $2, $3)',
+            [file.filename, file.content, newLesson.id]
+        );
+    });
+    await Promise.all(filePromises);
+
+    // --- 5. Insert the test code ---
+    if (testCode) {
+        await client.query(
+            'INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)',
+            [newLesson.id, testCode]
+        );
+    }
+
+    // --- 6. Insert the lesson-concept links ---
+    if (concepts && Array.isArray(concepts) && concepts.length > 0) {
+        const conceptPromises = concepts.map(concept => {
+            // Validate that the concept object has the required properties
+            if (concept.id && concept.mastery_level) {
+                const query = `
+                    INSERT INTO lesson_concepts (lesson_id, concept_id, mastery_level)
+                    VALUES ($1, $2, $3) ON CONFLICT (lesson_id, concept_id) DO NOTHING
+                `;
+                return client.query(query, [newLesson.id, concept.id, concept.mastery_level]);
+            }
+            return Promise.resolve(); // Ignore invalid concept objects in the array
+        });
+        await Promise.all(conceptPromises);
+    }
+
+    // If all queries were successful, commit the transaction to save the changes.
+    await client.query('COMMIT');
+    
+    res.status(201).json(newLesson);
+
+  } catch (err) {
+    // If any query within the 'try' block fails, roll back the entire transaction.
+    // This prevents partial data from being saved to the database.
+    await client.query('ROLLBACK');
+    console.error("Error in createLesson, transaction rolled back:", err.message);
+    res.status(500).json({ error: 'Server Error: Could not create lesson.' });
+  } finally {
+    // ALWAYS release the client back to the pool in a 'finally' block
+    // to ensure the connection is returned, even if an error occurred.
+    client.release();
+  }
+};
+
+// Library for the teacher to browse and choose lessons from
+// controllers/lessonController.js
+/**
+ * Adds an existing lesson from the library to a specific course.
+ */
+exports.addLessonToCourse = async (req, res) => {
+    const { courseId } = req.params;
+    const { ingestedLessonId } = req.body;
+    const teacherId = req.user.id;
+    
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+        const courseCheck = await client.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
+        if (courseCheck.rows.length === 0) throw new Error('Course not found or not owned by user.');
+
+        const lessonData = (await client.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId])).rows[0];
+        if (!lessonData) throw new Error('Lesson not found in library.');
+
+        const newLessonResult = await client.query(
+            `INSERT INTO lessons (title, description, course_id, teacher_id, lesson_type, language, objective)
+             VALUES ($1, $2, $3, $4, $5, $6, 'AI Objective Pending') RETURNING id, title, order_index`,
+            [lessonData.title, lessonData.description, courseId, teacherId, lessonData.lesson_type, lessonData.language]
+        );
+        const newLesson = newLessonResult.rows[0];
+
+        if (lessonData.files) for (const file of lessonData.files) await client.query(`INSERT INTO lesson_files (filename, content, lesson_id) VALUES ($1, $2, $3)`, [file.name || file.language, file.content || file.code, newLesson.id]);
+        if (lessonData.solution_files) for (const file of lessonData.solution_files) await client.query(`INSERT INTO lesson_solution_files (filename, content, lesson_id) VALUES ($1, $2, $3)`, [file.name || file.language, file.content || file.code, newLesson.id]);
+        if (lessonData.test_code) {
+            const testCode = Array.isArray(JSON.parse(lessonData.test_code)) ? JSON.parse(lessonData.test_code).map(t => t.testCode).join('\n') : lessonData.test_code;
+            await client.query(`INSERT INTO lesson_tests (test_code, lesson_id) VALUES ($1, $2)`, [testCode, newLesson.id]);
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json(newLesson);
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Error in addLessonToCourse:", err.message);
+        res.status(500).send('Server Error');
+    } finally {
+        client.release();
+    }
+};
+
+
+
+
+
+
+// --- 
+// updated to trigger the APE worker on success ---
+exports.createSubmission = async (req, res) => {
+    const studentId = req.user.id;
+    // The route parameter for submit is just 'id' based on your original controller
+    const { id: lessonId } = req.params; 
+    
+    const { files, time_to_solve_seconds, code_churn, copy_paste_activity } = req.body;
+    
+    if (!files || !Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({ error: 'Submitted code cannot be empty.' });
+    }
+    const studentCode = files.map(f => f.content).join('\n\n');
+
+    try {
+        const lessonResult = await db.query('SELECT language, objective FROM lessons WHERE id = $1', [lessonId]);
+        if (lessonResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Lesson not found.' });
+        }
+        const { language, objective } = lessonResult.rows[0];
+
+        const testCodeResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
+        if (testCodeResult.rows.length === 0) {
+            return res.status(404).json({ error: 'No tests found for this lesson.' });
+        }
+        const testCode = testCodeResult.rows[0].test_code;
+
+        const fullCode = `${studentCode}\n\n${testCode}`;
+        const execution = await executeCode(fullCode, language);
+
+        const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
+
+        // Try to insert with all new metrics columns, fallback to basic if fails
+        let submissionResult;
+        try {
+            submissionResult = await db.query(
+                `INSERT INTO submissions (
+                    lesson_id, 
+                    student_id, 
+                    submitted_code, 
+                    time_to_solve_seconds, 
+                    code_churn,
+                    copy_paste_activity,
+                    time_taken,
+                    error_types,
+                    is_correct
+                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+                [
+                    lessonId, 
+                    studentId, 
+                    JSON.stringify(files), 
+                    time_to_solve_seconds, 
+                    code_churn,
+                    copy_paste_activity || 0,
+                    Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
+                    JSON.stringify(errorTypes),
+                    execution.success // This is the boolean value for is_correct
+                ]
+            );
+        } catch (columnError) {
+            console.log('New columns not available in submissions table, using fallback insert:', columnError.message);
+            // Fallback to basic submission without metrics
+            submissionResult = await db.query(
+                `INSERT INTO submissions (
+                    lesson_id, 
+                    student_id, 
+                    submitted_code
+                 ) VALUES ($1, $2, $3) RETURNING id`,
+                [
+                    lessonId, 
+                    studentId, 
+                    JSON.stringify(files)
+                ]
+            );
+        }
+        const newSubmissionId = submissionResult.rows[0].id;
+        console.log(`[APE LOG] Submission ${newSubmissionId} created with analytics.`);
+
+        if (execution.success) {
+            await apeQueue.add('analyze-submission', {
+                userId: studentId,
+                lessonId: lessonId,
+                submissionId: newSubmissionId,
+            });
+            console.log(`[APE QUEUE] Job added for user ${studentId} on lesson ${lessonId}.`);
+
+            if (objective) {
+                // In your aiController/aiFeedbackService, this function must exist.
+                const feedback = await getConceptualHint(objective, studentCode);
+                
+                if (feedback.feedback_type === 'conceptual_hint') {
+                    await db.query(
+                        `INSERT INTO conceptual_feedback_log (submission_id, feedback_message) VALUES ($1, $2)`,
+                        [newSubmissionId, feedback.message]
+                    );
+                    return res.json(feedback);
+                }
+            }
+            return res.json({ message: "Solution submitted successfully!" });
+        } else {
+            return res.status(400).json({ error: "Your solution did not pass all the tests." });
+        }
+    } catch (err) {
+        console.error("CRITICAL ERROR in createSubmission:", err.message);
+        res.status(500).json({ error: 'An internal server error occurred while processing your submission.' });
+    }
+};
+
+// --- Get lesson submissions (includes AI feedback) ---
+exports.getLessonSubmissions = async (req, res) => {
+    try {
+        const lessonId = req.params.id;
+        const lesson = await db.query('SELECT teacher_id FROM lessons WHERE id = $1', [lessonId]);
+        if (lesson.rows.length === 0) return res.status(404).json({ error: 'Lesson not found' });
+        if (lesson.rows[0].teacher_id !== req.user.id) return res.status(403).json({ error: 'You are not authorized to view submissions for this lesson.' });
+        
+        // First try the full query with all new columns, fallback to basic if fails
+        let submissions;
+        try {
+            submissions = await db.query(
+                `SELECT 
+                    s.id, 
+                    s.submitted_code, 
+                    s.feedback, 
+                    s.grade, 
+                    s.submitted_at, 
+                    u.username,
+                    COALESCE(s.mastery_level, 0) as mastery_level,
+                    COALESCE(s.code_churn, 0) as code_churn,
+                    COALESCE(s.copy_paste_activity, 0) as copy_paste_activity,
+                    COALESCE(s.time_taken, 0) as time_taken
+                 FROM submissions s 
+                 JOIN users u ON s.student_id = u.id
+                 WHERE s.lesson_id = $1 
+                 ORDER BY s.submitted_at DESC`,
+                [lessonId]
+            );
+        } catch (columnError) {
+            console.log('New columns not available, falling back to basic query:', columnError.message);
+            // Fallback query without new columns if they don't exist yet
+            submissions = await db.query(
+                `SELECT 
+                    s.id, 
+                    s.submitted_code, 
+                    s.feedback, 
+                    s.grade, 
+                    s.submitted_at, 
+                    u.username
+                 FROM submissions s 
+                 JOIN users u ON s.student_id = u.id
+                 WHERE s.lesson_id = $1 
+                 ORDER BY s.submitted_at DESC`,
+                [lessonId]
+            );
+        }
+        res.json(submissions.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+// --- Other controller functions remain the same ---
+exports.runLessonTests = async (req, res) => {
+    const { id: lessonId } = req.params;
+    // Your controller was missing this from an earlier step, which may cause errors
+    const studentId = req.user.id; 
+
+    try {
+        const { files } = req.body;
+        const lessonResult = await db.query('SELECT language FROM lessons WHERE id = $1', [lessonId]);
+        if (lessonResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Lesson not found.' });
+        }
+        const language = lessonResult.rows[0].language;
+
+        const testCodeResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
+        
+        // --- THIS IS THE ROBUSTNESS FIX ---
+        if (testCodeResult.rows.length === 0 || !testCodeResult.rows[0].test_code) {
+            console.warn(`No tests found for lesson ${lessonId}. Auto-passing.`);
+            return res.json({
+                passed: 1, failed: 0, total: 1,
+                results: "No tests found for this lesson. Marked as complete."
+            });
+        }
+        const testCode = testCodeResult.rows[0].test_code;
+        // --- END OF FIX ---
+
+        const studentCode = files.map(f => f.content).join('\n\n');
+        const fullCode = `${studentCode}\n\n${testCode}`;
+        const execution = await executeCode(fullCode, language);
+
+        // ... (The rest of your logic for calculating passed/failed tests and logging is fine)
+        const testSummary = { /* ... */ };
+        res.json(testSummary);
+
+    } catch (err) {
+        console.error("Error in runLessonTests:", err.message);
+        res.status(500).json({
+            passed: 0, failed: 1, total: 1,
+            results: `A server error occurred: ${err.message}`
+        });
+    }
+};
+
+exports.getAllLessons = async (req, res) => {
+    try {
+        const lessons = await db.query('SELECT id, title, description, created_at, language FROM lessons ORDER BY created_at DESC');
+        res.json(lessons.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.getLessonById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const lessonResult = await db.query('SELECT * FROM lessons WHERE id = $1', [id]);
+        if (lessonResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Lesson not found.' });
+        }
+        const lesson = lessonResult.rows[0];
+        const filesResult = await db.query('SELECT id, filename, content FROM lesson_files WHERE lesson_id = $1', [id]);
+        lesson.files = filesResult.rows;
+        res.json(lesson);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.updateSubmission = async (req, res) => {
+    try {
+        const { submissionId } = req.params;
+        const { feedback, grade } = req.body;
+        const teacherId = req.user.id;
+        const submissionResult = await db.query(
+            `SELECT s.id FROM submissions s JOIN lessons l ON s.lesson_id = l.id
+             WHERE s.id = $1 AND l.teacher_id = $2`,
+            [submissionId, teacherId]
+        );
+        if (submissionResult.rows.length === 0) {
+            return res.status(403).json({ error: 'You are not authorized to grade this submission.' });
+        }
+        const updatedSubmission = await db.query(
+            'UPDATE submissions SET feedback = $1, grade = $2 WHERE id = $3 RETURNING *',
+            [feedback, grade, submissionId]
+        );
+        res.json(updatedSubmission.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
+exports.getStudentSubmissionForLesson = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+        const lessonId = req.params.id;
+        const submission = await db.query(
+            'SELECT * FROM submissions WHERE lesson_id = $1 AND student_id = $2 ORDER BY submitted_at DESC LIMIT 1',
+            [lessonId, studentId]
+        );
+        if (submission.rows.length === 0) {
+            return res.json(null);
+        }
+        res.json(submission.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+exports.getTeacherLessons = async (req, res) => {
+    try {
+        const teacherId = req.user.id;
+        const result = await db.query('SELECT id, title FROM lessons WHERE teacher_id = $1 ORDER BY created_at DESC', [teacherId]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
+
 // exports.getStudentLessonState = async (req, res) => {
 //     const studentId = req.user.id;
 //     const { lessonId } = req.params; 
@@ -342,194 +1167,7 @@ exports.getLessonSolution = async (req, res) => {
 //     client.release();
 //   }
 // };
-exports.createLesson = async (req, res) => {
-  // Get a client from the pool to run multiple queries in a single transaction.
-  // This is crucial for data integrity.
-  const client = await db.pool.connect(); 
 
-  try {
-    // Start the transaction block
-    await client.query('BEGIN');
-
-    const teacherId = req.user.id;
-    // Destructure all expected fields from the request body
-    const { title, description, objective, files, courseId, testCode, concepts, lesson_type = 'algorithmic' } = req.body;
-
-    // --- 1. Validation Logic ---
-    if (!title || !files || !Array.isArray(files) || files.length === 0 || !courseId) {
-        // If validation fails, we don't need to roll back, just release the client.
-        client.release();
-        return res.status(400).json({ error: 'Title, files, and courseId are required.' });
-    }
-    
-    // --- 2. Determine Lesson Language ---
-    const extension = files[0]?.filename.split('.').pop();
-    const languageMap = { js: 'javascript', py: 'python', java: 'java' };
-    const lessonLanguage = languageMap[extension] || 'plaintext';
-
-    // --- 3. Insert the main lesson record ---
-    const newLessonResult = await client.query(
-      'INSERT INTO lessons (title, description, objective, teacher_id, course_id, language, lesson_type) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [title, description, objective, teacherId, courseId, lessonLanguage, lesson_type]
-    );
-    const newLesson = newLessonResult.rows[0];
-
-    // --- 4. Insert all boilerplate files ---
-    const filePromises = files.map(file => {
-        return client.query(
-            'INSERT INTO lesson_files (filename, content, lesson_id) VALUES ($1, $2, $3)',
-            [file.filename, file.content, newLesson.id]
-        );
-    });
-    await Promise.all(filePromises);
-
-    // --- 5. Insert the test code ---
-    if (testCode) {
-        await client.query(
-            'INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)',
-            [newLesson.id, testCode]
-        );
-    }
-
-    // --- 6. Insert the lesson-concept links ---
-    if (concepts && Array.isArray(concepts) && concepts.length > 0) {
-        const conceptPromises = concepts.map(concept => {
-            // Validate that the concept object has the required properties
-            if (concept.id && concept.mastery_level) {
-                const query = `
-                    INSERT INTO lesson_concepts (lesson_id, concept_id, mastery_level)
-                    VALUES ($1, $2, $3) ON CONFLICT (lesson_id, concept_id) DO NOTHING
-                `;
-                return client.query(query, [newLesson.id, concept.id, concept.mastery_level]);
-            }
-            return Promise.resolve(); // Ignore invalid concept objects in the array
-        });
-        await Promise.all(conceptPromises);
-    }
-
-    // If all queries were successful, commit the transaction to save the changes.
-    await client.query('COMMIT');
-    
-    res.status(201).json(newLesson);
-
-  } catch (err) {
-    // If any query within the 'try' block fails, roll back the entire transaction.
-    // This prevents partial data from being saved to the database.
-    await client.query('ROLLBACK');
-    console.error("Error in createLesson, transaction rolled back:", err.message);
-    res.status(500).json({ error: 'Server Error: Could not create lesson.' });
-  } finally {
-    // ALWAYS release the client back to the pool in a 'finally' block
-    // to ensure the connection is returned, even if an error occurred.
-    client.release();
-  }
-};
-// --- createSubmission updated to trigger the APE worker on success ---
-exports.createSubmission = async (req, res) => {
-    const studentId = req.user.id;
-    // The route parameter for submit is just 'id' based on your original controller
-    const { id: lessonId } = req.params; 
-    
-    const { files, time_to_solve_seconds, code_churn, copy_paste_activity } = req.body;
-    
-    if (!files || !Array.isArray(files) || files.length === 0) {
-        return res.status(400).json({ error: 'Submitted code cannot be empty.' });
-    }
-    const studentCode = files.map(f => f.content).join('\n\n');
-
-    try {
-        const lessonResult = await db.query('SELECT language, objective FROM lessons WHERE id = $1', [lessonId]);
-        if (lessonResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Lesson not found.' });
-        }
-        const { language, objective } = lessonResult.rows[0];
-
-        const testCodeResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
-        if (testCodeResult.rows.length === 0) {
-            return res.status(404).json({ error: 'No tests found for this lesson.' });
-        }
-        const testCode = testCodeResult.rows[0].test_code;
-
-        const fullCode = `${studentCode}\n\n${testCode}`;
-        const execution = await executeCode(fullCode, language);
-
-        const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
-
-        // Try to insert with all new metrics columns, fallback to basic if fails
-        let submissionResult;
-        try {
-            submissionResult = await db.query(
-                `INSERT INTO submissions (
-                    lesson_id, 
-                    student_id, 
-                    submitted_code, 
-                    time_to_solve_seconds, 
-                    code_churn,
-                    copy_paste_activity,
-                    time_taken,
-                    error_types,
-                    is_correct
-                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-                [
-                    lessonId, 
-                    studentId, 
-                    JSON.stringify(files), 
-                    time_to_solve_seconds, 
-                    code_churn,
-                    copy_paste_activity || 0,
-                    Math.round(time_to_solve_seconds / 60), // Convert seconds to minutes for time_taken
-                    JSON.stringify(errorTypes),
-                    execution.success // This is the boolean value for is_correct
-                ]
-            );
-        } catch (columnError) {
-            console.log('New columns not available in submissions table, using fallback insert:', columnError.message);
-            // Fallback to basic submission without metrics
-            submissionResult = await db.query(
-                `INSERT INTO submissions (
-                    lesson_id, 
-                    student_id, 
-                    submitted_code
-                 ) VALUES ($1, $2, $3) RETURNING id`,
-                [
-                    lessonId, 
-                    studentId, 
-                    JSON.stringify(files)
-                ]
-            );
-        }
-        const newSubmissionId = submissionResult.rows[0].id;
-        console.log(`[APE LOG] Submission ${newSubmissionId} created with analytics.`);
-
-        if (execution.success) {
-            await apeQueue.add('analyze-submission', {
-                userId: studentId,
-                lessonId: lessonId,
-                submissionId: newSubmissionId,
-            });
-            console.log(`[APE QUEUE] Job added for user ${studentId} on lesson ${lessonId}.`);
-
-            if (objective) {
-                // In your aiController/aiFeedbackService, this function must exist.
-                const feedback = await getConceptualHint(objective, studentCode);
-                
-                if (feedback.feedback_type === 'conceptual_hint') {
-                    await db.query(
-                        `INSERT INTO conceptual_feedback_log (submission_id, feedback_message) VALUES ($1, $2)`,
-                        [newSubmissionId, feedback.message]
-                    );
-                    return res.json(feedback);
-                }
-            }
-            return res.json({ message: "Solution submitted successfully!" });
-        } else {
-            return res.status(400).json({ error: "Your solution did not pass all the tests." });
-        }
-    } catch (err) {
-        console.error("CRITICAL ERROR in createSubmission:", err.message);
-        res.status(500).json({ error: 'An internal server error occurred while processing your submission.' });
-    }
-};
 // exports.createSubmission = async (req, res) => {
 //     const studentId = req.user.id;
 //     const lessonId = req.params.id; // Assuming route is /api/lessons/:id/submit
@@ -625,6 +1263,7 @@ exports.createSubmission = async (req, res) => {
 //     }
 // };
 // // --- APE PHASE 2: createSubmission is heavily updated to capture analytics ---
+// IMPORTANT WORK HERE ASK GEMINI for implementation plan!!!
 // exports.createSubmission = async (req, res) => {
 //     const studentId = req.user.id;
 //     const lessonId = req.params.id; // Assuming route is /api/lessons/:id/submit
@@ -705,103 +1344,7 @@ exports.createSubmission = async (req, res) => {
 //     }
 // };
 
-// --- Get lesson submissions (includes AI feedback) ---
-exports.getLessonSubmissions = async (req, res) => {
-    try {
-        const lessonId = req.params.id;
-        const lesson = await db.query('SELECT teacher_id FROM lessons WHERE id = $1', [lessonId]);
-        if (lesson.rows.length === 0) return res.status(404).json({ error: 'Lesson not found' });
-        if (lesson.rows[0].teacher_id !== req.user.id) return res.status(403).json({ error: 'You are not authorized to view submissions for this lesson.' });
-        
-        // First try the full query with all new columns, fallback to basic if fails
-        let submissions;
-        try {
-            submissions = await db.query(
-                `SELECT 
-                    s.id, 
-                    s.submitted_code, 
-                    s.feedback, 
-                    s.grade, 
-                    s.submitted_at, 
-                    u.username,
-                    COALESCE(s.mastery_level, 0) as mastery_level,
-                    COALESCE(s.code_churn, 0) as code_churn,
-                    COALESCE(s.copy_paste_activity, 0) as copy_paste_activity,
-                    COALESCE(s.time_taken, 0) as time_taken
-                 FROM submissions s 
-                 JOIN users u ON s.student_id = u.id
-                 WHERE s.lesson_id = $1 
-                 ORDER BY s.submitted_at DESC`,
-                [lessonId]
-            );
-        } catch (columnError) {
-            console.log('New columns not available, falling back to basic query:', columnError.message);
-            // Fallback query without new columns if they don't exist yet
-            submissions = await db.query(
-                `SELECT 
-                    s.id, 
-                    s.submitted_code, 
-                    s.feedback, 
-                    s.grade, 
-                    s.submitted_at, 
-                    u.username
-                 FROM submissions s 
-                 JOIN users u ON s.student_id = u.id
-                 WHERE s.lesson_id = $1 
-                 ORDER BY s.submitted_at DESC`,
-                [lessonId]
-            );
-        }
-        res.json(submissions.rows);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: 'Server Error' });
-    }
-};
 
-// --- Other controller functions remain the same ---
-exports.runLessonTests = async (req, res) => {
-    const { id: lessonId } = req.params;
-    // Your controller was missing this from an earlier step, which may cause errors
-    const studentId = req.user.id; 
-
-    try {
-        const { files } = req.body;
-        const lessonResult = await db.query('SELECT language FROM lessons WHERE id = $1', [lessonId]);
-        if (lessonResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Lesson not found.' });
-        }
-        const language = lessonResult.rows[0].language;
-
-        const testCodeResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
-        
-        // --- THIS IS THE ROBUSTNESS FIX ---
-        if (testCodeResult.rows.length === 0 || !testCodeResult.rows[0].test_code) {
-            console.warn(`No tests found for lesson ${lessonId}. Auto-passing.`);
-            return res.json({
-                passed: 1, failed: 0, total: 1,
-                results: "No tests found for this lesson. Marked as complete."
-            });
-        }
-        const testCode = testCodeResult.rows[0].test_code;
-        // --- END OF FIX ---
-
-        const studentCode = files.map(f => f.content).join('\n\n');
-        const fullCode = `${studentCode}\n\n${testCode}`;
-        const execution = await executeCode(fullCode, language);
-
-        // ... (The rest of your logic for calculating passed/failed tests and logging is fine)
-        const testSummary = { /* ... */ };
-        res.json(testSummary);
-
-    } catch (err) {
-        console.error("Error in runLessonTests:", err.message);
-        res.status(500).json({
-            passed: 0, failed: 1, total: 1,
-            results: `A server error occurred: ${err.message}`
-        });
-    }
-};
 
 // MVP
 // exports.runLessonTests = async (req, res) => {
@@ -872,83 +1415,7 @@ exports.runLessonTests = async (req, res) => {
 //     }
 // };
 
-exports.getAllLessons = async (req, res) => {
-    try {
-        const lessons = await db.query('SELECT id, title, description, created_at, language FROM lessons ORDER BY created_at DESC');
-        res.json(lessons.rows);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-};
 
-exports.getLessonById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const lessonResult = await db.query('SELECT * FROM lessons WHERE id = $1', [id]);
-        if (lessonResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Lesson not found.' });
-        }
-        const lesson = lessonResult.rows[0];
-        const filesResult = await db.query('SELECT id, filename, content FROM lesson_files WHERE lesson_id = $1', [id]);
-        lesson.files = filesResult.rows;
-        res.json(lesson);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-};
-
-exports.updateSubmission = async (req, res) => {
-    try {
-        const { submissionId } = req.params;
-        const { feedback, grade } = req.body;
-        const teacherId = req.user.id;
-        const submissionResult = await db.query(
-            `SELECT s.id FROM submissions s JOIN lessons l ON s.lesson_id = l.id
-             WHERE s.id = $1 AND l.teacher_id = $2`,
-            [submissionId, teacherId]
-        );
-        if (submissionResult.rows.length === 0) {
-            return res.status(403).json({ error: 'You are not authorized to grade this submission.' });
-        }
-        const updatedSubmission = await db.query(
-            'UPDATE submissions SET feedback = $1, grade = $2 WHERE id = $3 RETURNING *',
-            [feedback, grade, submissionId]
-        );
-        res.json(updatedSubmission.rows[0]);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-};
-
-exports.getStudentSubmissionForLesson = async (req, res) => {
-    try {
-        const studentId = req.user.id;
-        const lessonId = req.params.id;
-        const submission = await db.query(
-            'SELECT * FROM submissions WHERE lesson_id = $1 AND student_id = $2 ORDER BY submitted_at DESC LIMIT 1',
-            [lessonId, studentId]
-        );
-        if (submission.rows.length === 0) {
-            return res.json(null);
-        }
-        res.json(submission.rows[0]);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-};
-exports.getTeacherLessons = async (req, res) => {
-    try {
-        const teacherId = req.user.id;
-        const result = await db.query('SELECT id, title FROM lessons WHERE teacher_id = $1 ORDER BY created_at DESC', [teacherId]);
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: 'Server Error' });
-    }
-};
 
 // exports.getAscentIdeData = async (req, res) => {
 //     const { lessonId } = req.params;
@@ -1029,93 +1496,6 @@ exports.getTeacherLessons = async (req, res) => {
 //         res.status(500).json({ error: 'A server error occurred while fetching lesson data.' });
 //     }
 // };
-exports.getAscentIdeData = async (req, res) => {
-    const { lessonId } = req.params;
-    const studentId = req.user.id;
-    try {
-        const lessonResult = await db.query('SELECT *, lesson_type FROM lessons WHERE id = $1', [lessonId]);
-        if (lessonResult.rows.length === 0) return res.status(404).json({ error: 'Lesson not found.' });
-        const lesson = lessonResult.rows[0];
-        
-        let files = [];
-        const savedProgressResult = await db.query('SELECT files FROM saved_progress WHERE student_id = $1 AND lesson_id = $2 ORDER BY saved_at DESC LIMIT 1', [studentId, lessonId]);
-        if (savedProgressResult.rows.length > 0) {
-            files = savedProgressResult.rows[0].files;
-        } else {
-            const lastSubmissionResult = await db.query('SELECT submitted_code FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC LIMIT 1', [studentId, lessonId]);
-            if (lastSubmissionResult.rows.length > 0) {
-                files = lastSubmissionResult.rows[0].submitted_code;
-            } else {
-                const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
-                files = templateFilesResult.rows;
-            }
-        }
-        
-        const gradedSubmissionResult = await db.query(`SELECT id, feedback, grade, submitted_at FROM submissions WHERE student_id = $1 AND lesson_id = $2 AND grade IS NOT NULL ORDER BY submitted_at DESC LIMIT 1`, [studentId, lessonId]);
-        const gradedSubmission = gradedSubmissionResult.rows[0] || null;
-
-        const historyResult = await db.query('SELECT id, submitted_at, is_correct FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC', [studentId, lessonId]);
-        const submissionHistory = historyResult.rows;
-
-        // Simplified placeholder data
-        const testCases = []; 
-        const officialSolution = { explanation: "The official solution is available after you pass all tests." };
-
-        res.json({
-            lesson, files, gradedSubmission, testCases, submissionHistory, officialSolution,
-            courseId: lesson.course_id, previousLessonId: null, nextLessonId: null,
-        });
-
-    } catch (err) {
-        console.error("Error in getAscentIdeData:", err.message);
-        res.status(500).json({ error: 'A server error occurred.' });
-    }
-};
-
-// --- Add lesson to course ---
-exports.addLessonToCourse = async (req, res) => {
-    try {
-        const { courseId } = req.params;
-        const teacherId = req.user.id;
-        const { lessonId } = req.body;
-
-        if (!lessonId) {
-            return res.status(400).json({ error: 'lessonId is required' });
-        }
-
-        // Verify the teacher owns the course
-        const courseResult = await db.query(
-            'SELECT id FROM courses WHERE id = $1 AND teacher_id = $2',
-            [courseId, teacherId]
-        );
-
-        if (courseResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Course not found or you do not have permission to modify it.' });
-        }
-
-        // Verify the lesson exists and teacher owns it
-        const lessonResult = await db.query(
-            'SELECT id FROM lessons WHERE id = $1 AND teacher_id = $2',
-            [lessonId, teacherId]
-        );
-
-        if (lessonResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Lesson not found or you do not have permission to modify it.' });
-        }
-
-        // Update the lesson to belong to the course
-        const updatedLessonResult = await db.query(
-            'UPDATE lessons SET course_id = $1 WHERE id = $2 RETURNING *',
-            [courseId, lessonId]
-        );
-
-        res.json(updatedLessonResult.rows[0]);
-
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-};
 
 // mvp
 // exports.getAscentIdeData = async (req, res) => {
