@@ -242,7 +242,7 @@ const CourseEditorPage: React.FC = () => {
     );
 };
 
-// export default CourseEditorPage;
+export default CourseEditorPage;
 // // FILE: src/pages/CourseEditorPage.tsx (Definitive, UX-Focused Version)
 // import React, { useState, useEffect, useCallback, useMemo } from 'react';
 // import { useParams, useNavigate } from 'react-router-dom';
