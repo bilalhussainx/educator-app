@@ -20,7 +20,6 @@ import { AppLayout } from './components/layout/AppLayout';
 
 // --- Page Components ---
 import CourseEditorPage from './pages/CourseEditorPage.tsx';
-import CourseLearnPage from './pages/CourseLearnPage'; // <-- 1. IMPORT THE NEW PAGE
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -148,6 +147,7 @@ export default function App() {
                 <Route path="/courses/:courseId/learn" element={<StudentCoursePage />} />
                 <Route path="/courses/:courseId/landing" element={<CourseLandingPage />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />`
+                
                 <Route path="/chapters/new" element={<CreateChapterPage />} /> {/* <-- 2. ADD THE NEW ROUTE */}
 
                 {/* Default route for any other authenticated path */}
