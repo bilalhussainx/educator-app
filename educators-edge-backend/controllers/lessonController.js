@@ -263,7 +263,7 @@ exports.addLessonToCourse = async (req, res) => {
 
 
 
-export const createChapter = async (req, res) => {
+exports.createChapter = async (req, res) => {
     const { title, content, courseId } = req.body;
     const { userId, role } = req.user;
 
@@ -309,7 +309,7 @@ export const createChapter = async (req, res) => {
  * @route   DELETE /api/lessons/:lessonId
  * @access  Private (Teacher)
  */
-export const removeLessonFromCourse = async (req, res) => {
+exports.removeLessonFromCourse = async (req, res) => {
     const { lessonId } = req.params;
     const { userId, role } = req.user;
 
