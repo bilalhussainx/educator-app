@@ -569,15 +569,26 @@ exports.addLessonToCourse = async (req, res) => {
             [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex, teacherId]
         );
 
+        console.log('lessonData.files raw:', lessonData.files);
         if (lessonData.files) {
-            const boilerplateFiles = JSON.parse(lessonData.files);
-            if (Array.isArray(boilerplateFiles)) {
-                for (const file of boilerplateFiles) {
-                    const filename = file.filename || 'index.js'; 
-                    const content = file.content || file.code || file.text || '';
-                    await client.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
+            try {
+                const boilerplateFiles = JSON.parse(lessonData.files);
+                console.log('Parsed boilerplateFiles:', boilerplateFiles);
+                if (Array.isArray(boilerplateFiles)) {
+                    for (const file of boilerplateFiles) {
+                        const filename = file.filename || 'index.js'; 
+                        const content = file.content || file.code || file.text || '';
+                        console.log(`Inserting boilerplate file: ${filename}, content length: ${content.length}`);
+                        await client.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
+                    }
+                } else {
+                    console.log('boilerplateFiles is not an array:', typeof boilerplateFiles);
                 }
+            } catch (parseError) {
+                console.error('Error parsing lessonData.files:', parseError.message);
             }
+        } else {
+            console.log('lessonData.files is null/undefined');
         }
 
         if (lessonData.solution_files) {
@@ -591,16 +602,28 @@ exports.addLessonToCourse = async (req, res) => {
             }
         }
 
+        console.log('lessonData.test_code raw:', lessonData.test_code);
         if (lessonData.test_code) {
-            const tests = JSON.parse(lessonData.test_code);
-            if (Array.isArray(tests)) {
-                const testString = tests.flat()
-                    .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
-                    .join('\n');
-                if (testString) {
-                     await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
+            try {
+                const tests = JSON.parse(lessonData.test_code);
+                console.log('Parsed tests:', tests);
+                if (Array.isArray(tests)) {
+                    const testString = tests.flat()
+                        .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
+                        .join('\n');
+                    console.log('Generated testString:', testString);
+                    if (testString) {
+                         await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
+                         console.log('Test code inserted successfully');
+                    }
+                } else {
+                    console.log('tests is not an array:', typeof tests);
                 }
+            } catch (parseError) {
+                console.error('Error parsing lessonData.test_code:', parseError.message);
             }
+        } else {
+            console.log('lessonData.test_code is null/undefined');
         }
         
         await client.query('COMMIT'); // COMMIT THE TRANSACTION
