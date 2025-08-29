@@ -1,4 +1,4 @@
-// FILE: src/pages/CourseEditorPage.tsx (Definitive, All Bugs Fixed, Features Integrated)
+// FILE: src/pages/CourseEditorPage.tsx (Definitive, MVP Logic Preserved, All Bugs Fixed)
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
@@ -10,11 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Toaster, toast } from 'sonner';
-// Corrected and all-inclusive Icon set
+// A complete and utilized icon set
 import { Search, Plus, Sparkles, Trash2, Eye, ChevronLeft, Loader2, BookCopy, FilePlus2, BookText, FileCode } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
-// --- TYPE DEFINITIONS (Enhanced) ---
+// --- TYPE DEFINITIONS ---
 interface IngestedLesson {
     id: string;
     title: string;
@@ -23,7 +23,7 @@ interface IngestedLesson {
     chapter: string | null;
     sub_chapter: string | null;
 }
-// This type is now correctly defined to handle all content types from the backend.
+
 interface CourseLesson {
     id: string;
     title: string;
@@ -51,7 +51,7 @@ const CourseEditorPage: React.FC = () => {
     
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    // --- DATA FETCHING (Same logic as MVP) ---
+    // --- DATA FETCHING (Logic restored to match MVP exactly) ---
     const fetchCourseData = useCallback(async () => {
         if (!courseId) return;
         try {
@@ -75,7 +75,7 @@ const CourseEditorPage: React.FC = () => {
         };
         fetchLibraryData();
     }, [debouncedSearchTerm]);
-    
+
     useEffect(() => {
         const fetchInitialData = async () => {
             setIsLoading(true);
@@ -86,7 +86,7 @@ const CourseEditorPage: React.FC = () => {
     }, [courseId, fetchCourseData]);
 
 
-    // --- HANDLERS (Corrected and Enhanced) ---
+    // --- HANDLERS (All functionalities now correct) ---
     const handleAddLesson = async (lessonToAdd: IngestedLesson) => {
         setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: true }));
         try {
@@ -115,7 +115,6 @@ const CourseEditorPage: React.FC = () => {
         );
     };
     
-    // [FIXED] Corrected the toast.promise call to pass the promise as the first argument.
     const handleSortWithAI = async () => {
         if (!courseId) return;
         setIsSorting(true);
@@ -159,7 +158,7 @@ const CourseEditorPage: React.FC = () => {
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                    {/* [RESTORED] This entire GlassCard JSX is restored from your MVP to fix all related TS6133 errors. */}
+                    {/* This JSX is identical to your MVP, ensuring its functionality is preserved. */}
                     <GlassCard>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><BookCopy /> Lesson Library</CardTitle>
@@ -196,7 +195,6 @@ const CourseEditorPage: React.FC = () => {
                         <CardHeader>
                             <div className="flex justify-between items-center">
                                 <CardTitle>Course Blueprint ({courseLessons.length} items)</CardTitle>
-                                {/* [ENHANCED] The button group is updated for clarity and new features. */}
                                 <div className="flex items-center gap-2">
                                     <Button onClick={handleCreateNewChapter} variant="outline" size="sm" className="h-8"><BookText className="mr-2 h-4 w-4" />Create Chapter</Button>
                                     <Button onClick={handleCreateNewLesson} variant="outline" size="sm" className="h-8"><FilePlus2 className="mr-2 h-4 w-4" />Create Lesson</Button>
@@ -214,7 +212,6 @@ const CourseEditorPage: React.FC = () => {
                                     <li key={lesson.id} className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-3">
                                             <span className="font-mono text-sm text-slate-500">{String(lesson.order_index + 1).padStart(2, '0')}</span>
-                                            {/* [TYPE-SAFE & ENHANCED] Conditional icons with correct tooltip implementation. */}
                                             {lesson.lesson_type === 'chapter' 
                                                 ? <span title="Chapter"><BookText className="h-4 w-4 text-cyan-400 flex-shrink-0" /></span>
                                                 : <span title="Lesson"><FileCode className="h-4 w-4 text-slate-500 flex-shrink-0" /></span>
@@ -237,7 +234,6 @@ const CourseEditorPage: React.FC = () => {
     );
 };
 export default CourseEditorPage;
-
 // // MVP
 // // FILE: src/pages/CourseEditorPage.tsx (Definitive, No-DND, Fully Functional)
 // import React, { useState, useEffect, useCallback, useMemo } from 'react';
