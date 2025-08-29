@@ -2,7 +2,6 @@
 // FILE: controllers/courseController.js (UPDATED)
 // =================================================================
 const db = require('../db');
-const db = require('../db');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // --- Gemini AI Configuration ---
