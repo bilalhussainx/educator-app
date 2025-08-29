@@ -34,6 +34,7 @@ import CourseLandingPage from './pages/CourseLandingPage';
 import StudentCoursePage from './pages/StudentCoursePage';
 import mixpanel from 'mixpanel-browser';
 import LessonLoaderPage from './pages/LessonLoaderPage';
+import CreateChapterPage from './pages/CreateChapterPage';
 // --- Mixpanel Initialization ---
 const MIXPANEL_PROJECT_TOKEN = "ddb00402917fe523b477eafdf60f0580"; 
 if (MIXPANEL_PROJECT_TOKEN) {
@@ -145,7 +146,10 @@ export default function App() {
                 <Route path="/courses/:courseId/learn" element={<StudentCoursePage />} />
                 <Route path="/courses/:courseId/landing" element={<CourseLandingPage />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />`
+                <Route path="/chapters/new" element={<CreateChapterPage />} /> {/* <-- 2. ADD THE NEW ROUTE */}
+
                 {/* Default route for any other authenticated path */}
+
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             </AppLayout>
