@@ -1,8 +1,8 @@
-// FILE: src/pages/CourseEditorPage.tsx (Definitive, Enhanced with Chapter & Deletion Functionality)
+// FILE: src/pages/CourseEditorPage.tsx (Corrected, Type-Safe, and Fully Functional)
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
-import { useDebounce } from '../hooks/useDebounce'; // Assuming this custom hook exists and works as expected.
+import { useDebounce } from '../hooks/useDebounce';
 
 // --- UI IMPORTS ---
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Toaster, toast } from 'sonner';
-// Enhanced Icon Imports for new features
 import { Search, Plus, Sparkles, Trash2, Eye, ChevronLeft, Loader2, BookCopy, BookText, FileCode, FilePlus2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
-// --- TYPE DEFINITIONS (Updated to support Chapters) ---
+// --- TYPE DEFINITIONS ---
 interface IngestedLesson {
     id: string;
     title: string;
@@ -24,15 +23,14 @@ interface IngestedLesson {
     sub_chapter: string | null;
 }
 
-// This interface is now more robust, reflecting the actual data shape from the backend.
 interface CourseLesson {
-    id: string; // The unique ID from the `lessons` table
+    id: string;
     title: string;
     order_index: number;
-    lesson_type: 'algorithmic' | 'frontend-project' | 'chapter'; // Essential for conditional rendering
+    lesson_type: 'algorithmic' | 'frontend-project' | 'chapter';
 }
 
-// --- REUSABLE & STYLED COMPONENTS (Unchanged) ---
+// --- REUSABLE & STYLED COMPONENTS ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
     <Card className={cn("bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white flex flex-col", className)} {...props} />
 );
@@ -52,13 +50,12 @@ const CourseEditorPage: React.FC = () => {
     
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    // --- DATA FETCHING (Unchanged, relies on backend sending `lesson_type`) ---
+    // --- DATA FETCHING ---
     const fetchCourseData = useCallback(async () => {
         if (!courseId) return;
         try {
             const courseRes = await apiClient.get(`/api/courses/${courseId}`);
             setCourseTitle(courseRes.data.title);
-            // Ensure lessons are sorted by their `order_index` for consistent display
             setCourseLessons(courseRes.data.lessons.sort((a: CourseLesson, b: CourseLesson) => a.order_index - b.order_index));
         } catch (error) {
             toast.error("Failed to load course data.", { description: "You will be redirected to the dashboard." });
@@ -69,7 +66,7 @@ const CourseEditorPage: React.FC = () => {
     useEffect(() => {
         const fetchLibraryData = async () => {
             if (!debouncedSearchTerm.trim()) {
-                setLibraryLessons([]); // Clear results if search is empty
+                setLibraryLessons([]);
                 return;
             }
             try {
@@ -91,12 +88,12 @@ const CourseEditorPage: React.FC = () => {
         fetchInitialData();
     }, [courseId, fetchCourseData]);
 
-    // --- HANDLERS (Updated and New Handlers) ---
+    // --- HANDLERS ---
     const handleAddLesson = async (lessonToAdd: IngestedLesson) => {
         setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: true }));
         try {
             await apiClient.post(`/api/lessons/add-to-course/${courseId}`, { ingestedLessonId: lessonToAdd.id });
-            await fetchCourseData(); // Re-sync with the database for the latest state
+            await fetchCourseData();
             toast.success(`"${lessonToAdd.title}" added to course.`);
         } catch (error) {
             toast.error("Failed to add lesson.");
@@ -105,10 +102,6 @@ const CourseEditorPage: React.FC = () => {
         }
     };
 
-    /**
-     * [UPGRADED] Handles lesson/chapter removal with a robust promise-based toast for better UX.
-     * This avoids optimistic UI updates that revert on failure, providing a clearer loading/success/error flow.
-     */
     const handleRemoveLesson = async (lessonIdToRemove: string) => {
         const lessonToRemove = courseLessons.find(l => l.id === lessonIdToRemove);
         if (!lessonToRemove) return;
@@ -118,7 +111,7 @@ const CourseEditorPage: React.FC = () => {
             {
                 loading: `Removing "${lessonToRemove.title}"...`,
                 success: () => {
-                    fetchCourseData(); // The single source of truth is a fresh fetch from the DB.
+                    fetchCourseData();
                     return `"${lessonToRemove.title}" removed successfully.`;
                 },
                 error: (err) => err.response?.data?.error || "Failed to remove item.",
@@ -148,14 +141,10 @@ const CourseEditorPage: React.FC = () => {
         navigate(`/lessons/new?courseId=${courseId}`);
     };
 
-    /**
-     * [NEW] Navigates to the dedicated page for creating a new chapter.
-     */
     const handleCreateNewChapter = () => {
         navigate(`/chapters/new?courseId=${courseId}`);
     };
 
-    // Memoized set for efficient filtering of library lessons already in the course.
     const courseLessonTitles = useMemo(() => new Set(courseLessons.map(l => l.title)), [courseLessons]);
 
     if (isLoading) {
@@ -209,7 +198,6 @@ const CourseEditorPage: React.FC = () => {
                         <CardHeader>
                             <div className="flex justify-between items-center">
                                 <CardTitle>Course Blueprint ({courseLessons.length} items)</CardTitle>
-                                {/* [UPDATED] Clearer action buttons for creating different content types. */}
                                 <div className="flex items-center gap-2">
                                     <Button onClick={handleCreateNewChapter} variant="outline" size="sm" className="h-8"><BookText className="mr-2 h-4 w-4" />Create Chapter</Button>
                                     <Button onClick={handleCreateNewLesson} variant="outline" size="sm" className="h-8"><FilePlus2 className="mr-2 h-4 w-4" />Create Lesson</Button>
@@ -227,11 +215,13 @@ const CourseEditorPage: React.FC = () => {
                                     <li key={lesson.id} className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg flex items-center justify-between gap-2 group">
                                         <div className="flex items-center gap-3">
                                             <span className="font-mono text-sm text-slate-500">{String(lesson.order_index + 1).padStart(2, '0')}</span>
-                                            {/* [NEW] Conditional icon rendering based on lesson_type provides immediate visual feedback. */}
+                                            
+                                            {/* [FIX] The icons are now wrapped in a `span` element, to which the `title` attribute is correctly applied for tooltips. */}
                                             {lesson.lesson_type === 'chapter' 
-                                                ? <BookText className="h-4 w-4 text-cyan-400 flex-shrink-0" title="Chapter" /> 
-                                                : <FileCode className="h-4 w-4 text-slate-500 flex-shrink-0" title="Lesson" />
+                                                ? <span title="Chapter"><BookText className="h-4 w-4 text-cyan-400 flex-shrink-0" /></span>
+                                                : <span title="Lesson"><FileCode className="h-4 w-4 text-slate-500 flex-shrink-0" /></span>
                                             }
+                                            
                                             <span className="font-medium text-slate-200">{lesson.title}</span>
                                         </div>
                                         <div className="flex items-center gap-1">
@@ -251,7 +241,6 @@ const CourseEditorPage: React.FC = () => {
 };
 
 export default CourseEditorPage;
-
 
 // MVP
 // // FILE: src/pages/CourseEditorPage.tsx (Definitive, No-DND, Fully Functional)
