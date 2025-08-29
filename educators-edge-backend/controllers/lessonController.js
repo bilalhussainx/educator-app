@@ -509,27 +509,49 @@ exports.addLessonToCourse = async (req, res) => {
         const orderQuery = await client.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
 
-        // Step 4: Create the new lesson by copying the REAL data into the `lessons` table.
+        // Step 4: Create the new lesson using the REAL title and description from the library.
         const newLessonId = uuidv4();
-        
-        // [THE FIX - PART 1] The INSERT statement now uses the actual title and description
-        // from the ingested lesson, not placeholder text.
         await client.query(
             `INSERT INTO lessons (id, course_id, title, description, lesson_type, order_index) 
              VALUES ($1, $2, $3, $4, $5, $6)`,
             [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex]
         );
 
-        // [THE FIX - PART 2] The function now iterates and copies all associated files,
-        // ensuring the lesson has its content when opened in an IDE.
-        const filesResult = await client.query('SELECT * FROM ingested_lesson_files WHERE ingested_lesson_id = $1', [ingestedLessonId]);
-        for (const file of filesResult.rows) {
-            await client.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, file.filename, file.content]);
+        // Step 5: Parse and copy boilerplate files from the 'files' JSON column.
+        if (lessonData.files) {
+            const boilerplateFiles = JSON.parse(lessonData.files);
+            if (Array.isArray(boilerplateFiles)) {
+                for (const file of boilerplateFiles) {
+                    // Assuming a default filename if one isn't provided in the JSON
+                    const filename = file.filename || 'index.js'; 
+                    const content = file.content || file.code || file.text || '';
+                    await client.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
+                }
+            }
         }
 
-        const solutionsResult = await client.query('SELECT * FROM ingested_lesson_solution_files WHERE ingested_lesson_id = $1', [ingestedLessonId]);
-        for (const solution of solutionsResult.rows) {
-            await client.query('INSERT INTO lesson_solution_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, solution.filename, solution.content]);
+        // Step 6: Parse and copy solution files from the 'solution_files' JSON column.
+        if (lessonData.solution_files) {
+            const solutionFiles = JSON.parse(lessonData.solution_files);
+            if (Array.isArray(solutionFiles)) {
+                for (const file of solutionFiles) {
+                    const filename = file.filename || 'solution.js';
+                    const content = file.content || file.code || file.text || '';
+                    await client.query('INSERT INTO lesson_solution_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
+                }
+            }
+        }
+
+        // Step 7: Parse, transform, and copy tests from the 'test_code' JSON column.
+        if (lessonData.test_code) {
+            const tests = JSON.parse(lessonData.test_code);
+            // This robustly handles nested arrays and transforms test descriptions into runnable code.
+            const testString = tests.flat()
+                .map((t: { text: string }) => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
+                .join('\n');
+            if (testString) {
+                 await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
+            }
         }
         
         await client.query('COMMIT'); // Commit the transaction if all steps succeed.
