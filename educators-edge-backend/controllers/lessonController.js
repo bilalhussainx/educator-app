@@ -241,15 +241,98 @@ exports.getLessonSolution = async (req, res) => {
 
         let solutionFiles = solutionFilesResult.rows;
         
-        // If no solution files exist, check if this is a Step lesson and provide default solution
+        // If no solution files exist, check if this is a Step lesson and try to load from freeCodeCamp
         if (solutionFiles.length === 0) {
             const lessonResult = await db.query('SELECT title FROM lessons WHERE id = $1', [lessonId]);
             if (lessonResult.rows.length > 0 && lessonResult.rows[0].title && lessonResult.rows[0].title.startsWith('Step ')) {
                 const lesson = lessonResult.rows[0];
-                solutionFiles = [
-                    {
-                        filename: 'index.html',
-                        content: `<!DOCTYPE html>
+                
+                try {
+                    // Try to find matching freeCodeCamp solution from ingested_lessons
+                    const fccSolutionResult = await db.query(
+                        `SELECT solution_files, files FROM ingested_lessons 
+                         WHERE title = $1 
+                         AND (
+                             solution_files IS NOT NULL AND jsonb_array_length(solution_files) > 0
+                             OR (files @> '[{"language": "html"}]'::jsonb)
+                         )
+                         ORDER BY (
+                             CASE WHEN solution_files IS NOT NULL AND jsonb_array_length(solution_files) > 0 THEN 0 ELSE 1 END
+                         )
+                         LIMIT 1`, 
+                        [lesson.title]
+                    );
+                    
+                    if (fccSolutionResult.rows.length > 0) {
+                        const fccData = fccSolutionResult.rows[0];
+                        solutionFiles = [];
+                        
+                        // First try to use actual solution files if they exist
+                        if (fccData.solution_files && fccData.solution_files.length > 0) {
+                            const htmlSolution = fccData.solution_files.find(f => f.language === 'html');
+                            const cssSolution = fccData.solution_files.find(f => f.language === 'css');
+                            const jsSolution = fccData.solution_files.find(f => f.language === 'js' || f.language === 'javascript');
+                            
+                            if (htmlSolution) {
+                                solutionFiles.push({
+                                    filename: 'index.html',
+                                    content: htmlSolution.code
+                                });
+                            }
+                            if (cssSolution) {
+                                solutionFiles.push({
+                                    filename: 'styles.css',
+                                    content: cssSolution.code
+                                });
+                            }
+                            if (jsSolution) {
+                                solutionFiles.push({
+                                    filename: 'script.js',
+                                    content: jsSolution.code
+                                });
+                            }
+                        }
+                        
+                        // If no solution files or incomplete, use the regular files as "completed" version
+                        if (solutionFiles.length === 0 && fccData.files) {
+                            const htmlFile = fccData.files.find(f => f.language === 'html');
+                            const cssFile = fccData.files.find(f => f.language === 'css');
+                            const jsFile = fccData.files.find(f => f.language === 'js' || f.language === 'javascript');
+                            
+                            if (htmlFile) {
+                                solutionFiles.push({
+                                    filename: 'index.html',
+                                    content: htmlFile.code.replace(/--fcc-editable-region--/g, '<!-- Solution: freeCodeCamp content -->')
+                                });
+                            }
+                            if (cssFile) {
+                                solutionFiles.push({
+                                    filename: 'styles.css',
+                                    content: cssFile.code.replace(/--fcc-editable-region--/g, '/* Solution: freeCodeCamp content */')
+                                });
+                            }
+                            if (jsFile) {
+                                solutionFiles.push({
+                                    filename: 'script.js',
+                                    content: jsFile.code.replace(/--fcc-editable-region--/g, '// Solution: freeCodeCamp content')
+                                });
+                            }
+                        }
+                        
+                        // Ensure we have at least basic files
+                        if (solutionFiles.length === 0) {
+                            throw new Error('No valid freeCodeCamp solution content found');
+                        }
+                    } else {
+                        throw new Error('No matching freeCodeCamp lesson found');
+                    }
+                } catch (error) {
+                    console.error('Error loading freeCodeCamp solution:', error);
+                    // Fallback to basic solution template
+                    solutionFiles = [
+                        {
+                            filename: 'index.html',
+                            content: `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -259,14 +342,14 @@ exports.getLessonSolution = async (req, res) => {
 </head>
 <body>
     <h1>Solution for ${lesson.title}</h1>
-    <p>This is a sample solution. In a real implementation, this would contain the complete solution for the lesson.</p>
+    <p>This is a sample solution. The actual freeCodeCamp solution could not be loaded.</p>
     <script src="script.js"></script>
 </body>
 </html>`
-                    },
-                    {
-                        filename: 'styles.css',
-                        content: `body {
+                        },
+                        {
+                            filename: 'styles.css',
+                            content: `body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 20px;
@@ -284,18 +367,18 @@ p {
     text-align: center;
     font-size: 16px;
 }`
-                    },
-                    {
-                        filename: 'script.js',
-                        content: `console.log("Solution for ${lesson.title} loaded!");
+                        },
+                        {
+                            filename: 'script.js',
+                            content: `console.log("Solution for ${lesson.title} loaded!");
 
 // This would contain the complete JavaScript solution
-// For example, if this was about DOM manipulation:
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Solution code executed successfully!');
 });`
-                    }
-                ];
+                        }
+                    ];
+                }
             } else {
                 return res.status(404).json({ error: 'Solution not found for this lesson.' });
             }
@@ -328,13 +411,80 @@ exports.getAscentIdeData = async (req, res) => {
                 const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
                 files = templateFilesResult.rows;
                 
-                // If no template files exist and this is a Step lesson, provide default web dev boilerplate
+                // If no template files exist and this is a Step lesson, try to load from freeCodeCamp content
                 if (files.length === 0 && lesson.title && lesson.title.startsWith('Step ')) {
-                    files = [
-                        {
-                            id: 'default-html',
-                            filename: 'index.html',
-                            content: `<!DOCTYPE html>
+                    try {
+                        // Try to find matching freeCodeCamp content from ingested_lessons
+                        const fccLessonResult = await db.query(
+                            `SELECT files FROM ingested_lessons 
+                             WHERE title = $1 
+                             AND (
+                                 (files @> '[{"language": "html"}]'::jsonb AND files @> '[{"language": "css"}]'::jsonb) 
+                                 OR files @> '[{"language": "html"}]'::jsonb
+                             )
+                             LIMIT 1`, 
+                            [lesson.title]
+                        );
+                        
+                        if (fccLessonResult.rows.length > 0) {
+                            const fccFiles = fccLessonResult.rows[0].files;
+                            files = [];
+                            
+                            // Convert freeCodeCamp files to our format
+                            const htmlFile = fccFiles.find(f => f.language === 'html');
+                            const cssFile = fccFiles.find(f => f.language === 'css');
+                            const jsFile = fccFiles.find(f => f.language === 'js' || f.language === 'javascript');
+                            
+                            if (htmlFile) {
+                                files.push({
+                                    id: 'fcc-html',
+                                    filename: 'index.html',
+                                    content: htmlFile.code
+                                });
+                            }
+                            
+                            if (cssFile) {
+                                files.push({
+                                    id: 'fcc-css',
+                                    filename: 'styles.css',
+                                    content: cssFile.code
+                                });
+                            } else {
+                                // Provide basic CSS if none exists
+                                files.push({
+                                    id: 'default-css',
+                                    filename: 'styles.css',
+                                    content: `/* Add your CSS styles here */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}`
+                                });
+                            }
+                            
+                            if (jsFile) {
+                                files.push({
+                                    id: 'fcc-js',
+                                    filename: 'script.js',
+                                    content: jsFile.code
+                                });
+                            } else {
+                                // Provide basic JS if none exists
+                                files.push({
+                                    id: 'default-js',
+                                    filename: 'script.js',
+                                    content: `// Add your JavaScript code here
+console.log("${lesson.title} loaded!");`
+                                });
+                            }
+                        } else {
+                            // Fallback to default boilerplate if no freeCodeCamp content found
+                            files = [
+                                {
+                                    id: 'default-html',
+                                    filename: 'index.html',
+                                    content: `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -349,11 +499,11 @@ exports.getAscentIdeData = async (req, res) => {
     <script src="script.js"></script>
 </body>
 </html>`
-                        },
-                        {
-                            id: 'default-css',
-                            filename: 'styles.css',
-                            content: `/* --fcc-editable-region-- */
+                                },
+                                {
+                                    id: 'default-css',
+                                    filename: 'styles.css',
+                                    content: `/* --fcc-editable-region-- */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -366,18 +516,71 @@ h1 {
     text-align: center;
 }
 /* --fcc-editable-region-- */`
-                        },
-                        {
-                            id: 'default-js',
-                            filename: 'script.js',
-                            content: `// --fcc-editable-region--
+                                },
+                                {
+                                    id: 'default-js',
+                                    filename: 'script.js',
+                                    content: `// --fcc-editable-region--
 console.log("Welcome to ${lesson.title}!");
 
 // Your JavaScript code goes here
 
 // --fcc-editable-region--`
+                                }
+                            ];
                         }
-                    ];
+                    } catch (fccError) {
+                        console.error('Error loading freeCodeCamp content:', fccError);
+                        // Fallback to default boilerplate
+                        files = [
+                            {
+                                id: 'default-html',
+                                filename: 'index.html',
+                                content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${lesson.title}</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- --fcc-editable-region-- -->
+    <h1>Hello World</h1>
+    <!-- --fcc-editable-region-- -->
+    <script src="script.js"></script>
+</body>
+</html>`
+                            },
+                            {
+                                id: 'default-css',
+                                filename: 'styles.css',
+                                content: `/* --fcc-editable-region-- */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+/* --fcc-editable-region-- */`
+                            },
+                            {
+                                id: 'default-js',
+                                filename: 'script.js',
+                                content: `// --fcc-editable-region--
+console.log("Welcome to ${lesson.title}!");
+
+// Your JavaScript code goes here
+
+// --fcc-editable-region--`
+                            }
+                        ];
+                    }
                 }
             }
         }
