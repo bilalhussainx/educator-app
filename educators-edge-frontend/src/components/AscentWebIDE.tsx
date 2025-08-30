@@ -37,7 +37,6 @@ const AscentWebIDE: React.FC = () => {
     const [submission] = useState<Submission | null>(null);
     const [testResult, setTestResult] = useState<TestResult | null>(null);
     const [isRunningTests, setIsRunningTests] = useState(false);
-    const [solutionFiles, setSolutionFiles] = useState<any[]>([]);
     const [showSolution, setShowSolution] = useState(false);
     const [isLoadingSolution, setIsLoadingSolution] = useState(false);
 
@@ -60,7 +59,6 @@ const AscentWebIDE: React.FC = () => {
                 // Detect lesson type and load appropriate files
                 const pythonFile = data.files.find(f => f.filename.endsWith('.py'));
                 const htmlFile = data.files.find(f => f.filename === 'index.html');
-                const jsFiles = data.files.filter(f => f.filename === 'index.js');
                 
                 if (pythonFile) {
                     // Python lesson
@@ -233,7 +231,6 @@ const AscentWebIDE: React.FC = () => {
         try {
             const response = await apiClient.get(`/api/lessons/${lessonId}/solution`);
             const files = response.data;
-            setSolutionFiles(files);
             
             // Load solution into editor
             const html = files.find((f: any) => f.filename === 'index.html')?.content || '';
