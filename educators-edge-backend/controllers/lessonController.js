@@ -11,6 +11,86 @@ const { v4: uuidv4 } = require('uuid'); // <-- FIX #1: Added the missing import
 const { executeCode } = require('../services/executionService'); 
 const { getConceptualHint } = require('../services/aiFeedbackService');
 const apeQueue = require('../queues/apeQueue'); // Adjust the path if necessary
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// Fallback hints for when Gemini API is unavailable
+const getFallbackHint = (lessonTitle) => {
+    const fallbackHints = {
+        'factorialize': 'This function should calculate factorial (n!). Try using a loop to multiply numbers from 1 to n, or use recursion where n! = n × (n-1)!',
+        'falsy': 'This function should remove falsy values (false, null, 0, "", undefined, NaN) from an array. Consider using Array.filter() with Boolean as the callback function.',
+        'bouncer': 'The filter() method creates a new array with elements that pass a test. The Boolean constructor can be used as a test function to keep only truthy values.',
+        'celsius': 'Use the formula: Fahrenheit = Celsius × (9/5) + 32. Implement this mathematical conversion in your function.',
+        'reverse': 'You need to reverse a string. Consider using string methods like split(), reverse(), and join(), or iterate backwards through the string.',
+        'palindrome': 'Check if a string reads the same forwards and backwards. Clean the string first, then compare it with its reverse.'
+    };
+
+    for (const [keyword, hint] of Object.entries(fallbackHints)) {
+        if (lessonTitle.toLowerCase().includes(keyword)) {
+            return hint;
+        }
+    }
+
+    return "Break down the problem step by step. Look at what the tests expect and think about what operations you need to perform on the input.";
+};
+
+// AI-Enhanced Test Feedback Function with Gemini Integration
+const generateTestFailureHint = async (lessonTitle, lessonDescription, errorOutput, testCode) => {
+    try {
+        // Check if Gemini API key is available
+        if (!process.env.GEMINI_API_KEY) {
+            console.warn('GEMINI_API_KEY not found, using fallback hints');
+            return getFallbackHint(lessonTitle);
+        }
+
+        // Initialize Gemini AI
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            generationConfig: {
+                maxOutputTokens: 150,
+                temperature: 0.7,
+            }
+        });
+
+        // Extract test requirements from test code
+        const testRequirements = testCode.split('\n')
+            .filter(line => line.includes('assert'))
+            .map(line => line.trim())
+            .slice(0, 3) // Limit to first 3 tests to avoid token overflow
+            .join('\n');
+
+        const prompt = `You are a helpful coding tutor. A student is working on "${lessonTitle}".
+
+Lesson: ${lessonDescription}
+
+Failed tests:
+${testRequirements}
+
+Error: ${errorOutput.substring(0, 200)}...
+
+Provide a brief, encouraging hint (max 80 words) that:
+1. Explains what the function should do
+2. Suggests an approach without giving the complete solution
+3. Is supportive and educational
+
+Be concise and helpful.`;
+
+        console.log('[GEMINI] Generating hint for:', lessonTitle);
+        
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const hint = response.text().trim();
+
+        console.log('[GEMINI] Generated hint:', hint.substring(0, 50) + '...');
+        
+        return hint;
+
+    } catch (error) {
+        console.warn('Gemini API failed:', error.message);
+        console.log('[GEMINI] Falling back to static hints');
+        return getFallbackHint(lessonTitle);
+    }
+};
 
 // --- APE PHASE 2: Helper function to categorize errors from stderr ---
 /**
@@ -699,26 +779,41 @@ exports.runLessonTests = async (req, res) => {
         // --- END OF FIX ---
 
         const studentCode = files.map(f => f.content).join('\n\n');
-        const fullCode = `${studentCode}\n\n${testCode}`;
+        // Add assert import for JavaScript test execution
+        const assertImport = language === 'javascript' ? 'const assert = require("assert");\n\n' : '';
+        const fullCode = `${assertImport}${studentCode}\n\n${testCode}`;
         const execution = await executeCode(fullCode, language);
 
         // Process test results from execution output
         let passed = 0;
         let failed = 0;
         let total = 0;
-        let results = execution.output || '';
+        let results = execution.output || execution.error || '';
 
         // Count total tests from testCode (count assert statements)
         const assertMatches = testCode.match(/assert\./g) || [];
         total = assertMatches.length;
 
-        // If execution was successful and no errors, assume tests passed
+        // Check for execution errors
         if (execution.error) {
-            // Parse assertion errors to count failures
+            // Count specific assertion errors
             const assertionErrors = (execution.error.match(/AssertionError/g) || []).length;
-            failed = assertionErrors > 0 ? assertionErrors : total; // If any error, assume all failed
-            passed = total - failed;
+            
+            if (assertionErrors > 0) {
+                // Some tests failed due to assertions
+                failed = assertionErrors;
+                passed = total - failed;
+            } else {
+                // Runtime error (like ReferenceError, SyntaxError, etc.)
+                failed = total; // All tests failed due to runtime error
+                passed = 0;
+            }
             results = execution.error;
+        } else if (execution.success === false) {
+            // Test execution completed but some tests failed
+            failed = total; // If no specific error info, assume all failed
+            passed = 0;
+            results = execution.output || 'Tests failed';
         } else {
             // No errors means all assertions passed
             passed = total;
@@ -732,6 +827,39 @@ exports.runLessonTests = async (req, res) => {
             total: total,
             results: results
         };
+
+        // AI-Enhanced Feedback: If tests fail and user has no/minimal code, provide intelligent hints
+        if (failed > 0 && studentCode.trim().length < 100) {
+            try {
+                // Get lesson context for better feedback
+                const lessonDetails = await db.query('SELECT title, description FROM lessons WHERE id = $1', [lessonId]);
+                if (lessonDetails.rows.length > 0) {
+                    const { title, description } = lessonDetails.rows[0];
+                    
+                    // Add timeout to prevent long-running AI requests
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('AI hint timeout')), 10000)
+                    );
+                    
+                    const hintPromise = generateTestFailureHint(title, description, results, testCode);
+                    const aiHint = await Promise.race([hintPromise, timeoutPromise]);
+                    
+                    if (aiHint) {
+                        testSummary.aiHint = aiHint;
+                    }
+                }
+            } catch (aiError) {
+                console.warn('AI hint generation failed:', aiError.message);
+                // Fallback hint - try to get lesson title for context
+                try {
+                    const lessonDetails = await db.query('SELECT title FROM lessons WHERE id = $1', [lessonId]);
+                    const title = lessonDetails.rows[0]?.title || 'coding problem';
+                    testSummary.aiHint = getFallbackHint(title);
+                } catch (dbError) {
+                    testSummary.aiHint = getFallbackHint('coding problem');
+                }
+            }
+        }
 
         console.log('Test Summary:', testSummary);
         res.json(testSummary);
