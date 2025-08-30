@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { AscentIdeData, Submission } from '../types/index.ts';
+import type { AscentIdeData, Submission, TestResult } from '../types/index.ts';
 import Editor from '@monaco-editor/react';
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Toaster, toast } from 'sonner';
-import { ChevronLeft, Send, Save, Award } from 'lucide-react';
+import { ChevronLeft, Send, Save, Award, Play, CheckCircle, XCircle } from 'lucide-react';
 
 const AscentWebIDE: React.FC = () => {
     const { lessonId } = useParams<{ lessonId: string }>();
@@ -21,21 +21,23 @@ const AscentWebIDE: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
-    const [htmlCode, setHtmlCode] = useState('');
-    const [cssCode, setCssCode] = useState('');
-    const [jsCode, setJsCode] = useState('');
+    const [code, setCode] = useState('');
+    const [language, setLanguage] = useState<'python' | 'html'>('python');
+    const [filename, setFilename] = useState('');
 
-    const [activeFile, setActiveFile] = useState<'html' | 'css' | 'js'>('html');
+    const [activeFile, setActiveFile] = useState<string>('main');
     const [previewSrcDoc, setPreviewSrcDoc] = useState('');
     
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submission] = useState<Submission | null>(null);
+    const [testResult, setTestResult] = useState<TestResult | null>(null);
+    const [isRunningTests, setIsRunningTests] = useState(false);
 
     const [startTime, setStartTime] = useState<number>(Date.now());
     const [codeChurn, setCodeChurn] = useState<number>(0);
     const [copyPasteActivity, setCopyPasteActivity] = useState<number>(0);
-    const prevCodeRef = useRef({ html: '', css: '', js: '' });
+    const prevCodeRef = useRef('');
     const totalTypedCharsRef = useRef<number>(0);
     const pastedCharsRef = useRef<number>(0);
 
@@ -48,15 +50,39 @@ const AscentWebIDE: React.FC = () => {
                 const data: AscentIdeData = response.data;
                 setIdeData(data);
 
-                const html = data.files.find(f => f.filename === 'index.html')?.content || '';
-                const css = data.files.find(f => f.filename === 'styles.css')?.content || '';
-                const js = data.files.find(f => f.filename === 'script.js')?.content || '';
+                // Detect lesson type and load appropriate files
+                const pythonFile = data.files.find(f => f.filename.endsWith('.py'));
+                const htmlFile = data.files.find(f => f.filename === 'index.html');
+                
+                if (pythonFile) {
+                    setLanguage('python');
+                    setCode(pythonFile.content);
+                    setFilename(pythonFile.filename);
+                    prevCodeRef.current = pythonFile.content;
+                } else if (htmlFile) {
+                    setLanguage('html');
+                    const css = data.files.find(f => f.filename === 'styles.css')?.content || '';
+                    const js = data.files.find(f => f.filename === 'script.js')?.content || '';
+                    setCode(`<!-- HTML -->
+${htmlFile.content}
 
-                setHtmlCode(html);
-                setCssCode(css);
-                setJsCode(js);
+/* CSS */
+${css}
 
-                prevCodeRef.current = { html, css, js };
+// JavaScript
+${js}`);
+                    setFilename('index.html');
+                    prevCodeRef.current = htmlFile.content;
+                } else {
+                    // Default to first file
+                    const firstFile = data.files[0];
+                    if (firstFile) {
+                        setCode(firstFile.content);
+                        setFilename(firstFile.filename);
+                        setLanguage(firstFile.filename.endsWith('.py') ? 'python' : 'html');
+                        prevCodeRef.current = firstFile.content;
+                    }
+                }
                 setStartTime(Date.now());
                 setCodeChurn(0);
                 setCopyPasteActivity(0);
@@ -75,21 +101,19 @@ const AscentWebIDE: React.FC = () => {
     
     useEffect(() => {
         const handler = setTimeout(() => {
-            setPreviewSrcDoc(
-                `<!DOCTYPE html><html><head><style>${cssCode}</style></head><body>${htmlCode}<script type="module">${jsCode}</script></body></html>`
-            );
+            if (language === 'html') {
+                setPreviewSrcDoc(code);
+            }
 
-            const newTotalLines = (htmlCode.split('\n').length) + (cssCode.split('\n').length) + (jsCode.split('\n').length);
-            const prevTotalLines = (prevCodeRef.current.html.split('\n').length) + (prevCodeRef.current.css.split('\n').length) + (prevCodeRef.current.js.split('\n').length);
+            const newTotalLines = code.split('\n').length;
+            const prevTotalLines = prevCodeRef.current.split('\n').length;
             const churn = Math.abs(newTotalLines - prevTotalLines);
             
             if (churn > 0) {
                 setCodeChurn(prev => prev + churn);
             }
             
-            const currentTotal = htmlCode.length + cssCode.length + jsCode.length;
-            const prevTotal = prevCodeRef.current.html.length + prevCodeRef.current.css.length + prevCodeRef.current.js.length;
-            const charDiff = currentTotal - prevTotal;
+            const charDiff = code.length - prevCodeRef.current.length;
             
             if (charDiff > 0) {
                 totalTypedCharsRef.current += charDiff;
@@ -98,21 +122,19 @@ const AscentWebIDE: React.FC = () => {
                 }
             }
             
-            prevCodeRef.current = { html: htmlCode, css: cssCode, js: jsCode };
+            prevCodeRef.current = code;
 
         }, 300); 
 
         return () => clearTimeout(handler);
-    }, [htmlCode, cssCode, jsCode]);
+    }, [code, language]);
 
     const handleSaveCode = async () => {
         if (!lessonId) return;
         setIsSaving(true);
 
         const filesPayload = [
-            { filename: 'index.html', content: htmlCode },
-            { filename: 'styles.css', content: cssCode },
-            { filename: 'script.js', content: jsCode },
+            { filename: filename, content: code }
         ];
         
         const savePromise = apiClient.post(`/api/lessons/${lessonId}/save-progress`, {
@@ -133,9 +155,7 @@ const AscentWebIDE: React.FC = () => {
         setIsSubmitting(true);
 
         const filesPayload = [
-            { filename: 'index.html', content: htmlCode },
-            { filename: 'styles.css', content: cssCode },
-            { filename: 'script.js', content: jsCode },
+            { filename: filename, content: code }
         ];
 
         const submissionPayload = {
@@ -163,6 +183,30 @@ const AscentWebIDE: React.FC = () => {
         submitPromise.finally(() => setIsSubmitting(false));
     };
 
+    const handleRunTests = async () => {
+        if (!lessonId) return;
+        setIsRunningTests(true);
+        setTestResult(null);
+
+        try {
+            const response = await apiClient.post(`/api/lessons/${lessonId}/run-tests`, {
+                code: code,
+                filename: filename
+            });
+            setTestResult(response.data);
+        } catch (error) {
+            console.error('Test execution failed:', error);
+            setTestResult({
+                passed: 0,
+                failed: 1,
+                total: 1,
+                results: 'Test execution failed: ' + (error instanceof Error ? error.message : 'Unknown error')
+            });
+        } finally {
+            setIsRunningTests(false);
+        }
+    };
+
     const handleEditorDidMount = (editor: any) => {
         editor.onDidPaste && editor.onDidPaste((e: any) => {
             if (e.range) {
@@ -178,35 +222,14 @@ const AscentWebIDE: React.FC = () => {
     };
 
     const renderActiveEditor = () => {
-        switch (activeFile) {
-            case 'html':
-                return <Editor 
-                    language="html" 
-                    theme="vs-dark" 
-                    value={htmlCode} 
-                    onChange={(val) => setHtmlCode(val || '')} 
-                    onMount={handleEditorDidMount}
-                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
-                />;
-            case 'css':
-                return <Editor 
-                    language="css" 
-                    theme="vs-dark" 
-                    value={cssCode} 
-                    onChange={(val) => setCssCode(val || '')} 
-                    onMount={handleEditorDidMount}
-                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
-                />;
-            case 'js':
-                return <Editor 
-                    language="javascript" 
-                    theme="vs-dark" 
-                    value={jsCode} 
-                    onChange={(val) => setJsCode(val || '')} 
-                    onMount={handleEditorDidMount}
-                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
-                />;
-        }
+        return <Editor 
+            language={language === 'python' ? 'python' : 'html'} 
+            theme="vs-dark" 
+            value={code} 
+            onChange={(val) => setCode(val || '')} 
+            onMount={handleEditorDidMount}
+            options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+        />;
     };
 
     const FeedbackCard = ({ submission }: { submission: Submission }) => (
@@ -273,6 +296,11 @@ const AscentWebIDE: React.FC = () => {
                      <h1 className="text-sm font-medium text-slate-200 truncate">{ideData.lesson.title}</h1>
                  </div>
                  <div className="flex items-center gap-2">
+                     {language === 'python' && (
+                         <Button onClick={handleRunTests} disabled={isRunningTests} variant="outline" size="sm" className="text-green-300 border-green-700 hover:bg-green-800 h-7 text-xs">
+                             <Play className="mr-1 h-3 w-3"/>{isRunningTests ? 'Running...' : 'Run Tests'}
+                         </Button>
+                     )}
                      <Button onClick={handleSaveCode} disabled={isSaving} variant="outline" size="sm" className="text-slate-300 border-slate-700 hover:bg-slate-800 h-7 text-xs">
                          <Save className="mr-1 h-3 w-3"/>Save
                      </Button>
@@ -302,9 +330,7 @@ const AscentWebIDE: React.FC = () => {
                         <PanelGroup direction="vertical">
                             <Panel defaultSize={60} minSize={20} className="flex flex-col">
                                 <div className="px-2 py-1 border-b border-slate-800 bg-slate-900">
-                                    <button onClick={() => setActiveFile('html')} className={cn("px-3 py-1 text-xs rounded-t-md", activeFile === 'html' ? "bg-slate-800 text-white" : "text-slate-400")}>index.html</button>
-                                    <button onClick={() => setActiveFile('css')} className={cn("px-3 py-1 text-xs rounded-t-md", activeFile === 'css' ? "bg-slate-800 text-white" : "text-slate-400")}>styles.css</button>
-                                    <button onClick={() => setActiveFile('js')} className={cn("px-3 py-1 text-xs rounded-t-md", activeFile === 'js' ? "bg-slate-800 text-white" : "text-slate-400")}>script.js</button>
+                                    <span className="px-3 py-1 text-xs bg-slate-800 text-white rounded-t-md">{filename}</span>
                                 </div>
                                 <div className="flex-grow overflow-hidden">
                                     {renderActiveEditor()}
@@ -314,14 +340,52 @@ const AscentWebIDE: React.FC = () => {
                             <PanelResizeHandle className="h-1 bg-slate-800" />
 
                             <Panel defaultSize={40} minSize={20}>
-                                <iframe
-                                    srcDoc={previewSrcDoc}
-                                    title="Live Preview"
-                                    sandbox="allow-scripts"
-                                    width="100%"
-                                    height="100%"
-                                    className="bg-white"
-                                />
+                                {language === 'python' ? (
+                                    <div className="h-full bg-slate-950 flex flex-col">
+                                        <div className="px-3 py-2 border-b border-slate-800 bg-slate-900">
+                                            <h3 className="text-sm font-medium text-slate-200">Test Results</h3>
+                                        </div>
+                                        <div className="flex-1 p-4 overflow-y-auto">
+                                            {testResult ? (
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center gap-2">
+                                                        {testResult.passed === testResult.total ? (
+                                                            <CheckCircle className="h-5 w-5 text-green-400" />
+                                                        ) : (
+                                                            <XCircle className="h-5 w-5 text-red-400" />
+                                                        )}
+                                                        <span className="text-sm font-medium">
+                                                            {testResult.passed}/{testResult.total} tests passed
+                                                        </span>
+                                                    </div>
+                                                    <pre className="bg-slate-900 p-3 rounded text-xs text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                                                        {testResult.results}
+                                                    </pre>
+                                                    {testResult.aiHint && (
+                                                        <div className="bg-blue-950/40 border border-blue-500/30 rounded p-3">
+                                                            <h4 className="text-sm font-medium text-blue-300 mb-2">💡 AI Hint</h4>
+                                                            <p className="text-xs text-blue-200">{testResult.aiHint}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center text-slate-500 mt-8">
+                                                    <Play className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                                    <p className="text-sm">Click "Run Tests" to test your code</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <iframe
+                                        srcDoc={previewSrcDoc}
+                                        title="Live Preview"
+                                        sandbox="allow-scripts"
+                                        width="100%"
+                                        height="100%"
+                                        className="bg-white"
+                                    />
+                                )}
                             </Panel>
                         </PanelGroup>
                     </Panel>
