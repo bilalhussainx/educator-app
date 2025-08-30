@@ -334,46 +334,81 @@ exports.getAscentIdeData = async (req, res) => {
     const { lessonId } = req.params;
     const studentId = req.user.id;
     try {
-        const lessonResult = await db.query('SELECT *, lesson_type FROM lessons WHERE id = $1', [lessonId]);
-        if (lessonResult.rows.length === 0) return res.status(404).json({ error: 'Lesson not found.' });
-        const lesson = lessonResult.rows[0];
+        // First try to find lesson in lessons table (for course lessons)
+        let lessonResult = await db.query('SELECT *, lesson_type FROM lessons WHERE id = $1', [lessonId]);
+        let lesson;
+        let isIngestedLesson = false;
+        
+        if (lessonResult.rows.length === 0) {
+            // If not found in lessons table, try ingested_lessons table (for library preview)
+            lessonResult = await db.query('SELECT *, lesson_type FROM ingested_lessons WHERE id = $1', [lessonId]);
+            if (lessonResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Lesson not found.' });
+            }
+            isIngestedLesson = true;
+        }
+        
+        lesson = lessonResult.rows[0];
         
         let files = [];
-        const savedProgressResult = await db.query('SELECT files FROM saved_progress WHERE student_id = $1 AND lesson_id = $2 ORDER BY saved_at DESC LIMIT 1', [studentId, lessonId]);
-        if (savedProgressResult.rows.length > 0) {
-            files = savedProgressResult.rows[0].files;
+        
+        if (isIngestedLesson) {
+            // For ingested lessons (library preview), use AI matching to generate content
+            console.log(`[AscentIDE] Generating preview content for ingested lesson: ${lesson.title}`);
+            try {
+                const lessonMatchingService = require('../services/lessonMatchingService');
+                const matchedLesson = await lessonMatchingService.findBestMatch(lesson);
+                if (matchedLesson) {
+                    files = lessonMatchingService.generateBoilerplateFiles(matchedLesson, lesson);
+                } else {
+                    throw new Error('No suitable match found');
+                }
+            } catch (aiError) {
+                console.error('Error generating preview content:', aiError);
+                // Fallback to default files if no match found
+                files = [{
+                    id: 'default',
+                    filename: 'index.html',
+                    content: `<!DOCTYPE html><html><head><title>${lesson.title}</title></head><body><h1>${lesson.title}</h1><p>Preview content loading...</p></body></html>`
+                }];
+            }
         } else {
-            const lastSubmissionResult = await db.query('SELECT submitted_code FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC LIMIT 1', [studentId, lessonId]);
-            if (lastSubmissionResult.rows.length > 0) {
-                files = lastSubmissionResult.rows[0].submitted_code;
+            // For regular course lessons, use the existing logic
+            const savedProgressResult = await db.query('SELECT files FROM saved_progress WHERE student_id = $1 AND lesson_id = $2 ORDER BY saved_at DESC LIMIT 1', [studentId, lessonId]);
+            if (savedProgressResult.rows.length > 0) {
+                files = savedProgressResult.rows[0].files;
             } else {
-                const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
-                files = templateFilesResult.rows;
-                
-                // If no template files exist and this is a Step lesson, use intelligent matching
-                if (files.length === 0 && lesson.title && lesson.title.startsWith('Step ')) {
-                    try {
-                        const lessonMatchingService = require('../services/lessonMatchingService');
-                        console.log(`Using AI to find best match for: ${lesson.title}`);
-                        
-                        // Use Gemini AI to find the best matching lesson
-                        const matchedLesson = await lessonMatchingService.findBestMatch(lesson);
-                        
-                        if (matchedLesson) {
-                            console.log(`AI matched with: ${matchedLesson.title} - ${matchedLesson.lesson_name}`);
-                            files = lessonMatchingService.generateBoilerplateFiles(matchedLesson, lesson);
-                        } else {
-                            throw new Error('No suitable match found');
-                        }
-                        
-                    } catch (aiError) {
-                        console.error('Error in AI lesson matching:', aiError);
-                        // Fallback to default boilerplate
-                        files = [
-                            {
-                                id: 'default-html',
-                                filename: 'index.html',
-                                content: `<!DOCTYPE html>
+                const lastSubmissionResult = await db.query('SELECT submitted_code FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC LIMIT 1', [studentId, lessonId]);
+                if (lastSubmissionResult.rows.length > 0) {
+                    files = lastSubmissionResult.rows[0].submitted_code;
+                } else {
+                    const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
+                    files = templateFilesResult.rows;
+                    
+                    // If no template files exist and this is a Step lesson, use intelligent matching
+                    if (files.length === 0 && lesson.title && lesson.title.startsWith('Step ')) {
+                        try {
+                            const lessonMatchingService = require('../services/lessonMatchingService');
+                            console.log(`Using AI to find best match for: ${lesson.title}`);
+                            
+                            // Use Gemini AI to find the best matching lesson
+                            const matchedLesson = await lessonMatchingService.findBestMatch(lesson);
+                            
+                            if (matchedLesson) {
+                                console.log(`AI matched with: ${matchedLesson.title} - ${matchedLesson.lesson_name}`);
+                                files = lessonMatchingService.generateBoilerplateFiles(matchedLesson, lesson);
+                            } else {
+                                throw new Error('No suitable match found');
+                            }
+                            
+                        } catch (aiError) {
+                            console.error('Error in AI lesson matching:', aiError);
+                            // Fallback to default boilerplate
+                            files = [
+                                {
+                                    id: 'default-html',
+                                    filename: 'index.html',
+                                    content: `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -420,6 +455,7 @@ console.log("Welcome to ${lesson.title}!");
                     }
                 }
             }
+        }
         }
         
         const gradedSubmissionResult = await db.query(`SELECT id, feedback, grade, submitted_at FROM submissions WHERE student_id = $1 AND lesson_id = $2 AND grade IS NOT NULL ORDER BY submitted_at DESC LIMIT 1`, [studentId, lessonId]);
