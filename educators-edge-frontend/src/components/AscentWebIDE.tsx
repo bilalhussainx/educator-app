@@ -21,11 +21,15 @@ const AscentWebIDE: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
-    const [code, setCode] = useState('');
-    const [language, setLanguage] = useState<'python' | 'html'>('python');
-    const [filename, setFilename] = useState('');
+    const [htmlCode, setHtmlCode] = useState('');
+    const [cssCode, setCssCode] = useState('');
+    const [jsCode, setJsCode] = useState('');
+    const [pythonCode, setPythonCode] = useState('');
+    
+    const [language, setLanguage] = useState<'python' | 'web'>('python');
+    const [pythonFilename, setPythonFilename] = useState('');
 
-    const [activeFile, setActiveFile] = useState<string>('main');
+    const [activeFile, setActiveFile] = useState<'html' | 'css' | 'js'>('html');
     const [previewSrcDoc, setPreviewSrcDoc] = useState('');
     
     const [isSaving, setIsSaving] = useState(false);
@@ -37,7 +41,7 @@ const AscentWebIDE: React.FC = () => {
     const [startTime, setStartTime] = useState<number>(Date.now());
     const [codeChurn, setCodeChurn] = useState<number>(0);
     const [copyPasteActivity, setCopyPasteActivity] = useState<number>(0);
-    const prevCodeRef = useRef('');
+    const prevCodeRef = useRef({ html: '', css: '', js: '', python: '' });
     const totalTypedCharsRef = useRef<number>(0);
     const pastedCharsRef = useRef<number>(0);
 
@@ -55,33 +59,25 @@ const AscentWebIDE: React.FC = () => {
                 const htmlFile = data.files.find(f => f.filename === 'index.html');
                 
                 if (pythonFile) {
+                    // Python lesson
                     setLanguage('python');
-                    setCode(pythonFile.content);
-                    setFilename(pythonFile.filename);
-                    prevCodeRef.current = pythonFile.content;
-                } else if (htmlFile) {
-                    setLanguage('html');
+                    setPythonCode(pythonFile.content);
+                    setPythonFilename(pythonFile.filename);
+                    prevCodeRef.current.python = pythonFile.content;
+                } else {
+                    // Web development lesson
+                    setLanguage('web');
+                    const html = data.files.find(f => f.filename === 'index.html')?.content || '';
                     const css = data.files.find(f => f.filename === 'styles.css')?.content || '';
                     const js = data.files.find(f => f.filename === 'script.js')?.content || '';
-                    setCode(`<!-- HTML -->
-${htmlFile.content}
-
-/* CSS */
-${css}
-
-// JavaScript
-${js}`);
-                    setFilename('index.html');
-                    prevCodeRef.current = htmlFile.content;
-                } else {
-                    // Default to first file
-                    const firstFile = data.files[0];
-                    if (firstFile) {
-                        setCode(firstFile.content);
-                        setFilename(firstFile.filename);
-                        setLanguage(firstFile.filename.endsWith('.py') ? 'python' : 'html');
-                        prevCodeRef.current = firstFile.content;
-                    }
+                    
+                    setHtmlCode(html);
+                    setCssCode(css);
+                    setJsCode(js);
+                    
+                    prevCodeRef.current.html = html;
+                    prevCodeRef.current.css = css;
+                    prevCodeRef.current.js = js;
                 }
                 setStartTime(Date.now());
                 setCodeChurn(0);
@@ -101,20 +97,33 @@ ${js}`);
     
     useEffect(() => {
         const handler = setTimeout(() => {
-            if (language === 'html') {
-                setPreviewSrcDoc(code);
+            if (language === 'web') {
+                setPreviewSrcDoc(
+                    `<!DOCTYPE html><html><head><style>${cssCode}</style></head><body>${htmlCode}<script type="module">${jsCode}</script></body></html>`
+                );
             }
 
-            const newTotalLines = code.split('\n').length;
-            const prevTotalLines = prevCodeRef.current.split('\n').length;
-            const churn = Math.abs(newTotalLines - prevTotalLines);
+            // Calculate metrics based on lesson type
+            let newTotalLines, prevTotalLines, currentTotal, prevTotal;
             
+            if (language === 'python') {
+                newTotalLines = pythonCode.split('\n').length;
+                prevTotalLines = prevCodeRef.current.python.split('\n').length;
+                currentTotal = pythonCode.length;
+                prevTotal = prevCodeRef.current.python.length;
+            } else {
+                newTotalLines = (htmlCode.split('\n').length) + (cssCode.split('\n').length) + (jsCode.split('\n').length);
+                prevTotalLines = (prevCodeRef.current.html.split('\n').length) + (prevCodeRef.current.css.split('\n').length) + (prevCodeRef.current.js.split('\n').length);
+                currentTotal = htmlCode.length + cssCode.length + jsCode.length;
+                prevTotal = prevCodeRef.current.html.length + prevCodeRef.current.css.length + prevCodeRef.current.js.length;
+            }
+            
+            const churn = Math.abs(newTotalLines - prevTotalLines);
             if (churn > 0) {
                 setCodeChurn(prev => prev + churn);
             }
             
-            const charDiff = code.length - prevCodeRef.current.length;
-            
+            const charDiff = currentTotal - prevTotal;
             if (charDiff > 0) {
                 totalTypedCharsRef.current += charDiff;
                 if (totalTypedCharsRef.current > 0) {
@@ -122,19 +131,30 @@ ${js}`);
                 }
             }
             
-            prevCodeRef.current = code;
+            // Update previous code reference
+            if (language === 'python') {
+                prevCodeRef.current.python = pythonCode;
+            } else {
+                prevCodeRef.current.html = htmlCode;
+                prevCodeRef.current.css = cssCode;
+                prevCodeRef.current.js = jsCode;
+            }
 
         }, 300); 
 
         return () => clearTimeout(handler);
-    }, [code, language]);
+    }, [htmlCode, cssCode, jsCode, pythonCode, language]);
 
     const handleSaveCode = async () => {
         if (!lessonId) return;
         setIsSaving(true);
 
-        const filesPayload = [
-            { filename: filename, content: code }
+        const filesPayload = language === 'python' ? [
+            { filename: pythonFilename, content: pythonCode }
+        ] : [
+            { filename: 'index.html', content: htmlCode },
+            { filename: 'styles.css', content: cssCode },
+            { filename: 'script.js', content: jsCode }
         ];
         
         const savePromise = apiClient.post(`/api/lessons/${lessonId}/save-progress`, {
@@ -154,8 +174,12 @@ ${js}`);
         if (!lessonId) return;
         setIsSubmitting(true);
 
-        const filesPayload = [
-            { filename: filename, content: code }
+        const filesPayload = language === 'python' ? [
+            { filename: pythonFilename, content: pythonCode }
+        ] : [
+            { filename: 'index.html', content: htmlCode },
+            { filename: 'styles.css', content: cssCode },
+            { filename: 'script.js', content: jsCode }
         ];
 
         const submissionPayload = {
@@ -190,8 +214,8 @@ ${js}`);
 
         try {
             const response = await apiClient.post(`/api/lessons/${lessonId}/run-tests`, {
-                code: code,
-                filename: filename
+                code: pythonCode,
+                filename: pythonFilename
             });
             setTestResult(response.data);
         } catch (error) {
@@ -222,14 +246,48 @@ ${js}`);
     };
 
     const renderActiveEditor = () => {
-        return <Editor 
-            language={language === 'python' ? 'python' : 'html'} 
-            theme="vs-dark" 
-            value={code} 
-            onChange={(val) => setCode(val || '')} 
-            onMount={handleEditorDidMount}
-            options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
-        />;
+        if (language === 'python') {
+            return <Editor 
+                language="python" 
+                theme="vs-dark" 
+                value={pythonCode} 
+                onChange={(val) => setPythonCode(val || '')} 
+                onMount={handleEditorDidMount}
+                options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+            />;
+        }
+        
+        switch (activeFile) {
+            case 'html':
+                return <Editor 
+                    language="html" 
+                    theme="vs-dark" 
+                    value={htmlCode} 
+                    onChange={(val) => setHtmlCode(val || '')} 
+                    onMount={handleEditorDidMount}
+                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+                />;
+            case 'css':
+                return <Editor 
+                    language="css" 
+                    theme="vs-dark" 
+                    value={cssCode} 
+                    onChange={(val) => setCssCode(val || '')} 
+                    onMount={handleEditorDidMount}
+                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+                />;
+            case 'js':
+                return <Editor 
+                    language="javascript" 
+                    theme="vs-dark" 
+                    value={jsCode} 
+                    onChange={(val) => setJsCode(val || '')} 
+                    onMount={handleEditorDidMount}
+                    options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+                />;
+            default:
+                return null;
+        }
     };
 
     const FeedbackCard = ({ submission }: { submission: Submission }) => (
@@ -330,7 +388,15 @@ ${js}`);
                         <PanelGroup direction="vertical">
                             <Panel defaultSize={60} minSize={20} className="flex flex-col">
                                 <div className="px-2 py-1 border-b border-slate-800 bg-slate-900">
-                                    <span className="px-3 py-1 text-xs bg-slate-800 text-white rounded-t-md">{filename}</span>
+                                    {language === 'python' ? (
+                                        <span className="px-3 py-1 text-xs bg-slate-800 text-white rounded-t-md">{pythonFilename}</span>
+                                    ) : (
+                                        <>
+                                            <button onClick={() => setActiveFile('html')} className={cn("px-3 py-1 text-xs rounded-t-md", activeFile === 'html' ? "bg-slate-800 text-white" : "text-slate-400")}>index.html</button>
+                                            <button onClick={() => setActiveFile('css')} className={cn("px-3 py-1 text-xs rounded-t-md", activeFile === 'css' ? "bg-slate-800 text-white" : "text-slate-400")}>styles.css</button>
+                                            <button onClick={() => setActiveFile('js')} className={cn("px-3 py-1 text-xs rounded-t-md", activeFile === 'js' ? "bg-slate-800 text-white" : "text-slate-400")}>script.js</button>
+                                        </>
+                                    )}
                                 </div>
                                 <div className="flex-grow overflow-hidden">
                                     {renderActiveEditor()}
