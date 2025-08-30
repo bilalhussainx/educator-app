@@ -320,7 +320,11 @@ const AscentIDE: React.FC = () => {
             
             <header className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-slate-800 bg-slate-950/60 backdrop-blur-sm z-30 gap-2 min-h-[48px]">
                 <div className="flex items-center gap-2 flex-shrink min-w-0">
-                    <Button variant="ghost" size="sm" onClick={() => navigate(`/courses/${ideData.courseId}/learn`)} className="hover:bg-slate-800 flex-shrink-0 h-7 px-2 text-xs"><ChevronLeft className="mr-1 h-3 w-3" /> Back</Button>
+                    <Button variant="ghost" size="sm" onClick={() => {
+                        const user = JSON.parse(localStorage.getItem('user') || '{}');
+                        const backPath = user.role === 'teacher' ? `/courses/${ideData.courseId}/manage` : `/courses/${ideData.courseId}/learn`;
+                        navigate(backPath);
+                    }} className="hover:bg-slate-800 flex-shrink-0 h-7 px-2 text-xs"><ChevronLeft className="mr-1 h-3 w-3" /> Back</Button>
                     <span className="text-slate-500 flex-shrink-0 text-sm">/</span>
                     <h1 className="text-sm font-medium text-slate-200 truncate" title={ideData.lesson.title}>{ideData.lesson.title}</h1>
                 </div>
@@ -415,6 +419,15 @@ const AscentIDE: React.FC = () => {
                                                     {testResults.failed > 0 ? <><XCircle className="h-4 w-4"/>{`${testResults.failed} / ${testResults.total} Tests Failed`}</> : <><CheckCircle className="h-4 w-4"/>{`All ${testResults.total} Tests Passed!`}</>}
                                                 </div>
                                                 <pre className="whitespace-pre-wrap text-xs p-2 bg-black/40 rounded">{testResults.results}</pre>
+                                                {testResults.aiHint && (
+                                                    <div className="p-3 bg-blue-950/40 border border-blue-500/30 rounded text-blue-300">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <BotMessageSquare className="h-4 w-4" />
+                                                            <span className="font-medium text-xs">AI Hint</span>
+                                                        </div>
+                                                        <p className="text-xs font-sans">{testResults.aiHint}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : <div className="flex items-center justify-center h-full text-center text-slate-500"><BeakerIcon className="h-8 w-8 mb-2 opacity-50" /><p>Run tests to see results</p></div>}
                                     </TabsContent>
