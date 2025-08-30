@@ -198,8 +198,51 @@ exports.getAscentIdeData = async (req, res) => {
         const historyResult = await db.query('SELECT id, submitted_at, is_correct FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC', [studentId, lessonId]);
         const submissionHistory = historyResult.rows;
 
-        // Simplified placeholder data
-        const testCases = []; 
+        // Load test cases from the database
+        let testCases = [];
+        try {
+            const testResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
+            if (testResult.rows.length > 0 && testResult.rows[0].test_code) {
+                const testCode = testResult.rows[0].test_code;
+                const lines = testCode.split('\n').filter(line => line.trim());
+                testCases = lines.map((line, index) => {
+                    // Parse console.assert format: console.assert(condition, "description");
+                    const match = line.match(/console\.assert\((.+?),\s*"(.+?)"\);?$/);
+                    if (match) {
+                        const condition = match[1];
+                        const description = match[2];
+                        
+                        // Extract input/expected from common test patterns
+                        let input = 'N/A';
+                        let expectedOutput = 'Should pass';
+                        
+                        // Pattern for function calls: functionName(input) should return/equal value
+                        const funcMatch = description.match(/`(.+?)\((.+?)\)` should (?:return|equal) (?:`(.+?)`|(.+?))/i);
+                        if (funcMatch) {
+                            const funcName = funcMatch[1];
+                            const inputArgs = funcMatch[2];
+                            const expectedValue = funcMatch[3] || funcMatch[4];
+                            input = `${funcName}(${inputArgs})`;
+                            expectedOutput = expectedValue;
+                        }
+                        
+                        return {
+                            description: description,
+                            input: input,
+                            expectedOutput: expectedOutput
+                        };
+                    }
+                    
+                    return {
+                        description: `Test ${index + 1}`,
+                        input: line.trim(),
+                        expectedOutput: 'Should pass'
+                    };
+                });
+            }
+        } catch (testErr) {
+            console.warn('Error loading test cases:', testErr.message);
+        } 
         const officialSolution = { explanation: "The official solution is available after you pass all tests." };
 
         res.json({
