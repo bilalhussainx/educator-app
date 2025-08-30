@@ -427,7 +427,9 @@ exports.createSubmission = async (req, res) => {
         }
         const testCode = testCodeResult.rows[0].test_code;
 
-        const fullCode = `${studentCode}\n\n${testCode}`;
+        // Add assert import for JavaScript test execution (same fix as runLessonTests)
+        const assertImport = language === 'javascript' ? 'const assert = require("assert");\n\n' : '';
+        const fullCode = `${assertImport}${studentCode}\n\n${testCode}`;
         const execution = await executeCode(fullCode, language);
 
         const errorTypes = execution.success ? [] : parseErrorTypes(execution.output);
