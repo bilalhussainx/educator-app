@@ -322,6 +322,13 @@ const AscentIDE: React.FC = () => {
                 <div className="flex items-center gap-2 flex-shrink min-w-0">
                     <Button variant="ghost" size="sm" onClick={() => {
                         try {
+                            // Check if this is a preview from the course editor
+                            const urlParams = new URLSearchParams(window.location.search);
+                            if (urlParams.get('preview') === 'true') {
+                                navigate(`/courses/${ideData.courseId}/edit`);
+                                return;
+                            }
+                            
                             // Try to get user from localStorage
                             const userStr = localStorage.getItem('user');
                             console.log('[DEBUG] User from localStorage:', userStr);

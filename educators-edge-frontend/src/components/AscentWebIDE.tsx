@@ -423,7 +423,14 @@ const AscentWebIDE: React.FC = () => {
             
             <header className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-slate-800 bg-slate-950/60 z-30">
                  <div className="flex items-center gap-2">
-                     <Button variant="ghost" size="sm" onClick={() => navigate(`/courses/${ideData.courseId}/learn`)} className="hover:bg-slate-800 h-7 text-xs">
+                     <Button variant="ghost" size="sm" onClick={() => {
+                         const urlParams = new URLSearchParams(window.location.search);
+                         if (urlParams.get('preview') === 'true') {
+                             navigate(`/courses/${ideData.courseId}/edit`);
+                         } else {
+                             navigate(`/courses/${ideData.courseId}/learn`);
+                         }
+                     }} className="hover:bg-slate-800 h-7 text-xs">
                          <ChevronLeft className="mr-1 h-3 w-3" /> Back
                      </Button>
                      <span className="text-slate-500 text-sm">/</span>

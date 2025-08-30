@@ -136,7 +136,7 @@ const CourseEditorPage: React.FC = () => {
     };
 
     const handlePreviewLesson = (lessonId: string) => {
-        window.open(`/lesson/${lessonId}`, '_blank');
+        window.open(`/lesson/${lessonId}?courseId=${courseId}&preview=true`, '_blank');
     };
 
     const handleCreateNewLesson = () => {
