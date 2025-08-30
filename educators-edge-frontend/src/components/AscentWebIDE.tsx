@@ -56,7 +56,6 @@ const AscentWebIDE: React.FC = () => {
 
                 // Detect lesson type and load appropriate files
                 const pythonFile = data.files.find(f => f.filename.endsWith('.py'));
-                const htmlFile = data.files.find(f => f.filename === 'index.html');
                 
                 if (pythonFile) {
                     // Python lesson
