@@ -534,7 +534,7 @@ exports.addLessonToCourse = async (req, res) => {
 
         // Handle the 'files' column
         if (lessonData.files) {
-            const boilerplateFiles = JSON.parse(lessonData.files);
+            const boilerplateFiles = Array.isArray(lessonData.files) ? lessonData.files : JSON.parse(lessonData.files);
             if (Array.isArray(boilerplateFiles)) {
                 for (const file of boilerplateFiles) {
                     const filename = file.filename || 'index.js'; 
@@ -546,7 +546,7 @@ exports.addLessonToCourse = async (req, res) => {
 
         // Handle the 'solution_files' column
         if (lessonData.solution_files) {
-            const solutionFiles = JSON.parse(lessonData.solution_files);
+            const solutionFiles = Array.isArray(lessonData.solution_files) ? lessonData.solution_files : JSON.parse(lessonData.solution_files);
             if (Array.isArray(solutionFiles)) {
                 for (const file of solutionFiles) {
                     const filename = file.filename || 'solution.js';
