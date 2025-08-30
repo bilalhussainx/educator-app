@@ -239,11 +239,69 @@ exports.getLessonSolution = async (req, res) => {
             [lessonId]
         );
 
-        if (solutionFilesResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Solution not found for this lesson.' });
+        let solutionFiles = solutionFilesResult.rows;
+        
+        // If no solution files exist, check if this is a Step lesson and provide default solution
+        if (solutionFiles.length === 0) {
+            const lessonResult = await db.query('SELECT title FROM lessons WHERE id = $1', [lessonId]);
+            if (lessonResult.rows.length > 0 && lessonResult.rows[0].title && lessonResult.rows[0].title.startsWith('Step ')) {
+                const lesson = lessonResult.rows[0];
+                solutionFiles = [
+                    {
+                        filename: 'index.html',
+                        content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${lesson.title} - Solution</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Solution for ${lesson.title}</h1>
+    <p>This is a sample solution. In a real implementation, this would contain the complete solution for the lesson.</p>
+    <script src="script.js"></script>
+</body>
+</html>`
+                    },
+                    {
+                        filename: 'styles.css',
+                        content: `body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f8f9fa;
+}
+
+h1 {
+    color: #28a745;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+p {
+    color: #6c757d;
+    text-align: center;
+    font-size: 16px;
+}`
+                    },
+                    {
+                        filename: 'script.js',
+                        content: `console.log("Solution for ${lesson.title} loaded!");
+
+// This would contain the complete JavaScript solution
+// For example, if this was about DOM manipulation:
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Solution code executed successfully!');
+});`
+                    }
+                ];
+            } else {
+                return res.status(404).json({ error: 'Solution not found for this lesson.' });
+            }
         }
         
-        res.json(solutionFilesResult.rows);
+        res.json(solutionFiles);
 
     } catch (err) {
         console.error("Error in getLessonSolution:", err.message);
@@ -269,6 +327,58 @@ exports.getAscentIdeData = async (req, res) => {
             } else {
                 const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
                 files = templateFilesResult.rows;
+                
+                // If no template files exist and this is a Step lesson, provide default web dev boilerplate
+                if (files.length === 0 && lesson.title && lesson.title.startsWith('Step ')) {
+                    files = [
+                        {
+                            id: 'default-html',
+                            filename: 'index.html',
+                            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${lesson.title}</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- --fcc-editable-region-- -->
+    <h1>Hello World</h1>
+    <!-- --fcc-editable-region-- -->
+    <script src="script.js"></script>
+</body>
+</html>`
+                        },
+                        {
+                            id: 'default-css',
+                            filename: 'styles.css',
+                            content: `/* --fcc-editable-region-- */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+/* --fcc-editable-region-- */`
+                        },
+                        {
+                            id: 'default-js',
+                            filename: 'script.js',
+                            content: `// --fcc-editable-region--
+console.log("Welcome to ${lesson.title}!");
+
+// Your JavaScript code goes here
+
+// --fcc-editable-region--`
+                        }
+                    ];
+                }
             }
         }
         
