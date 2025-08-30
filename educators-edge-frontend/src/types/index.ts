@@ -179,6 +179,7 @@ export interface TestResult {
     failed: number;
     total: number;
     results: string;
+    aiHint?: string; // AI-generated hint when tests fail
 }
 
 // /*
