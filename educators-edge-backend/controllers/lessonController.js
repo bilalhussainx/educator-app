@@ -170,7 +170,6 @@ exports.getLessonSolution = async (req, res) => {
         res.status(500).send('Server Error');
     }
 };
-// It now fetches and returns the actual files and tests for the lesson.
 exports.getAscentIdeData = async (req, res) => {
     const { lessonId } = req.params;
     const studentId = req.user.id;
@@ -180,46 +179,32 @@ exports.getAscentIdeData = async (req, res) => {
         const lesson = lessonResult.rows[0];
         
         let files = [];
-        // [CRITICAL] Fetch the actual boilerplate files for this lesson
-        const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
-        if (templateFilesResult.rows.length > 0) {
-            files = templateFilesResult.rows;
+        const savedProgressResult = await db.query('SELECT files FROM saved_progress WHERE student_id = $1 AND lesson_id = $2 ORDER BY saved_at DESC LIMIT 1', [studentId, lessonId]);
+        if (savedProgressResult.rows.length > 0) {
+            files = savedProgressResult.rows[0].files;
+        } else {
+            const lastSubmissionResult = await db.query('SELECT submitted_code FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC LIMIT 1', [studentId, lessonId]);
+            if (lastSubmissionResult.rows.length > 0) {
+                files = lastSubmissionResult.rows[0].submitted_code;
+            } else {
+                const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
+                files = templateFilesResult.rows;
+            }
         }
-
-        // [CRITICAL] Fetch the actual test cases for this lesson
-        const testCasesResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
-        // The frontend expects an array of test case objects. We transform the raw test code.
-        const testCases = testCasesResult.rows.map((row, i) => ({
-            id: i,
-            description: `Test case ${i + 1}`,
-            input: row.test_code.split(',')[0], // Simple parsing for display
-            expectedOutput: row.test_code.split(',')[1] // Simple parsing for display
-        }));
         
-        // Fetch submission history and graded feedback as before
         const gradedSubmissionResult = await db.query(`SELECT id, feedback, grade, submitted_at FROM submissions WHERE student_id = $1 AND lesson_id = $2 AND grade IS NOT NULL ORDER BY submitted_at DESC LIMIT 1`, [studentId, lessonId]);
         const gradedSubmission = gradedSubmissionResult.rows[0] || null;
 
         const historyResult = await db.query('SELECT id, submitted_at, is_correct FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC', [studentId, lessonId]);
         const submissionHistory = historyResult.rows;
 
-        // Fetch solution files as before
-        const solutionResult = await db.query('SELECT * FROM lesson_solution_files WHERE lesson_id = $1', [lessonId]);
-        const officialSolution = { 
-            files: solutionResult.rows,
-            explanation: "The official solution is available after you pass all tests." 
-        };
+        // Simplified placeholder data
+        const testCases = []; 
+        const officialSolution = { explanation: "The official solution is available after you pass all tests." };
 
         res.json({
-            lesson, 
-            files, // Now contains the real boilerplate files
-            gradedSubmission, 
-            testCases, // Now contains the real test cases
-            submissionHistory, 
-            officialSolution,
-            courseId: lesson.course_id, 
-            previousLessonId: null, // Placeholder
-            nextLessonId: null, // Placeholder
+            lesson, files, gradedSubmission, testCases, submissionHistory, officialSolution,
+            courseId: lesson.course_id, previousLessonId: null, nextLessonId: null,
         });
 
     } catch (err) {
@@ -227,48 +212,6 @@ exports.getAscentIdeData = async (req, res) => {
         res.status(500).json({ error: 'A server error occurred.' });
     }
 };
-// exports.getAscentIdeData = async (req, res) => {
-//     const { lessonId } = req.params;
-//     const studentId = req.user.id;
-//     try {
-//         const lessonResult = await db.query('SELECT *, lesson_type FROM lessons WHERE id = $1', [lessonId]);
-//         if (lessonResult.rows.length === 0) return res.status(404).json({ error: 'Lesson not found.' });
-//         const lesson = lessonResult.rows[0];
-        
-//         let files = [];
-//         const savedProgressResult = await db.query('SELECT files FROM saved_progress WHERE student_id = $1 AND lesson_id = $2 ORDER BY saved_at DESC LIMIT 1', [studentId, lessonId]);
-//         if (savedProgressResult.rows.length > 0) {
-//             files = savedProgressResult.rows[0].files;
-//         } else {
-//             const lastSubmissionResult = await db.query('SELECT submitted_code FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC LIMIT 1', [studentId, lessonId]);
-//             if (lastSubmissionResult.rows.length > 0) {
-//                 files = lastSubmissionResult.rows[0].submitted_code;
-//             } else {
-//                 const templateFilesResult = await db.query('SELECT * FROM lesson_files WHERE lesson_id = $1', [lessonId]);
-//                 files = templateFilesResult.rows;
-//             }
-//         }
-        
-//         const gradedSubmissionResult = await db.query(`SELECT id, feedback, grade, submitted_at FROM submissions WHERE student_id = $1 AND lesson_id = $2 AND grade IS NOT NULL ORDER BY submitted_at DESC LIMIT 1`, [studentId, lessonId]);
-//         const gradedSubmission = gradedSubmissionResult.rows[0] || null;
-
-//         const historyResult = await db.query('SELECT id, submitted_at, is_correct FROM submissions WHERE student_id = $1 AND lesson_id = $2 ORDER BY submitted_at DESC', [studentId, lessonId]);
-//         const submissionHistory = historyResult.rows;
-
-//         // Simplified placeholder data
-//         const testCases = []; 
-//         const officialSolution = { explanation: "The official solution is available after you pass all tests." };
-
-//         res.json({
-//             lesson, files, gradedSubmission, testCases, submissionHistory, officialSolution,
-//             courseId: lesson.course_id, previousLessonId: null, nextLessonId: null,
-//         });
-
-//     } catch (err) {
-//         console.error("Error in getAscentIdeData:", err.message);
-//         res.status(500).json({ error: 'A server error occurred.' });
-//     }
-// };
 
 // removing lessons and creating  for the course creator (teacher specific)
 
@@ -538,159 +481,100 @@ exports.addLessonToCourse = async (req, res) => {
     const { courseId } = req.params;
     const { ingestedLessonId } = req.body;
     
-    console.log('=== addLessonToCourse START ===');
+    // Debug logging to see what we're getting from req.user
+    console.log('req.user:', req.user);
     console.log('courseId:', courseId);
     console.log('ingestedLessonId:', ingestedLessonId);
-    console.log('req.user:', req.user);
-
-    // Validate inputs
-    if (!courseId) {
-        return res.status(400).json({ error: 'Course ID is required.' });
+    
+    // Check if req.user exists and has an id
+    if (!req.user) {
+        return res.status(401).json({ error: 'User not authenticated' });
     }
     
+    if (!req.user.id) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+    }
+    
+    const teacherId = req.user.id;
+
     if (!ingestedLessonId) {
         return res.status(400).json({ error: 'Ingested Lesson ID is required.' });
     }
 
-    if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'User not authenticated or missing user ID.' });
-    }
-
-    const teacherId = req.user.id;
-
-    let client;
     try {
-        console.log('Getting database client...');
-        client = await db.pool.connect();
-        console.log('Database client acquired successfully');
-        
-        console.log('Starting transaction...');
-        await client.query('BEGIN');
-        console.log('Transaction started successfully');
-
-        console.log('Checking course ownership...');
-        const courseCheck = await client.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
-        console.log('Course check result:', courseCheck.rows);
+        // Validate course ownership
+        const courseCheck = await db.query('SELECT id FROM courses WHERE id = $1 AND teacher_id = $2', [courseId, teacherId]);
         if (courseCheck.rows.length === 0) {
-            throw new Error('Course not found or user is not authorized.');
+            return res.status(403).json({ error: 'Course not found or user is not authorized.' });
         }
 
-        console.log('Fetching lesson data from ingested_lessons...');
-        const lessonDataResult = await client.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId]);
-        console.log('Lesson data query result rows count:', lessonDataResult.rows.length);
+        // Get lesson data from ingested_lessons
+        const lessonDataResult = await db.query('SELECT * FROM ingested_lessons WHERE id = $1', [ingestedLessonId]);
         if (lessonDataResult.rows.length === 0) {
-            throw new Error('Lesson not found in the library.');
+            return res.status(404).json({ error: 'Lesson not found in the library.' });
         }
         const lessonData = lessonDataResult.rows[0];
-        console.log('Lesson data:', lessonData);
 
-        console.log('Getting next order index...');
-        const orderQuery = await client.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
+        // Get next order index
+        const orderQuery = await db.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
-        console.log('Next order index:', nextOrderIndex);
+
+        // Additional validation before INSERT
+        console.log('About to insert lesson with teacherId:', teacherId);
+        if (!teacherId) {
+            throw new Error('Teacher ID is null or undefined');
+        }
 
         const newLessonId = uuidv4();
-        console.log('Generated new lesson ID:', newLessonId);
-        console.log('Inserting main lesson record...');
-        await client.query(
+        await db.query(
             `INSERT INTO lessons (id, course_id, title, description, lesson_type, order_index, teacher_id) 
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [newLessonId, courseId, lessonData.title, lessonData.description, lessonData.lesson_type, nextOrderIndex, teacherId]
         );
-        console.log('Main lesson record inserted successfully');
 
-        console.log('lessonData.files raw:', lessonData.files);
+        // Handle the 'files' column
         if (lessonData.files) {
-            try {
-                const boilerplateFiles = JSON.parse(lessonData.files);
-                console.log('Parsed boilerplateFiles:', boilerplateFiles);
-                if (Array.isArray(boilerplateFiles)) {
-                    for (const file of boilerplateFiles) {
-                        const filename = file.filename || 'index.js'; 
-                        const content = file.content || file.code || file.text || '';
-                        console.log(`Inserting boilerplate file: ${filename}, content length: ${content.length}`);
-                        await client.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
-                    }
-                } else {
-                    console.log('boilerplateFiles is not an array:', typeof boilerplateFiles);
+            const boilerplateFiles = JSON.parse(lessonData.files);
+            if (Array.isArray(boilerplateFiles)) {
+                for (const file of boilerplateFiles) {
+                    const filename = file.filename || 'index.js'; 
+                    const content = file.content || file.code || file.text || '';
+                    await db.query('INSERT INTO lesson_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
                 }
-            } catch (parseError) {
-                console.error('Error parsing lessonData.files:', parseError.message);
             }
-        } else {
-            console.log('lessonData.files is null/undefined');
         }
 
+        // Handle the 'solution_files' column
         if (lessonData.solution_files) {
             const solutionFiles = JSON.parse(lessonData.solution_files);
             if (Array.isArray(solutionFiles)) {
                 for (const file of solutionFiles) {
                     const filename = file.filename || 'solution.js';
                     const content = file.content || file.code || file.text || '';
-                    await client.query('INSERT INTO lesson_solution_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
+                    await db.query('INSERT INTO lesson_solution_files (lesson_id, filename, content) VALUES ($1, $2, $3)', [newLessonId, filename, content]);
                 }
             }
         }
 
-        console.log('lessonData.test_code raw:', lessonData.test_code);
+        // Handle the 'test_code' column
         if (lessonData.test_code) {
-            try {
-                const tests = JSON.parse(lessonData.test_code);
-                console.log('Parsed tests:', tests);
-                if (Array.isArray(tests)) {
-                    const testString = tests.flat()
-                        .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
-                        .join('\n');
-                    console.log('Generated testString:', testString);
-                    if (testString) {
-                         await client.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
-                         console.log('Test code inserted successfully');
-                    }
-                } else {
-                    console.log('tests is not an array:', typeof tests);
+            const tests = JSON.parse(lessonData.test_code);
+            if (Array.isArray(tests)) {
+                const testString = tests.flat()
+                    .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
+                    .join('\n');
+                if (testString) {
+                     await db.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
                 }
-            } catch (parseError) {
-                console.error('Error parsing lessonData.test_code:', parseError.message);
             }
-        } else {
-            console.log('lessonData.test_code is null/undefined');
         }
         
-        await client.query('COMMIT'); // COMMIT THE TRANSACTION
         res.status(201).json({ message: 'Lesson added successfully', lessonId: newLessonId });
 
     } catch (err) {
-        console.error("=== CRITICAL ERROR in addLessonToCourse ===");
-        console.error("Error message:", err.message);
-        console.error("Error stack:", err.stack);
-        console.error("Full error object:", err);
-        
-        if (client) {
-            try {
-                console.log('Rolling back transaction...');
-                await client.query('ROLLBACK');
-                console.log('Transaction rolled back successfully');
-            } catch (rollbackErr) {
-                console.error('Error during rollback:', rollbackErr);
-            }
-        }
-        
-        res.status(500).json({ 
-            error: 'An error occurred while adding the lesson.', 
-            details: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-        });
-    } finally {
-        if (client) {
-            try {
-                console.log('Releasing database client...');
-                client.release();
-                console.log('Database client released successfully');
-            } catch (releaseErr) {
-                console.error('Error releasing client:', releaseErr);
-            }
-        }
-        console.log('=== addLessonToCourse END ===');
+        console.error("CRITICAL ERROR in addLessonToCourse:", err.message);
+        console.error("Full error:", err);
+        res.status(500).json({ error: 'An error occurred while adding the lesson.', details: err.message });
     }
 };
 
