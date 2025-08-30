@@ -706,8 +706,38 @@ exports.runLessonTests = async (req, res) => {
         const fullCode = `${studentCode}\n\n${testCode}`;
         const execution = await executeCode(fullCode, language);
 
-        // ... (The rest of your logic for calculating passed/failed tests and logging is fine)
-        const testSummary = { /* ... */ };
+        // Process test results from execution output
+        let passed = 0;
+        let failed = 0;
+        let total = 0;
+        let results = execution.output || '';
+
+        // Count total tests from testCode
+        const testLines = testCode.split('\n').filter(line => line.trim().startsWith('console.assert'));
+        total = testLines.length;
+
+        // If execution was successful and no errors, assume tests passed
+        if (execution.error) {
+            // Parse assertion errors to count failures
+            const assertionErrors = (execution.error.match(/AssertionError/g) || []).length;
+            failed = assertionErrors > 0 ? assertionErrors : total; // If any error, assume all failed
+            passed = total - failed;
+            results = execution.error;
+        } else {
+            // No errors means all assertions passed
+            passed = total;
+            failed = 0;
+            results = execution.output || 'All tests passed!';
+        }
+
+        const testSummary = {
+            passed: passed,
+            failed: failed, 
+            total: total,
+            results: results
+        };
+
+        console.log('Test Summary:', testSummary);
         res.json(testSummary);
 
     } catch (err) {
