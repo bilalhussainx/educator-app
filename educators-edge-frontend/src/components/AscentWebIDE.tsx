@@ -26,7 +26,7 @@ const AscentWebIDE: React.FC = () => {
     const [jsCode, setJsCode] = useState('');
     const [pythonCode, setPythonCode] = useState('');
     
-    const [language, setLanguage] = useState<'python' | 'web'>('python');
+    const [language, setLanguage] = useState<'python' | 'web' | 'javascript'>('python');
     const [pythonFilename, setPythonFilename] = useState('');
 
     const [activeFile, setActiveFile] = useState<'html' | 'css' | 'js'>('html');
@@ -56,6 +56,8 @@ const AscentWebIDE: React.FC = () => {
 
                 // Detect lesson type and load appropriate files
                 const pythonFile = data.files.find(f => f.filename.endsWith('.py'));
+                const htmlFile = data.files.find(f => f.filename === 'index.html');
+                const jsFiles = data.files.filter(f => f.filename === 'index.js');
                 
                 if (pythonFile) {
                     // Python lesson
@@ -63,8 +65,8 @@ const AscentWebIDE: React.FC = () => {
                     setPythonCode(pythonFile.content);
                     setPythonFilename(pythonFile.filename);
                     prevCodeRef.current.python = pythonFile.content;
-                } else {
-                    // Web development lesson
+                } else if (htmlFile) {
+                    // Full web development lesson (HTML + CSS + JS)
                     setLanguage('web');
                     const html = data.files.find(f => f.filename === 'index.html')?.content || '';
                     const css = data.files.find(f => f.filename === 'styles.css')?.content || '';
@@ -77,6 +79,22 @@ const AscentWebIDE: React.FC = () => {
                     prevCodeRef.current.html = html;
                     prevCodeRef.current.css = css;
                     prevCodeRef.current.js = js;
+                } else if (jsFiles.length > 0) {
+                    // JavaScript-only lesson (like Step 1-43)
+                    setLanguage('javascript');
+                    // Find the shortest file (likely the boilerplate with editable regions)
+                    const boilerplateFile = jsFiles.reduce((shortest, current) => 
+                        current.content.length < shortest.content.length ? current : shortest
+                    );
+                    setJsCode(boilerplateFile.content);
+                    setPythonFilename('index.js'); // Reuse this for JavaScript filename
+                    prevCodeRef.current.js = boilerplateFile.content;
+                } else {
+                    // Default fallback
+                    setLanguage('web');
+                    setHtmlCode('');
+                    setCssCode('');
+                    setJsCode('');
                 }
                 setStartTime(Date.now());
                 setCodeChurn(0);
@@ -96,7 +114,7 @@ const AscentWebIDE: React.FC = () => {
     
     useEffect(() => {
         const handler = setTimeout(() => {
-            if (language === 'web') {
+            if (language === 'web' || language === 'javascript') {
                 setPreviewSrcDoc(
                     `<!DOCTYPE html><html><head><style>${cssCode}</style></head><body>${htmlCode}<script type="module">${jsCode}</script></body></html>`
                 );
@@ -110,6 +128,11 @@ const AscentWebIDE: React.FC = () => {
                 prevTotalLines = prevCodeRef.current.python.split('\n').length;
                 currentTotal = pythonCode.length;
                 prevTotal = prevCodeRef.current.python.length;
+            } else if (language === 'javascript') {
+                newTotalLines = jsCode.split('\n').length;
+                prevTotalLines = prevCodeRef.current.js.split('\n').length;
+                currentTotal = jsCode.length;
+                prevTotal = prevCodeRef.current.js.length;
             } else {
                 newTotalLines = (htmlCode.split('\n').length) + (cssCode.split('\n').length) + (jsCode.split('\n').length);
                 prevTotalLines = (prevCodeRef.current.html.split('\n').length) + (prevCodeRef.current.css.split('\n').length) + (prevCodeRef.current.js.split('\n').length);
@@ -133,6 +156,8 @@ const AscentWebIDE: React.FC = () => {
             // Update previous code reference
             if (language === 'python') {
                 prevCodeRef.current.python = pythonCode;
+            } else if (language === 'javascript') {
+                prevCodeRef.current.js = jsCode;
             } else {
                 prevCodeRef.current.html = htmlCode;
                 prevCodeRef.current.css = cssCode;
@@ -150,6 +175,8 @@ const AscentWebIDE: React.FC = () => {
 
         const filesPayload = language === 'python' ? [
             { filename: pythonFilename, content: pythonCode }
+        ] : language === 'javascript' ? [
+            { filename: 'index.js', content: jsCode }
         ] : [
             { filename: 'index.html', content: htmlCode },
             { filename: 'styles.css', content: cssCode },
@@ -175,6 +202,8 @@ const AscentWebIDE: React.FC = () => {
 
         const filesPayload = language === 'python' ? [
             { filename: pythonFilename, content: pythonCode }
+        ] : language === 'javascript' ? [
+            { filename: 'index.js', content: jsCode }
         ] : [
             { filename: 'index.html', content: htmlCode },
             { filename: 'styles.css', content: cssCode },
@@ -212,9 +241,12 @@ const AscentWebIDE: React.FC = () => {
         setTestResult(null);
 
         try {
+            const code = language === 'python' ? pythonCode : jsCode;
+            const filename = language === 'python' ? pythonFilename : 'index.js';
+            
             const response = await apiClient.post(`/api/lessons/${lessonId}/run-tests`, {
-                code: pythonCode,
-                filename: pythonFilename
+                code: code,
+                filename: filename
             });
             setTestResult(response.data);
         } catch (error) {
@@ -251,6 +283,17 @@ const AscentWebIDE: React.FC = () => {
                 theme="vs-dark" 
                 value={pythonCode} 
                 onChange={(val) => setPythonCode(val || '')} 
+                onMount={handleEditorDidMount}
+                options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
+            />;
+        }
+        
+        if (language === 'javascript') {
+            return <Editor 
+                language="javascript" 
+                theme="vs-dark" 
+                value={jsCode} 
+                onChange={(val) => setJsCode(val || '')} 
                 onMount={handleEditorDidMount}
                 options={{ minimap: { enabled: false }, padding: { top: 12 } }} 
             />;
@@ -353,7 +396,7 @@ const AscentWebIDE: React.FC = () => {
                      <h1 className="text-sm font-medium text-slate-200 truncate">{ideData.lesson.title}</h1>
                  </div>
                  <div className="flex items-center gap-2">
-                     {language === 'python' && (
+                     {(language === 'python' || language === 'javascript') && (
                          <Button onClick={handleRunTests} disabled={isRunningTests} variant="outline" size="sm" className="text-green-300 border-green-700 hover:bg-green-800 h-7 text-xs">
                              <Play className="mr-1 h-3 w-3"/>{isRunningTests ? 'Running...' : 'Run Tests'}
                          </Button>
@@ -389,6 +432,8 @@ const AscentWebIDE: React.FC = () => {
                                 <div className="px-2 py-1 border-b border-slate-800 bg-slate-900">
                                     {language === 'python' ? (
                                         <span className="px-3 py-1 text-xs bg-slate-800 text-white rounded-t-md">{pythonFilename}</span>
+                                    ) : language === 'javascript' ? (
+                                        <span className="px-3 py-1 text-xs bg-slate-800 text-white rounded-t-md">index.js</span>
                                     ) : (
                                         <>
                                             <button onClick={() => setActiveFile('html')} className={cn("px-3 py-1 text-xs rounded-t-md", activeFile === 'html' ? "bg-slate-800 text-white" : "text-slate-400")}>index.html</button>
@@ -405,7 +450,7 @@ const AscentWebIDE: React.FC = () => {
                             <PanelResizeHandle className="h-1 bg-slate-800" />
 
                             <Panel defaultSize={40} minSize={20}>
-                                {language === 'python' ? (
+                                {(language === 'python' || language === 'javascript') ? (
                                     <div className="h-full bg-slate-950 flex flex-col">
                                         <div className="px-3 py-2 border-b border-slate-800 bg-slate-900">
                                             <h3 className="text-sm font-medium text-slate-200">Test Results</h3>
