@@ -204,19 +204,21 @@ exports.getAscentIdeData = async (req, res) => {
             const testResult = await db.query('SELECT test_code FROM lesson_tests WHERE lesson_id = $1', [lessonId]);
             if (testResult.rows.length > 0 && testResult.rows[0].test_code) {
                 const testCode = testResult.rows[0].test_code;
-                const lines = testCode.split('\n').filter(line => line.trim());
-                testCases = lines.map((line, index) => {
-                    // Parse console.assert format: console.assert(condition, "description");
-                    const match = line.match(/console\.assert\((.+?),\s*"(.+?)"\);?$/);
-                    if (match) {
-                        const condition = match[1];
-                        const description = match[2];
+                // Split by double newlines to separate test blocks
+                const testBlocks = testCode.split('\n\n').filter(block => block.trim());
+                
+                testCases = testBlocks.map((block, index) => {
+                    const lines = block.split('\n');
+                    let description = `Test ${index + 1}`;
+                    let input = 'N/A';
+                    let expectedOutput = 'Should pass';
+                    
+                    // Look for comment line with description
+                    const commentLine = lines.find(line => line.trim().startsWith('//'));
+                    if (commentLine) {
+                        description = commentLine.replace(/^\/\/\s*/, '');
                         
-                        // Extract input/expected from common test patterns
-                        let input = 'N/A';
-                        let expectedOutput = 'Should pass';
-                        
-                        // Pattern for function calls: functionName(input) should return/equal value
+                        // Parse description for input/expected patterns
                         const funcMatch = description.match(/`(.+?)\((.+?)\)` should (?:return|equal) (?:`(.+?)`|(.+?))/i);
                         if (funcMatch) {
                             const funcName = funcMatch[1];
@@ -225,18 +227,12 @@ exports.getAscentIdeData = async (req, res) => {
                             input = `${funcName}(${inputArgs})`;
                             expectedOutput = expectedValue;
                         }
-                        
-                        return {
-                            description: description,
-                            input: input,
-                            expectedOutput: expectedOutput
-                        };
                     }
                     
                     return {
-                        description: `Test ${index + 1}`,
-                        input: line.trim(),
-                        expectedOutput: 'Should pass'
+                        description: description,
+                        input: input,
+                        expectedOutput: expectedOutput
                     };
                 });
             }
@@ -604,8 +600,8 @@ exports.addLessonToCourse = async (req, res) => {
             const tests = JSON.parse(lessonData.test_code);
             if (Array.isArray(tests)) {
                 const testString = tests.flat()
-                    .map(t => `console.assert(${t.text}, "${t.text.replace(/"/g, '\\"')}");`)
-                    .join('\n');
+                    .map(t => `// ${t.text}\n${t.testCode}`)
+                    .join('\n\n');
                 if (testString) {
                      await db.query('INSERT INTO lesson_tests (lesson_id, test_code) VALUES ($1, $2)', [newLessonId, testString]);
                 }
@@ -712,9 +708,9 @@ exports.runLessonTests = async (req, res) => {
         let total = 0;
         let results = execution.output || '';
 
-        // Count total tests from testCode
-        const testLines = testCode.split('\n').filter(line => line.trim().startsWith('console.assert'));
-        total = testLines.length;
+        // Count total tests from testCode (count assert statements)
+        const assertMatches = testCode.match(/assert\./g) || [];
+        total = assertMatches.length;
 
         // If execution was successful and no errors, assume tests passed
         if (execution.error) {
