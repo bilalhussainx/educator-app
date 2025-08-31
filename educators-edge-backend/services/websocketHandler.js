@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const url = require('url');
 const { addSession, removeSession } = require('./sessionStore');
 const { executeCode } = require('../services/executionService'); // For running code
+const agoraRecordingService = require('./agoraRecordingService');
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
@@ -108,6 +109,11 @@ function initializeWebSocket(wss) {
                 whiteboardLines: [],
                 isWhiteboardVisible: false,
                 videoConnections: new Map(),
+                recording: {
+                    isRecording: false,
+                    recordingId: null,
+                    startTime: null
+                }
             });
         }
         const session = sessions.get(sessionKey);
@@ -252,6 +258,100 @@ function initializeWebSocket(wss) {
                     case 'ASSIGN_HOMEWORK':
                         sendToClient(session, data.payload.studentId, { type: 'HOMEWORK_ASSIGNED', payload: data.payload });
                         session.assignments.set(data.payload.studentId, data.payload);
+                        break;
+
+                    // Recording functionality
+                    case 'START_RECORDING':
+                        if (session.recording.isRecording) {
+                            ws.send(JSON.stringify({ 
+                                type: 'RECORDING_ERROR', 
+                                payload: { message: 'Recording is already in progress' } 
+                            }));
+                            return;
+                        }
+                        
+                        try {
+                            const { channelName, courseId } = data.payload;
+                            const result = await agoraRecordingService.startRecording(channelName, courseId, user.id);
+                            
+                            if (result.success) {
+                                session.recording = {
+                                    isRecording: true,
+                                    recordingId: result.recordingId,
+                                    startTime: new Date(),
+                                    channelName,
+                                    courseId
+                                };
+                                
+                                // Notify all participants that recording started
+                                broadcast(session, { 
+                                    type: 'RECORDING_STARTED', 
+                                    payload: { 
+                                        recordingId: result.recordingId,
+                                        startTime: session.recording.startTime
+                                    } 
+                                });
+                                
+                                log(`Recording started for session ${sessionKey}, recording ID: ${result.recordingId}`);
+                            } else {
+                                ws.send(JSON.stringify({ 
+                                    type: 'RECORDING_ERROR', 
+                                    payload: { message: result.error } 
+                                }));
+                            }
+                        } catch (error) {
+                            console.error('[RECORDING] Error starting recording:', error);
+                            ws.send(JSON.stringify({ 
+                                type: 'RECORDING_ERROR', 
+                                payload: { message: 'Failed to start recording' } 
+                            }));
+                        }
+                        break;
+
+                    case 'STOP_RECORDING':
+                        if (!session.recording.isRecording) {
+                            ws.send(JSON.stringify({ 
+                                type: 'RECORDING_ERROR', 
+                                payload: { message: 'No active recording to stop' } 
+                            }));
+                            return;
+                        }
+                        
+                        try {
+                            const result = await agoraRecordingService.stopRecording(session.recording.recordingId);
+                            
+                            if (result.success) {
+                                const recordingInfo = {
+                                    recordingId: session.recording.recordingId,
+                                    duration: Date.now() - session.recording.startTime.getTime()
+                                };
+                                
+                                session.recording = {
+                                    isRecording: false,
+                                    recordingId: null,
+                                    startTime: null
+                                };
+                                
+                                // Notify all participants that recording stopped
+                                broadcast(session, { 
+                                    type: 'RECORDING_STOPPED', 
+                                    payload: recordingInfo 
+                                });
+                                
+                                log(`Recording stopped for session ${sessionKey}, recording ID: ${recordingInfo.recordingId}`);
+                            } else {
+                                ws.send(JSON.stringify({ 
+                                    type: 'RECORDING_ERROR', 
+                                    payload: { message: result.error } 
+                                }));
+                            }
+                        } catch (error) {
+                            console.error('[RECORDING] Error stopping recording:', error);
+                            ws.send(JSON.stringify({ 
+                                type: 'RECORDING_ERROR', 
+                                payload: { message: 'Failed to stop recording' } 
+                            }));
+                        }
                         break;
 
                     case 'TERMINAL_IN':

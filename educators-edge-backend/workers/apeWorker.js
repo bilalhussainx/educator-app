@@ -1,6 +1,8 @@
 // apeWorker.js
 const { Worker } = require('bullmq');
 const Redis = require('ioredis');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const db = require('../db');
 require('dotenv').config();
 
 console.log("--- BullMQ Worker Initializing ---");
@@ -10,7 +12,7 @@ if (!process.env.REDIS_URL) {
     process.exit(1);
 }
 
-// 1. Create another explicit Redis client instance for the worker.
+// 1. Create Redis client instance for the worker.
 const redisClient = new Redis(process.env.REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
@@ -19,22 +21,162 @@ const redisClient = new Redis(process.env.REDIS_URL, {
 redisClient.on('connect', () => console.log('Redis client for Worker connected.'));
 redisClient.on('error', (err) => console.error('Redis client for Worker Error:', err));
 
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 
-// 2. Pass the created client directly to the Worker.
-const worker = new Worker('analyze-submission', async job => {
-    // Your job processing logic here...
-    console.log(`Processing job ${job.id} for user ${job.data.userId}`);
+// 2. Create workers for different job types
+// Original submission analysis worker
+const submissionWorker = new Worker('analyze-submission', async job => {
+    console.log(`Processing submission analysis job ${job.id} for user ${job.data.userId}`);
+    // Your existing submission processing logic here...
 }, {
     connection: redisClient,
-    client: redisClient
 });
 
-worker.on('ready', () => {
-    console.log('BullMQ Worker is connected and ready.');
+// New recording processing worker
+const recordingWorker = new Worker('recording-processing', async job => {
+    console.log(`Processing recording job ${job.id}: ${job.name}`);
+    
+    switch (job.name) {
+        case 'transcribe-recording':
+            return await handleTranscription(job.data);
+        case 'enrich-recording':
+            return await handleAiEnrichment(job.data);
+        default:
+            throw new Error(`Unknown job type: ${job.name}`);
+    }
+}, {
+    connection: redisClient,
 });
 
-worker.on('failed', (job, err) => {
-  console.log(`Job ${job.id} has failed with ${err.message}`);
+// Transcription handler (using Whisper API - free alternative)
+async function handleTranscription(data) {
+    const { recordingId, videoUrl } = data;
+    
+    try {
+        console.log(`[TRANSCRIBE] Starting transcription for recording ${recordingId}`);
+        
+        // For MVP: Mock transcription (replace with actual Whisper implementation)
+        // In production, you'd use OpenAI Whisper or similar
+        const mockTranscript = `This is a mock transcript for recording ${recordingId}. 
+In a real implementation, this would be generated using OpenAI Whisper API 
+or a self-hosted Whisper instance to transcribe the audio from the video file.
+The transcript would contain the actual spoken content from the live tutorial session.`;
+        
+        // Update database with transcript
+        await db.query(
+            'UPDATE recorded_sessions SET transcript = $1, processing_status = $2, updated_at = NOW() WHERE id = $3',
+            [mockTranscript, 'enriching', recordingId]
+        );
+        
+        // Add AI enrichment job to queue
+        await recordingWorker.queue.add('enrich-recording', {
+            recordingId,
+            transcript: mockTranscript
+        });
+        
+        console.log(`[TRANSCRIBE] Transcription completed for recording ${recordingId}`);
+        return { success: true, transcript: mockTranscript };
+        
+    } catch (error) {
+        console.error(`[TRANSCRIBE] Error transcribing recording ${recordingId}:`, error);
+        
+        // Mark as failed
+        await db.query(
+            'UPDATE recorded_sessions SET processing_status = $1, updated_at = NOW() WHERE id = $2',
+            ['failed', recordingId]
+        );
+        
+        throw error;
+    }
+}
+
+// AI enrichment handler using Gemini
+async function handleAiEnrichment(data) {
+    const { recordingId, transcript } = data;
+    
+    try {
+        console.log(`[ENRICH] Starting AI enrichment for recording ${recordingId}`);
+        
+        if (!process.env.GOOGLE_AI_API_KEY) {
+            throw new Error('GOOGLE_AI_API_KEY is not configured');
+        }
+        
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        
+        const prompt = `You are an expert computer science educator tasked with cataloging a live tutorial session for students. The following is the full transcript of the session. Your job is to perform two tasks:
+
+1. Summarize: Write a concise, one-paragraph summary highlighting the key concepts and problems solved in this session.
+
+2. Extract Topics: Identify and list the 3-5 most important technical topics or keywords discussed. Format them as a comma-separated list (e.g., 'Promises, async/await, Error Handling, Event Loop').
+
+Please respond in JSON format:
+{
+  "summary": "Your one-paragraph summary here...",
+  "topics": ["Topic1", "Topic2", "Topic3", ...]
+}
+
+Here is the transcript:
+${transcript}`;
+
+        const result = await model.generateContent(prompt);
+        const response = result.response;
+        const text = response.text();
+        
+        // Parse JSON response
+        let aiResult;
+        try {
+            aiResult = JSON.parse(text);
+        } catch (parseError) {
+            console.error('[ENRICH] Failed to parse AI response as JSON:', text);
+            // Fallback: extract summary and topics from text
+            aiResult = {
+                summary: text.substring(0, 500) + "...",
+                topics: ["JavaScript", "Programming", "Tutorial"]
+            };
+        }
+        
+        // Update database with AI results
+        await db.query(
+            'UPDATE recorded_sessions SET ai_summary = $1, ai_topics = $2, processing_status = $3, updated_at = NOW() WHERE id = $4',
+            [aiResult.summary, aiResult.topics, 'completed', recordingId]
+        );
+        
+        console.log(`[ENRICH] AI enrichment completed for recording ${recordingId}`);
+        return { success: true, ...aiResult };
+        
+    } catch (error) {
+        console.error(`[ENRICH] Error enriching recording ${recordingId}:`, error);
+        
+        // Mark as failed
+        await db.query(
+            'UPDATE recorded_sessions SET processing_status = $1, updated_at = NOW() WHERE id = $2',
+            ['failed', recordingId]
+        );
+        
+        throw error;
+    }
+}
+
+// Event handlers
+submissionWorker.on('ready', () => {
+    console.log('BullMQ Submission Worker is connected and ready.');
+});
+
+recordingWorker.on('ready', () => {
+    console.log('BullMQ Recording Worker is connected and ready.');
+});
+
+submissionWorker.on('failed', (job, err) => {
+    console.log(`Submission job ${job.id} has failed with ${err.message}`);
+});
+
+recordingWorker.on('failed', (job, err) => {
+    console.log(`Recording job ${job.id} has failed with ${err.message}`);
+});
+
+recordingWorker.on('completed', (job) => {
+    console.log(`Recording job ${job.id} completed successfully`);
 });
 // /*
 //  * =================================================================

@@ -19,6 +19,7 @@ const studentRoutes = require('./routes/studentRoutes');
 const stuckPointRoutes = require('./routes/stuckPointRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
+const recordingRoutes = require('./routes/recordingRoutes');
 
 const app = express();
 app.use(express.json());
@@ -92,6 +93,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/concepts', conceptRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/library', libraryRoutes);
+app.use('/api/recordings', recordingRoutes);
 
 
 // Server and WebSocket Initialization
