@@ -8,11 +8,9 @@ services:
     env: node
     plan: free # Or your chosen paid plan
     
-    # Ensure this is your Dockerfile's location
-    dockerfilePath: ./educators-edge-backend/Dockerfile
-    
-    # The command to start your Express server
-    startCommand: "node educators-edge-backend/server.js"
+    # For Node.js environment, use buildCommand and startCommand instead of dockerfilePath
+    buildCommand: "cd educators-edge-backend && npm install"
+    startCommand: "cd educators-edge-backend && node server.js"
     
     # Render uses this to know when your service is ready.
     # Ensure you have a simple GET /healthz route in server.js that returns 200 OK.
@@ -36,11 +34,9 @@ services:
     env: node
     plan: free # Or a paid plan if it needs more resources
 
-    # It uses the same Dockerfile as the web service
-    dockerfilePath: ./educators-edge-backend/Dockerfile
-    
-    # The command to start your BullMQ worker
-    startCommand: "node educators-edge-backend/dockerWorker.js"
+    # For Node.js environment, use buildCommand and startCommand instead of dockerfilePath
+    buildCommand: "cd educators-edge-backend && npm install"
+    startCommand: "cd educators-edge-backend && node dockerWorker.js"
     
     envVars:
       - key: REDIS_URL
@@ -55,3 +51,4 @@ services:
   - type: redis
     name: educator-redis
     plan: free
+    ipAllowList: [] # Allow all IPs (empty list means no restrictions)
