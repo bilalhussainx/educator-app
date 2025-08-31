@@ -512,11 +512,14 @@ class WebSocketTerminalHandler {
                 }
             }));
             
-            // Also send structured execution result
+            // Also send structured execution result (matching frontend expectation)
             ws.send(JSON.stringify({
                 type: 'CODE_EXECUTION_RESULT',
                 payload: {
-                    result: result.output,
+                    result: {
+                        output: result.output,
+                        success: result.success
+                    },
                     success: true,
                     language,
                     fileName: displayFileName,
