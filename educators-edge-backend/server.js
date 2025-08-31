@@ -97,8 +97,11 @@ app.use('/api/library', libraryRoutes);
 // Server and WebSocket Initialization
 // We can simplify the WS config now
 const server = http.createServer(app);
+console.log('🔧 Creating WebSocket servers...');
 const wss = new WebSocketServer({ server, path: '/ws' }); 
+console.log('✅ Main WebSocket server created on path: /ws');
 const terminalWss = new WebSocketServer({ server, path: '/terminal' });
+console.log('✅ Terminal WebSocket server created on path: /terminal');
 
 app.get('/test-ws', (req, res) => {
     res.json({ 
@@ -109,8 +112,11 @@ app.get('/test-ws', (req, res) => {
     });
 });
 
+console.log('🔧 Initializing WebSocket handlers...');
 initializeWebSocket(wss);
+console.log('✅ Main WebSocket handler initialized');
 terminalWebSocketHandler.initializeTerminalWebSocket(terminalWss);
+console.log('✅ Terminal WebSocket handler initialized');
 
 
 const PORT = process.env.PORT || 10000;
