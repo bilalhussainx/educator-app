@@ -420,7 +420,7 @@ const LiveTutorialPage: React.FC = () => {
         }
 
         // --- WebSocket Setup (Aligned with backend) ---
-        const wsUrl = `${getWebSocketUrl()}?sessionId=${sessionId}&token=${token}`;
+        const wsUrl = `${getWebSocketUrl()}/ws?sessionId=${sessionId}&token=${token}`;
         console.log("Connecting to WebSocket:", wsUrl);
         const socket = new WebSocket(wsUrl);
         ws.current = socket;

@@ -9,10 +9,10 @@ export const getWebSocketUrl = (): string => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     if (hostname.includes('vercel.app') || hostname.includes('educator-')) {
-      return 'wss://educator-app.onrender.com';
+      return 'wss://educator-app-backend-vxtu.onrender.com';
     }
   }
   
   // Default to localhost for development
-  return 'ws://localhost:5000';
+  return 'ws://localhost:10000';
 };
