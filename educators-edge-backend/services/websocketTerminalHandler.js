@@ -503,7 +503,16 @@ class WebSocketTerminalHandler {
             
             console.log(`✅ Code execution completed for ${user.username}`);
             
-            // Send result back to client
+            // Send terminal output for display in terminal interface
+            ws.send(JSON.stringify({
+                type: 'TERMINAL_OUTPUT',
+                payload: {
+                    output: `$ ${language} ${displayFileName}\n${result.output}\n`,
+                    timestamp: Date.now()
+                }
+            }));
+            
+            // Also send structured execution result
             ws.send(JSON.stringify({
                 type: 'CODE_EXECUTION_RESULT',
                 payload: {
@@ -518,6 +527,16 @@ class WebSocketTerminalHandler {
         } catch (error) {
             console.error(`❌ Code execution failed for ${user.username}:`, error.message);
             
+            // Send terminal error output for display
+            ws.send(JSON.stringify({
+                type: 'TERMINAL_OUTPUT',
+                payload: {
+                    output: `$ ${language} ${displayFileName}\nError: ${error.message}\n`,
+                    timestamp: Date.now()
+                }
+            }));
+            
+            // Also send structured error result
             ws.send(JSON.stringify({
                 type: 'CODE_EXECUTION_ERROR',
                 payload: {
