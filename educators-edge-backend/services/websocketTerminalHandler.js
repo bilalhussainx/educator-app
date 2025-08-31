@@ -29,6 +29,7 @@ class WebSocketTerminalHandler {
     
     initializeTerminalWebSocket(wss) {
         console.log('🔧 Terminal WebSocket server initialized');
+        console.log('🔧 Terminal WSS clients:', wss.clients.size);
         
         wss.on('error', (error) => {
             console.error('🔥 Terminal WebSocket server error:', error);
@@ -42,6 +43,10 @@ class WebSocketTerminalHandler {
         
         wss.on('listening', () => {
             console.log('🎧 Terminal WebSocket server is listening');
+        });
+        
+        wss.on('headers', (headers, req) => {
+            console.log('📋 Terminal WSS headers event:', req.url);
         });
         
         wss.on('connection', async (ws, req) => {

@@ -143,22 +143,7 @@ const terminalWss = new WebSocketServer({
 });
 console.log('✅ Terminal WebSocket server created on path: /terminal');
 
-// Add logging for terminal WebSocket upgrade requests
-server.on('upgrade', (request, socket, head) => {
-    const url = new URL(request.url, 'http://localhost');
-    console.log(`🔄 WebSocket upgrade request: ${url.pathname} with query: ${url.search}`);
-    
-    if (url.pathname === '/terminal') {
-        console.log('🎯 Terminal WebSocket upgrade detected');
-        console.log('📍 Request headers:', {
-            origin: request.headers.origin,
-            'sec-websocket-protocol': request.headers['sec-websocket-protocol'],
-            'sec-websocket-version': request.headers['sec-websocket-version']
-        });
-    } else if (url.pathname === '/ws') {
-        console.log('🎯 Main WebSocket upgrade detected');
-    }
-});
+// Note: Removed custom upgrade handler to let WebSocket servers handle their own upgrades
 
 app.get('/test-ws', (req, res) => {
     res.json({ 
