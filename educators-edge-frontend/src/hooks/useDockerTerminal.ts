@@ -195,7 +195,7 @@ export const useDockerTerminal = (
       return;
     }
 
-    const wsUrl = `${process.env.REACT_APP_WS_URL || 'ws://localhost:10000'}/terminal?token=${encodeURIComponent(token)}${sessionId ? `&sessionId=${sessionId}` : ''}`;
+    const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:10000'}/terminal?token=${encodeURIComponent(token)}${sessionId ? `&sessionId=${sessionId}` : ''}`;
     
     try {
       const ws = new WebSocket(wsUrl);
