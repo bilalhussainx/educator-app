@@ -163,10 +163,12 @@ export const useDockerTerminal = (
             console.error('❌ DockerTerminal: No terminal instance available for TERMINAL_OUTPUT');
             // Queue the message for when terminal becomes available
             console.log('🔄 DockerTerminal: Queuing TERMINAL_OUTPUT for later processing');
+            const outputToWrite = message.payload.output;
             setTimeout(() => {
-              if (terminal) {
+              // Re-check terminal availability in the callback
+              if (terminal && terminal.write) {
                 console.log('🔄 DockerTerminal: Retrying queued TERMINAL_OUTPUT');
-                terminal.write(message.payload.output);
+                terminal.write(outputToWrite);
               }
             }, 100);
           }
@@ -198,10 +200,11 @@ export const useDockerTerminal = (
             console.error('❌ DockerTerminal: Cannot write execution result - terminal:', !!terminal, 'result:', !!result, 'output:', !!(result?.output));
             // Queue for retry
             if (result && result.output) {
+              const outputToWrite = `\r\n${result.output}\r\n$ `;
               setTimeout(() => {
-                if (terminal) {
+                if (terminal && terminal.write) {
                   console.log('🔄 DockerTerminal: Retrying queued CODE_EXECUTION_RESULT');
-                  terminal.write(`\r\n${result.output}\r\n$ `);
+                  terminal.write(outputToWrite);
                 }
               }, 100);
             }
