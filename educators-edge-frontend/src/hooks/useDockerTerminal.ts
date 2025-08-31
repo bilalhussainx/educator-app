@@ -83,6 +83,7 @@ export const useDockerTerminal = (
   useEffect(() => {
     if (!terminalRef.current || terminal) return;
 
+    console.log('🔧 DockerTerminal: Initializing terminal instance');
     const newTerminal = new Terminal({
       cursorBlink: true,
       fontSize: 14,
@@ -107,6 +108,7 @@ export const useDockerTerminal = (
     
     fitAddonRef.current = fitAddon;
     setTerminal(newTerminal);
+    console.log('✅ DockerTerminal: Terminal instance initialized and set');
 
     // Handle terminal input
     newTerminal.onData((data) => {
@@ -118,10 +120,14 @@ export const useDockerTerminal = (
       }
     });
 
-    // Auto-connect if requested
+    // Auto-connect if requested - delay to ensure terminal is ready
     if (autoConnect) {
       console.log('🚀 DockerTerminal: Auto-connecting with options:', { autoConnect, enableWebSocket });
-      createSession();
+      // Small delay to ensure terminal is fully initialized before WebSocket connects
+      setTimeout(() => {
+        console.log('🚀 DockerTerminal: Starting delayed auto-connect');
+        createSession();
+      }, 100);
     } else {
       console.log('❌ DockerTerminal: Auto-connect disabled:', { autoConnect, enableWebSocket });
     }
@@ -145,12 +151,25 @@ export const useDockerTerminal = (
       switch (message.type) {
         case 'TERMINAL_OUTPUT':
           console.log('📺 DockerTerminal: Processing TERMINAL_OUTPUT:', message.payload.output);
-          if (terminal) {
+          console.log('🔍 DockerTerminal: Current terminal instance:', !!terminal);
+          console.log('🔍 DockerTerminal: Terminal ref current:', !!terminalRef.current);
+          
+          // Try to get terminal from current state or wait briefly for initialization
+          const currentTerminal = terminal;
+          if (currentTerminal) {
             console.log('✅ DockerTerminal: Writing to terminal:', message.payload.output.length, 'characters');
-            terminal.write(message.payload.output);
+            currentTerminal.write(message.payload.output);
             console.log('✅ DockerTerminal: TERMINAL_OUTPUT written to terminal');
           } else {
             console.error('❌ DockerTerminal: No terminal instance available for TERMINAL_OUTPUT');
+            // Queue the message for when terminal becomes available
+            console.log('🔄 DockerTerminal: Queuing TERMINAL_OUTPUT for later processing');
+            setTimeout(() => {
+              if (terminal) {
+                console.log('🔄 DockerTerminal: Retrying queued TERMINAL_OUTPUT');
+                terminal.write(message.payload.output);
+              }
+            }, 100);
           }
           setOutput(prev => prev + message.payload.output);
           break;
@@ -170,12 +189,24 @@ export const useDockerTerminal = (
           console.log('🚀 DockerTerminal: Processing CODE_EXECUTION_RESULT:', message.payload);
           const result = message.payload.result;
           console.log('📋 DockerTerminal: Execution result:', result);
-          if (terminal && result && result.output) {
+          console.log('🔍 DockerTerminal: Current terminal instance for CODE_EXECUTION_RESULT:', !!terminal);
+          
+          const currentTerminal = terminal;
+          if (currentTerminal && result && result.output) {
             console.log('✅ DockerTerminal: Writing execution result to terminal:', result.output.length, 'characters');
-            terminal.write(`\r\n${result.output}\r\n$ `);
+            currentTerminal.write(`\r\n${result.output}\r\n$ `);
             console.log('✅ DockerTerminal: CODE_EXECUTION_RESULT written to terminal');
           } else {
             console.error('❌ DockerTerminal: Cannot write execution result - terminal:', !!terminal, 'result:', !!result, 'output:', !!(result?.output));
+            // Queue for retry
+            if (result && result.output) {
+              setTimeout(() => {
+                if (terminal) {
+                  console.log('🔄 DockerTerminal: Retrying queued CODE_EXECUTION_RESULT');
+                  terminal.write(`\r\n${result.output}\r\n$ `);
+                }
+              }, 100);
+            }
           }
           break;
 
