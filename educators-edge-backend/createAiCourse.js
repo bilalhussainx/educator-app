@@ -1,98 +1,16 @@
-// createAiCourse.js
-require('dotenv').config();
-const db = require('./db');
-const { selectLessons, generateCourseStructure } = require('./services/aiCourseGenerator.js');
 
-// IMPORTANT: Replace this with a valid teacher ID from your 'users' table.
-const TEACHER_ID = 'eb03e344-252f-42ab-8187-602fc30384fa';
+async function createCourse(topic, lessonCount) {
+    // ... (the top part of the function is the same, including the AI Scout)
+    // It finds candidates and asks the Scout to select the best ones.
 
-/**
- * Infers the primary programming language from a course topic string.
- * @param {string} topic - The topic for the course (e.g., "JavaScript Arrays").
- * @returns {string|null} The inferred language in lowercase (e.g., 'javascript') or null.
- */
-function inferLanguageFromTopic(topic) {
-    const lowerTopic = topic.toLowerCase();
-    if (lowerTopic.includes('javascript') || lowerTopic.includes('js')) return 'javascript';
-    if (lowerTopic.includes('python')) return 'python';
-    if (lowerTopic.includes('css')) return 'css';
-    if (lowerTopic.includes('html')) return 'html';
-    return null; // Return null if no language is obvious
-}
+    // ... (inside the try block, after the AI Scout has run)
 
-function inferLanguageFromTopic(topic) {
-    const lowerTopic = topic.toLowerCase();
-    if (lowerTopic.includes('javascript') || lowerTopic.includes('js')) return 'javascript';
-    if (lowerTopic.includes('python')) return 'python';
-    if (lowerTopic.includes('css')) return 'css';
-    if (lowerTopic.includes('html')) return 'html';
-    return null;
-}
+        // STEP 3: AI ARCHITECT (Now only generates title and description)
+        console.log(`\n[Step 3/4] Asking AI Architect to generate the course narrative...`);
+        const courseStructure = await generateCourseStructure(topic, chosenLessons); // Assume this now returns { course_title, course_description }
 
-/**
- * The main orchestrator function for generating an AI-powered course.
- */
-async function createCourse(initialTopic, lessonCount) {
-    if (!initialTopic || !lessonCount) {
-        console.error("Usage: node createAiCourse.js \"<Topic Name>\" <Number of Lessons>");
-        process.exit(1);
-    }
-    console.log(`--- Starting AI Course Generation for: "${initialTopic}" ---`);
-
-    const client = await db.pool.connect();
-    try {
-        let currentTopic = initialTopic;
-        let chosenLessonsInfo = [];
-        let candidateLessons = [];
-
-        // --- FIX #1: THE AI QUALITY FIX (Fallback Strategy) ---
-        // We will try the specific topic first. If it fails, we broaden the search.
-        for (let attempt = 1; attempt <= 2; attempt++) {
-            console.log(`\n[Attempt ${attempt}] Searching for lessons related to "${currentTopic}"...`);
-            
-            const language = inferLanguageFromTopic(currentTopic);
-            if (!language) throw new Error(`Could not determine language from topic "${currentTopic}".`);
-            console.log(` -> Inferred language: ${language}`);
-
-            const searchKeyword = currentTopic.split(' ')[1] || currentTopic.split(' ')[0];
-            const candidateResult = await client.query(
-                `SELECT id, title, description, files, test_code, lesson_type, language FROM ingested_lessons
-                 WHERE (title ILIKE $1 OR description ILIKE $1) AND language = $2 LIMIT 100`,
-                [`%${searchKeyword}%`, language]
-            );
-            candidateLessons = candidateResult.rows;
-            console.log(` -> Found ${candidateLessons.length} candidate lessons.`);
-
-            if (candidateLessons.length > 0) {
-                console.log(` -> Asking AI Scout to select the best ${lessonCount} lessons...`);
-                chosenLessonsInfo = await selectLessons(currentTopic, lessonCount, candidateLessons);
-            }
-
-            // If the AI found enough lessons, break the loop and proceed.
-            if (chosenLessonsInfo.length >= lessonCount) {
-                console.log(` -> Scout successful on attempt ${attempt}. Proceeding to Architect.`);
-                break;
-            }
-
-            // If we are on the first attempt and it failed, broaden the topic.
-            if (attempt === 1) {
-                console.log(` -> Scout returned too few lessons (${chosenLessonsInfo.length}). Broadening topic...`);
-                currentTopic = `Introduction to ${language}`; // Fallback to a broader topic
-            }
-        }
-
-        if (chosenLessonsInfo.length === 0) {
-            throw new Error(`The AI Scout failed even with a broader topic. Check the quality of ingested lessons for this language.`);
-        }
-        
-        const candidateMap = new Map(candidateLessons.map(l => [l.id, l]));
-        const chosenLessonIds = chosenLessonsInfo.map(info => info.id);
-        const chosenLessons = chosenLessonIds.map(id => candidateMap.get(id)).filter(Boolean);
-
-        console.log(`\n[Step 3/4] Asking AI Architect to generate the course structure...`);
-        const courseStructure = await generateCourseStructure(currentTopic, chosenLessons);
-
-        console.log(`\n[Step 4/4] Saving the new course to the database...`);
+        // STEP 4: DATABASE INSERTION (Dumps lessons with default order)
+        console.log(`\n[Step 4/4] Saving the new course and its lessons to the database...`);
         await client.query('BEGIN');
 
         const courseInsertResult = await client.query(
@@ -102,45 +20,28 @@ async function createCourse(initialTopic, lessonCount) {
         const courseId = courseInsertResult.rows[0].id;
         console.log(` -> Created course "${courseStructure.course_title}" with ID: ${courseId}`);
 
-        let insertedLessonsCount = 0;
-        for (const lessonInfo of courseStructure.lesson_sequence) {
-            const originalLesson = chosenLessons.find(l => l.id === lessonInfo.id);
-            if (originalLesson) {
-                const lessonInsertResult = await client.query(
-                    `INSERT INTO lessons (title, description, course_id, teacher_id, lesson_type, objective, language)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-                    [
-                        originalLesson.title, originalLesson.description, courseId,
-                        TEACHER_ID, originalLesson.lesson_type,
-                        lessonInfo.ai_generated_objective, originalLesson.language
-                    ]
-                );
-                const newLessonId = lessonInsertResult.rows[0].id;
-
-                if (originalLesson.files && Array.isArray(originalLesson.files)) {
-                    for (const file of originalLesson.files) {
-                        // --- FIX #2: THE DATA INTEGRITY FIX ---
-                        // Use file.name, which is what our parser actually creates.
-                        await client.query(
-                            `INSERT INTO lesson_files (filename, content, lesson_id) VALUES ($1, $2, $3)`,
-                            [file.name, file.content, newLessonId]
-                        );
-                    }
-                }
-
-                if (originalLesson.test_code) {
-                    await client.query(
-                        `INSERT INTO lesson_tests (test_code, lesson_id) VALUES ($1, $2)`,
-                        [originalLesson.test_code, newLessonId]
-                    );
-                }
-                insertedLessonsCount++;
-            }
+        // Loop through the lessons chosen by the Scout and add them to the new course
+        // The `order_index` will automatically be the default value (0) for all of them.
+        for (const lesson of chosenLessons) {
+            await client.query(
+                `INSERT INTO lessons (title, description, course_id, teacher_id, lesson_type, objective, language)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [
+                    lesson.title, lesson.description, courseId, TEACHER_ID,
+                    lesson.lesson_type, "Objective to be generated later.", lesson.language
+                ]
+            );
         }
         
-        console.log(` -> Inserted ${insertedLessonsCount} complete lessons into the new course.`);
+        console.log(` -> Inserted ${chosenLessons.length} lessons into the new course.`);
         await client.query('COMMIT');
-        console.log(`\n--- SUCCESS! AI course created and saved. ---`);
+        
+        console.log(`\n--- SUCCESS! Course and raw lessons created. ---`);
+        
+        // --- THIS IS THE NEW GUIDED WORKFLOW ---
+        console.log(`\n--- NEXT STEP: Run the AI Sorter to organize the lessons ---`);
+        console.log(`To sort this course, run the following command in your terminal:`);
+        console.log(`\x1b[36m%s\x1b[0m`, `node sortCourseLessons.js ${courseId}`); // Prints in cyan color
 
     } catch (error) {
         if (client) await client.query('ROLLBACK').catch(e => console.error("Rollback failed:", e));
@@ -150,11 +51,165 @@ async function createCourse(initialTopic, lessonCount) {
         if (client) client.release();
         await db.pool.end();
     }
-}
 
-const topic = process.argv[2];
-const lessonCount = parseInt(process.argv[3], 10);
-createCourse(topic, lessonCount);
+
+// // createAiCourse.js
+// require('dotenv').config();
+// const db = require('./db');
+// const { selectLessons, generateCourseStructure } = require('./services/aiCourseGenerator.js');
+
+// // IMPORTANT: Replace this with a valid teacher ID from your 'users' table.
+// const TEACHER_ID = 'eb03e344-252f-42ab-8187-602fc30384fa';
+
+// /**
+//  * Infers the primary programming language from a course topic string.
+//  * @param {string} topic - The topic for the course (e.g., "JavaScript Arrays").
+//  * @returns {string|null} The inferred language in lowercase (e.g., 'javascript') or null.
+//  */
+// function inferLanguageFromTopic(topic) {
+//     const lowerTopic = topic.toLowerCase();
+//     if (lowerTopic.includes('javascript') || lowerTopic.includes('js')) return 'javascript';
+//     if (lowerTopic.includes('python')) return 'python';
+//     if (lowerTopic.includes('css')) return 'css';
+//     if (lowerTopic.includes('html')) return 'html';
+//     return null; // Return null if no language is obvious
+// }
+
+// function inferLanguageFromTopic(topic) {
+//     const lowerTopic = topic.toLowerCase();
+//     if (lowerTopic.includes('javascript') || lowerTopic.includes('js')) return 'javascript';
+//     if (lowerTopic.includes('python')) return 'python';
+//     if (lowerTopic.includes('css')) return 'css';
+//     if (lowerTopic.includes('html')) return 'html';
+//     return null;
+// }
+
+// /**
+//  * The main orchestrator function for generating an AI-powered course.
+//  */
+// async function createCourse(initialTopic, lessonCount) {
+//     if (!initialTopic || !lessonCount) {
+//         console.error("Usage: node createAiCourse.js \"<Topic Name>\" <Number of Lessons>");
+//         process.exit(1);
+//     }
+//     console.log(`--- Starting AI Course Generation for: "${initialTopic}" ---`);
+
+//     const client = await db.pool.connect();
+//     try {
+//         let currentTopic = initialTopic;
+//         let chosenLessonsInfo = [];
+//         let candidateLessons = [];
+
+//         // --- FIX #1: THE AI QUALITY FIX (Fallback Strategy) ---
+//         // We will try the specific topic first. If it fails, we broaden the search.
+//         for (let attempt = 1; attempt <= 2; attempt++) {
+//             console.log(`\n[Attempt ${attempt}] Searching for lessons related to "${currentTopic}"...`);
+            
+//             const language = inferLanguageFromTopic(currentTopic);
+//             if (!language) throw new Error(`Could not determine language from topic "${currentTopic}".`);
+//             console.log(` -> Inferred language: ${language}`);
+
+//             const searchKeyword = currentTopic.split(' ')[1] || currentTopic.split(' ')[0];
+//             const candidateResult = await client.query(
+//                 `SELECT id, title, description, files, test_code, lesson_type, language FROM ingested_lessons
+//                  WHERE (title ILIKE $1 OR description ILIKE $1) AND language = $2 LIMIT 100`,
+//                 [`%${searchKeyword}%`, language]
+//             );
+//             candidateLessons = candidateResult.rows;
+//             console.log(` -> Found ${candidateLessons.length} candidate lessons.`);
+
+//             if (candidateLessons.length > 0) {
+//                 console.log(` -> Asking AI Scout to select the best ${lessonCount} lessons...`);
+//                 chosenLessonsInfo = await selectLessons(currentTopic, lessonCount, candidateLessons);
+//             }
+
+//             // If the AI found enough lessons, break the loop and proceed.
+//             if (chosenLessonsInfo.length >= lessonCount) {
+//                 console.log(` -> Scout successful on attempt ${attempt}. Proceeding to Architect.`);
+//                 break;
+//             }
+
+//             // If we are on the first attempt and it failed, broaden the topic.
+//             if (attempt === 1) {
+//                 console.log(` -> Scout returned too few lessons (${chosenLessonsInfo.length}). Broadening topic...`);
+//                 currentTopic = `Introduction to ${language}`; // Fallback to a broader topic
+//             }
+//         }
+
+//         if (chosenLessonsInfo.length === 0) {
+//             throw new Error(`The AI Scout failed even with a broader topic. Check the quality of ingested lessons for this language.`);
+//         }
+        
+//         const candidateMap = new Map(candidateLessons.map(l => [l.id, l]));
+//         const chosenLessonIds = chosenLessonsInfo.map(info => info.id);
+//         const chosenLessons = chosenLessonIds.map(id => candidateMap.get(id)).filter(Boolean);
+
+//         console.log(`\n[Step 3/4] Asking AI Architect to generate the course structure...`);
+//         const courseStructure = await generateCourseStructure(currentTopic, chosenLessons);
+
+//         console.log(`\n[Step 4/4] Saving the new course to the database...`);
+//         await client.query('BEGIN');
+
+//         const courseInsertResult = await client.query(
+//             `INSERT INTO courses (title, description, teacher_id, is_published) VALUES ($1, $2, $3, false) RETURNING id`,
+//             [courseStructure.course_title, courseStructure.course_description, TEACHER_ID]
+//         );
+//         const courseId = courseInsertResult.rows[0].id;
+//         console.log(` -> Created course "${courseStructure.course_title}" with ID: ${courseId}`);
+
+//         let insertedLessonsCount = 0;
+//         for (const lessonInfo of courseStructure.lesson_sequence) {
+//             const originalLesson = chosenLessons.find(l => l.id === lessonInfo.id);
+//             if (originalLesson) {
+//                 const lessonInsertResult = await client.query(
+//                     `INSERT INTO lessons (title, description, course_id, teacher_id, lesson_type, objective, language)
+//                      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+//                     [
+//                         originalLesson.title, originalLesson.description, courseId,
+//                         TEACHER_ID, originalLesson.lesson_type,
+//                         lessonInfo.ai_generated_objective, originalLesson.language
+//                     ]
+//                 );
+//                 const newLessonId = lessonInsertResult.rows[0].id;
+
+//                 if (originalLesson.files && Array.isArray(originalLesson.files)) {
+//                     for (const file of originalLesson.files) {
+//                         // --- FIX #2: THE DATA INTEGRITY FIX ---
+//                         // Use file.name, which is what our parser actually creates.
+//                         await client.query(
+//                             `INSERT INTO lesson_files (filename, content, lesson_id) VALUES ($1, $2, $3)`,
+//                             [file.name, file.content, newLessonId]
+//                         );
+//                     }
+//                 }
+
+//                 if (originalLesson.test_code) {
+//                     await client.query(
+//                         `INSERT INTO lesson_tests (test_code, lesson_id) VALUES ($1, $2)`,
+//                         [originalLesson.test_code, newLessonId]
+//                     );
+//                 }
+//                 insertedLessonsCount++;
+//             }
+//         }
+        
+//         console.log(` -> Inserted ${insertedLessonsCount} complete lessons into the new course.`);
+//         await client.query('COMMIT');
+//         console.log(`\n--- SUCCESS! AI course created and saved. ---`);
+
+//     } catch (error) {
+//         if (client) await client.query('ROLLBACK').catch(e => console.error("Rollback failed:", e));
+//         console.error("\n--- FAILED to create AI course ---");
+//         console.error(error.message);
+//     } finally {
+//         if (client) client.release();
+//         await db.pool.end();
+//     }
+// }
+
+// const topic = process.argv[2];
+// const lessonCount = parseInt(process.argv[3], 10);
+// createCourse(topic, lessonCount);
 
 // /**
 //  * Infers the primary programming language from a course topic string.
