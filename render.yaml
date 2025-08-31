@@ -1,0 +1,67 @@
+# render.yaml
+# Definitive, resilient multi-service architecture for Educator App
+
+services:
+  # The main Node.js Web API and WebSocket server
+  - type: web
+    name: educator-app-backend
+    env: node
+    plan: free # Or your chosen paid plan
+    
+    # Ensure this is your Dockerfile's location
+    dockerfilePath: ./Dockerfile
+    
+    # The command to start your Express server
+    startCommand: "node server.js"
+    
+    # Render uses this to know when your service is ready.
+    # Ensure you have a simple GET /healthz route in server.js that returns 200 OK.
+    healthCheckPath: /healthz
+    
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: educator-db # The name of the database service defined below
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: educator-redis # The name of the Redis service defined below
+          property: connectionString
+      - key: PORT # Let Render inject the port for the web service
+        value: 10000
+      # All other secrets (JWT_SECRET, GEMINI_API_KEY, etc.) should be added in the Render Environment tab
+
+  # The background worker for Docker code execution
+  - type: worker
+    name: educator-worker
+    env: node
+    plan: free # Or a paid plan if it needs more resources
+
+    # It uses the same Dockerfile as the web service
+    dockerfilePath: ./Dockerfile
+    
+    # The command to start your Docker worker
+    startCommand: "node dockerWorker.js"
+    
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: educator-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: educator-redis
+          property: connectionString
+      # Add any other secrets the worker needs
+
+# Database and Redis definitions, managed by this Blueprint
+databases:
+  - name: educator-db
+    plan: free
+
+services:
+  - type: redis
+    name: educator-redis
+    plan: free
