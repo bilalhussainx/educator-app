@@ -10,9 +10,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
-import 'xterm/css/xterm.css';
+// Terminal functionality now handled by DockerTerminal component
 import { cn } from "@/lib/utils";
 
 // --- AGORA SDK IMPORT ---
@@ -22,6 +20,7 @@ import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRT
 import { HomeworkView } from '../components/classroom/HomeworkView';
 import { WhiteboardPanel, Line } from '../components/classroom/WhiteboardPanel';
 import { ChatPanel } from '../components/classroom/ChatPanel';
+import DockerTerminal from '../components/DockerTerminal';
 
 // Import shadcn components and icons
 import { Button } from "@/components/ui/button";
@@ -393,9 +392,8 @@ const LiveTutorialPage: React.FC = () => {
     // --- Refs ---
     const ws = useRef<WebSocket | null>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
-    const terminalRef = useRef<HTMLDivElement>(null);
-    const term = useRef<Terminal | null>(null);
-    const fitAddon = useRef<FitAddon | null>(null);
+    // Old terminal refs removed - now using DockerTerminal
+    const dockerTerminalRef = useRef<any>(null);
     const roleRef = useRef(role);
     const teacherIdRef = useRef(teacherId);
     const activeChatStudentIdRef = useRef(activeChatStudentId);
@@ -484,24 +482,7 @@ const LiveTutorialPage: React.FC = () => {
             setRemoteUsers(Array.from(client.remoteUsers));
         });
 
-        // --- Terminal Setup ---
-        if (terminalRef.current && !term.current) {
-            fitAddon.current = new FitAddon();
-            const newTerm = new Terminal({ 
-                cursorBlink: true, 
-                theme: { background: '#0D1117', foreground: '#c9d1d9', cursor: '#c9d1d9' }, 
-                fontSize: 14 
-            });
-            newTerm.loadAddon(fitAddon.current);
-            newTerm.open(terminalRef.current);
-            fitAddon.current.fit();
-            newTerm.onData((data) => {
-                if (ws.current?.readyState === WebSocket.OPEN && roleRef.current === 'teacher' && viewingMode === 'teacher') {
-                    sendWsMessage('TERMINAL_IN', { data });
-                }
-            });
-            term.current = newTerm;
-        }
+        // Terminal is now handled by DockerTerminal component
 
         // --- Cleanup Function ---
         return () => {
@@ -509,7 +490,7 @@ const LiveTutorialPage: React.FC = () => {
             localTracks.current?.videoTrack.close();
             localTracks.current?.audioTrack.close();
             client.leave();
-            term.current?.dispose();
+            // DockerTerminal cleanup is handled internally
         };
     }, [sessionId, currentUserId, navigate, token]);
 
@@ -537,32 +518,7 @@ const LiveTutorialPage: React.FC = () => {
         }
     }, [role, token]);
 
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (!term.current) return;
-            let outputToDisplay = '';
-            let isTerminalReadOnly = false;
-            if (spotlightedStudentId && spotlightWorkspace) {
-                const studentName = students.find(s => s.id === spotlightedStudentId)?.username || 'student';
-                outputToDisplay = spotlightWorkspace.terminalOutput || `\r\n--- Viewing Spotlight: ${studentName} ---\r\n`;
-                isTerminalReadOnly = true;
-            } else if (role === 'teacher' && viewingMode !== 'teacher') {
-                const studentState = studentHomeworkStates.get(viewingMode);
-                const studentName = students.find(s => s.id === viewingMode)?.username || 'student';
-                outputToDisplay = studentState?.terminalOutput || `\r\n--- Watching ${studentName}'s Terminal ---\r\n`;
-                isTerminalReadOnly = !isTeacherControllingThisStudent;
-            } else {
-                outputToDisplay = teacherTerminalOutput;
-                isTerminalReadOnly = (role !== 'teacher' || viewingMode !== 'teacher');
-            }
-            term.current.clear();
-            term.current.write(outputToDisplay);
-            if (term.current.options.disableStdin !== isTerminalReadOnly) {
-                term.current.options.disableStdin = isTerminalReadOnly;
-            }
-        }, 0);
-        return () => clearTimeout(timeoutId);
-    }, [role, viewingMode, teacherTerminalOutput, spotlightedStudentId, spotlightWorkspace, studentHomeworkStates, students, controlledStudentId]);
+    // Terminal state is now managed by DockerTerminal component
 
     // --- Handlers and Functions ---
     const sendWsMessage = (type: string, payload?: object) => {
@@ -669,6 +625,28 @@ const LiveTutorialPage: React.FC = () => {
                         return map; 
                     }); 
                     break;
+                case 'DOCKER_CODE_EXECUTION':
+                    // Handle teacher's code execution broadcast to students
+                    if (role === 'student' && dockerTerminalRef.current) {
+                        const { code, language, result, error, fileName, timestamp } = message.payload;
+                        
+                        // Display the code execution in student's terminal
+                        if (result) {
+                            // Show successful execution
+                            console.log(`Teacher executed ${language} code from ${fileName}:`, result);
+                            
+                            // Execute the same code in student's terminal to show live demo
+                            try {
+                                await dockerTerminalRef.current.executeCode(code, language);
+                            } catch (err) {
+                                console.error('Failed to replicate teacher code execution:', err);
+                            }
+                        } else if (error) {
+                            // Show execution error
+                            console.log(`Teacher's code execution failed:`, error);
+                        }
+                    }
+                    break;
             }
         };
     };
@@ -751,9 +729,34 @@ const LiveTutorialPage: React.FC = () => {
         }
     };
     
-    const handleRunCode = () => {
-        if (activeFile && role === 'teacher' && viewingMode === 'teacher') {
-            sendWsMessage('RUN_CODE', { language: activeFile.language, code: activeFile.content });
+    const handleRunCode = async () => {
+        if (activeFile && role === 'teacher' && viewingMode === 'teacher' && dockerTerminalRef.current) {
+            try {
+                // Execute code in Docker terminal
+                const result = await dockerTerminalRef.current.executeCode(activeFile.content, activeFile.language);
+                
+                // Broadcast the code execution and results to all students
+                sendWsMessage('DOCKER_CODE_EXECUTION', { 
+                    language: activeFile.language, 
+                    code: activeFile.content, 
+                    result: result,
+                    fileName: activeFile.name,
+                    timestamp: Date.now()
+                });
+
+                console.log('Code executed and broadcasted:', result);
+            } catch (error) {
+                console.error('Code execution failed:', error);
+                
+                // Still broadcast the attempt so students can see what was tried
+                sendWsMessage('DOCKER_CODE_EXECUTION', { 
+                    language: activeFile.language, 
+                    code: activeFile.content, 
+                    error: error.message,
+                    fileName: activeFile.name,
+                    timestamp: Date.now()
+                });
+            }
         }
     };
 
@@ -993,18 +996,24 @@ const LiveTutorialPage: React.FC = () => {
                                 
                                 {/* Terminal */}
                                 <Panel defaultSize={isWhiteboardVisible ? 25 : 30} minSize={20}>
-                                    <div className="h-full bg-slate-950">
-                                        <div className="flex items-center px-4 py-2 bg-slate-800 border-b border-slate-700">
-                                            <TerminalIcon className="h-4 w-4 mr-2 text-slate-400" />
-                                            <span className="text-sm font-medium text-slate-300">Terminal</span>
-                                            {isEditorReadOnly && (
-                                                <Badge className="ml-2 bg-red-500/10 text-red-400 border-red-500/20 text-xs">
-                                                    Read Only
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <div ref={terminalRef} className="h-[calc(100%-40px)]" />
-                                    </div>
+                                    <DockerTerminal
+                                        ref={dockerTerminalRef}
+                                        title="Live Coding Terminal"
+                                        showHeader={true}
+                                        showCodeButtons={role === 'teacher' && viewingMode === 'teacher'}
+                                        height="100%"
+                                        initialCode={activeFile?.content || ''}
+                                        initialLanguage={activeFile?.language || 'javascript'}
+                                        autoConnect={true}
+                                        enableWebSocket={true}
+                                        className="h-full"
+                                        onCodeExecution={(result) => {
+                                            console.log('Docker terminal code execution result:', result);
+                                        }}
+                                        onError={(error) => {
+                                            console.error('Docker terminal error:', error);
+                                        }}
+                                    />
                                 </Panel>
                                 
                                 {/* Whiteboard */}

@@ -34,12 +34,13 @@ import {
     ChevronLeft, BeakerIcon, CheckCircle, XCircle, File as FileIcon,
     BrainCircuit, Send, ChevronRight, History,
     FileCode, BotMessageSquare, NotebookPen, Check, FilePlus2, Trash2, Save, PanelLeft,
-    Award, Loader2
+    Award, Loader2, Terminal as TerminalIcon
 } from 'lucide-react';
+import DockerTerminal from '../components/DockerTerminal';
 
 // --- Type Definitions for this component ---
 type MissionControlTab = "problem" | "submissions" | "solution";
-type DiagnosticsTab = "results" | "aiFeedback";
+type DiagnosticsTab = "results" | "aiFeedback" | "terminal" | "testCases";
 
 // --- Reusable UI Components ---
 const GlassAlertDialogContent: React.FC<React.ComponentProps<typeof AlertDialogContent>> = ({ className, ...props }) => (
@@ -431,10 +432,11 @@ const AscentIDE: React.FC = () => {
                             <PanelResizeHandle className="h-1 bg-slate-800" />
                             <Panel defaultSize={35} minSize={20} className="flex flex-col bg-slate-900/40">
                                 <Tabs value={diagnosticsTab} onValueChange={(v) => setDiagnosticsTab(v as DiagnosticsTab)} className="flex flex-col h-full">
-                                    <TabsList className="grid w-full grid-cols-3 bg-slate-900">
+                                    <TabsList className="grid w-full grid-cols-4 bg-slate-900">
                                         <TabsTrigger value="testCases"><Check className="mr-2 h-4 w-4"/>Cases</TabsTrigger>
                                         <TabsTrigger value="results"><BeakerIcon className="mr-2 h-4 w-4"/>Results</TabsTrigger>
                                         <TabsTrigger value="aiFeedback" className={cn(conceptualHint && "text-fuchsia-400 animate-pulse")}><BotMessageSquare className="mr-2 h-4 w-4"/>AI</TabsTrigger>
+                                        <TabsTrigger value="terminal"><TerminalIcon className="mr-2 h-4 w-4"/>Terminal</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="testCases" className="flex-grow overflow-y-auto p-2 text-sm">
                                         {ideData.testCases.map((tc: any, i: number) => (
@@ -465,6 +467,22 @@ const AscentIDE: React.FC = () => {
                                     </TabsContent>
                                     <TabsContent value="aiFeedback" className="flex-grow overflow-y-auto p-2 prose prose-sm prose-invert">
                                         {conceptualHint ? <ReactMarkdown>{conceptualHint}</ReactMarkdown> : <div className="flex items-center justify-center h-full text-center text-slate-500"><BotMessageSquare className="h-8 w-8 mb-2 opacity-50" /><p>Submit a correct solution for AI feedback.</p></div>}
+                                    </TabsContent>
+                                    <TabsContent value="terminal" className="flex-grow p-2">
+                                        <DockerTerminal
+                                            title="Code Sandbox"
+                                            showHeader={false}
+                                            showCodeButtons={true}
+                                            height="100%"
+                                            initialCode={files.find(f => f.filename.endsWith('.py'))?.content || files.map(f => f.content).join('\n\n') || ''}
+                                            initialLanguage={files.find(f => f.filename.endsWith('.py')) ? 'python' : 'javascript'}
+                                            onCodeExecution={(result) => {
+                                                console.log('Code execution result:', result);
+                                            }}
+                                            onError={(error) => {
+                                                toast.error(`Terminal Error: ${error}`);
+                                            }}
+                                        />
                                     </TabsContent>
                                 </Tabs>
                             </Panel>

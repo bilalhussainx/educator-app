@@ -10,8 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Button } from "@/components/ui/button";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster, toast } from 'sonner';
-import { ChevronLeft, Send, Save, Award, Play, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, Send, Save, Award, Play, CheckCircle, XCircle, Terminal } from 'lucide-react';
+import DockerTerminal from './DockerTerminal';
 
 const AscentWebIDE: React.FC = () => {
     const { lessonId } = useParams<{ lessonId: string }>();
@@ -31,6 +33,7 @@ const AscentWebIDE: React.FC = () => {
 
     const [activeFile, setActiveFile] = useState<'html' | 'css' | 'js'>('html');
     const [previewSrcDoc, setPreviewSrcDoc] = useState('');
+    const [bottomTab, setBottomTab] = useState<'preview' | 'tests' | 'terminal'>('preview');
     
     const [isSaving, setIsSaving] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -505,52 +508,87 @@ const AscentWebIDE: React.FC = () => {
                             <PanelResizeHandle className="h-1 bg-slate-800" />
 
                             <Panel defaultSize={40} minSize={20}>
-                                {language === 'python' ? (
-                                    <div className="h-full bg-slate-950 flex flex-col">
-                                        <div className="px-3 py-2 border-b border-slate-800 bg-slate-900">
-                                            <h3 className="text-sm font-medium text-slate-200">Test Results</h3>
-                                        </div>
-                                        <div className="flex-1 p-4 overflow-y-auto">
-                                            {testResult ? (
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center gap-2">
-                                                        {testResult.passed === testResult.total ? (
-                                                            <CheckCircle className="h-5 w-5 text-green-400" />
-                                                        ) : (
-                                                            <XCircle className="h-5 w-5 text-red-400" />
-                                                        )}
-                                                        <span className="text-sm font-medium">
-                                                            {testResult.passed}/{testResult.total} tests passed
-                                                        </span>
-                                                    </div>
-                                                    <pre className="bg-slate-900 p-3 rounded text-xs text-slate-300 overflow-x-auto whitespace-pre-wrap">
-                                                        {testResult.results}
-                                                    </pre>
-                                                    {testResult.aiHint && (
-                                                        <div className="bg-blue-950/40 border border-blue-500/30 rounded p-3">
-                                                            <h4 className="text-sm font-medium text-blue-300 mb-2">💡 AI Hint</h4>
-                                                            <p className="text-xs text-blue-200">{testResult.aiHint}</p>
+                                <Tabs value={language === 'python' ? (bottomTab === 'preview' ? 'tests' : bottomTab) : bottomTab} onValueChange={(value) => setBottomTab(value as 'preview' | 'tests' | 'terminal')} className="h-full flex flex-col">
+                                    <TabsList className="grid w-full grid-cols-3 bg-slate-900 border-b border-slate-800">
+                                        {language !== 'python' && (
+                                            <TabsTrigger value="preview" className="text-xs">Live Preview</TabsTrigger>
+                                        )}
+                                        {language === 'python' && (
+                                            <TabsTrigger value="tests" className="text-xs">Test Results</TabsTrigger>
+                                        )}
+                                        <TabsTrigger value="terminal" className="text-xs">
+                                            <Terminal className="h-3 w-3 mr-1" />
+                                            Terminal
+                                        </TabsTrigger>
+                                    </TabsList>
+
+                                    {language !== 'python' && (
+                                        <TabsContent value="preview" className="flex-1 mt-0 p-0">
+                                            <iframe
+                                                srcDoc={previewSrcDoc}
+                                                title="Live Preview"
+                                                sandbox="allow-scripts"
+                                                width="100%"
+                                                height="100%"
+                                                className="bg-white"
+                                            />
+                                        </TabsContent>
+                                    )}
+
+                                    {language === 'python' && (
+                                        <TabsContent value="tests" className="flex-1 mt-0 p-0">
+                                            <div className="h-full bg-slate-950 flex flex-col">
+                                                <div className="flex-1 p-4 overflow-y-auto">
+                                                    {testResult ? (
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center gap-2">
+                                                                {testResult.passed === testResult.total ? (
+                                                                    <CheckCircle className="h-5 w-5 text-green-400" />
+                                                                ) : (
+                                                                    <XCircle className="h-5 w-5 text-red-400" />
+                                                                )}
+                                                                <span className="text-sm font-medium">
+                                                                    {testResult.passed}/{testResult.total} tests passed
+                                                                </span>
+                                                            </div>
+                                                            <pre className="bg-slate-900 p-3 rounded text-xs text-slate-300 overflow-x-auto whitespace-pre-wrap">
+                                                                {testResult.results}
+                                                            </pre>
+                                                            {testResult.aiHint && (
+                                                                <div className="bg-blue-950/40 border border-blue-500/30 rounded p-3">
+                                                                    <h4 className="text-sm font-medium text-blue-300 mb-2">💡 AI Hint</h4>
+                                                                    <p className="text-xs text-blue-200">{testResult.aiHint}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center text-slate-500 mt-8">
+                                                            <Play className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                                            <p className="text-sm">Click "Run Tests" to test your code</p>
                                                         </div>
                                                     )}
                                                 </div>
-                                            ) : (
-                                                <div className="text-center text-slate-500 mt-8">
-                                                    <Play className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                                    <p className="text-sm">Click "Run Tests" to test your code</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <iframe
-                                        srcDoc={previewSrcDoc}
-                                        title="Live Preview"
-                                        sandbox="allow-scripts"
-                                        width="100%"
-                                        height="100%"
-                                        className="bg-white"
-                                    />
-                                )}
+                                            </div>
+                                        </TabsContent>
+                                    )}
+
+                                    <TabsContent value="terminal" className="flex-1 mt-0 p-2">
+                                        <DockerTerminal
+                                            title="Code Sandbox"
+                                            showHeader={false}
+                                            showCodeButtons={true}
+                                            height="100%"
+                                            initialCode={language === 'python' ? pythonCode : (htmlCode + '\n\n' + cssCode + '\n\n' + jsCode)}
+                                            initialLanguage={language === 'python' ? 'python' : 'javascript'}
+                                            onCodeExecution={(result) => {
+                                                console.log('Code execution result:', result);
+                                            }}
+                                            onError={(error) => {
+                                                toast.error(`Terminal Error: ${error}`);
+                                            }}
+                                        />
+                                    </TabsContent>
+                                </Tabs>
                             </Panel>
                         </PanelGroup>
                     </Panel>
