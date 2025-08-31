@@ -28,8 +28,16 @@ class WebSocketTerminalHandler {
     }
     
     initializeTerminalWebSocket(wss) {
+        console.log('🔧 Terminal WebSocket server initialized');
+        
+        wss.on('error', (error) => {
+            console.error('🔥 Terminal WebSocket server error:', error);
+        });
+        
         wss.on('connection', async (ws, req) => {
-            console.log('🔌 New terminal WebSocket connection');
+            console.log('🔌 New terminal WebSocket connection attempt');
+            console.log('📍 Request URL:', req.url);
+            console.log('📍 Request headers:', req.headers);
             
             try {
                 const urlParams = new URLSearchParams(req.url.split('?')[1]);
@@ -62,6 +70,7 @@ class WebSocketTerminalHandler {
                 
             } catch (error) {
                 console.error('❌ Terminal WS connection error:', error);
+                console.error('❌ Error stack:', error.stack);
                 ws.close(4000, 'Connection error');
             }
         });
