@@ -5,7 +5,7 @@ module.exports = {
   apps : [
     {
       name   : "educator-api",
-      script : "./educators-edge-backend/server.js", // Path to your main server
+      script : "./server.js", // Path to your main server (copied to /usr/src/app/)
       env_production: {
         NODE_ENV: "production",
         PORT: 10000
@@ -13,7 +13,7 @@ module.exports = {
     },
     {
       name   : "educator-worker",
-      script : "./educators-edge-backend/dockerWorker.js", // Path to your worker script
+      script : "./dockerWorker.js", // Path to your worker script (copied to /usr/src/app/)
       env_production: {
         NODE_ENV: "production"
       }
