@@ -11,8 +11,12 @@ const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
 
-// Redis connection
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+// Redis connection with BullMQ configuration
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    maxRetriesPerRequest: null, // Required for BullMQ
+    retryDelayOnFailover: 100,
+    enableReadyCheck: false
+});
 
 // Code execution worker
 const codeExecutionWorker = new Worker('code-execution', async (job) => {

@@ -8,8 +8,12 @@ const { Queue } = require('bullmq');
 const Redis = require('ioredis');
 const { v4: uuidv4 } = require('uuid');
 
-// Redis connection and BullMQ queue
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+// Redis connection with BullMQ configuration
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    maxRetriesPerRequest: null, // Required for BullMQ
+    retryDelayOnFailover: 100,
+    enableReadyCheck: false
+});
 const codeExecutionQueue = new Queue('code-execution', { connection: redis });
 
 class TerminalController {
