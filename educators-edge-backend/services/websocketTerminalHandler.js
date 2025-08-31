@@ -489,7 +489,8 @@ class WebSocketTerminalHandler {
     
     async handleExecuteCode(ws, payload, user) {
         const { code, language, fileName } = payload;
-        console.log(`🚀 Code execution request from ${user.username}: ${language} (${fileName})`);
+        const displayFileName = fileName || 'terminal.py';
+        console.log(`🚀 Code execution request from ${user.username}: ${language} (${displayFileName})`);
         
         try {
             // Import the execution service
@@ -509,7 +510,7 @@ class WebSocketTerminalHandler {
                     result: result.output,
                     success: true,
                     language,
-                    fileName,
+                    fileName: displayFileName,
                     timestamp: Date.now()
                 }
             }));
@@ -523,7 +524,7 @@ class WebSocketTerminalHandler {
                     error: error.message,
                     success: false,
                     language,
-                    fileName,
+                    fileName: displayFileName,
                     timestamp: Date.now()
                 }
             }));
