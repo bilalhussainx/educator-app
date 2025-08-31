@@ -160,12 +160,34 @@ console.log('🔧 Initializing WebSocket handlers...');
 initializeWebSocket(wss);
 console.log('✅ Main WebSocket handler initialized');
 
+// Add debugging to terminal WebSocket server
+terminalWss.on('error', (error) => {
+    console.error('🔥 Terminal WSS Error:', error);
+});
+
+terminalWss.on('listening', () => {
+    console.log('🎧 Terminal WSS is listening');
+});
+
+terminalWss.on('headers', (headers, req) => {
+    console.log('📋 Terminal WSS headers event for:', req.url);
+});
+
 // Initialize terminal WebSocket with direct connection handling
 terminalWss.on('connection', async (ws, req) => {
     console.log('🎯 Terminal WebSocket connection detected - routing to handler');
+    console.log('📍 Connection request URL:', req.url);
+    console.log('📍 Connection headers:', req.headers);
     await terminalWebSocketHandler.handleConnection(ws, req);
 });
 console.log('✅ Terminal WebSocket handler initialized');
+
+// Add server-level upgrade logging
+server.on('upgrade', (request, socket, head) => {
+    const url = new URL(request.url, 'http://localhost');
+    console.log(`🔄 Server upgrade event: ${url.pathname} with query: ${url.search}`);
+    console.log('🔍 Headers:', request.headers);
+});
 
 
 const PORT = process.env.PORT || 10000;
