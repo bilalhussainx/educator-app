@@ -155,10 +155,9 @@ export const useDockerTerminal = (
           console.log('🔍 DockerTerminal: Terminal ref current:', !!terminalRef.current);
           
           // Try to get terminal from current state or wait briefly for initialization
-          const currentTerminal = terminal;
-          if (currentTerminal) {
+          if (terminal) {
             console.log('✅ DockerTerminal: Writing to terminal:', message.payload.output.length, 'characters');
-            currentTerminal.write(message.payload.output);
+            terminal.write(message.payload.output);
             console.log('✅ DockerTerminal: TERMINAL_OUTPUT written to terminal');
           } else {
             console.error('❌ DockerTerminal: No terminal instance available for TERMINAL_OUTPUT');
@@ -191,10 +190,9 @@ export const useDockerTerminal = (
           console.log('📋 DockerTerminal: Execution result:', result);
           console.log('🔍 DockerTerminal: Current terminal instance for CODE_EXECUTION_RESULT:', !!terminal);
           
-          const currentTerminal = terminal;
-          if (currentTerminal && result && result.output) {
+          if (terminal && result && result.output) {
             console.log('✅ DockerTerminal: Writing execution result to terminal:', result.output.length, 'characters');
-            currentTerminal.write(`\r\n${result.output}\r\n$ `);
+            terminal.write(`\r\n${result.output}\r\n$ `);
             console.log('✅ DockerTerminal: CODE_EXECUTION_RESULT written to terminal');
           } else {
             console.error('❌ DockerTerminal: Cannot write execution result - terminal:', !!terminal, 'result:', !!result, 'output:', !!(result?.output));
