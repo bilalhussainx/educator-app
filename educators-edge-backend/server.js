@@ -99,15 +99,15 @@ app.use('/api/library', libraryRoutes);
 const server = http.createServer(app);
 console.log('🔧 Creating WebSocket servers...');
 
-// Create WebSocket servers with explicit path handling
+// Create WebSocket servers with explicit path handling - Fixed approach
 const wss = new WebSocketServer({ 
     server, 
     path: '/ws',
     verifyClient: (info) => {
         const url = new URL(info.req.url, 'http://localhost');
-        console.log(`🔍 WS verification for path: ${url.pathname}`);
+        console.log(`🔍 Main WS verification for path: ${url.pathname}`);
         const isWsPath = url.pathname === '/ws';
-        console.log(`🔍 WS verification result: ${isWsPath}`);
+        console.log(`🔍 Main WS verification result: ${isWsPath}`);
         return isWsPath;
     }
 }); 
@@ -155,9 +155,16 @@ app.get('/test-ws', (req, res) => {
 });
 
 console.log('🔧 Initializing WebSocket handlers...');
+
+// Initialize main WebSocket handler
 initializeWebSocket(wss);
 console.log('✅ Main WebSocket handler initialized');
-terminalWebSocketHandler.initializeTerminalWebSocket(terminalWss);
+
+// Initialize terminal WebSocket with direct connection handling
+terminalWss.on('connection', async (ws, req) => {
+    console.log('🎯 Terminal WebSocket connection detected - routing to handler');
+    await terminalWebSocketHandler.handleConnection(ws, req);
+});
 console.log('✅ Terminal WebSocket handler initialized');
 
 
