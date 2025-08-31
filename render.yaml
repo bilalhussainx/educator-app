@@ -19,10 +19,6 @@ services:
     healthCheckPath: /healthz
     
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: educator-db # The name of the database service defined below
-          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
@@ -30,7 +26,9 @@ services:
           property: connectionString
       - key: PORT # Let Render inject the port for the web service
         value: 10000
-      # All other secrets (JWT_SECRET, GEMINI_API_KEY, etc.) should be added in the Render Environment tab
+      # DATABASE_URL and other secrets (JWT_SECRET, GEMINI_API_KEY, etc.) 
+      # should be added manually in the Render Environment tab
+      # using your existing Neon database connection string
 
   # The background worker for code execution
   - type: worker
@@ -45,23 +43,15 @@ services:
     startCommand: "node educators-edge-backend/dockerWorker.js"
     
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: educator-db
-          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
           name: educator-redis
           property: connectionString
-      # Add any other secrets the worker needs
+      # DATABASE_URL should be added manually in the Render Environment tab
+      # using your existing Neon database connection string
 
   # Redis service for job queues
   - type: redis
     name: educator-redis
-    plan: free
-
-# Database definitions, managed by this Blueprint
-databases:
-  - name: educator-db
     plan: free
