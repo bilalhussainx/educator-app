@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Video } from 'lucide-react';
 import { RecordingsManager } from '../components/recordings/RecordingsManager';
 import { toast } from 'sonner';
-import { apiClient } from '../config/api';
+import apiClient from '../services/apiClient';
 
 interface Course {
     id: string;

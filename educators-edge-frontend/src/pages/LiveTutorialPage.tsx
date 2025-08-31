@@ -355,8 +355,6 @@ const LiveTutorialPage: React.FC = () => {
     
     // --- RECORDING STATE ---
     const [isRecording, setIsRecording] = useState(false);
-    const [recordingId, setRecordingId] = useState<string | null>(null);
-    const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
 
     // --- APPLICATION STATE ---
     const [files, setFiles] = useState<CodeFile[]>([]);
@@ -655,8 +653,6 @@ const LiveTutorialPage: React.FC = () => {
                 // Recording message handlers
                 case 'RECORDING_STARTED':
                     setIsRecording(true);
-                    setRecordingId(message.payload.recordingId);
-                    setRecordingStartTime(new Date(message.payload.startTime));
                     toast.success('Recording started', {
                         description: 'This session is now being recorded.'
                     });
@@ -664,8 +660,6 @@ const LiveTutorialPage: React.FC = () => {
                     
                 case 'RECORDING_STOPPED':
                     setIsRecording(false);
-                    setRecordingId(null);
-                    setRecordingStartTime(null);
                     toast.success('Recording stopped', {
                         description: 'Session recording has been saved.'
                     });
@@ -830,14 +824,14 @@ const LiveTutorialPage: React.FC = () => {
 
     // Recording handlers
     const handleStartRecording = () => {
-        if (!sessionId || !courseId) {
-            toast.error('Missing session or course information');
+        if (!sessionId) {
+            toast.error('Missing session information');
             return;
         }
         
         sendWsMessage('START_RECORDING', {
             channelName: sessionId,
-            courseId: courseId
+            courseId: sessionId // Use sessionId as fallback for courseId
         });
     };
 

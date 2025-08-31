@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Play, Clock, Brain, Search, Filter, Sparkles, MessageCircle, BookOpen, Languages, Globe } from 'lucide-react';
+import { Play, Clock, Brain, Search, Filter, Sparkles, MessageCircle, Languages, Globe } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiClient } from '../../config/api';
+import apiClient from '../../services/apiClient';
 
 interface IntelligentSearchResult {
     matches: Recording[];
