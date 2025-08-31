@@ -504,16 +504,25 @@ class WebSocketTerminalHandler {
             console.log(`✅ Code execution completed for ${user.username}`);
             
             // Send terminal output for display in terminal interface
-            ws.send(JSON.stringify({
+            const terminalOutputMessage = {
                 type: 'TERMINAL_OUTPUT',
                 payload: {
                     output: `$ ${language} ${displayFileName}\n${result.output}\n`,
                     timestamp: Date.now()
                 }
-            }));
+            };
+            console.log(`📤 Sending TERMINAL_OUTPUT to ${user.username}:`, terminalOutputMessage.payload.output.substring(0, 100));
+            console.log(`🔍 WebSocket state: ${ws.readyState} (OPEN=${ws.OPEN})`);
+            
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify(terminalOutputMessage));
+                console.log(`✅ TERMINAL_OUTPUT sent successfully`);
+            } else {
+                console.log(`❌ WebSocket not open, cannot send TERMINAL_OUTPUT`);
+            }
             
             // Also send structured execution result (matching frontend expectation)
-            ws.send(JSON.stringify({
+            const codeResultMessage = {
                 type: 'CODE_EXECUTION_RESULT',
                 payload: {
                     result: {
@@ -525,7 +534,15 @@ class WebSocketTerminalHandler {
                     fileName: displayFileName,
                     timestamp: Date.now()
                 }
-            }));
+            };
+            console.log(`📤 Sending CODE_EXECUTION_RESULT to ${user.username}:`, result.output.substring(0, 50));
+            
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify(codeResultMessage));
+                console.log(`✅ CODE_EXECUTION_RESULT sent successfully`);
+            } else {
+                console.log(`❌ WebSocket not open, cannot send CODE_EXECUTION_RESULT`);
+            }
             
         } catch (error) {
             console.error(`❌ Code execution failed for ${user.username}:`, error.message);
