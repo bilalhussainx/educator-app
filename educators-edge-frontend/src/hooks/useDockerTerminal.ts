@@ -78,6 +78,7 @@ export const useDockerTerminal = (
   const terminalRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const terminalInstanceRef = useRef<Terminal | null>(null);
 
   // Initialize terminal
   useEffect(() => {
@@ -107,6 +108,7 @@ export const useDockerTerminal = (
     fitAddon.fit();
     
     fitAddonRef.current = fitAddon;
+    terminalInstanceRef.current = newTerminal;
     setTerminal(newTerminal);
     console.log('✅ DockerTerminal: Terminal instance initialized and set');
 
@@ -134,6 +136,7 @@ export const useDockerTerminal = (
 
     return () => {
       newTerminal.dispose();
+      terminalInstanceRef.current = null;
       if (wsRef.current) {
         wsRef.current.close();
       }
@@ -165,10 +168,11 @@ export const useDockerTerminal = (
             console.log('🔄 DockerTerminal: Queuing TERMINAL_OUTPUT for later processing');
             const outputToWrite = message.payload.output;
             setTimeout(() => {
-              // Re-check terminal availability in the callback
-              if (terminal && terminal.write) {
+              // Use ref to avoid closure issues
+              const currentTerminal = terminalInstanceRef.current;
+              if (currentTerminal) {
                 console.log('🔄 DockerTerminal: Retrying queued TERMINAL_OUTPUT');
-                terminal.write(outputToWrite);
+                currentTerminal.write(outputToWrite);
               }
             }, 100);
           }
@@ -202,9 +206,11 @@ export const useDockerTerminal = (
             if (result && result.output) {
               const outputToWrite = `\r\n${result.output}\r\n$ `;
               setTimeout(() => {
-                if (terminal && terminal.write) {
+                // Use ref to avoid closure issues
+                const currentTerminal = terminalInstanceRef.current;
+                if (currentTerminal) {
                   console.log('🔄 DockerTerminal: Retrying queued CODE_EXECUTION_RESULT');
-                  terminal.write(outputToWrite);
+                  currentTerminal.write(outputToWrite);
                 }
               }, 100);
             }
