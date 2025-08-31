@@ -503,11 +503,12 @@ class WebSocketTerminalHandler {
             
             console.log(`✅ Code execution completed for ${user.username}`);
             
-            // Send terminal output for display in terminal interface
+            // Send terminal output for display in terminal interface with improved formatting
+            const formattedOutput = this.formatTerminalOutput(language, displayFileName, result.output, 'success');
             const terminalOutputMessage = {
                 type: 'TERMINAL_OUTPUT',
                 payload: {
-                    output: `$ ${language} ${displayFileName}\n${result.output}\n`,
+                    output: formattedOutput,
                     timestamp: Date.now()
                 }
             };
@@ -553,11 +554,12 @@ class WebSocketTerminalHandler {
         } catch (error) {
             console.error(`❌ Code execution failed for ${user.username}:`, error.message);
             
-            // Send terminal error output for display
+            // Send terminal error output for display with improved formatting
+            const formattedError = this.formatTerminalOutput(language, displayFileName, error.message, 'error');
             ws.send(JSON.stringify({
                 type: 'TERMINAL_OUTPUT',
                 payload: {
-                    output: `$ ${language} ${displayFileName}\nError: ${error.message}\n`,
+                    output: formattedError,
                     timestamp: Date.now()
                 }
             }));
@@ -573,6 +575,61 @@ class WebSocketTerminalHandler {
                     timestamp: Date.now()
                 }
             }));
+        }
+    }
+    
+    formatTerminalOutput(language, fileName, output, type = 'success') {
+        const timestamp = new Date().toLocaleTimeString();
+        const languageIcon = {
+            'python': '🐍',
+            'javascript': '🟨',
+            'java': '☕',
+            'cpp': '⚡',
+            'c': '⚡'
+        }[language] || '📝';
+        
+        let formattedOutput = '';
+        
+        // Header with timestamp and language
+        formattedOutput += `\r\n╭─ ${languageIcon} ${language.toUpperCase()} EXECUTION [${timestamp}]\r\n`;
+        formattedOutput += `├─ File: ${fileName}\r\n`;
+        formattedOutput += `├─ Command: ${this.getExecutionCommand(language, fileName)}\r\n`;
+        formattedOutput += `├─ Output:\r\n`;
+        
+        if (type === 'error') {
+            formattedOutput += `│ ❌ Error: ${output}\r\n`;
+        } else {
+            // Format output lines with proper indentation
+            const outputLines = output.split('\n').filter(line => line.trim() !== '');
+            if (outputLines.length === 0) {
+                formattedOutput += `│ (No output)\r\n`;
+            } else {
+                outputLines.forEach(line => {
+                    formattedOutput += `│ ${line}\r\n`;
+                });
+            }
+        }
+        
+        formattedOutput += `╰─ ${type === 'error' ? '❌ FAILED' : '✅ SUCCESS'}\r\n`;
+        formattedOutput += `\r\n$ `;
+        
+        return formattedOutput;
+    }
+    
+    getExecutionCommand(language, fileName) {
+        switch (language.toLowerCase()) {
+            case 'python':
+                return `python3 ${fileName}`;
+            case 'javascript':
+                return `node ${fileName}`;
+            case 'java':
+                return `javac ${fileName} && java Main`;
+            case 'cpp':
+                return `g++ ${fileName} -o main && ./main`;
+            case 'c':
+                return `gcc ${fileName} -o main && ./main`;
+            default:
+                return `${language} ${fileName}`;
         }
     }
     
