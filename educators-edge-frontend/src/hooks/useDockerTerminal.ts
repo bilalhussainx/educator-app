@@ -136,34 +136,60 @@ export const useDockerTerminal = (
 
   // WebSocket message handler
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
+    console.log('🎯 DockerTerminal: Received WebSocket message:', event.data.substring(0, 200));
+    
     try {
       const message = JSON.parse(event.data);
+      console.log('📨 DockerTerminal: Parsed message type:', message.type, 'payload:', message.payload);
       
       switch (message.type) {
         case 'TERMINAL_OUTPUT':
+          console.log('📺 DockerTerminal: Processing TERMINAL_OUTPUT:', message.payload.output);
           if (terminal) {
+            console.log('✅ DockerTerminal: Writing to terminal:', message.payload.output.length, 'characters');
             terminal.write(message.payload.output);
+            console.log('✅ DockerTerminal: TERMINAL_OUTPUT written to terminal');
+          } else {
+            console.error('❌ DockerTerminal: No terminal instance available for TERMINAL_OUTPUT');
           }
           setOutput(prev => prev + message.payload.output);
           break;
 
         case 'TERMINAL_SESSION_CONNECTED':
+          console.log('🔗 DockerTerminal: Terminal session connected');
           setSession(prev => prev ? { ...prev, status: 'connected' } : null);
           setIsConnected(true);
           setError(null);
           if (terminal) {
             terminal.write(`\r\n✅ Connected to Docker terminal session\r\n$ `);
+            console.log('✅ DockerTerminal: Connection message written to terminal');
           }
           break;
 
         case 'CODE_EXECUTION_RESULT':
+          console.log('🚀 DockerTerminal: Processing CODE_EXECUTION_RESULT:', message.payload);
           const result = message.payload.result;
-          if (terminal) {
+          console.log('📋 DockerTerminal: Execution result:', result);
+          if (terminal && result && result.output) {
+            console.log('✅ DockerTerminal: Writing execution result to terminal:', result.output.length, 'characters');
             terminal.write(`\r\n${result.output}\r\n$ `);
+            console.log('✅ DockerTerminal: CODE_EXECUTION_RESULT written to terminal');
+          } else {
+            console.error('❌ DockerTerminal: Cannot write execution result - terminal:', !!terminal, 'result:', !!result, 'output:', !!(result?.output));
+          }
+          break;
+
+        case 'CONNECTION_ESTABLISHED':
+          console.log('🎊 DockerTerminal: Connection established message received');
+          setIsConnected(true);
+          setError(null);
+          if (terminal) {
+            terminal.write(`\r\n🎊 Terminal connection established\r\n$ `);
           }
           break;
 
         case 'TERMINAL_ERROR':
+          console.log('❌ DockerTerminal: Terminal error received:', message.payload.error);
           setError(message.payload.error);
           if (terminal) {
             terminal.write(`\r\n❌ Error: ${message.payload.error}\r\n$ `);
@@ -171,6 +197,7 @@ export const useDockerTerminal = (
           break;
 
         case 'TERMINAL_SESSION_CREATED':
+          console.log('✨ DockerTerminal: Terminal session created:', message.payload.sessionId);
           const newSession: TerminalSession = {
             sessionId: message.payload.sessionId,
             status: 'connected',
@@ -181,10 +208,11 @@ export const useDockerTerminal = (
           break;
 
         default:
-          console.log('Unknown WebSocket message type:', message.type);
+          console.log('❓ DockerTerminal: Unknown WebSocket message type:', message.type, 'full message:', message);
       }
     } catch (error) {
-      console.error('Error handling WebSocket message:', error);
+      console.error('❌ DockerTerminal: Error handling WebSocket message:', error);
+      console.error('❌ DockerTerminal: Raw message data:', event.data);
     }
   }, [terminal]);
 
@@ -210,24 +238,45 @@ export const useDockerTerminal = (
       console.log('✅ DockerTerminal: WebSocket object created');
       
       ws.onopen = () => {
-        console.log('✅ Terminal WebSocket connected');
+        console.log('✅ DockerTerminal: Terminal WebSocket connected successfully');
+        console.log('🔗 DockerTerminal: WebSocket readyState:', ws.readyState);
+        console.log('🔗 DockerTerminal: WebSocket URL:', wsUrl);
         setIsConnected(true);
         setError(null);
+        
+        // Send a test message to confirm connection
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'HEALTH_CHECK',
+            payload: { timestamp: Date.now() }
+          }));
+          console.log('📤 DockerTerminal: Sent HEALTH_CHECK message');
+        }
       };
       
-      ws.onmessage = handleWebSocketMessage;
+      ws.onmessage = (event) => {
+        console.log('📨 DockerTerminal: Raw WebSocket message received');
+        console.log('📨 DockerTerminal: Message data length:', event.data.length);
+        console.log('📨 DockerTerminal: Terminal instance exists:', !!terminal);
+        handleWebSocketMessage(event);
+      };
       
       ws.onclose = (event) => {
-        console.log('🔌 Terminal WebSocket disconnected:', event.code, event.reason);
+        console.log('🔌 DockerTerminal: Terminal WebSocket disconnected');
+        console.log('🔌 DockerTerminal: Close code:', event.code);
+        console.log('🔌 DockerTerminal: Close reason:', event.reason);
+        console.log('🔌 DockerTerminal: Was clean close:', event.wasClean);
         setIsConnected(false);
         
         if (event.code !== 1000) { // Not a normal closure
           setError(`Connection lost: ${event.reason || 'Unknown error'}`);
+          console.error('❌ DockerTerminal: Abnormal WebSocket closure');
         }
       };
       
       ws.onerror = (error) => {
-        console.error('❌ Terminal WebSocket error:', error);
+        console.error('❌ DockerTerminal: Terminal WebSocket error:', error);
+        console.error('❌ DockerTerminal: WebSocket readyState:', ws.readyState);
         setError('WebSocket connection error');
         setIsConnected(false);
       };
@@ -363,35 +412,56 @@ export const useDockerTerminal = (
 
   // Execute code in session
   const executeCode = useCallback(async (code: string, language: string): Promise<CodeExecutionResult> => {
+    console.log('🚀 DockerTerminal: executeCode called with:', { code: code.substring(0, 50), language });
+    console.log('🔍 DockerTerminal: Session exists:', !!session);
+    console.log('🔍 DockerTerminal: EnableWebSocket:', enableWebSocket);
+    console.log('🔍 DockerTerminal: WebSocket state:', wsRef.current?.readyState);
+    
     if (!session) {
+      console.error('❌ DockerTerminal: No active session for executeCode');
       throw new Error('No active session');
     }
 
     if (enableWebSocket && wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('📡 DockerTerminal: Using WebSocket for code execution');
       return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
+          console.error('❌ DockerTerminal: Code execution timeout');
           reject(new Error('Execution timeout'));
         }, 30000);
 
         const handleResult = (event: MessageEvent) => {
-          const message = JSON.parse(event.data);
-          if (message.type === 'CODE_EXECUTION_RESULT') {
-            clearTimeout(timeout);
-            wsRef.current?.removeEventListener('message', handleResult);
-            resolve(message.payload.result);
-          } else if (message.type === 'CODE_EXECUTION_ERROR') {
-            clearTimeout(timeout);
-            wsRef.current?.removeEventListener('message', handleResult);
-            reject(new Error(message.payload.error));
+          console.log('📨 DockerTerminal: executeCode received message:', event.data.substring(0, 100));
+          try {
+            const message = JSON.parse(event.data);
+            console.log('📋 DockerTerminal: executeCode message type:', message.type);
+            
+            if (message.type === 'CODE_EXECUTION_RESULT') {
+              console.log('✅ DockerTerminal: CODE_EXECUTION_RESULT received in executeCode');
+              clearTimeout(timeout);
+              wsRef.current?.removeEventListener('message', handleResult);
+              resolve(message.payload.result);
+            } else if (message.type === 'CODE_EXECUTION_ERROR') {
+              console.log('❌ DockerTerminal: CODE_EXECUTION_ERROR received in executeCode');
+              clearTimeout(timeout);
+              wsRef.current?.removeEventListener('message', handleResult);
+              reject(new Error(message.payload.error));
+            }
+          } catch (parseError) {
+            console.error('❌ DockerTerminal: Error parsing executeCode result:', parseError);
           }
         };
 
         wsRef.current?.addEventListener('message', handleResult);
         
-        wsRef.current?.send(JSON.stringify({
+        const executeMessage = {
           type: 'EXECUTE_CODE',
           payload: { code, language }
-        }));
+        };
+        
+        console.log('📤 DockerTerminal: Sending EXECUTE_CODE message:', executeMessage);
+        wsRef.current?.send(JSON.stringify(executeMessage));
+        console.log('✅ DockerTerminal: EXECUTE_CODE message sent');
       });
     } else {
       // Fallback to REST API
