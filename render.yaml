@@ -9,10 +9,10 @@ services:
     plan: free # Or your chosen paid plan
     
     # Ensure this is your Dockerfile's location
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./educators-edge-backend/Dockerfile
     
     # The command to start your Express server
-    startCommand: "node server.js"
+    startCommand: "node educators-edge-backend/server.js"
     
     # Render uses this to know when your service is ready.
     # Ensure you have a simple GET /healthz route in server.js that returns 200 OK.
@@ -32,17 +32,17 @@ services:
         value: 10000
       # All other secrets (JWT_SECRET, GEMINI_API_KEY, etc.) should be added in the Render Environment tab
 
-  # The background worker for Docker code execution
+  # The background worker for code execution
   - type: worker
     name: educator-worker
     env: node
     plan: free # Or a paid plan if it needs more resources
 
     # It uses the same Dockerfile as the web service
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./educators-edge-backend/Dockerfile
     
-    # The command to start your Docker worker
-    startCommand: "node dockerWorker.js"
+    # The command to start your BullMQ worker
+    startCommand: "node educators-edge-backend/dockerWorker.js"
     
     envVars:
       - key: DATABASE_URL
@@ -56,12 +56,12 @@ services:
           property: connectionString
       # Add any other secrets the worker needs
 
-# Database and Redis definitions, managed by this Blueprint
-databases:
-  - name: educator-db
-    plan: free
-
-services:
+  # Redis service for job queues
   - type: redis
     name: educator-redis
+    plan: free
+
+# Database definitions, managed by this Blueprint
+databases:
+  - name: educator-db
     plan: free
