@@ -99,56 +99,42 @@ app.use('/api/library', libraryRoutes);
 const server = http.createServer(app);
 console.log('🔧 Creating WebSocket servers...');
 
-// Create WebSocket servers with explicit path handling - Fixed approach
+// Create single WebSocket server to avoid conflicts
 const wss = new WebSocketServer({ 
-    server, 
-    path: '/ws',
-    verifyClient: (info) => {
-        const url = new URL(info.req.url, 'http://localhost');
-        console.log(`🔍 Main WS verification for path: ${url.pathname}`);
-        const isWsPath = url.pathname === '/ws';
-        console.log(`🔍 Main WS verification result: ${isWsPath}`);
-        return isWsPath;
-    }
-}); 
-console.log('✅ Main WebSocket server created on path: /ws');
-
-const terminalWss = new WebSocketServer({ 
-    server, 
-    path: '/terminal',
+    server,
     verifyClient: (info) => {
         const url = new URL(info.req.url, 'http://localhost');
         const origin = info.origin;
-        console.log(`🔍 Terminal WS verification for path: ${url.pathname} from origin: ${origin}`);
+        
+        console.log(`🔍 WS verification for path: ${url.pathname} from origin: ${origin}`);
         
         // Check if origin is allowed
         const isOriginAllowed = !origin || allowedOrigins.includes(origin);
-        const isTerminalPath = url.pathname === '/terminal';
+        const isValidPath = url.pathname === '/ws' || url.pathname === '/terminal';
         
-        console.log(`🔍 Terminal WS verification - Origin allowed: ${isOriginAllowed}, Path correct: ${isTerminalPath}`);
+        console.log(`🔍 WS verification - Origin allowed: ${isOriginAllowed}, Path valid: ${isValidPath} (${url.pathname})`);
         
         if (!isOriginAllowed) {
-            console.log(`❌ Terminal WS: Origin ${origin} not allowed`);
+            console.log(`❌ WS: Origin ${origin} not allowed`);
             return false;
         }
         
-        if (!isTerminalPath) {
-            console.log(`❌ Terminal WS: Path ${url.pathname} not allowed`);
+        if (!isValidPath) {
+            console.log(`❌ WS: Path ${url.pathname} not allowed`);
             return false;
         }
         
-        console.log(`✅ Terminal WS verification passed`);
+        console.log(`✅ WS verification passed for ${url.pathname}`);
         return true;
     }
-});
-console.log('✅ Terminal WebSocket server created on path: /terminal');
+}); 
+console.log('✅ Single WebSocket server created for paths: /ws and /terminal');
 
 // Note: Removed custom upgrade handler to let WebSocket servers handle their own upgrades
 
 app.get('/test-ws', (req, res) => {
     res.json({ 
         wsReady: wss.clients.size >= 0,
-        terminalWsReady: terminalWss.clients.size >= 0,
         jwtSecret: !!process.env.JWT_SECRET,
         timestamp: Date.now()
     });
@@ -156,31 +142,31 @@ app.get('/test-ws', (req, res) => {
 
 console.log('🔧 Initializing WebSocket handlers...');
 
-// Initialize main WebSocket handler
+// Initialize main WebSocket handler once for all /ws connections
 initializeWebSocket(wss);
 console.log('✅ Main WebSocket handler initialized');
 
-// Add debugging to terminal WebSocket server
-terminalWss.on('error', (error) => {
-    console.error('🔥 Terminal WSS Error:', error);
+// Override the connection handler to add terminal routing
+const originalConnectionHandler = wss._connectionHandler || wss._handleConnection;
+
+wss.on('connection', async (ws, req) => {
+    const url = new URL(req.url, 'http://localhost');
+    console.log(`🔌 WebSocket connection received for path: ${url.pathname}`);
+    
+    if (url.pathname === '/terminal') {
+        console.log('🎯 Routing to terminal handler');
+        await terminalWebSocketHandler.handleConnection(ws, req);
+    } else if (url.pathname === '/ws') {
+        console.log('🎯 Using main WebSocket handler (already initialized)');
+        // The main handler is already set up via initializeWebSocket above
+        // No additional action needed - the main handler will process this connection
+    } else {
+        console.log(`❌ Unknown WebSocket path: ${url.pathname}`);
+        ws.close(4004, 'Invalid path');
+    }
 });
 
-terminalWss.on('listening', () => {
-    console.log('🎧 Terminal WSS is listening');
-});
-
-terminalWss.on('headers', (headers, req) => {
-    console.log('📋 Terminal WSS headers event for:', req.url);
-});
-
-// Initialize terminal WebSocket with direct connection handling
-terminalWss.on('connection', async (ws, req) => {
-    console.log('🎯 Terminal WebSocket connection detected - routing to handler');
-    console.log('📍 Connection request URL:', req.url);
-    console.log('📍 Connection headers:', req.headers);
-    await terminalWebSocketHandler.handleConnection(ws, req);
-});
-console.log('✅ Terminal WebSocket handler initialized');
+console.log('✅ Terminal routing added to WebSocket connection handler');
 
 // Add server-level upgrade logging
 server.on('upgrade', (request, socket, head) => {
