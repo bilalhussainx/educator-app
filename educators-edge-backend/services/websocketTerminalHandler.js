@@ -515,8 +515,14 @@ class WebSocketTerminalHandler {
             console.log(`🔍 WebSocket state: ${ws.readyState} (OPEN=${ws.OPEN})`);
             
             if (ws.readyState === ws.OPEN) {
-                ws.send(JSON.stringify(terminalOutputMessage));
-                console.log(`✅ TERMINAL_OUTPUT sent successfully`);
+                try {
+                    const messageStr = JSON.stringify(terminalOutputMessage);
+                    ws.send(messageStr);
+                    console.log(`✅ TERMINAL_OUTPUT sent successfully (${messageStr.length} bytes)`);
+                    console.log(`📋 Message content:`, messageStr.substring(0, 200));
+                } catch (sendError) {
+                    console.error(`❌ Error sending TERMINAL_OUTPUT:`, sendError);
+                }
             } else {
                 console.log(`❌ WebSocket not open, cannot send TERMINAL_OUTPUT`);
             }
