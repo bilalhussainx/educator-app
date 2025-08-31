@@ -14,6 +14,7 @@ import {
 import { toast } from 'sonner';
 import apiClient from '../services/apiClient'; // The centralized API client
 import axios from 'axios'; // Import axios to check for specific error types
+import { PortfolioWidget } from '../components/trade/PortfolioWidget'; // <-- 1. IMPORT THE WIDGET
 
 // --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
@@ -225,6 +226,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             <h3 className="text-lg font-medium text-slate-300">No courses yet</h3>
                             <p className="text-slate-500 mb-4">Create your first course to begin your teaching journey.</p>
                             <Button onClick={() => navigate('/courses/new')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold"><PlusCircle className="mr-2 h-4 w-4" /> Create First Course</Button>
+                             <div className="lg:col-span-1">
+                        <PortfolioWidget />
+                        </div>
                         </div>
                     )}
                 </div>
@@ -294,7 +298,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                         <Button className="w-full bg-slate-800/70 border border-slate-600 hover:bg-slate-700/80 text-slate-200" onClick={() => navigate(`/courses/${course.id}/learn`)}>
                                             <BookOpen className="mr-2 h-4 w-4" /> View Course
                                         </Button>
-                                    </CardContent>
+                                    </CardContent>'
+                                    <Button onClick={() => navigate('/courses/new')} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold"><PlusCircle className="mr-2 h-4 w-4" /> Create First Course</Button>
+                                    <div className="lg:col-span-1">
+                                <PortfolioWidget />
+                                </div>
                                 </GlassCard>
                             ))}
                         </div>
