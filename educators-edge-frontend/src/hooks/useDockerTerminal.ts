@@ -7,7 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
-import { WebLinksAddon } from 'xterm-addon-web-links';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 import apiClient from '../services/apiClient';
 
 interface TerminalSession {

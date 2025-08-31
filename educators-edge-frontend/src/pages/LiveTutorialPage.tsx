@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { PhoneOff, ChevronRight, FilePlus, Play, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
 
@@ -367,7 +367,6 @@ const LiveTutorialPage: React.FC = () => {
         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
         return saved ? JSON.parse(saved) : null;
     });
-    const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
         return saved === 'true';
@@ -565,13 +564,13 @@ const LiveTutorialPage: React.FC = () => {
                     setWhiteboardLines(message.payload.whiteboardLines || []);
                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
                     setTeacherId(message.payload.teacherId);
-                    setTeacherTerminalOutput(message.payload.terminalOutput || '');
+                    // Terminal output now handled by DockerTerminal component
                     break;
                 case 'TEACHER_WORKSPACE_UPDATE':
                     if (roleRef.current === 'student' && !spotlightedStudentId) {
                         setFiles(message.payload.files);
                         setActiveFileName(message.payload.activeFileName);
-                        setTeacherTerminalOutput(message.payload.terminalOutput || '');
+                        // Terminal output now handled by DockerTerminal component
                     }
                     break;
                 case 'TEACHER_CODE_DID_UPDATE':
@@ -582,7 +581,7 @@ const LiveTutorialPage: React.FC = () => {
                     break;
                 case 'TERMINAL_OUT':
                     if ((roleRef.current === 'student' && !spotlightedStudentId) || (roleRef.current === 'teacher' && viewingMode === 'teacher')) {
-                        setTeacherTerminalOutput(prev => prev + message.payload);
+                        // Terminal output now handled by DockerTerminal component
                     }
                     break;
                 case 'CONTROL_STATE_UPDATE': 
@@ -628,7 +627,7 @@ const LiveTutorialPage: React.FC = () => {
                 case 'DOCKER_CODE_EXECUTION':
                     // Handle teacher's code execution broadcast to students
                     if (role === 'student' && dockerTerminalRef.current) {
-                        const { code, language, result, error, fileName, timestamp } = message.payload;
+                        const { code, language, result, error, fileName } = message.payload;
                         
                         // Display the code execution in student's terminal
                         if (result) {
@@ -745,14 +744,14 @@ const LiveTutorialPage: React.FC = () => {
                 });
 
                 console.log('Code executed and broadcasted:', result);
-            } catch (error) {
+            } catch (error: unknown) {
                 console.error('Code execution failed:', error);
                 
                 // Still broadcast the attempt so students can see what was tried
                 sendWsMessage('DOCKER_CODE_EXECUTION', { 
                     language: activeFile.language, 
                     code: activeFile.content, 
-                    error: error.message,
+                    error: error instanceof Error ? error.message : String(error),
                     fileName: activeFile.name,
                     timestamp: Date.now()
                 });
@@ -1200,8 +1199,7 @@ export default LiveTutorialPage;
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
 //     const [spotlightWorkspace, setSpotlightWorkspace] = useState<any>(null);
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-//     const [isStudentChatOpen, setIsStudentChatOpen] = useState(false);
+// //     const [isStudentChatOpen, setIsStudentChatOpen] = useState(false);
 
 //     const ws = useRef<WebSocket | null>(null);
 //     const agoraClient = useRef<IAgoraRTCClient | null>(null);
@@ -1349,13 +1347,13 @@ export default LiveTutorialPage;
 //                     setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
-//                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     // Terminal output now handled by DockerTerminal component
 //                     break;
 //                 case 'TEACHER_WORKSPACE_UPDATE':
 //                     if (roleRef.current === 'student' && !spotlightedStudentId) {
 //                         setFiles(message.payload.files);
 //                         setActiveFileName(message.payload.activeFileName);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                 case 'TEACHER_CODE_DID_UPDATE':
@@ -1366,7 +1364,7 @@ export default LiveTutorialPage;
 //                     break;
 //                 case 'TERMINAL_OUT':
 //                     if ((roleRef.current === 'student' && !spotlightedStudentId) || (roleRef.current === 'teacher' && viewingMode === 'teacher')) {
-//                         setTeacherTerminalOutput(prev => prev + message.payload);
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                 case 'CONTROL_STATE_UPDATE': 
@@ -1852,7 +1850,7 @@ export default LiveTutorialPage;
 // import { Badge } from "@/components/ui/badge";
 // import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// import { PhoneOff, ChevronRight, FilePlus, Play, Terminal as TerminalIcon, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp } from 'lucide-react';
+// import { PhoneOff, ChevronRight, FilePlus, Play, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp } from 'lucide-react';
 // import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 // import { toast, Toaster } from 'sonner';
 
@@ -2195,8 +2193,7 @@ export default LiveTutorialPage;
 //         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
 //         return saved ? JSON.parse(saved) : null;
 //     });
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-//     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
+// //     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
 //         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
 //         return saved === 'true';
 //     });
@@ -2409,13 +2406,13 @@ export default LiveTutorialPage;
 //                     setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
-//                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     // Terminal output now handled by DockerTerminal component
 //                     break;
 //                 case 'TEACHER_WORKSPACE_UPDATE':
 //                     if (roleRef.current === 'student' && !spotlightedStudentId) {
 //                         setFiles(message.payload.files);
 //                         setActiveFileName(message.payload.activeFileName);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                  case 'TEACHER_CODE_DID_UPDATE':
@@ -2426,7 +2423,7 @@ export default LiveTutorialPage;
 //                     break;
 //                 case 'TERMINAL_OUT':
 //                      if ((roleRef.current === 'student' && !spotlightedStudentId) || (roleRef.current === 'teacher' && viewingMode === 'teacher')) {
-//                         setTeacherTerminalOutput(prev => prev + message.payload);
+//                         // Terminal output now handled by DockerTerminal component
 //                      }
 //                     break;
 //                 case 'CONTROL_STATE_UPDATE': setControlledStudentId(message.payload.controlledStudentId); break;
@@ -2964,8 +2961,7 @@ export default LiveTutorialPage;
 //         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
 //         return saved ? JSON.parse(saved) : null;
 //     });
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-//     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
+// //     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
 //         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
 //         return saved === 'true';
 //     });
@@ -3182,13 +3178,13 @@ export default LiveTutorialPage;
 //                     setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
-//                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     // Terminal output now handled by DockerTerminal component
 //                     break;
 //                 case 'TEACHER_WORKSPACE_UPDATE':
 //                     if (roleRef.current === 'student' && !spotlightedStudentId) {
 //                         setFiles(message.payload.files);
 //                         setActiveFileName(message.payload.activeFileName);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                  case 'TEACHER_CODE_DID_UPDATE':
@@ -3199,7 +3195,7 @@ export default LiveTutorialPage;
 //                     break;
 //                 case 'TERMINAL_OUT':
 //                      if ((roleRef.current === 'student' && !spotlightedStudentId) || (roleRef.current === 'teacher' && viewingMode === 'teacher')) {
-//                         setTeacherTerminalOutput(prev => prev + message.payload);
+//                         // Terminal output now handled by DockerTerminal component
 //                      }
 //                     break;
 //                 case 'CONTROL_STATE_UPDATE': setControlledStudentId(message.payload.controlledStudentId); break;
@@ -3583,8 +3579,7 @@ export default LiveTutorialPage;
 //         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
 //         return saved ? JSON.parse(saved) : null;
 //     });
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-//     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
+// //     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
 //         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
 //         return saved === 'true';
 //     });
@@ -4033,13 +4028,13 @@ export default LiveTutorialPage;
 //                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
-//                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     // Terminal output now handled by DockerTerminal component
 //                     break;
 //                 case 'TEACHER_WORKSPACE_UPDATE':
 //                     if (roleRef.current === 'student' && !spotlightedStudentId) {
 //                         setFiles(message.payload.files);
 //                         setActiveFileName(message.payload.activeFileName);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                  case 'TEACHER_CODE_DID_UPDATE':
@@ -4053,7 +4048,7 @@ export default LiveTutorialPage;
 //                         (roleRef.current === 'student' && !spotlightedStudentId) ||
 //                         (roleRef.current === 'teacher' && viewingMode === 'teacher')
 //                     ) {
-//                         setTeacherTerminalOutput(prev => prev + message.payload);
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                 case 'WEBRTC_OFFER': 
@@ -4731,8 +4726,7 @@ export default LiveTutorialPage;
 //         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
 //         return saved ? JSON.parse(saved) : null;
 //     });
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-//     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
+// //     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
 //         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
 //         return saved === 'true';
 //     });
@@ -5001,13 +4995,13 @@ export default LiveTutorialPage;
 //                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
-//                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     // Terminal output now handled by DockerTerminal component
 //                     break;
 //                 case 'TEACHER_WORKSPACE_UPDATE':
 //                     if (roleRef.current === 'student' && !spotlightedStudentId) {
 //                         setFiles(message.payload.files);
 //                         setActiveFileName(message.payload.activeFileName);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                  case 'TEACHER_CODE_DID_UPDATE':
@@ -5021,7 +5015,7 @@ export default LiveTutorialPage;
 //                         (roleRef.current === 'student' && !spotlightedStudentId) ||
 //                         (roleRef.current === 'teacher' && viewingMode === 'teacher')
 //                     ) {
-//                         setTeacherTerminalOutput(prev => prev + message.payload);
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                 case 'WEBRTC_OFFER': if (roleRef.current === 'student') setIncomingCall(message.payload); break;
@@ -5443,8 +5437,7 @@ export default LiveTutorialPage;
 //         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
 //         return saved ? JSON.parse(saved) : null;
 //     });
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-//     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
+// //     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
 //         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
 //         return saved === 'true';
 //     });
@@ -5679,13 +5672,13 @@ export default LiveTutorialPage;
 //                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
-//                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     // Terminal output now handled by DockerTerminal component
 //                     break;
 //                 case 'TEACHER_WORKSPACE_UPDATE':
 //                     if (roleRef.current === 'student' && !spotlightedStudentId) {
 //                         setFiles(message.payload.files);
 //                         setActiveFileName(message.payload.activeFileName);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                  case 'TEACHER_CODE_DID_UPDATE':
@@ -5699,7 +5692,7 @@ export default LiveTutorialPage;
 //                         (roleRef.current === 'student' && !spotlightedStudentId) ||
 //                         (roleRef.current === 'teacher' && viewingMode === 'teacher')
 //                     ) {
-//                         setTeacherTerminalOutput(prev => prev + message.payload);
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 //                 case 'WEBRTC_OFFER': if (roleRef.current === 'student') setIncomingCall(message.payload); break;
@@ -6156,8 +6149,7 @@ export default LiveTutorialPage;
 //         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
 //         return saved ? JSON.parse(saved) : null;
 //     });
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-//     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
+// //     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
 //         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
 //         return saved === 'true';
 //     });
@@ -6547,7 +6539,7 @@ export default LiveTutorialPage;
 //                     _setWhiteboardLines(message.payload.whiteboardLines || []);
 //                     setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                     setTeacherId(message.payload.teacherId);
-//                     setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                     // Terminal output now handled by DockerTerminal component
 //                     break;
 //                 case 'TEACHER_WORKSPACE_UPDATE':
 //                     if (roleRef.current === 'student' && !spotlightedStudentId) {
@@ -6557,7 +6549,7 @@ export default LiveTutorialPage;
 //                         setFiles(message.payload.files);
 //                         setActiveFileName(message.payload.activeFileName);
 //                         log(`  -> Setting teacherTerminalOutput state with full history.`);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 
 //                         // if (term.current) {
 //                         //    term.current.clear();
@@ -6577,7 +6569,7 @@ export default LiveTutorialPage;
 //                         (roleRef.current === 'student' && !spotlightedStudentId) ||
 //                         (roleRef.current === 'teacher' && viewingMode === 'teacher')
 //                     ) {
-//                         setTeacherTerminalOutput(prev => prev + message.payload);
+//                         // Terminal output now handled by DockerTerminal component
 //                     }
 //                     break;
 
@@ -7007,8 +6999,7 @@ export default LiveTutorialPage;
 //         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
 //         return saved ? JSON.parse(saved) : null;
 //     });
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-//     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
+// //     const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
 //         const saved = sessionStorage.getItem(`isDoingHomework_${sessionId}`);
 //         return saved === 'true';
 //     });
@@ -7262,7 +7253,7 @@ export default LiveTutorialPage;
 //                         setIsWhiteboardVisible(message.payload.isWhiteboardVisible || false);
 //                         setTeacherId(message.payload.teacherId);
 //                         log(`  -> Setting teacherTerminalOutput state from ROLE_ASSIGNED.`);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 //                         break;
 //                     case 'TEACHER_CODE_DID_UPDATE':
 //                         if (roleRef.current === 'student' && !spotlightedStudentId) {
@@ -7278,7 +7269,7 @@ export default LiveTutorialPage;
 //                             // 1. Update React state as before to keep it in sync for future renders.
 //                             setFiles(message.payload.files);
 //                             setActiveFileName(message.payload.activeFileName);
-//                             setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                             // Terminal output now handled by DockerTerminal component
 //                             log(`  -> React state for teacherTerminalOutput is being set.`);
 
 //                             // 2. THE DEFINITIVE FIX: Check if the terminal instance exists and
@@ -7295,7 +7286,7 @@ export default LiveTutorialPage;
 //                         break;
 //                     case 'TERMINAL_OUT':
 //                         if ((roleRef.current === 'teacher' && viewingMode === 'teacher') || (roleRef.current === 'student' && !spotlightedStudentId)) {
-//                            setTeacherTerminalOutput(prev => prev + message.payload);
+//                            // Terminal output now handled by DockerTerminal component
 //                         }
 //                         break;
 //                     case 'WEBRTC_OFFER': if (roleRef.current === 'student') setIncomingCall(message.payload); break;
@@ -7728,8 +7719,7 @@ export default LiveTutorialPage;
 //         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
 //         return saved ? JSON.parse(saved) : null;
 //     });
-//     const [teacherTerminalOutput, setTeacherTerminalOutput] = useState('');
-
+// 
 
    
 //      const [isDoingHomework, setIsDoingHomework] = useState<boolean>(() => {
@@ -8023,7 +8013,7 @@ export default LiveTutorialPage;
 //                     //     term.current.clear();
 //                     //     term.current.write(message.payload.terminalOutput);
 //                     // };
-//                     setTeacherTerminalOutput(message.payload.terminalOutput || ''); // <-- Add this
+//                     // Terminal output now handled by DockerTerminal component // <-- Add this
 //                     // if (message.payload.role === 'student' && term.current && message.payload.terminalOutput) {
 //                     //     term.current.clear();
 //                     //     term.current.write(message.payload.terminalOutput);
@@ -8050,7 +8040,7 @@ export default LiveTutorialPage;
 //                     if (roleRef.current === 'student' && !spotlightedStudentId) {
 //                         setFiles(message.payload.files);
 //                         setActiveFileName(message.payload.activeFileName);
-//                         setTeacherTerminalOutput(message.payload.terminalOutput || '');
+//                         // Terminal output now handled by DockerTerminal component
 //                         // if (term.current && message.payload.terminalOutput !== undefined) {
 //                         //     term.current.clear();
 //                         //     term.current.write(message.payload.terminalOutput);
@@ -8074,7 +8064,7 @@ export default LiveTutorialPage;
 //                     // or if we are a student watching the teacher (not spotlighted).
 //                     if ((roleRef.current === 'teacher' && viewingMode === 'teacher') || (roleRef.current === 'student' && !spotlightedStudentId)) {
 //                         // term.current?.write(message.payload);
-//                         setTeacherTerminalOutput(prev => prev + message.payload); 
+//                         // Terminal output now handled by DockerTerminal component 
 
 //                     }
 //                     break;

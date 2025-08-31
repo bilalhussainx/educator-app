@@ -4,7 +4,7 @@
 // DESCRIPTION: Reusable Docker terminal component for code execution
 // Can be used in LiveTutorialPage, AscentIDE, and AscentWebIDE
 
-import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
@@ -53,17 +53,14 @@ const DockerTerminal = forwardRef<DockerTerminalRef, DockerTerminalProps>(({
     onError,
     autoConnect = true,
     initialCode = '',
-    initialLanguage = 'javascript',
     height = 400,
     enableWebSocket = true
 }, ref) => {
     const {
-        terminal,
         terminalRef,
         session,
         isConnected,
         createSession,
-        connectToSession,
         terminateSession,
         executeCode,
         quickExecute,
