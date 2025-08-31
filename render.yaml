@@ -26,8 +26,7 @@ services:
       # should be added manually in the Render Environment tab
       # using your existing Neon database connection string
 
-# Redis service for job queues
-services:
+  # Redis service for job queues
   - type: redis
     name: educator-redis
     plan: free
