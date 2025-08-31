@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { PhoneOff, ChevronRight, FilePlus, Play, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp, Circle, Square } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
 
@@ -352,6 +352,11 @@ const LiveTutorialPage: React.FC = () => {
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(false);
     const [isVideoCollapsed, setIsVideoCollapsed] = useState(false);
+    
+    // --- RECORDING STATE ---
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingId, setRecordingId] = useState<string | null>(null);
+    const [recordingStartTime, setRecordingStartTime] = useState<Date | null>(null);
 
     // --- APPLICATION STATE ---
     const [files, setFiles] = useState<CodeFile[]>([]);
@@ -646,6 +651,31 @@ const LiveTutorialPage: React.FC = () => {
                         }
                     }
                     break;
+                
+                // Recording message handlers
+                case 'RECORDING_STARTED':
+                    setIsRecording(true);
+                    setRecordingId(message.payload.recordingId);
+                    setRecordingStartTime(new Date(message.payload.startTime));
+                    toast.success('Recording started', {
+                        description: 'This session is now being recorded.'
+                    });
+                    break;
+                    
+                case 'RECORDING_STOPPED':
+                    setIsRecording(false);
+                    setRecordingId(null);
+                    setRecordingStartTime(null);
+                    toast.success('Recording stopped', {
+                        description: 'Session recording has been saved.'
+                    });
+                    break;
+                    
+                case 'RECORDING_ERROR':
+                    toast.error('Recording Error', {
+                        description: message.payload.message
+                    });
+                    break;
             }
         };
     };
@@ -798,6 +828,23 @@ const LiveTutorialPage: React.FC = () => {
         }
     };
 
+    // Recording handlers
+    const handleStartRecording = () => {
+        if (!sessionId || !courseId) {
+            toast.error('Missing session or course information');
+            return;
+        }
+        
+        sendWsMessage('START_RECORDING', {
+            channelName: sessionId,
+            courseId: courseId
+        });
+    };
+
+    const handleStopRecording = () => {
+        sendWsMessage('STOP_RECORDING', {});
+    };
+
     if (role === 'student' && isDoingHomework && pendingHomework && homeworkFiles) {
         return <HomeworkView 
             lessonId={pendingHomework.lessonId} 
@@ -831,6 +878,12 @@ const LiveTutorialPage: React.FC = () => {
                             <div className={cn('h-2 w-2 rounded-full', isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500')}></div>
                             {isConnected ? 'Connected' : 'Offline'}
                         </div>
+                        {isRecording && (
+                            <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 animate-pulse">
+                                <Circle className="mr-1 h-3 w-3 fill-current" />
+                                Recording
+                            </Badge>
+                        )}
                     </div>
                 </div>
 
@@ -886,6 +939,18 @@ const LiveTutorialPage: React.FC = () => {
                         <Button size="sm" onClick={toggleCamera} variant={isCameraOff ? "destructive" : "outline"}>
                             {isCameraOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
                         </Button>
+                        
+                        {/* Recording Controls - Teacher Only */}
+                        {role === 'teacher' && (
+                            <Button 
+                                size="sm" 
+                                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                                variant={isRecording ? "destructive" : "outline"}
+                                className={isRecording ? "animate-pulse" : ""}
+                            >
+                                {isRecording ? <Square className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                            </Button>
+                        )}
                     </div>
 
                     <Button onClick={() => navigate('/dashboard')} variant="destructive">

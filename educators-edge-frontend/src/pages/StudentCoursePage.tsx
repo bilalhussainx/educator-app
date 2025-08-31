@@ -19,6 +19,9 @@ import { cn } from "@/lib/utils";
 import { AdaptiveActionModal } from '../components/AdaptiveActionModal';
 import { useApeStore } from '../stores/apeStore';
 
+// --- Import Recordings Component ---
+import { StudentRecordings } from '../components/recordings/StudentRecordings';
+
 // CoreZenith UI Components & Icons
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -277,6 +280,11 @@ const StudentCoursePage: React.FC = () => {
                                     </ul>
                                 </CardContent>
                             </GlassCard>
+
+                            {/* Session Recordings Section */}
+                            <div className="mt-8">
+                                <StudentRecordings courseId={course.id} />
+                            </div>
                         </div>
 
                         {/* Right Column: Progress Card */}
