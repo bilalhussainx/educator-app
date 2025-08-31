@@ -1,37 +1,67 @@
+# render.yaml
+# Definitive, resilient multi-service architecture for Educator App
+
 services:
-  # Main web service - Node.js application with WebSocket, API, database
+  # The main Node.js Web API and WebSocket server
   - type: web
     name: educator-app-backend
     env: node
-    buildCommand: npm install
-    startCommand: node server.js
-    plan: starter  # Can use starter plan since no Docker-in-Docker needed
+    plan: free # Or your chosen paid plan
+    
+    # Ensure this is your Dockerfile's location
+    dockerfilePath: ./Dockerfile
+    
+    # The command to start your Express server
+    startCommand: "node server.js"
+    
+    # Render uses this to know when your service is ready.
+    # Ensure you have a simple GET /healthz route in server.js that returns 200 OK.
+    healthCheckPath: /healthz
+    
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: HOST
-        value: 0.0.0.0
-      - key: PORT
+      - key: DATABASE_URL
+        fromDatabase:
+          name: educator-db # The name of the database service defined below
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: educator-redis # The name of the Redis service defined below
+          property: connectionString
+      - key: PORT # Let Render inject the port for the web service
         value: 10000
-      - key: DOCKER_WORKER_URL
-        value: http://educator-docker-worker:10001  # Internal service address
-      # Environment variables will need to be set manually in Render dashboard:
-      # DATABASE_URL, DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE, DB_PORT  
-      # JWT_SECRET, GEMINI_API_KEY, GLOT_API_KEY, etc.
+      # All other secrets (JWT_SECRET, GEMINI_API_KEY, etc.) should be added in the Render Environment tab
 
-  # Docker worker service - Handles container execution in isolation
-  - type: web
-    name: educator-docker-worker
-    env: docker
-    dockerfilePath: ./Dockerfile.worker
-    dockerCommand: node dockerWorker.js
-    plan: standard  # Required for Docker access
+  # The background worker for Docker code execution
+  - type: worker
+    name: educator-worker
+    env: node
+    plan: free # Or a paid plan if it needs more resources
+
+    # It uses the same Dockerfile as the web service
+    dockerfilePath: ./Dockerfile
+    
+    # The command to start your Docker worker
+    startCommand: "node dockerWorker.js"
+    
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: HOST
-        value: 0.0.0.0  
-      - key: PORT
-        value: 10001
-      - key: DOCKER_HOST
-        value: unix:///var/run/docker.sock
+      - key: DATABASE_URL
+        fromDatabase:
+          name: educator-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: educator-redis
+          property: connectionString
+      # Add any other secrets the worker needs
+
+# Database and Redis definitions, managed by this Blueprint
+databases:
+  - name: educator-db
+    plan: free
+
+services:
+  - type: redis
+    name: educator-redis
+    plan: free

@@ -18,8 +18,11 @@ class DockerWorkerClient extends EventEmitter {
         
         console.log(`[DockerWorkerClient] Worker URL: ${this.workerUrl}`);
         
-        // Test connection to worker
-        this.testConnection();
+        // Test connection to worker (non-blocking)
+        this.testConnection().catch(() => {
+            // Worker not available at startup - this is OK, will retry on first use
+            console.log('🔄 Worker connection will be attempted when first needed');
+        });
     }
     
     async testConnection() {
@@ -62,9 +65,14 @@ class DockerWorkerClient extends EventEmitter {
                 throw new Error(response.data.error || 'Failed to create session');
             }
         } catch (error) {
-            console.error('❌ Failed to create Docker session:', error.message);
-            this.emit('error', error);
-            throw error;
+            if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+                console.error('🔄 Docker worker service is not available. This is normal during startup.');
+                throw new Error('Docker worker service is temporarily unavailable. Please try again in a moment.');
+            } else {
+                console.error('❌ Failed to create Docker session:', error.message);
+                this.emit('error', error);
+                throw error;
+            }
         }
     }
     

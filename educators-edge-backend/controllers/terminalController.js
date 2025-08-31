@@ -4,9 +4,13 @@
 // DESCRIPTION: Controller for managing Docker-based terminal sessions
 // Supports both HTTP REST API and WebSocket real-time communication
 
-const DockerWorkerClient = require('../services/dockerWorkerClient');
-const workerClient = new DockerWorkerClient();
+const { Queue } = require('bullmq');
+const Redis = require('ioredis');
 const { v4: uuidv4 } = require('uuid');
+
+// Redis connection and BullMQ queue
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const codeExecutionQueue = new Queue('code-execution', { connection: redis });
 
 class TerminalController {
     constructor() {
@@ -17,10 +21,9 @@ class TerminalController {
     createSession = async (req, res) => {
         try {
             const userId = req.user?.id;
+            const sessionId = uuidv4();
             
-            const sessionId = await workerClient.createSession();
-            
-            // Track session metadata
+            // Track session metadata (no worker needed for session creation)
             this.sessions.set(sessionId, {
                 userId,
                 createdAt: new Date(),
@@ -61,7 +64,18 @@ class TerminalController {
                 });
             }
             
-            const result = await workerClient.executeCode(sessionId, code, language);
+            // Add job to queue for worker processing
+            const job = await codeExecutionQueue.add('execute', {
+                sessionId,
+                code,
+                language
+            }, {
+                removeOnComplete: 5,
+                removeOnFail: 10
+            });
+            
+            // Wait for job completion (with timeout)
+            const result = await job.waitUntilFinished(redis, 15000); // 15 second timeout
             
             // Update session activity
             if (sessionMeta) {
@@ -69,8 +83,8 @@ class TerminalController {
             }
             
             res.json({
-                success: true,
-                result: {
+                success: result.success,
+                result: result.result || {
                     output: result.output,
                     error: result.error,
                     executionTime: result.executionTime,
@@ -141,7 +155,7 @@ class TerminalController {
                 });
             }
             
-            const sessionInfo = workerClient.getSessionInfo(sessionId);
+            const sessionInfo = this.sessions.get(sessionId);
             const status = sessionInfo ? 'active' : 'not_found';
             
             if (!status) {
@@ -185,7 +199,7 @@ class TerminalController {
             const sessionsWithStatus = await Promise.all(
                 userSessions.map(async (session) => {
                     try {
-                        const sessionInfo = workerClient.getSessionInfo(session.sessionId);
+                        const sessionInfo = this.sessions.get(session.sessionId);
                         const status = sessionInfo ? 'active' : 'inactive';
                         return { ...session, status };
                     } catch (error) {
@@ -224,7 +238,8 @@ class TerminalController {
                 });
             }
             
-            await workerClient.terminateSession(sessionId);
+            // Session cleanup (no worker communication needed)
+            console.log(`🗑️ Cleaning up session ${sessionId}`);
             this.sessions.delete(sessionId);
             
             console.log(`🗑️ Terminal session ${sessionId} terminated by user ${userId}`);
@@ -252,14 +267,19 @@ class TerminalController {
             
             console.log(`⚡ Quick execute request: ${language} code for user ${userId}`);
             
-            // Create temporary session for quick execution
-            const tempSessionId = await workerClient.createSession();
-            const result = await workerClient.executeCode(tempSessionId, code, language);
+            // Execute code directly via queue (no session needed for quick execution)
+            const tempSessionId = uuidv4();
             
-            // Clean up temporary session
-            setTimeout(() => {
-                workerClient.terminateSession(tempSessionId).catch(console.error);
-            }, 1000);
+            const job = await codeExecutionQueue.add('execute', {
+                sessionId: tempSessionId,
+                code,
+                language
+            }, {
+                removeOnComplete: 1,
+                removeOnFail: 5
+            });
+            
+            const result = await job.waitUntilFinished(redis, 15000);
             
             res.json({
                 success: result.success,
@@ -285,7 +305,8 @@ class TerminalController {
     // Health check endpoint
     healthCheck = async (req, res) => {
         try {
-            const serviceHealth = await workerClient.getSessionHealth();
+            // Check Redis connection and queue health
+            const queueHealth = await this.checkQueueHealth();
             const controllerHealth = {
                 activeSessions: this.sessions.size,
                 uptime: process.uptime(),
@@ -294,10 +315,10 @@ class TerminalController {
             };
             
             res.json({
-                success: true,
+                success: queueHealth.connected,
                 health: {
                     controller: controllerHealth,
-                    sandbox: serviceHealth
+                    queue: queueHealth
                 }
             });
             
@@ -311,6 +332,37 @@ class TerminalController {
         }
     };
 
+    // Check queue and Redis health
+    async checkQueueHealth() {
+        try {
+            // Test Redis connection
+            await redis.ping();
+            
+            // Get queue stats
+            const waiting = await codeExecutionQueue.getWaiting();
+            const active = await codeExecutionQueue.getActive();
+            const completed = await codeExecutionQueue.getCompleted();
+            const failed = await codeExecutionQueue.getFailed();
+            
+            return {
+                connected: true,
+                redis: 'connected',
+                queueStats: {
+                    waiting: waiting.length,
+                    active: active.length,
+                    completed: completed.length,
+                    failed: failed.length
+                }
+            };
+        } catch (error) {
+            return {
+                connected: false,
+                redis: 'disconnected',
+                error: error.message
+            };
+        }
+    }
+
     // Cleanup inactive sessions (call this periodically)
     cleanupInactiveSessions = async () => {
         const now = new Date();
@@ -320,7 +372,8 @@ class TerminalController {
             if (now - meta.lastActivity > inactivityThreshold) {
                 console.log(`🧹 Cleaning up inactive session ${sessionId}`);
                 try {
-                    await workerClient.terminateSession(sessionId);
+                    // Session cleanup (no worker communication needed)
+            console.log(`🗑️ Cleaning up session ${sessionId}`);
                     this.sessions.delete(sessionId);
                 } catch (error) {
                     console.error(`Error cleaning up session ${sessionId}:`, error);
