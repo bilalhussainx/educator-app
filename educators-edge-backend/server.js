@@ -98,9 +98,26 @@ app.use('/api/library', libraryRoutes);
 // We can simplify the WS config now
 const server = http.createServer(app);
 console.log('🔧 Creating WebSocket servers...');
-const wss = new WebSocketServer({ server, path: '/ws' }); 
+
+// Create WebSocket servers with explicit path handling
+const wss = new WebSocketServer({ 
+    server, 
+    path: '/ws',
+    verifyClient: (info) => {
+        console.log(`🔍 WS verification for path: ${info.req.url}`);
+        return info.req.url?.startsWith('/ws');
+    }
+}); 
 console.log('✅ Main WebSocket server created on path: /ws');
-const terminalWss = new WebSocketServer({ server, path: '/terminal' });
+
+const terminalWss = new WebSocketServer({ 
+    server, 
+    path: '/terminal',
+    verifyClient: (info) => {
+        console.log(`🔍 Terminal WS verification for path: ${info.req.url}`);
+        return info.req.url?.startsWith('/terminal');
+    }
+});
 console.log('✅ Terminal WebSocket server created on path: /terminal');
 
 // Add logging for terminal WebSocket upgrade requests
