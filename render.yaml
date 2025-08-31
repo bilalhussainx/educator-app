@@ -1,42 +1,18 @@
 # render.yaml
-# Definitive, resilient multi-service architecture for Educator App
+# Definitive Free Tier Architecture: One service running two processes with pm2
 
 services:
-  # The main Node.js Web API and WebSocket server
+  # A single web service that runs both your API and Worker
   - type: web
     name: educator-app-backend
-    env: node
-    plan: free # Or your chosen paid plan
+    env: docker
+    plan: free
     
-    # For Node.js environment, use buildCommand and startCommand instead of dockerfilePath
-    buildCommand: "cd educators-edge-backend && npm install"
-    startCommand: "cd educators-edge-backend && node server.js"
-    
-    # Render uses this to know when your service is ready.
-    # Ensure you have a simple GET /healthz route in server.js that returns 200 OK.
+    # Health check for your Express server
     healthCheckPath: /healthz
-    
-    envVars:
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: educator-redis # The name of the Redis service defined below
-          property: connectionString
-      - key: PORT # Let Render inject the port for the web service
-        value: 10000
-      # DATABASE_URL and other secrets (JWT_SECRET, GEMINI_API_KEY, etc.) 
-      # should be added manually in the Render Environment tab
-      # using your existing Neon database connection string
 
-  # The background worker for code execution
-  - type: worker
-    name: educator-worker
-    env: node
-    plan: free # Or a paid plan if it needs more resources
-
-    # For Node.js environment, use buildCommand and startCommand instead of dockerfilePath
-    buildCommand: "cd educators-edge-backend && npm install"
-    startCommand: "cd educators-edge-backend && node dockerWorker.js"
+    # Tell Render where the Dockerfile is
+    dockerfilePath: ./Dockerfile
     
     envVars:
       - key: REDIS_URL
@@ -44,11 +20,15 @@ services:
           type: redis
           name: educator-redis
           property: connectionString
-      # DATABASE_URL should be added manually in the Render Environment tab
+      - key: PORT
+        value: 10000
+      # DATABASE_URL and other secrets (JWT_SECRET, GEMINI_API_KEY, etc.) 
+      # should be added manually in the Render Environment tab
       # using your existing Neon database connection string
 
-  # Redis service for job queues
+# Redis service for job queues
+services:
   - type: redis
     name: educator-redis
     plan: free
-    ipAllowList: [] # Allow all IPs (empty list means no restrictions)
+    ipAllowList: []
