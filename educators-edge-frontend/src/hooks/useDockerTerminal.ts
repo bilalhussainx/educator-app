@@ -120,7 +120,10 @@ export const useDockerTerminal = (
 
     // Auto-connect if requested
     if (autoConnect) {
+      console.log('🚀 DockerTerminal: Auto-connecting with options:', { autoConnect, enableWebSocket });
       createSession();
+    } else {
+      console.log('❌ DockerTerminal: Auto-connect disabled:', { autoConnect, enableWebSocket });
     }
 
     return () => {
@@ -187,18 +190,24 @@ export const useDockerTerminal = (
 
   // WebSocket connection management
   const connectWebSocket = useCallback((sessionId?: string) => {
-    if (!enableWebSocket) return;
+    if (!enableWebSocket) {
+      console.log('❌ DockerTerminal: WebSocket disabled');
+      return;
+    }
 
     const token = localStorage.getItem('authToken');
     if (!token) {
+      console.error('❌ DockerTerminal: No auth token found');
       setError('Authentication token not found');
       return;
     }
 
     const wsUrl = `${import.meta.env.VITE_WS_URL || 'ws://localhost:10000'}/terminal?token=${encodeURIComponent(token)}${sessionId ? `&sessionId=${sessionId}` : ''}`;
+    console.log('🔗 DockerTerminal: Attempting WebSocket connection to:', wsUrl);
     
     try {
       const ws = new WebSocket(wsUrl);
+      console.log('✅ DockerTerminal: WebSocket object created');
       
       ws.onopen = () => {
         console.log('✅ Terminal WebSocket connected');
@@ -233,11 +242,13 @@ export const useDockerTerminal = (
 
   // Create new terminal session
   const createSession = useCallback(async () => {
+    console.log('🎯 DockerTerminal: createSession called with enableWebSocket:', enableWebSocket);
     setIsLoading(true);
     setError(null);
 
     try {
       if (enableWebSocket) {
+        console.log('🔗 DockerTerminal: Creating session via WebSocket');
         // Create session via WebSocket
         connectWebSocket();
         
