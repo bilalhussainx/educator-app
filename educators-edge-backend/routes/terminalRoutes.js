@@ -1,17 +1,28 @@
-// -----------------------------------------------------------------
-// FILE: routes/terminalRoutes.js (NEW FILE)
-// -----------------------------------------------------------------
+// =================================================================
+// FILE: routes/terminalRoutes.js
+// =================================================================
+// DESCRIPTION: REST API routes for Docker-based terminal functionality
+
 const express = require('express');
 const router = express.Router();
-// We will create the controller in the next step.
-// const terminalController = require('../controllers/terminalController');
+const terminalController = require('../controllers/terminalController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
-// This is a placeholder for now. In a real app, you might have routes
-// to create or manage terminal sessions via HTTP, but we will handle
-// creation directly via the WebSocket connection for simplicity.
-router.get('/', verifyToken, (req, res) => {
-    res.send('Terminal service is active.');
-});
+// All terminal routes require authentication
+router.use(verifyToken);
+
+// Session management routes
+router.post('/session', terminalController.createSession);
+router.get('/session/:sessionId/status', terminalController.getSessionStatus);
+router.get('/sessions', terminalController.listSessions);
+router.delete('/session/:sessionId', terminalController.terminateSession);
+
+// Code execution routes
+router.post('/execute', terminalController.executeCode);
+router.post('/input', terminalController.sendInput);
+router.post('/quick-execute', terminalController.quickExecute);
+
+// Health check
+router.get('/health', terminalController.healthCheck);
 
 module.exports = router;

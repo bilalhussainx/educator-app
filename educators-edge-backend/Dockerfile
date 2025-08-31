@@ -1,36 +1,87 @@
-# Dockerfile for CoreZenith - Definitive Multi-Language Environment
+# =================================================================
+# FILE: Dockerfile (Production with Docker-in-Docker Support)
+# =================================================================
+# DESCRIPTION: Multi-stage Docker build for production deployment
+# with Docker-in-Docker capabilities for code execution
 
-# 1. Base Image
-# Use a full Debian "bullseye" image. It is stable and has a reliable package manager.
-FROM node:18-bullseye
+# Stage 1: Base image with Docker support
+FROM docker:24-dind AS docker-base
 
-# 2. Set environment variable to prevent interactive prompts during installation.
+# Install Node.js and other dependencies
+RUN apk add --no-cache nodejs npm python3 py3-pip openjdk17-jdk bash curl
+
+# Stage 2: Application build
+FROM node:18-bullseye AS app-builder
+
+# Set environment variable to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 3. Install necessary language runtimes and compilers in a single, optimized layer.
+# Install Docker CLI only (we'll use DinD from base)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    openjdk-17-jdk \
+    ca-certificates \
+    curl \
+    && curl -fsSL https://get.docker.com -o get-docker.sh \
+    && sh get-docker.sh \
     && apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* get-docker.sh
 
-# 4. Set the working directory for our application.
+# Set working directory
 WORKDIR /usr/src/app
 
-# 5. Copy package files for optimized Node.js dependency installation.
+# Copy package files
 COPY package*.json ./
 
-# 6. Install ONLY production Node.js dependencies.
-RUN npm install --only=production
+# Install dependencies
+RUN npm ci --only=production
 
-# 7. Copy the rest of your application's source code.
+# Copy application code
 COPY . .
 
-# 8. Expose the port that the application will run on.
+# Stage 3: Final production image
+FROM docker:24-dind
+
+# Install Node.js and other runtimes
+RUN apk add --no-cache \
+    nodejs \
+    npm \
+    python3 \
+    py3-pip \
+    openjdk17-jdk \
+    bash \
+    curl \
+    supervisor
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Copy built application from builder stage
+COPY --from=app-builder /usr/src/app .
+
+# Create supervisor configuration
+RUN mkdir -p /etc/supervisor/conf.d && \
+    echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'user=root' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:dockerd]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=dockerd --host=unix:///var/run/docker.sock' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile=/var/log/dockerd.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/dockerd.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:app]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=node server.js' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'directory=/usr/src/app' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile=/var/log/app.err.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/app.out.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'environment=NODE_ENV=production,PORT=10000' >> /etc/supervisor/conf.d/supervisord.conf
+
+# Expose port
 EXPOSE 10000
 
-# 9. Define the command to run your application when the container starts.
-#    This starts your main Node.js server. For the worker, Render will override this.
-CMD [ "node", "server.js" ]
+# Use supervisor to run both Docker daemon and Node.js app
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

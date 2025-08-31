@@ -311,6 +311,29 @@ function initializeWebSocket(wss) {
                              broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
                          }
                          break;
+
+                    case 'DOCKER_CODE_EXECUTION':
+                        // Handle Docker-based code execution broadcast from teacher to all students
+                        if (clientInfo.role === 'teacher') {
+                            const { language, code, result, error, fileName, timestamp } = data.payload;
+                            
+                            console.log(`[WS] Broadcasting Docker code execution from teacher ${clientInfo.username}: ${language} code from ${fileName}`);
+                            
+                            // Broadcast to all students in the session
+                            broadcastToAll(session, { 
+                                type: 'DOCKER_CODE_EXECUTION', 
+                                payload: {
+                                    language,
+                                    code,
+                                    result,
+                                    error,
+                                    fileName,
+                                    timestamp,
+                                    teacherName: clientInfo.username
+                                }
+                            });
+                        }
+                        break;
                 }
             } catch (error) {
                 console.error('[WS] Error parsing message:', error);

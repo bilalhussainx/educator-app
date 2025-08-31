@@ -7,6 +7,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const initializeWebSocket = require('./services/websocketHandler');
+const terminalWebSocketHandler = require('./services/websocketTerminalHandler');
 const aiRoutes = require('./routes/aiRoutes');
 const userRoutes = require('./routes/userRoutes');
 const conceptRoutes = require('./routes/conceptRoutes');
@@ -96,17 +97,20 @@ app.use('/api/library', libraryRoutes);
 // Server and WebSocket Initialization
 // We can simplify the WS config now
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server }); 
+const wss = new WebSocketServer({ server, path: '/ws' }); 
+const terminalWss = new WebSocketServer({ server, path: '/terminal' });
 
 app.get('/test-ws', (req, res) => {
     res.json({ 
         wsReady: wss.clients.size >= 0,
+        terminalWsReady: terminalWss.clients.size >= 0,
         jwtSecret: !!process.env.JWT_SECRET,
         timestamp: Date.now()
     });
 });
 
 initializeWebSocket(wss);
+terminalWebSocketHandler.initializeTerminalWebSocket(terminalWss);
 
 
 const PORT = process.env.PORT || 10000;
