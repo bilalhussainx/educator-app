@@ -265,6 +265,11 @@ class WebSocketTerminalHandler {
                         await this.handleQuickExecute(ws, message.payload, user);
                         break;
                         
+                    case 'EXECUTE_CODE':
+                        console.log(`🚀 Execute code request from ${user.username}`);
+                        await this.handleExecuteCode(ws, message.payload, user);
+                        break;
+                        
                     case 'HEALTH_CHECK':
                         await this.handleHealthCheck(ws);
                         break;
@@ -476,6 +481,49 @@ class WebSocketTerminalHandler {
                 type: 'HEALTH_CHECK_ERROR',
                 payload: {
                     error: error.message,
+                    timestamp: Date.now()
+                }
+            }));
+        }
+    }
+    
+    async handleExecuteCode(ws, payload, user) {
+        const { code, language, fileName } = payload;
+        console.log(`🚀 Code execution request from ${user.username}: ${language} (${fileName})`);
+        
+        try {
+            // Import the execution service
+            const { executeCode } = require('./executionService');
+            
+            console.log(`⚡ Executing ${language} code: ${code.substring(0, 50)}...`);
+            
+            // Execute the code
+            const result = await executeCode(code, language);
+            
+            console.log(`✅ Code execution completed for ${user.username}`);
+            
+            // Send result back to client
+            ws.send(JSON.stringify({
+                type: 'CODE_EXECUTION_RESULT',
+                payload: {
+                    result: result.output,
+                    success: true,
+                    language,
+                    fileName,
+                    timestamp: Date.now()
+                }
+            }));
+            
+        } catch (error) {
+            console.error(`❌ Code execution failed for ${user.username}:`, error.message);
+            
+            ws.send(JSON.stringify({
+                type: 'CODE_EXECUTION_ERROR',
+                payload: {
+                    error: error.message,
+                    success: false,
+                    language,
+                    fileName,
                     timestamp: Date.now()
                 }
             }));
