@@ -1,0 +1,37 @@
+# =================================================================
+# FILE: Dockerfile.worker (Docker Worker Service)
+# =================================================================
+# DESCRIPTION: Simplified Docker service for container execution
+# Uses Render's native Docker support instead of Docker-in-Docker
+
+# Use official Docker-in-Docker image as base
+FROM docker:24-dind
+
+# Install Node.js and dependencies
+RUN apk add --no-cache \
+    nodejs \
+    npm \
+    curl
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install Node.js dependencies
+RUN npm ci --only=production
+
+# Copy application code
+COPY dockerWorker.js .
+
+# Expose worker port
+EXPOSE 10001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:10001/health || exit 1
+
+# Start the worker service
+# Note: Render will handle Docker daemon startup automatically
+CMD ["node", "dockerWorker.js"]

@@ -1,10 +1,11 @@
 services:
+  # Main web service - Node.js application with WebSocket, API, database
   - type: web
     name: educator-app-backend
-    env: docker
-    dockerfilePath: ./Dockerfile
-    plan: standard  # Required for Docker-in-Docker
-    dockerCommand: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    plan: starter  # Can use starter plan since no Docker-in-Docker needed
     envVars:
       - key: NODE_ENV
         value: production
@@ -12,8 +13,28 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: 10000
+      - key: DOCKER_WORKER_URL
+        fromService:
+          type: web
+          name: educator-docker-worker
+          property: host
+      # Environment variables will need to be set manually in Render dashboard:
+      # DATABASE_URL, DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE, DB_PORT  
+      # JWT_SECRET, GEMINI_API_KEY, GLOT_API_KEY, etc.
+
+  # Docker worker service - Handles container execution in isolation
+  - type: web
+    name: educator-docker-worker
+    env: docker
+    dockerfilePath: ./Dockerfile.worker
+    dockerCommand: node dockerWorker.js
+    plan: standard  # Required for Docker access
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0  
+      - key: PORT
+        value: 10001
       - key: DOCKER_HOST
         value: unix:///var/run/docker.sock
-      # Environment variables will need to be set manually in Render dashboard:
-      # DATABASE_URL, DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE, DB_PORT
-      # JWT_SECRET, GEMINI_API_KEY, GLOT_API_KEY, etc.

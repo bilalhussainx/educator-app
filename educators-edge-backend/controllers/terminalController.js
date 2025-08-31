@@ -4,7 +4,8 @@
 // DESCRIPTION: Controller for managing Docker-based terminal sessions
 // Supports both HTTP REST API and WebSocket real-time communication
 
-const sandboxService = require('../services/dockerSandboxService');
+const DockerWorkerClient = require('../services/dockerWorkerClient');
+const workerClient = new DockerWorkerClient();
 const { v4: uuidv4 } = require('uuid');
 
 class TerminalController {
@@ -16,9 +17,8 @@ class TerminalController {
     createSession = async (req, res) => {
         try {
             const userId = req.user?.id;
-            const sessionId = uuidv4();
             
-            const sandbox = await sandboxService.createSandboxSession(sessionId);
+            const sessionId = await workerClient.createSession();
             
             // Track session metadata
             this.sessions.set(sessionId, {
@@ -32,7 +32,7 @@ class TerminalController {
             
             res.json({
                 success: true,
-                sessionId: sandbox.id,
+                sessionId: sessionId,
                 message: 'Terminal session created successfully'
             });
             
@@ -61,7 +61,7 @@ class TerminalController {
                 });
             }
             
-            const result = await sandboxService.executeCode(code, language, sessionId);
+            const result = await workerClient.executeCode(sessionId, code, language);
             
             // Update session activity
             if (sessionMeta) {
@@ -103,7 +103,8 @@ class TerminalController {
                 });
             }
             
-            await sandboxService.sendInput(sessionId, input);
+            // TODO: Implement sendInput via WebSocket to worker
+            console.log(`📤 Sending input to session ${sessionId}: ${input}`);
             
             // Update session activity
             if (sessionMeta) {
@@ -140,7 +141,8 @@ class TerminalController {
                 });
             }
             
-            const status = await sandboxService.getSessionStatus(sessionId);
+            const sessionInfo = workerClient.getSessionInfo(sessionId);
+            const status = sessionInfo ? 'active' : 'not_found';
             
             if (!status) {
                 return res.status(404).json({
@@ -183,7 +185,8 @@ class TerminalController {
             const sessionsWithStatus = await Promise.all(
                 userSessions.map(async (session) => {
                     try {
-                        const status = await sandboxService.getSessionStatus(session.sessionId);
+                        const sessionInfo = workerClient.getSessionInfo(session.sessionId);
+                        const status = sessionInfo ? 'active' : 'inactive';
                         return { ...session, status };
                     } catch (error) {
                         return { ...session, status: 'error', error: error.message };
@@ -221,7 +224,7 @@ class TerminalController {
                 });
             }
             
-            await sandboxService.cleanupSession(sessionId);
+            await workerClient.terminateSession(sessionId);
             this.sessions.delete(sessionId);
             
             console.log(`🗑️ Terminal session ${sessionId} terminated by user ${userId}`);
@@ -249,7 +252,14 @@ class TerminalController {
             
             console.log(`⚡ Quick execute request: ${language} code for user ${userId}`);
             
-            const result = await sandboxService.executeCode(code, language);
+            // Create temporary session for quick execution
+            const tempSessionId = await workerClient.createSession();
+            const result = await workerClient.executeCode(tempSessionId, code, language);
+            
+            // Clean up temporary session
+            setTimeout(() => {
+                workerClient.terminateSession(tempSessionId).catch(console.error);
+            }, 1000);
             
             res.json({
                 success: result.success,
@@ -275,7 +285,7 @@ class TerminalController {
     // Health check endpoint
     healthCheck = async (req, res) => {
         try {
-            const serviceHealth = await sandboxService.healthCheck();
+            const serviceHealth = await workerClient.getSessionHealth();
             const controllerHealth = {
                 activeSessions: this.sessions.size,
                 uptime: process.uptime(),
@@ -310,7 +320,7 @@ class TerminalController {
             if (now - meta.lastActivity > inactivityThreshold) {
                 console.log(`🧹 Cleaning up inactive session ${sessionId}`);
                 try {
-                    await sandboxService.cleanupSession(sessionId);
+                    await workerClient.terminateSession(sessionId);
                     this.sessions.delete(sessionId);
                 } catch (error) {
                     console.error(`Error cleaning up session ${sessionId}:`, error);
