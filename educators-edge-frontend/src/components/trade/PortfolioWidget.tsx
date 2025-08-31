@@ -1,9 +1,14 @@
 import React from 'react';
 import { usePortfolio } from '../../hooks/usePortfolio';
+// src/components/trade/PortfolioWidget.tsx
+
+// [FIX #1] The import path is corrected to use a standard, project-aliased path.
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+// [PREREQUISITE] This import will now work correctly after you run `npx shadcn-ui@latest add skeleton`.
+import { Skeleton } from '@/components/ui/skeleton'; 
 import { AlertCircle, ArrowRight } from 'lucide-react';
+import type { PortfolioAsset } from '@/types/trade'; // Import the type for explicit typing
 
 // A professional currency formatter.
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -49,16 +54,18 @@ export const PortfolioWidget: React.FC = () => {
 
   if (isLoading) return <PortfolioLoadingSkeleton />;
   if (error) return <PortfolioErrorState error={error} />;
-  if (!portfolio) return null; // Or render an empty state
+  if (!portfolio) return null;
 
-  // NOTE: In a real application, this would come from our market data service.
-  // For now, we use a mock to calculate portfolio value.
   const MOCK_ASSET_PRICE = 150.75; 
 
   const cashBalance = parseFloat(portfolio.cash_balance);
-  const assetsValue = portfolio.assets.reduce((total, asset) => {
+
+  // [FIX #2] Explicit types are provided for the `reduce` function's accumulator and current value,
+  // resolving all 'implicitly has an any type' errors.
+  const assetsValue = portfolio.assets.reduce((total: number, asset: PortfolioAsset) => {
     return total + (parseFloat(asset.quantity) * MOCK_ASSET_PRICE);
   }, 0);
+
   const totalValue = cashBalance + assetsValue;
 
   return (
@@ -87,7 +94,7 @@ export const PortfolioWidget: React.FC = () => {
         <div>
             <h4 className="font-semibold mb-2">Your Holdings</h4>
             <div className="space-y-2">
-                {portfolio.assets.length > 0 ? portfolio.assets.map(asset => (
+                {portfolio.assets.length > 0 ? portfolio.assets.map((asset: PortfolioAsset) => ( // [FIX #3] Explicit type for asset in map
                     <div key={asset.asset_symbol} className="flex justify-between items-center p-2 bg-slate-800/50 rounded-md">
                         <span className="font-mono font-bold">{asset.asset_symbol}</span>
                         <span className="text-slate-300">{parseFloat(asset.quantity).toFixed(2)} Shares</span>
