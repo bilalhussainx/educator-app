@@ -20,6 +20,7 @@ const stuckPointRoutes = require('./routes/stuckPointRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 const recordingRoutes = require('./routes/recordingRoutes');
+const tradeRoutes = require('./src/routes/trade_routes'); // <-- IMPORT THE NEW TRADE ROUTES
 
 const app = express();
 app.use(express.json());
@@ -94,7 +95,7 @@ app.use('/api/concepts', conceptRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/recordings', recordingRoutes);
-
+app.use('/api/trade', tradeRoutes); // <-- REGISTER THE NEW TRADE ROUTES
 
 // Server and WebSocket Initialization
 // We can simplify the WS config now
