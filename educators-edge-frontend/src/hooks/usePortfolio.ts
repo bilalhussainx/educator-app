@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import apiClient from '../services/apiClient';
 import type { Portfolio } from '../types/trade';
 
-exports.usePortfolio = () => {
+// [THE FIX] The function is now correctly exported using the ES Module 'export' keyword,
+// which will be recognized by the 'import' statement in your PortfolioWidget component.
+export const usePortfolio = () => {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,7 +16,6 @@ exports.usePortfolio = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // This is the secure, authenticated API call we created
         const response = await apiClient.get<Portfolio>('/api/trade/portfolio');
         setPortfolio(response.data);
       } catch (err) {
