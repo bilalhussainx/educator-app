@@ -32,6 +32,16 @@ class WebSocketTerminalHandler {
         
         wss.on('error', (error) => {
             console.error('🔥 Terminal WebSocket server error:', error);
+            console.error('🔥 Error details:', error.message);
+            console.error('🔥 Error stack:', error.stack);
+        });
+        
+        wss.on('close', () => {
+            console.log('🔥 Terminal WebSocket server closed');
+        });
+        
+        wss.on('listening', () => {
+            console.log('🎧 Terminal WebSocket server is listening');
         });
         
         wss.on('connection', async (ws, req) => {
@@ -39,31 +49,80 @@ class WebSocketTerminalHandler {
             console.log('📍 Request URL:', req.url);
             console.log('📍 Request headers:', req.headers);
             
+            // Add immediate error handler
+            ws.on('error', (error) => {
+                console.error('❌ Terminal WebSocket error:', error);
+                console.error('❌ WebSocket state:', ws.readyState);
+            });
+            
+            ws.on('close', (code, reason) => {
+                console.log(`🔌 Terminal WebSocket closed. Code: ${code}, Reason: ${reason || 'No reason provided'}`);
+            });
+            
             try {
                 const urlParams = new URLSearchParams(req.url.split('?')[1]);
                 const token = urlParams.get('token');
                 const sessionId = urlParams.get('sessionId');
                 
+                console.log('🔍 Terminal WS connection params:', { 
+                    hasToken: !!token, 
+                    sessionId: sessionId || 'none' 
+                });
+                
                 if (!token) {
                     console.log('❌ Terminal WS: Missing token');
-                    return ws.close(4001, 'Authentication token required');
+                    ws.close(4001, 'Authentication token required');
+                    return;
                 }
                 
                 // Verify JWT token
                 let user;
                 try {
+                    if (!process.env.JWT_SECRET) {
+                        console.error('❌ Terminal WS: JWT_SECRET not set');
+                        ws.close(4000, 'Server configuration error');
+                        return;
+                    }
+                    
+                    console.log('🔍 Terminal WS: Verifying JWT token...');
                     const decoded = jwt.verify(token, process.env.JWT_SECRET);
                     user = decoded.user;
+                    
+                    if (!user || !user.username) {
+                        console.error('❌ Terminal WS: Invalid user data in token');
+                        ws.close(4001, 'Invalid user data');
+                        return;
+                    }
+                    
                     console.log(`✅ Terminal WS: Authenticated user ${user.username} (${user.role})`);
                 } catch (err) {
-                    console.error('❌ Terminal WS: Invalid token:', err.message);
-                    return ws.close(4001, 'Invalid authentication token');
+                    console.error('❌ Terminal WS: Token verification failed:', err.message);
+                    console.error('❌ Terminal WS: Token starts with:', token.substring(0, 20));
+                    ws.close(4001, 'Invalid authentication token');
+                    return;
                 }
                 
+                // Send immediate connection confirmation
+                if (ws.readyState === ws.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'CONNECTION_ESTABLISHED',
+                        payload: {
+                            message: 'Terminal WebSocket connected successfully',
+                            userId: user.id,
+                            username: user.username,
+                            sessionId: sessionId || null,
+                            timestamp: Date.now()
+                        }
+                    }));
+                    console.log(`📤 Connection confirmation sent to ${user.username}`);
+                }
+
                 // Handle terminal session connection
                 if (sessionId) {
+                    console.log(`🎯 Handling terminal session connection for ${sessionId}`);
                     await this.handleTerminalSessionConnection(ws, user, sessionId);
                 } else {
+                    console.log('🎯 Handling general terminal connection');
                     // General terminal connection (for creating new sessions)
                     await this.handleGeneralTerminalConnection(ws, user);
                 }
@@ -71,7 +130,9 @@ class WebSocketTerminalHandler {
             } catch (error) {
                 console.error('❌ Terminal WS connection error:', error);
                 console.error('❌ Error stack:', error.stack);
-                ws.close(4000, 'Connection error');
+                if (ws.readyState === ws.OPEN) {
+                    ws.close(4000, 'Connection error');
+                }
             }
         });
     }
@@ -129,25 +190,36 @@ class WebSocketTerminalHandler {
     }
     
     async handleGeneralTerminalConnection(ws, user) {
-        console.log(`🎯 User ${user.username} connected for general terminal operations`);
-        
-        // Send welcome message
-        ws.send(JSON.stringify({
-            type: 'TERMINAL_WELCOME',
-            payload: {
-                message: 'Connected to Docker Terminal Service',
-                userId: user.id,
-                username: user.username,
-                timestamp: Date.now()
+        try {
+            console.log(`🎯 User ${user.username} connected for general terminal operations`);
+            
+            // Send welcome message
+            if (ws.readyState === ws.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'TERMINAL_WELCOME',
+                    payload: {
+                        message: 'Connected to Docker Terminal Service',
+                        userId: user.id,
+                        username: user.username,
+                        timestamp: Date.now()
+                    }
+                }));
+                console.log(`✅ Welcome message sent to ${user.username}`);
             }
-        }));
-        
-        // Set up general message handlers
-        this.setupGeneralTerminalHandlers(ws, user);
-        
-        ws.on('close', () => {
-            console.log(`🔌 User ${user.username} disconnected from general terminal`);
-        });
+            
+            // Set up general message handlers
+            this.setupGeneralTerminalHandlers(ws, user);
+            
+            ws.on('close', (code, reason) => {
+                console.log(`🔌 User ${user.username} disconnected from general terminal. Code: ${code}, Reason: ${reason}`);
+            });
+            
+        } catch (error) {
+            console.error('❌ Error in handleGeneralTerminalConnection:', error);
+            if (ws.readyState === ws.OPEN) {
+                ws.close(4000, 'Failed to initialize terminal connection');
+            }
+        }
     }
     
     setupTerminalMessageHandlers(ws, user, sessionId) {
@@ -220,15 +292,21 @@ class WebSocketTerminalHandler {
                 
             } catch (error) {
                 console.error('❌ General terminal message error:', error);
-                ws.send(JSON.stringify({
-                    type: 'TERMINAL_ERROR',
-                    payload: {
-                        error: 'Message processing failed',
-                        details: error.message,
-                        timestamp: Date.now()
-                    }
-                }));
+                if (ws.readyState === ws.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'TERMINAL_ERROR',
+                        payload: {
+                            error: 'Message processing failed',
+                            details: error.message,
+                            timestamp: Date.now()
+                        }
+                    }));
+                }
             }
+        });
+        
+        ws.on('error', (error) => {
+            console.error(`❌ WebSocket error for user ${user.username}:`, error);
         });
     }
     

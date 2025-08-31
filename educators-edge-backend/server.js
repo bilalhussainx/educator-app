@@ -104,8 +104,11 @@ const wss = new WebSocketServer({
     server, 
     path: '/ws',
     verifyClient: (info) => {
-        console.log(`🔍 WS verification for path: ${info.req.url}`);
-        return info.req.url?.startsWith('/ws');
+        const url = new URL(info.req.url, 'http://localhost');
+        console.log(`🔍 WS verification for path: ${url.pathname}`);
+        const isWsPath = url.pathname === '/ws';
+        console.log(`🔍 WS verification result: ${isWsPath}`);
+        return isWsPath;
     }
 }); 
 console.log('✅ Main WebSocket server created on path: /ws');
@@ -114,8 +117,28 @@ const terminalWss = new WebSocketServer({
     server, 
     path: '/terminal',
     verifyClient: (info) => {
-        console.log(`🔍 Terminal WS verification for path: ${info.req.url}`);
-        return info.req.url?.startsWith('/terminal');
+        const url = new URL(info.req.url, 'http://localhost');
+        const origin = info.origin;
+        console.log(`🔍 Terminal WS verification for path: ${url.pathname} from origin: ${origin}`);
+        
+        // Check if origin is allowed
+        const isOriginAllowed = !origin || allowedOrigins.includes(origin);
+        const isTerminalPath = url.pathname === '/terminal';
+        
+        console.log(`🔍 Terminal WS verification - Origin allowed: ${isOriginAllowed}, Path correct: ${isTerminalPath}`);
+        
+        if (!isOriginAllowed) {
+            console.log(`❌ Terminal WS: Origin ${origin} not allowed`);
+            return false;
+        }
+        
+        if (!isTerminalPath) {
+            console.log(`❌ Terminal WS: Path ${url.pathname} not allowed`);
+            return false;
+        }
+        
+        console.log(`✅ Terminal WS verification passed`);
+        return true;
     }
 });
 console.log('✅ Terminal WebSocket server created on path: /terminal');
