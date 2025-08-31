@@ -142,13 +142,31 @@ app.get('/test-ws', (req, res) => {
 
 console.log('🔧 Initializing WebSocket handlers...');
 
-// Initialize main WebSocket handler once for all /ws connections
-initializeWebSocket(wss);
-console.log('✅ Main WebSocket handler initialized');
+// Create a filtered WebSocket server wrapper that only handles /ws connections
+const filteredWss = {
+    clients: wss.clients,
+    on: function(event, handler) {
+        if (event === 'connection') {
+            // Wrap the handler to only call it for /ws connections
+            wss.on('connection', async (ws, req) => {
+                const url = new URL(req.url, 'http://localhost');
+                if (url.pathname === '/ws') {
+                    console.log('🎯 Calling main WebSocket handler for /ws connection');
+                    await handler(ws, req);
+                }
+                // Don't call handler for other paths - they'll be handled separately
+            });
+        } else {
+            wss.on(event, handler);
+        }
+    }
+};
 
-// Override the connection handler to add terminal routing
-const originalConnectionHandler = wss._connectionHandler || wss._handleConnection;
+// Initialize main WebSocket handler with filtered server
+initializeWebSocket(filteredWss);
+console.log('✅ Main WebSocket handler initialized (filtered for /ws only)');
 
+// Add terminal routing
 wss.on('connection', async (ws, req) => {
     const url = new URL(req.url, 'http://localhost');
     console.log(`🔌 WebSocket connection received for path: ${url.pathname}`);
@@ -157,16 +175,15 @@ wss.on('connection', async (ws, req) => {
         console.log('🎯 Routing to terminal handler');
         await terminalWebSocketHandler.handleConnection(ws, req);
     } else if (url.pathname === '/ws') {
-        console.log('🎯 Using main WebSocket handler (already initialized)');
-        // The main handler is already set up via initializeWebSocket above
-        // No additional action needed - the main handler will process this connection
+        console.log('🎯 Main WebSocket handler will process this connection');
+        // Main handler already set up above with filtered wrapper
     } else {
         console.log(`❌ Unknown WebSocket path: ${url.pathname}`);
         ws.close(4004, 'Invalid path');
     }
 });
 
-console.log('✅ Terminal routing added to WebSocket connection handler');
+console.log('✅ Path-based WebSocket routing initialized');
 
 // Add server-level upgrade logging
 server.on('upgrade', (request, socket, head) => {
