@@ -315,16 +315,28 @@ function initializeWebSocket(wss) {
                             const { resourceId, sid, uid } = session.recording;
                             const channelName = sessionKey;
                             
-                            // Call the Agora service to stop the recording
-                            await agoraService.stopCloudRecording(resourceId, sid, channelName, uid);
+                            console.log(`[RECORDING] Attempting to stop recording - Session: ${sessionKey}, SID: ${sid}, UID: ${uid}, ResourceId: ${resourceId}`);
                             
-                            log(`Recording stopped for session ${sessionKey}, SID: ${sid}`);
+                            // Call the Agora service to stop the recording
+                            const result = await agoraService.stopCloudRecording(resourceId, sid, channelName, uid);
+                            
+                            if (result.warning) {
+                                log(`Recording for session ${sessionKey} was already stopped or expired, SID: ${sid}`);
+                            } else {
+                                log(`Recording stopped successfully for session ${sessionKey}, SID: ${sid}`);
+                            }
 
                             session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
                             broadcast(session, { type: 'RECORDING_STOPPED' });
 
                         } catch (error) {
-                            console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
+                            console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, {
+                                message: error.message,
+                                stack: error.stack,
+                                recordingState: session.recording,
+                                sessionKey: sessionKey,
+                                timestamp: new Date().toISOString()
+                            });
                             ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to stop correctly.' } }));
                         }
                         break;

@@ -149,7 +149,33 @@ const uploadToCloudinary = (fileBuffer, publicId) => {
  */
 const stopCloudRecording = async (resourceId, sid, channelName, uid) => {
     try {
-        console.log(`[AGORA SERVICE] Stopping recording for SID: ${sid}`);
+        console.log(`[AGORA SERVICE] Stopping recording for SID: ${sid}, UID: ${uid}, Channel: ${channelName}`);
+        
+        // First query the recording status to see if it's still active
+        try {
+            const queryResponse = await axios.get(
+                `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+                {
+                    headers: {
+                        'Authorization': getBasicAuthHeader(),
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+            
+            console.log(`[AGORA SERVICE] Recording status query result:`, JSON.stringify(queryResponse.data, null, 2));
+            
+            // If recording is not in a recordable state, consider it already stopped
+            const recordingStatus = queryResponse.data?.serverResponse?.status;
+            if (recordingStatus === 0) {
+                console.log(`[AGORA SERVICE] Recording ${sid} is not active (status: ${recordingStatus}). Considering it already stopped.`);
+                return { message: 'Recording already stopped or completed' };
+            }
+            
+        } catch (queryError) {
+            const queryErrorDetails = queryError.response ? queryError.response.data : { message: queryError.message };
+            console.log(`[AGORA SERVICE] Query failed, attempting direct stop:`, JSON.stringify(queryErrorDetails, null, 2));
+        }
         
         const stopResponse = await axios.post(
             `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
@@ -171,8 +197,15 @@ const stopCloudRecording = async (resourceId, sid, channelName, uid) => {
 
     } catch (error) {
         const errorDetails = error.response ? error.response.data : { message: error.message };
+        
+        // Handle specific error cases more gracefully
+        if (errorDetails.code === 404 && errorDetails.reason === 'failed to find worker') {
+            console.log(`[AGORA SERVICE] Recording ${sid} worker not found - recording may have already ended or expired`);
+            return { message: 'Recording already stopped or expired', warning: true };
+        }
+        
         console.error("[AGORA SERVICE] Error stopping recording:", JSON.stringify(errorDetails, null, 2));
-        throw new Error('Failed to stop cloud recording via Agora API.');
+        throw new Error(`Failed to stop cloud recording: ${errorDetails.reason || errorDetails.message || 'Unknown error'}`);
     }
 };
 
