@@ -36,6 +36,15 @@ const getBasicAuthHeader = () => {
 const startCloudRecording = async (channelName, courseId, teacherId) => {
     let recordingBotUid;
     try {
+        // Validate Azure storage configuration using user's variable names
+        const azureContainer = process.env.AGORA_AZURE_BUCKET;
+        const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY; // This should be the storage account name
+        const azureAccessKey = process.env.AGORA_AZURE_SECRET_KEY; // This should be the access key
+
+        if (!azureContainer || !azureAccountName || !azureAccessKey) {
+            throw new Error(`Missing Azure storage configuration. Required: AGORA_AZURE_BUCKET, AGORA_AZURE_ACCESS_KEY (storage account name), AGORA_AZURE_SECRET_KEY (access key)`);
+        }
+
         recordingBotUid = String(Math.floor(Math.random() * 10000000) + 1);
         
         console.log(`[AGORA SERVICE] Acquiring resource for channel: ${channelName} with Bot UID: ${recordingBotUid}`);
@@ -55,6 +64,14 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                 cname: channelName,
                 uid: recordingBotUid,
                 clientRequest: {
+                    token: "",
+                    storageConfig: {
+                        vendor: 5, // Microsoft Azure Blob Storage
+                        region: 0, // Always 0 for Azure
+                        bucket: process.env.AGORA_AZURE_BUCKET,
+                        accessKey: process.env.AGORA_AZURE_ACCESS_KEY, // Storage account name
+                        secretKey: process.env.AGORA_AZURE_SECRET_KEY  // Access key
+                    },
                     recordingConfig: {
                         channelType: 1,
                         streamTypes: 2,
