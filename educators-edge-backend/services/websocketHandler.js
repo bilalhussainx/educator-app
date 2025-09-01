@@ -311,8 +311,12 @@ function initializeWebSocket(wss) {
 
                         try {
                             const { resourceId, sid } = session.recording;
-                            // Future logic: await agoraService.stopCloudRecording(sessionKey, uuidv4(), resourceId, sid);
-                            log(`(Placeholder) Recording stopped for session ${sessionKey}, SID: ${sid}`);
+                            const channelName = sessionKey;
+                            
+                            // Call the Agora service to stop the recording
+                            await agoraService.stopCloudRecording(resourceId, sid, channelName);
+                            
+                            log(`Recording stopped for session ${sessionKey}, SID: ${sid}`);
 
                             session.recording = { isRecording: false, resourceId: null, sid: null, startTime: null };
                             broadcast(session, { type: 'RECORDING_STOPPED' });
