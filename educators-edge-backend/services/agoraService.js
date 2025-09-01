@@ -80,6 +80,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                         audioProfile: 1,
                         videoStreamType: 0,
                         maxRecordingHour: 12,
+                        maxIdleTime: 120,    // Keep recording active for 2 minutes of inactivity
                         transcodingConfig: {
                             width: 1280,
                             height: 720,
@@ -90,12 +91,9 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                         }
                     },
                     storageConfig: {
-                        vendor: 1,
-                        region: 1,
-                        bucket: "agora-cloud-recording",
-                        accessKey: "temp",
-                        secretKey: "temp",
-                        fileNamePrefix: ["recordings"]
+                        vendor: 0,        // Agora's built-in storage (no separate credentials needed)
+                        region: 1,        // US East (Virginia)
+                        fileNamePrefix: [`recordings/${courseId}/${Date.now()}`]
                     }
                 }
             },
@@ -165,6 +163,24 @@ const uploadToCloudinary = (fileBuffer, publicId) => {
 const stopCloudRecording = async (resourceId, sid, channelName, uid) => {
     try {
         console.log(`[AGORA SERVICE] Stopping recording for channel: ${channelName}, SID: ${sid}, ResourceID: ${resourceId}`);
+        
+        // First, query the recording status to ensure it's still active
+        console.log(`[AGORA SERVICE] Querying recording status first...`);
+        const queryUrl = `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`;
+        console.log(`[AGORA SERVICE] Query URL: ${queryUrl}`);
+        
+        try {
+            const queryResponse = await axios.get(queryUrl, {
+                headers: {
+                    'Authorization': getBasicAuthHeader(),
+                    'Content-Type': 'application/json',
+                },
+            });
+            console.log(`[AGORA SERVICE] Recording status query result:`, JSON.stringify(queryResponse.data, null, 2));
+        } catch (queryError) {
+            console.warn(`[AGORA SERVICE] Warning: Could not query recording status:`, queryError.response?.data || queryError.message);
+        }
+        
         console.log(`[AGORA SERVICE] Stop URL: ${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`);
         
         const requestBody = {

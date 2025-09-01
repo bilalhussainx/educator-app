@@ -343,15 +343,35 @@ function initializeWebSocket(wss) {
                                 errorDetails: error.response?.data || 'No response data'
                             });
                             
-                            // Send detailed error information back to client for debugging
-                            ws.send(JSON.stringify({ 
-                                type: 'RECORDING_FAILED', 
-                                payload: { 
-                                    message: 'The recording service failed to stop correctly.',
-                                    error: error.message,
-                                    details: error.response?.data || null
-                                } 
-                            }));
+                            // If the error is "failed to find worker", the recording may have already ended
+                            // In this case, we should still reset the session state and notify clients
+                            if (error.response?.data?.reason === 'failed to find worker') {
+                                console.log(`[RECORDING] Recording may have already ended naturally. Resetting session state.`);
+                                
+                                // Reset the session recording state
+                                session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
+                                
+                                // Notify clients that recording has stopped (even though it may have ended naturally)
+                                broadcast(session, { 
+                                    type: 'RECORDING_STOPPED', 
+                                    payload: { 
+                                        sid: session.recording.sid,
+                                        message: 'Recording ended (may have stopped automatically due to inactivity)'
+                                    } 
+                                });
+                                
+                                log(`Recording session ended for ${sessionKey} (recording may have auto-stopped)`);
+                            } else {
+                                // Send detailed error information back to client for debugging
+                                ws.send(JSON.stringify({ 
+                                    type: 'RECORDING_FAILED', 
+                                    payload: { 
+                                        message: 'The recording service failed to stop correctly.',
+                                        error: error.message,
+                                        details: error.response?.data || null
+                                    } 
+                                }));
+                            }
                         }
                         break;
 
