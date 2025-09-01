@@ -20,5 +20,3 @@ exports.getMyPortfolio = async (req, res) => {
         res.status(500).json({ error: 'Server error while fetching portfolio.' });
     }
 };
-
-=
