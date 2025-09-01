@@ -104,6 +104,7 @@ function initializeWebSocket(wss) {
                     isRecording: false,
                     resourceId: null,
                     sid: null,
+                    uid: null,
                     startTime: null
                 }
             });
@@ -267,6 +268,7 @@ function initializeWebSocket(wss) {
                                 isRecording: true,
                                 resourceId: result.resourceId,
                                 sid: result.sid,
+                                uid: result.uid,
                                 startTime: new Date()
                             };
                             
@@ -314,18 +316,18 @@ function initializeWebSocket(wss) {
                         }
 
                         try {
-                            const { resourceId, sid } = session.recording;
+                            const { resourceId, sid, uid } = session.recording;
                             const channelName = sessionKey;
                             
-                            console.log(`[WSS] Attempting to stop recording with resourceId: ${resourceId}, sid: ${sid}, channel: ${channelName}`);
+                            console.log(`[WSS] Attempting to stop recording with resourceId: ${resourceId}, sid: ${sid}, uid: ${uid}, channel: ${channelName}`);
                             
                             // Call the agoraService to stop the recording
-                            const result = await agoraService.stopCloudRecording(resourceId, sid, channelName);
+                            const result = await agoraService.stopCloudRecording(resourceId, sid, channelName, uid);
                             
                             log(`Recording stopped for session ${sessionKey}, SID: ${sid}`);
 
                             // Reset the session recording state
-                            session.recording = { isRecording: false, resourceId: null, sid: null, startTime: null };
+                            session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
                             
                             // Notify all clients that recording has stopped
                             broadcast(session, { type: 'RECORDING_STOPPED', payload: { sid, fileList: result.serverResponse?.fileList || [] } });
