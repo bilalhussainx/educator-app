@@ -524,10 +524,26 @@ const LiveTutorialPage: React.FC = () => {
 
     // --- Handlers and Functions ---
     const sendWsMessage = (type: string, payload?: object) => {
+        // Enhanced logging for recording-related messages
+        if (type.includes('RECORDING')) {
+            console.log(`[RECORDING] Sending ${type} message:`, { type, payload, timestamp: new Date().toISOString() });
+            console.log(`[RECORDING] WebSocket state:`, ws.current?.readyState, '(1=OPEN)');
+        }
+        
         if (ws.current?.readyState === WebSocket.OPEN) {
-            ws.current.send(JSON.stringify({ type, payload }));
+            const message = JSON.stringify({ type, payload });
+            ws.current.send(message);
+            
+            if (type.includes('RECORDING')) {
+                console.log(`[RECORDING] Message sent successfully:`, message);
+            }
         } else {
             console.error("WebSocket not open. Current state:", ws.current?.readyState);
+            
+            if (type.includes('RECORDING')) {
+                console.error(`[RECORDING] Failed to send ${type} - WebSocket not open`);
+            }
+            
             toast.error("Connection lost. Please refresh the page.");
         }
     };
@@ -535,7 +551,13 @@ const LiveTutorialPage: React.FC = () => {
     const initializeWebSocketEvents = (currentWs: WebSocket) => {
         currentWs.onmessage = async (event) => {
             const message = JSON.parse(event.data);
-            console.log("Received message:", message.type, message.payload);
+            
+            // Enhanced logging for recording messages
+            if (message.type?.includes('RECORDING')) {
+                console.log(`[RECORDING] Received ${message.type} message:`, message);
+            } else {
+                console.log("Received message:", message.type, message.payload);
+            }
             
             switch (message.type) {
                 case 'PRIVATE_MESSAGE': {
@@ -652,6 +674,7 @@ const LiveTutorialPage: React.FC = () => {
                 
                 // Recording message handlers
                 case 'RECORDING_STARTED':
+                    console.log('[RECORDING] Received RECORDING_STARTED message:', message);
                     setIsRecording(true);
                     toast.success('Recording started', {
                         description: 'This session is now being recorded.'
@@ -659,13 +682,22 @@ const LiveTutorialPage: React.FC = () => {
                     break;
                     
                 case 'RECORDING_STOPPED':
+                    console.log('[RECORDING] Received RECORDING_STOPPED message:', message);
                     setIsRecording(false);
                     toast.success('Recording stopped', {
                         description: 'Session recording has been saved.'
                     });
                     break;
                     
+                case 'RECORDING_FAILED':
+                    console.error('[RECORDING] Received RECORDING_FAILED message:', message);
+                    toast.error('Recording Failed', {
+                        description: message.payload?.message || 'Recording operation failed'
+                    });
+                    break;
+                    
                 case 'RECORDING_ERROR':
+                    console.error('[RECORDING] Received RECORDING_ERROR message:', message);
                     toast.error('Recording Error', {
                         description: message.payload.message
                     });
@@ -824,18 +856,35 @@ const LiveTutorialPage: React.FC = () => {
 
     // Recording handlers
     const handleStartRecording = () => {
+        console.log('[RECORDING] Start recording button clicked');
+        console.log('[RECORDING] Current state:', { isRecording, sessionId });
+        
         if (!sessionId) {
+            console.error('[RECORDING] No session ID available for recording');
             toast.error('Missing session information');
             return;
         }
         
-        sendWsMessage('START_RECORDING', {
+        const startPayload = {
             channelName: sessionId,
             courseId: sessionId // Use sessionId as fallback for courseId
-        });
+        };
+        
+        console.log('[RECORDING] Sending START_RECORDING message:', startPayload);
+        sendWsMessage('START_RECORDING', startPayload);
     };
 
     const handleStopRecording = () => {
+        console.log('[RECORDING] Stop recording button clicked');
+        console.log('[RECORDING] Current state:', { isRecording, sessionId });
+        
+        if (!isRecording) {
+            console.warn('[RECORDING] Attempted to stop recording but isRecording is false');
+            toast.warning('No active recording to stop');
+            return;
+        }
+        
+        console.log('[RECORDING] Sending STOP_RECORDING message');
         sendWsMessage('STOP_RECORDING', {});
     };
 
@@ -938,7 +987,14 @@ const LiveTutorialPage: React.FC = () => {
                         {role === 'teacher' && (
                             <Button 
                                 size="sm" 
-                                onClick={isRecording ? handleStopRecording : handleStartRecording}
+                                onClick={() => {
+                                    console.log(`[RECORDING] Recording button clicked - Current state: isRecording=${isRecording}`);
+                                    if (isRecording) {
+                                        handleStopRecording();
+                                    } else {
+                                        handleStartRecording();
+                                    }
+                                }}
                                 variant={isRecording ? "destructive" : "outline"}
                                 className={isRecording ? "animate-pulse" : ""}
                             >
