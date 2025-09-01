@@ -33,6 +33,34 @@ const getBasicAuthHeader = () => {
  */
 const startCloudRecording = async (channelName, courseId, teacherId) => {
     try {
+        // Validate required environment variables
+        const requiredVars = [
+            'AGORA_APP_ID',
+            'AGORA_CUSTOMER_ID', 
+            'AGORA_CUSTOMER_SECRET'
+        ];
+        
+        const azureRequiredVars = [
+            'AGORA_AZURE_CONTAINER',
+            'AGORA_AZURE_ACCOUNT_NAME', 
+            'AGORA_AZURE_ACCESS_KEY'
+        ];
+        
+        // Check if we have alternative naming for Azure vars
+        const hasAzureContainer = process.env.AGORA_AZURE_CONTAINER || process.env.AGORA_AZURE_BUCKET;
+        const hasAzureAccount = process.env.AGORA_AZURE_ACCOUNT_NAME || process.env.AGORA_AZURE_ACCESS_KEY;
+        const hasAzureKey = process.env.AGORA_AZURE_ACCESS_KEY || process.env.AGORA_AZURE_SECRET_KEY;
+        
+        for (const varName of requiredVars) {
+            if (!process.env[varName]) {
+                throw new Error(`Missing required environment variable: ${varName}`);
+            }
+        }
+        
+        if (!hasAzureContainer || !hasAzureAccount || !hasAzureKey) {
+            throw new Error(`Missing Azure storage configuration. Required: AGORA_AZURE_CONTAINER (or AGORA_AZURE_BUCKET), AGORA_AZURE_ACCOUNT_NAME, AGORA_AZURE_ACCESS_KEY`);
+        }
+
         const recordingBotUid = String(Math.floor(Math.random() * 10000000) + 1);
         
         console.log(`[AGORA SERVICE] Acquiring resource for channel: ${channelName} with Bot UID: ${recordingBotUid}`);
@@ -66,11 +94,11 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                     token: "",
                     // CRITICAL: storageConfig is REQUIRED to avoid "services not selected!" error
                     storageConfig: {
-                        vendor: 5,  // 0: Qiniu, 1: Amazon S3, 2: Alibaba Cloud, 3: Tencent Cloud, 4: Kingsoft Cloud, 5: Microsoft Azure, 6: Google Cloud, 7: Huawei Cloud, 8: Baidu Cloud
-                        region: 0,  // Region varies by vendor - check Agora docs for your storage provider
-                        bucket: process.env.AGORA_AZURE_BUCKET,
-                        accessKey: process.env.AGORA_AZURE_ACCESS_KEY,
-                        secretKey: process.env.AGORA_AZURE_SECRET_KEY,
+                        vendor: 5,  // Microsoft Azure Blob Storage
+                        region: 0,  // For Azure, region parameter has no effect - always use 0
+                        bucket: process.env.AGORA_AZURE_CONTAINER || process.env.AGORA_AZURE_BUCKET,  // Azure container name
+                        accessKey: process.env.AGORA_AZURE_ACCOUNT_NAME || process.env.AGORA_AZURE_ACCESS_KEY,  // Azure storage account name
+                        secretKey: process.env.AGORA_AZURE_ACCESS_KEY || process.env.AGORA_AZURE_SECRET_KEY,  // Azure access key
                         fileNamePrefix: ["recordings", channelName]
                     },
                     recordingConfig: {
@@ -129,7 +157,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         console.error("Channel Name:", channelName);
         console.error("Course ID:", courseId);
         console.error("Teacher ID:", teacherId);
-        console.error("Recording Bot UID:", recordingBotUid);
+        console.error("Recording Bot UID:", recordingBotUid || "undefined");
         
         if (error.config) {
             console.error("Request URL:", error.config.url);
