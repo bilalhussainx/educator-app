@@ -104,7 +104,10 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         );
         console.log(`[DB] Placeholder record created for SID: ${sid}`);
 
-        return startResponse.data;
+        return {
+            ...startResponse.data,
+            uid: recordingBotUid  // Include the UID so we can use it for stopping
+        };
 
     } catch (error) {
         const errorDetails = error.response ? error.response.data : { message: error.message };
@@ -144,7 +147,7 @@ const uploadToCloudinary = (fileBuffer, publicId) => {
 /**
  * Stops a cloud recording using the same pattern as startCloudRecording
  */
-const stopCloudRecording = async (resourceId, sid, channelName) => {
+const stopCloudRecording = async (resourceId, sid, channelName, uid) => {
     try {
         console.log(`[AGORA SERVICE] Stopping recording for SID: ${sid}`);
         
@@ -152,7 +155,7 @@ const stopCloudRecording = async (resourceId, sid, channelName) => {
             `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
             {
                 cname: channelName,
-                uid: "0",
+                uid: uid || "0",  // Use the provided UID or fallback to "0"
                 clientRequest: {}
             },
             {
