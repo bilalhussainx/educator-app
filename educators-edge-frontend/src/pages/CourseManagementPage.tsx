@@ -146,7 +146,7 @@ const CourseManagementPage: React.FC = () => {
                         <TabsList>
                             <TabsTrigger value="curriculum"><BookOpen className="h-5 w-5 mr-2"/>Curriculum</TabsTrigger>
                             <TabsTrigger value="students" disabled><Users className="h-5 w-5 mr-2"/>Students</TabsTrigger>
-                            <TabsTrigger value="sessions" disabled><RadioTower className="h-5 w-5 mr-2"/>Sessions</TabsTrigger>
+                            <TabsTrigger value="sessions"><RadioTower className="h-5 w-5 mr-2"/>Live Sessions</TabsTrigger>
                             <TabsTrigger value="settings"><Settings className="h-5 w-5 mr-2"/>Settings</TabsTrigger>
                         </TabsList>
                         
@@ -187,6 +187,35 @@ const CourseManagementPage: React.FC = () => {
                                                 </Button>
                                             </div>
                                         )}
+                                    </div>
+                                </CardContent>
+                            </GlassCard>
+                        </TabsContent>
+
+                        <TabsContent value="sessions">
+                            <GlassCard>
+                                <CardHeader>
+                                    <div className="flex flex-wrap gap-4 justify-between items-center">
+                                        <div>
+                                            <CardTitle className="text-2xl text-white">Live Tutoring Sessions</CardTitle>
+                                            <CardDescription className="text-gray-400">Manage recordings from your live tutoring sessions.</CardDescription>
+                                        </div>
+                                        <Button onClick={() => navigate(`/courses/${course.id}/recordings`)} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
+                                            <RadioTower className="mr-2 h-4 w-4" /> View Session Recordings
+                                        </Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-center py-12 border-2 border-dashed border-slate-700 rounded-lg bg-slate-950/20">
+                                        <RadioTower className="mx-auto h-12 w-12 text-cyan-400/50 mb-4" />
+                                        <h3 className="text-lg font-medium text-gray-300 mb-2">Session Recordings</h3>
+                                        <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                                            Your live tutoring session recordings are automatically saved and available for students to review. 
+                                            Click the button above to view and manage your recordings.
+                                        </p>
+                                        <Button onClick={() => navigate(`/courses/${course.id}/recordings`)} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
+                                            <RadioTower className="mr-2 h-4 w-4" /> View All Recordings
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </GlassCard>

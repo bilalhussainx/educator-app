@@ -33,6 +33,7 @@ import CourseManagementPage from './pages/CourseManagementPage';
 import DiscoverCoursesPage from './pages/DiscoverCoursesPage';
 import CourseLandingPage from './pages/CourseLandingPage';
 import StudentCoursePage from './pages/StudentCoursePage';
+import { RecordingsPage } from './pages/RecordingsPage';
 import mixpanel from 'mixpanel-browser';
 import LessonLoaderPage from './pages/LessonLoaderPage';
 import CreateChapterPage from './pages/CreateChapterPage';
@@ -137,6 +138,7 @@ export default function App() {
                 {/* Teacher-Only Routes */}
                 <Route path="/courses/new" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><CreateCoursePage /></ProtectedRoute>} />
                 <Route path="/courses/:courseId/manage" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><CourseManagementPage /></ProtectedRoute>} />
+                <Route path="/courses/:courseId/recordings" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><RecordingsPage /></ProtectedRoute>} />
                 <Route path="/lessons/new" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><CreateLessonPage /></ProtectedRoute>} />
                 <Route path="/submissions/:lessonId" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><SubmissionsPage /></ProtectedRoute>} />
 
