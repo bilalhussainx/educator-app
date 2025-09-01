@@ -63,12 +63,31 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                 cname: channelName,
                 uid: recordingBotUid,
                 clientRequest: {
+                    token: "",
                     recordingConfig: {
                         channelType: 1,
                         streamTypes: 2,
-                        transcodingConfig: { "width": 1280, "height": 720, "fps": 30, "bitrate": 2000, "mixedVideoLayout": 1 },
+                        audioProfile: 1,
+                        videoStreamType: 0,
+                        maxRecordingHour: 12,
+                        transcodingConfig: {
+                            width: 1280,
+                            height: 720,
+                            fps: 30,
+                            bitrate: 2000,
+                            mixedVideoLayout: 1,
+                            backgroundColor: "#000000"
+                        }
+                    },
+                    storageConfig: {
+                        vendor: 1,
+                        region: 1,
+                        bucket: "agora-cloud-recording",
+                        accessKey: "temp",
+                        secretKey: "temp",
+                        fileNamePrefix: ["recordings"]
                     }
-                },
+                }
             },
             {
                 headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' },
