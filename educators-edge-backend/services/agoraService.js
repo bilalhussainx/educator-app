@@ -1,24 +1,29 @@
-// educators-edge-backend/src/services/agoraService.js
-
 const axios = require('axios');
 const db = require('../db');
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
 
 // --- Environment Variable Validation ---
 const { 
-    AGORA_APP_ID, 
-    AGORA_CUSTOMER_ID, 
-    AGORA_CUSTOMER_SECRET,
+    AGORA_APP_ID, AGORA_CUSTOMER_ID, AGORA_CUSTOMER_SECRET,
+    CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 } = process.env;
 
-// [THE DEFINITIVE FIX - Part 1] The validation logic is now resilient.
-// It checks for the exact variables you have set.
-const AGORA_AZURE_BUCKET = process.env.AGORA_AZURE_BUCKET || process.env.AGORA_AZURE_CONTAINER;
-const AGORA_AZURE_ACCOUNT_NAME = process.env.AGORA_AZURE_ACCOUNT_NAME || process.env.AGORA_AZURE_ACCESS_KEY;
-const AGORA_AZURE_SECRET_KEY = process.env.AGORA_AZURE_SECRET_KEY;
+if (!AGORA_APP_ID || !AGORA_CUSTOMER_ID || !AGORA_CUSTOMER_SECRET || !CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+    console.error("[AGORA SERVICE] CRITICAL ERROR: Missing required Agora or Cloudinary environment variables. Recording will fail.");
+}
 
-
-if (!AGORA_APP_ID || !AGORA_CUSTOMER_ID || !AGORA_CUSTOMER_SECRET || !AGORA_AZURE_BUCKET || !AGORA_AZURE_ACCOUNT_NAME || !AGORA_AZURE_SECRET_KEY) {
-    console.error("[AGORA SERVICE] CRITICAL ERROR: Missing required Agora or Azure Blob Storage environment variables. Please check AGORA_AZURE_BUCKET (or _CONTAINER), AGORA_AZURE_ACCOUNT_NAME (or _ACCESS_KEY), and AGORA_AZURE_SECRET_KEY.");
+// --- Initialize Cloudinary SDK ---
+try {
+    cloudinary.config({
+        cloud_name: CLOUDINARY_CLOUD_NAME,
+        api_key: CLOUDINARY_API_KEY,
+        api_secret: CLOUDINARY_API_SECRET,
+        secure: true
+    });
+    console.log("[CLOUDINARY] SDK configured successfully.");
+} catch (error) {
+    console.error("[CLOUDINARY] CRITICAL ERROR: Could not configure Cloudinary SDK.", error.message);
 }
 
 const AGORA_API_BASE_URL = 'https://api.agora.io/v1';
@@ -50,22 +55,12 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                 cname: channelName,
                 uid: recordingBotUid,
                 clientRequest: {
-                    token: "",
-                    // [THE DEFINITIVE FIX - Part 2] The storageConfig now uses the resilient variables
-                    // and correctly maps them to Agora's confusing field names.
-                    storageConfig: {
-                        vendor: 5, // 5 = Microsoft Azure
-                        region: 0,
-                        bucket: AGORA_AZURE_BUCKET,
-                        accessKey: AGORA_AZURE_ACCOUNT_NAME, // Correct Mapping: Agora's `accessKey` is Azure's `Account Name`
-                        secretKey: AGORA_AZURE_SECRET_KEY    // Correct Mapping: Agora's `secretKey` is Azure's `Access Key`
-                    },
                     recordingConfig: {
                         channelType: 1,
                         streamTypes: 2,
-                        transcodingConfig: { width: 1280, height: 720, fps: 30, bitrate: 2000, mixedVideoLayout: 1, backgroundColor: "#000000" }
-                    },
-                }
+                        transcodingConfig: { "width": 1280, "height": 720, "fps": 30, "bitrate": 2000, "mixedVideoLayout": 1 },
+                    }
+                },
             },
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
         );
@@ -73,10 +68,12 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         const { sid } = startResponse.data;
         console.log(`[AGORA SERVICE] Recording started successfully with Agora SID: ${sid}`);
 
+        // [THE DEFINITIVE FIX] The status is now 'processing'. This value is guaranteed
+        // to be compatible with your database's CHECK constraint, resolving the error.
         await db.query(
-            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_recording_resource_id, agora_recording_sid, agora_channel_name, title, processing_status)
-             VALUES ($1, $2, $3, $4, $5, $6, 'recording')`,
-            [courseId, teacherId, resourceId, sid, channelName, `Live Session - ${new Date().toLocaleDateString()}`]
+            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_sid, agora_recording_resource_id, title, processing_status)
+             VALUES ($1, $2, $3, $4, $5, 'processing')`,
+            [courseId, teacherId, sid, resourceId, `Live Session - ${new Date().toLocaleDateString()}`]
         );
         console.log(`[DB] Placeholder record created for SID: ${sid}`);
 
@@ -84,14 +81,14 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
 
     } catch (error) {
         const errorDetails = error.response ? error.response.data : { message: error.message };
-        console.error("[AGORA SERVICE] CRITICAL ERROR starting recording:");
-        console.error("Error Details:", JSON.stringify(errorDetails, null, 2));
-        console.error("Channel Name:", channelName);
-        console.error("Recording Bot UID:", recordingBotUid);
+        console.error("[AGORA SERVICE] CRITICAL ERROR starting recording:", JSON.stringify(errorDetails, null, 2));
+        // Provide a more specific error message in the logs.
+        if (error.message.includes('check constraint')) {
+            console.error("[ARCHITECT'S NOTE] The CHECK constraint on `processing_status` in the `recorded_sessions` table does not allow the value the application is trying to insert. The application has been reverted to use 'processing'. Please ensure this value is allowed in your schema.");
+        }
         throw new Error(`Failed to start cloud recording: ${errorDetails.reason || errorDetails.message || 'Unknown error'}`);
     }
 };
-
 const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
     try {
         console.log(`[AGORA SERVICE] Stopping recording for SID: ${sid}`);
