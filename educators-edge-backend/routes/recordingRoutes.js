@@ -69,12 +69,15 @@ router.post('/webhook/recording-complete', async (req, res) => {
     }
 });
 
-// Get recordings for a course (teacher view)
+// Get recordings for a course (teacher view - shows teacher's own live session recordings)
 router.get('/course/:courseId', async (req, res) => {
     try {
         const { courseId } = req.params;
         const { userId } = req.user; // From auth middleware
         
+        console.log(`[RECORDINGS] Teacher recordings request for teacher: "${userId}"`);
+        
+        // Show all recordings created by this teacher (from live tutoring sessions)
         const recordings = await db.query(`
             SELECT 
                 id,
@@ -85,12 +88,14 @@ router.get('/course/:courseId', async (req, res) => {
                 ai_topics,
                 processing_status,
                 recorded_at,
-                created_at
+                created_at,
+                course_id
             FROM recorded_sessions 
-            WHERE course_id = $1 AND teacher_id = $2
+            WHERE teacher_id = $1
             ORDER BY recorded_at DESC
-        `, [courseId, userId]);
+        `, [userId]);
 
+        console.log(`[RECORDINGS] Found ${recordings.rows.length} recordings created by teacher ${userId}`);
         res.json({ recordings: recordings.rows });
         
     } catch (error) {
@@ -99,25 +104,15 @@ router.get('/course/:courseId', async (req, res) => {
     }
 });
 
-// Get recordings for students (filtered, completed only)
+// Get recordings for students (all recordings from live sessions)
 router.get('/course/:courseId/student', async (req, res) => {
     try {
         const { courseId } = req.params;
         
-        console.log(`[RECORDINGS] Student recordings request for courseId: "${courseId}"`);
+        console.log(`[RECORDINGS] Student recordings request for courseId: "${courseId}" - showing all live session recordings`);
         
-        // Validate UUID format
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(courseId)) {
-            console.error(`[RECORDINGS] Invalid UUID format for courseId: "${courseId}"`);
-            return res.status(400).json({ 
-                error: 'Invalid course ID format. Expected UUID.',
-                details: `Received courseId: "${courseId}". This should be a valid UUID format like: 123e4567-e89b-12d3-a456-426614174000`,
-                suggestion: 'Check that you are using the correct course ID from the course data. Course IDs should be UUIDs, not integers.'
-            });
-        }
-        
-        // For now, show all recordings regardless of processing status for debugging
+        // Since recordings are from live tutoring sessions (not course-specific),
+        // show ALL recordings to students regardless of the courseId parameter
         const recordings = await db.query(`
             SELECT 
                 id,
@@ -127,13 +122,14 @@ router.get('/course/:courseId/student', async (req, res) => {
                 ai_summary,
                 ai_topics,
                 recorded_at,
-                processing_status
+                processing_status,
+                course_id
             FROM recorded_sessions 
-            WHERE course_id = $1 
+            WHERE processing_status IN ('completed', 'processing', 'transcribing', 'enriching')
             ORDER BY recorded_at DESC
-        `, [courseId]);
+        `);
 
-        console.log(`[RECORDINGS] Found ${recordings.rows.length} completed recordings for course ${courseId}`);
+        console.log(`[RECORDINGS] Found ${recordings.rows.length} live session recordings available to all students`);
         res.json({ recordings: recordings.rows });
         
     } catch (error) {
