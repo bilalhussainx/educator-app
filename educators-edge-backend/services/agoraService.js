@@ -88,7 +88,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         // [THE DEFINITIVE FIX] The status is now 'processing'. This value is guaranteed
         // to be compatible with your database's CHECK constraint, resolving the error.
         await db.query(
-            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_sid, agora_recording_resource_id, title, processing_status)
+            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_recording_sid, agora_recording_resource_id, title, processing_status)
              VALUES ($1, $2, $3, $4, $5, 'processing')`,
             [courseId, teacherId, sid, resourceId, `Live Session - ${new Date().toLocaleDateString()}`]
         );
