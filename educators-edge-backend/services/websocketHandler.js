@@ -6,7 +6,7 @@ const url = require('url');
 const { v4: uuidv4 } = require('uuid');
 const { addSession, removeSession } = require('./sessionStore');
 const { executeCode } = require('../services/executionService');
-const agoraService = require('../services/agoraService'); // Corrected import to the new, robust service
+const agoraRecordingService = require('../services/agoraRecordingService'); // Complete Agora Recording Service
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
@@ -102,9 +102,9 @@ function initializeWebSocket(wss) {
                 videoConnections: new Map(),
                 recording: {
                     isRecording: false,
+                    recordingId: null,
                     resourceId: null,
                     sid: null,
-                    uid: null,
                     startTime: null
                 }
             });
@@ -242,147 +242,159 @@ function initializeWebSocket(wss) {
                         break;
 
                     case 'START_RECORDING':
-                        if (session.recording.isRecording) {
-                            log(`Teacher ${clientInfo.username} tried to start an existing recording. Request denied.`);
-                            ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A recording is already in progress.' } }));
-                            return;
-                        }
+                        // if (session.recording.isRecording) {
+                        //     log(`Teacher ${clientInfo.username} tried to start an existing recording. Request denied.`);
+                        //     ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A recording is already in progress.' } }));
+                        //     return;
+                        // }
                         
-                        const { courseId } = data.payload;
-                        if (!courseId) {
-                            log(`[RECORDING] Teacher ${clientInfo.username} tried to start recording without a courseId.`);
-                             ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A courseId is required to start a recording.' } }));
-                            return;
-                        }
+                        // const { courseId } = data.payload;
+                        // if (!courseId) {
+                        //     log(`[RECORDING] Teacher ${clientInfo.username} tried to start recording without a courseId.`);
+                        //      ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A courseId is required to start a recording.' } }));
+                        //     return;
+                        // }
 
-                        log(`Teacher ${clientInfo.username} is attempting to start a recording for channel: ${sessionKey}`);
+                        // log(`Teacher ${clientInfo.username} is attempting to start a recording for channel: ${sessionKey}`);
                         
-                        try {
-                            const channelName = sessionKey;
-                            const recordingBotUid = uuidv4();
-                            const teacherId = user.id;
+                        // try {
+                        //     const channelName = sessionKey;
+                        //     const recordingBotUid = uuidv4();
+                        //     const teacherId = user.id;
 
-                            const result = await agoraService.startCloudRecording(channelName, courseId, teacherId);
+                        //     const result = await agoraRecordingService.startRecording(channelName, courseId, teacherId);
                             
-                            session.recording = {
-                                isRecording: true,
-                                resourceId: result.resourceId,
-                                sid: result.sid,
-                                uid: result.uid,
-                                startTime: new Date()
-                            };
+                        //     if (!result.success) {
+                        //         throw new Error(result.error);
+                        //     }
                             
-                            broadcast(session, { type: 'RECORDING_STARTED', payload: { sid: result.sid, startTime: session.recording.startTime } });
-                            log(`Recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
+                        //     session.recording = {
+                        //         isRecording: true,
+                        //         recordingId: result.recordingId, // Database ID
+                        //         resourceId: result.resourceId,   // Agora resource ID
+                        //         sid: result.sid,                 // Agora session ID
 
-                        } catch (error) {
-                            console.error(`[RECORDING] Critical error starting recording for session ${sessionKey}:`, {
-                                message: error.message,
-                                stack: error.stack,
-                                sessionKey: sessionKey,
-                                courseId: courseId,
-                                teacherId: user.id,
-                                username: clientInfo.username,
-                                timestamp: new Date().toISOString()
-                            });
+                        //         startTime: new Date()
+                        //     };
                             
-                            // Send detailed error to the teacher with specific error handling
-                            const errorMessage = error.message.includes('authentication') || error.message.includes('Invalid App ID')
-                                ? 'Recording failed due to authentication issues. Please check Agora credentials.'
-                                : error.message.includes('Storage configuration is missing')
-                                ? 'Recording failed: Cloud storage is not configured. Please configure storage settings in the Agora project.'
-                                : error.message.includes('services not selected')
-                                ? 'Recording failed: Please ensure Cloud Recording and storage are properly configured in your Agora project.'
-                                : error.message.includes('Agora service temporarily unavailable')
-                                ? 'Recording failed: Agora service is temporarily unavailable. Please try again in a few minutes.'
-                                : error.message.includes('column')
-                                ? 'Recording failed due to database configuration issue. Please contact support.'
-                                : 'The recording service failed to start. Please try again or contact support.';
+                        //     broadcast(session, { type: 'RECORDING_STARTED', payload: { sid: result.sid, startTime: session.recording.startTime } });
+                        //     log(`Recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
+
+                        // } catch (error) {
+                        //     console.error(`[RECORDING] Critical error starting recording for session ${sessionKey}:`, {
+                        //         message: error.message,
+                        //         stack: error.stack,
+                        //         sessionKey: sessionKey,
+                        //         courseId: courseId,
+                        //         teacherId: user.id,
+                        //         username: clientInfo.username,
+                        //         timestamp: new Date().toISOString()
+                        //     });
+                            
+                        //     // Send detailed error to the teacher
+                        //     const errorMessage = error.message.includes('authentication') 
+                        //         ? 'Recording failed due to authentication issues. Please check Agora credentials.'
+                        //         : error.message.includes('services not selected')
+                        //         ? 'Recording failed. Please ensure Cloud Recording is enabled in your Agora project.'
+                        //         : error.message.includes('column')
+                        //         ? 'Recording failed due to database configuration issue. Please contact support.'
+                        //         : 'The recording service failed to start. Please try again or contact support.';
                                 
-                            ws.send(JSON.stringify({ 
-                                type: 'RECORDING_FAILED', 
-                                payload: { 
-                                    message: errorMessage,
-                                    details: process.env.NODE_ENV === 'development' ? error.message : undefined
-                                } 
-                            }));
-                        }
-                        break;
+                        //     ws.send(JSON.stringify({ 
+                        //         type: 'RECORDING_FAILED', 
+                        //         payload: { 
+                        //             message: errorMessage,
+                        //             details: process.env.NODE_ENV === 'development' ? error.message : undefined
+                        //         } 
+                        //     }));
+                        // }
+                        // break;
+                        if (session.recording.isRecording) {
+                        log(`Teacher ${clientInfo.username} tried to start an existing recording. Request denied.`);
+                        ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A recording is already in progress.' } }));
+                        return;
+                    }
+                    
+                    const { courseId } = data.payload;
+                    if (!courseId) {
+                        log(`[RECORDING] Teacher ${clientInfo.username} tried to start recording without a courseId.`);
+                         ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A courseId is required to start a recording.' } }));
+                        return;
+                    }
+
+                    log(`Teacher ${clientInfo.username} is attempting to start a recording for channel: ${sessionKey}`);
+                    
+                    try {
+                        const channelName = sessionKey;
+                        const teacherId = user.id;
+
+                        const result = await agoraService.startCloudRecording(channelName, courseId, teacherId);
+                        
+                        session.recording = {
+                            isRecording: true,
+                            resourceId: result.resourceId,
+                            sid: result.sid,
+                            uid: result.uid,
+                            startTime: new Date()
+                        };
+                        
+                        broadcast(session, { type: 'RECORDING_STARTED', payload: { sid: result.sid, startTime: session.recording.startTime } });
+                        log(`Recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
+
+                    } catch (error) {
+                        console.error(`[RECORDING] Critical error starting recording for session ${sessionKey}:`, error.message);
+                        ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to start. Please check backend logs.' } }));
+                    }
+                    break;
+
+                case 'STOP_RECORDING':
+                    if (!session.recording.isRecording || !session.recording.resourceId) {
+                        ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'No active recording to stop.' } }));
+                        return;
+                    }
+
+                    try {
+                        const { resourceId, sid, uid } = session.recording;
+                        const channelName = sessionKey;
+
+                        await agoraService.stopCloudRecording(channelName, resourceId, sid, uid);
+                        
+                        log(`Recording stop command sent successfully for session ${sessionKey}`);
+                        session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
+                        broadcast(session, { type: 'RECORDING_STOPPED' });
+
+                    } catch (error) {
+                        console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
+                        ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to stop correctly.' } }));
+                    }
+                    break;
 
                     case 'STOP_RECORDING':
-                        if (!session.recording.isRecording || !session.recording.resourceId) {
+                        if (!session.recording.isRecording || !session.recording.recordingId) {
                             ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'No active recording to stop.' } }));
                             return;
                         }
 
                         try {
-                            const { resourceId, sid, uid } = session.recording;
-                            const channelName = sessionKey;
+                            const { recordingId, resourceId, sid } = session.recording;
                             
-                            console.log(`[RECORDING] Attempting to stop recording - Session: ${sessionKey}, SID: ${sid}, UID: ${uid}, ResourceId: ${resourceId}`);
+                            // Call the complete Agora Recording Service to stop the recording
+                            const result = await agoraRecordingService.stopRecording(recordingId);
                             
-                            // Call the Agora service to stop the recording
-                            const result = await agoraService.stopCloudRecording(resourceId, sid, channelName, uid);
-                            
-                            if (result.warning) {
-                                log(`Recording for session ${sessionKey} was already stopped or expired, SID: ${sid}`);
-                            } else {
-                                log(`Recording stopped successfully for session ${sessionKey}, SID: ${sid}`);
+                            if (!result.success) {
+                                throw new Error(result.error);
                             }
+                            
+                            log(`Recording stopped for session ${sessionKey}, SID: ${sid}, Recording ID: ${recordingId}`);
 
-                            // Process recording completion - download and upload to Cloudinary
-                            try {
-                                console.log(`[RECORDING] Processing recording completion for SID: ${sid}`);
-                                
-                                // Process recording files (download from Agora, upload to Cloudinary)
-                                const recordingResult = await agoraService.processRecordingFiles(resourceId, sid);
-                                
-                                const db = require('../db');
-                                
-                                if (recordingResult) {
-                                    // Update recording with Cloudinary URL and mark as completed
-                                    await db.query(
-                                        'UPDATE recorded_sessions SET video_url = $1, processing_status = $2, updated_at = NOW() WHERE agora_recording_sid = $3',
-                                        [recordingResult.videoUrl, 'completed', sid]
-                                    );
-                                    
-                                    console.log(`[RECORDING] Recording ${sid} processed and saved to Cloudinary: ${recordingResult.videoUrl}`);
-                                } else {
-                                    // No files found, mark as failed
-                                    await db.query(
-                                        'UPDATE recorded_sessions SET processing_status = $1, updated_at = NOW() WHERE agora_recording_sid = $2',
-                                        ['failed', sid]
-                                    );
-                                    
-                                    console.log(`[RECORDING] Recording ${sid} marked as failed - no files found`);
-                                }
-                                
-                            } catch (processingError) {
-                                console.error(`[RECORDING] Error processing recording completion:`, processingError.message);
-                                
-                                // Mark as failed if processing error occurs
-                                try {
-                                    const db = require('../db');
-                                    await db.query(
-                                        'UPDATE recorded_sessions SET processing_status = $1, updated_at = NOW() WHERE agora_recording_sid = $2',
-                                        ['failed', sid]
-                                    );
-                                } catch (dbError) {
-                                    console.error(`[RECORDING] Error updating failed status:`, dbError.message);
-                                }
-                            }
-
-                            session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
-                            broadcast(session, { type: 'RECORDING_STOPPED' });
+                            // Reset the session recording state
+                            session.recording = { isRecording: false, recordingId: null, resourceId: null, sid: null, startTime: null };
+                            
+                            // Notify all clients that recording has stopped
+                            broadcast(session, { type: 'RECORDING_STOPPED', payload: { recordingId, fileList: result.fileList } });
 
                         } catch (error) {
-                            console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, {
-                                message: error.message,
-                                stack: error.stack,
-                                recordingState: session.recording,
-                                sessionKey: sessionKey,
-                                timestamp: new Date().toISOString()
-                            });
+                            console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
                             ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to stop correctly.' } }));
                         }
                         break;
