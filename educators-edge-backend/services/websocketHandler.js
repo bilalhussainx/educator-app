@@ -274,8 +274,32 @@ function initializeWebSocket(wss) {
                             log(`Recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
 
                         } catch (error) {
-                            console.error(`[RECORDING] Critical error starting recording for session ${sessionKey}:`, error.message);
-                            ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to start. Please check backend logs.' } }));
+                            console.error(`[RECORDING] Critical error starting recording for session ${sessionKey}:`, {
+                                message: error.message,
+                                stack: error.stack,
+                                sessionKey: sessionKey,
+                                courseId: courseId,
+                                teacherId: user.id,
+                                username: clientInfo.username,
+                                timestamp: new Date().toISOString()
+                            });
+                            
+                            // Send detailed error to the teacher
+                            const errorMessage = error.message.includes('authentication') 
+                                ? 'Recording failed due to authentication issues. Please check Agora credentials.'
+                                : error.message.includes('services not selected')
+                                ? 'Recording failed. Please ensure Cloud Recording is enabled in your Agora project.'
+                                : error.message.includes('column')
+                                ? 'Recording failed due to database configuration issue. Please contact support.'
+                                : 'The recording service failed to start. Please try again or contact support.';
+                                
+                            ws.send(JSON.stringify({ 
+                                type: 'RECORDING_FAILED', 
+                                payload: { 
+                                    message: errorMessage,
+                                    details: process.env.NODE_ENV === 'development' ? error.message : undefined
+                                } 
+                            }));
                         }
                         break;
 

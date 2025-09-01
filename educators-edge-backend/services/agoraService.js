@@ -98,7 +98,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         console.log(`[AGORA SERVICE] Recording started successfully with Agora SID: ${sid}`);
 
         await db.query(
-            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_sid, title, processing_status)
+            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_recording_sid, title, processing_status)
              VALUES ($1, $2, $3, $4, 'processing')`,
             [courseId, teacherId, sid, `Live Session - ${new Date().toLocaleDateString()}`]
         );
