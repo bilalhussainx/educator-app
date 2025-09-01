@@ -6,7 +6,7 @@ const url = require('url');
 const { v4: uuidv4 } = require('uuid');
 const { addSession, removeSession } = require('./sessionStore');
 const { executeCode } = require('../services/executionService');
-const agoraService = require('../services/agoraService'); // Agora Service
+const agoraService = require('../services/agoraService'); // Corrected import to the new, robust service
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
@@ -104,7 +104,6 @@ function initializeWebSocket(wss) {
                     isRecording: false,
                     resourceId: null,
                     sid: null,
-                    uid: null,
                     startTime: null
                 }
             });
@@ -268,7 +267,6 @@ function initializeWebSocket(wss) {
                                 isRecording: true,
                                 resourceId: result.resourceId,
                                 sid: result.sid,
-                                uid: result.uid,
                                 startTime: new Date()
                             };
                             
@@ -306,74 +304,22 @@ function initializeWebSocket(wss) {
                         break;
 
                     case 'STOP_RECORDING':
-                        console.log(`[WSS] STOP_RECORDING requested for session ${sessionKey}`);
-                        console.log(`[WSS] Session recording state:`, JSON.stringify(session.recording, null, 2));
-                        
                         if (!session.recording.isRecording || !session.recording.resourceId) {
-                            console.log(`[WSS] No active recording to stop - isRecording: ${session.recording.isRecording}, resourceId: ${session.recording.resourceId}`);
                             ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'No active recording to stop.' } }));
                             return;
                         }
 
                         try {
-                            const { resourceId, sid, uid } = session.recording;
-                            const channelName = sessionKey;
-                            
-                            console.log(`[WSS] Attempting to stop recording with resourceId: ${resourceId}, sid: ${sid}, uid: ${uid}, channel: ${channelName}`);
-                            
-                            // Call the agoraService to stop the recording
-                            const result = await agoraService.stopCloudRecording(resourceId, sid, channelName, uid);
-                            
-                            log(`Recording stopped for session ${sessionKey}, SID: ${sid}`);
+                            const { resourceId, sid } = session.recording;
+                            // Future logic: await agoraService.stopCloudRecording(sessionKey, uuidv4(), resourceId, sid);
+                            log(`(Placeholder) Recording stopped for session ${sessionKey}, SID: ${sid}`);
 
-                            // Reset the session recording state
-                            session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
-                            
-                            // Notify all clients that recording has stopped
-                            broadcast(session, { type: 'RECORDING_STOPPED', payload: { sid, fileList: result.serverResponse?.fileList || [] } });
+                            session.recording = { isRecording: false, resourceId: null, sid: null, startTime: null };
+                            broadcast(session, { type: 'RECORDING_STOPPED' });
 
                         } catch (error) {
-                            console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, {
-                                message: error.message,
-                                stack: error.stack,
-                                sessionKey: sessionKey,
-                                resourceId: session.recording.resourceId,
-                                sid: session.recording.sid,
-                                timestamp: new Date().toISOString(),
-                                errorDetails: error.response?.data || 'No response data'
-                            });
-                            
-                            // If the error is "failed to find worker", the recording may have already ended
-                            // In this case, we should still reset the session state and notify clients
-                            if (error.response?.data?.reason === 'failed to find worker') {
-                                console.log(`[RECORDING] Recording may have already ended naturally. Resetting session state.`);
-                                
-                                const previousSid = session.recording.sid; // Store before resetting
-                                
-                                // Reset the session recording state
-                                session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
-                                
-                                // Notify clients that recording has stopped (even though it may have ended naturally)
-                                broadcast(session, { 
-                                    type: 'RECORDING_STOPPED', 
-                                    payload: { 
-                                        sid: previousSid,
-                                        message: 'Recording ended (may have stopped automatically due to inactivity)'
-                                    } 
-                                });
-                                
-                                log(`Recording session ended for ${sessionKey} (recording may have auto-stopped)`);
-                            } else {
-                                // Send detailed error information back to client for debugging
-                                ws.send(JSON.stringify({ 
-                                    type: 'RECORDING_FAILED', 
-                                    payload: { 
-                                        message: 'The recording service failed to stop correctly.',
-                                        error: error.message,
-                                        details: error.response?.data || null
-                                    } 
-                                }));
-                            }
+                            console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
+                            ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to stop correctly.' } }));
                         }
                         break;
 

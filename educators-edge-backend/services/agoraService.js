@@ -19,18 +19,8 @@ try {
 }
 
 const getBasicAuthHeader = () => {
-    if (!process.env.AGORA_CUSTOMER_ID || !process.env.AGORA_CUSTOMER_SECRET) {
-        console.error('[AGORA SERVICE] Missing authentication credentials:', {
-            AGORA_CUSTOMER_ID: process.env.AGORA_CUSTOMER_ID ? 'SET' : 'MISSING',
-            AGORA_CUSTOMER_SECRET: process.env.AGORA_CUSTOMER_SECRET ? 'SET' : 'MISSING'
-        });
-        throw new Error('Agora authentication credentials are missing');
-    }
-    
     const credentials = `${process.env.AGORA_CUSTOMER_ID}:${process.env.AGORA_CUSTOMER_SECRET}`;
-    const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
-    console.log('[AGORA SERVICE] Auth header generated successfully');
-    return authHeader;
+    return `Basic ${Buffer.from(credentials).toString('base64')}`;
 };
 
 /**
@@ -114,10 +104,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         );
         console.log(`[DB] Placeholder record created for SID: ${sid}`);
 
-        return { 
-            ...startResponse.data, 
-            uid: recordingBotUid // Include the UID for stopping the recording
-        };
+        return startResponse.data;
 
     } catch (error) {
         const errorDetails = error.response ? error.response.data : { message: error.message };
@@ -154,78 +141,7 @@ const uploadToCloudinary = (fileBuffer, publicId) => {
 };
 
 
-/**
- * Stops a cloud recording with proper Agora API integration
- * @param {string} resourceId - The Agora resource ID from starting the recording
- * @param {string} sid - The Agora session ID from starting the recording
- * @param {string} channelName - The channel name used for recording
- * @param {string} uid - The same UID that was used to start the recording
- * @returns {Promise<object>} The response data from the Agora API
- */
-const stopCloudRecording = async (resourceId, sid, channelName, uid) => {
-    try {
-        console.log(`[AGORA SERVICE] Stopping recording for channel: ${channelName}, SID: ${sid}, ResourceID: ${resourceId}`);
-        
-        // First, query the recording status to ensure it's still active
-        console.log(`[AGORA SERVICE] Querying recording status first...`);
-        const queryUrl = `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`;
-        console.log(`[AGORA SERVICE] Query URL: ${queryUrl}`);
-        
-        try {
-            const queryResponse = await axios.get(queryUrl, {
-                headers: {
-                    'Authorization': getBasicAuthHeader(),
-                    'Content-Type': 'application/json',
-                },
-            });
-            console.log(`[AGORA SERVICE] Recording status query result:`, JSON.stringify(queryResponse.data, null, 2));
-        } catch (queryError) {
-            console.warn(`[AGORA SERVICE] Warning: Could not query recording status:`, queryError.response?.data || queryError.message);
-        }
-        
-        console.log(`[AGORA SERVICE] Stop URL: ${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`);
-        
-        const requestBody = {
-            cname: channelName,
-            uid: uid, // Use the same UID that was used to start the recording
-            clientRequest: {}
-        };
-        
-        console.log(`[AGORA SERVICE] Stop request body:`, JSON.stringify(requestBody, null, 2));
-        
-        const stopResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
-            requestBody,
-            {
-                headers: {
-                    'Authorization': getBasicAuthHeader(),
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
-
-        console.log(`[AGORA SERVICE] Recording stopped successfully for SID: ${sid}`, JSON.stringify(stopResponse.data, null, 2));
-        return stopResponse.data;
-
-    } catch (error) {
-        const errorDetails = error.response ? error.response.data : { message: error.message };
-        console.error("[AGORA SERVICE] CRITICAL ERROR stopping recording:", {
-            message: error.message,
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            data: errorDetails,
-            config: {
-                url: error.config?.url,
-                method: error.config?.method,
-                data: error.config?.data
-            }
-        });
-        throw new Error(`Failed to stop cloud recording via Agora API: ${error.message}`);
-    }
-};
-
 module.exports = {
     startCloudRecording,
-    stopCloudRecording,
     uploadToCloudinary,
 };
