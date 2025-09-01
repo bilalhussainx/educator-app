@@ -92,6 +92,7 @@ The transcript would contain the actual spoken content from the live tutorial se
 }
 
 // AI enrichment handler using Gemini
+
 async function handleAiEnrichment(data) {
     const { recordingId, transcript } = data;
     

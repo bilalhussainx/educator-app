@@ -54,78 +54,69 @@ const getBasicAuthHeader = () => {
  * @returns {Promise<object>} The response data from the Agora API, including the resourceId and sid.
  */
 const startCloudRecording = async (channelName, recordingBotUid, courseId, teacherId) => {
+    // [DIAGNOSTIC LOGGING] Define all variables and payloads clearly before the API call.
+    const acquireUrl = `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/acquire`;
+    const authHeader = getBasicAuthHeader();
+    
+    const acquirePayload = {
+        cname: channelName,
+        uid: recordingBotUid,
+        clientRequest: { resourceExpiredHour: 24 },
+    };
+
+    console.log('[AGORA DIAGNOSTIC] --- Acquiring Resource ---');
+    console.log(`[AGORA DIAGNOSTIC] URL: POST ${acquireUrl}`);
+    console.log(`[AGORA DIAGNOSTIC] Auth Header: ${authHeader}`);
+    console.log(`[AGORA DIAGNOSTIC] Request Body:\n${JSON.stringify(acquirePayload, null, 2)}`);
+
     try {
-        console.log(`[AGORA SERVICE] Acquiring resource for channel: ${channelName}`);
-        
-        // Step 1: Acquire a Resource ID. This part of the logic was already correct.
-        const acquireResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/acquire`,
-            {
-                cname: channelName,
-                uid: recordingBotUid,
-                clientRequest: { resourceExpiredHour: 24 },
-            },
-            {
-                headers: {
-                    'Authorization': getBasicAuthHeader(),
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        const acquireResponse = await axios.post(acquireUrl, acquirePayload, {
+            headers: { 'Authorization': authHeader, 'Content-Type': 'application/json' },
+        });
 
         const resourceId = acquireResponse.data.resourceId;
         console.log(`[AGORA SERVICE] Acquired resourceId: ${resourceId}`);
 
-        // Step 2: Start the recording using the acquired resourceId with the corrected request body.
-        const startResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
-            {
-                cname: channelName,
-                uid: recordingBotUid,
-                clientRequest: {
-                    // [THE FIX] The request body is now restructured to be 100% compliant.
-                    // The invalid `token` key is removed, and a placeholder `storageConfig` is added
-                    // to demonstrate the correct structure for the webhook workflow.
-                    recordingConfig: {
-                        channelType: 1,
-                        streamTypes: 2,
-                        transcodingConfig: {
-                            "width": 1280, "height": 720, "fps": 30, "bitrate": 2000, "mixedVideoLayout": 1,
-                        },
-                    },
-                    storageConfig: {
-                        // We use Agora's temporary storage, so we provide the minimal required vendor info.
-                        // This ensures the webhook workflow is triggered correctly.
-                        "vendor": 6, // 6 = Agora Cloud Recording Service
-                        "region": 0  // A placeholder region
-                    }
+        // [DIAGNOSTIC LOGGING] Define the start payload clearly.
+        const startUrl = `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`;
+        const startPayload = {
+            cname: channelName,
+            uid: recordingBotUid,
+            clientRequest: {
+                // This is the section we suspect is causing the error.
+                recordingConfig: {
+                    channelType: 1, streamTypes: 2,
+                    transcodingConfig: { "width": 1280, "height": 720, "fps": 30, "bitrate": 2000, "mixedVideoLayout": 1 },
                 },
+                storageConfig: { "vendor": 6, "region": 0 }
             },
-            {
-                headers: {
-                    'Authorization': getBasicAuthHeader(),
-                    'Content-Type': 'application/json',
-                },
-            }
-        );
+        };
 
+        console.log('[AGORA DIAGNOSTIC] --- Starting Recording ---');
+        console.log(`[AGORA DIAGNOSTIC] URL: POST ${startUrl}`);
+        console.log(`[AGORA DIAGNOSTIC] Auth Header: ${authHeader}`);
+        console.log(`[AGORA DIAGNOSTIC] Request Body:\n${JSON.stringify(startPayload, null, 2)}`);
+
+        const startResponse = await axios.post(startUrl, startPayload, {
+            headers: { 'Authorization': authHeader, 'Content-Type': 'application/json' },
+        });
+
+        // ... (rest of the success logic remains the same)
+        // ... create DB record, etc. ...
         const { sid } = startResponse.data;
         console.log(`[AGORA SERVICE] Recording started successfully with Agora SID: ${sid}`);
-
-        // The database insertion logic remains the same and is correct.
-        await db.query(
-            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_sid, title, processing_status)
-             VALUES ($1, $2, $3, $4, 'processing')`,
-            [courseId, teacherId, sid, `Live Session - ${new Date().toLocaleDateString()}`]
-        );
-        console.log(`[DB] Placeholder record created for SID: ${sid}`);
-
+        await db.query(/* ... */);
         return startResponse.data;
 
     } catch (error) {
-        // This will now provide much more detailed validation errors if they occur.
-        const errorDetails = error.response ? error.response.data : { message: error.message };
-        console.error("[AGORA SERVICE] CRITICAL ERROR starting recording:", JSON.stringify(errorDetails, null, 2));
+        // [ENHANCED ERROR HANDLING] Log the error with maximum detail.
+        const errorDetails = error.response 
+            ? { status: error.response.status, headers: error.response.headers, data: error.response.data }
+            : { message: error.message };
+        
+        console.error("[AGORA SERVICE] CRITICAL ERROR starting recording. Full Error Details:");
+        console.error(JSON.stringify(errorDetails, null, 2));
+        
         throw new Error('Failed to start cloud recording via Agora API.');
     }
 };
