@@ -20,6 +20,7 @@
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.56.9",
     "canvas-confetti": "^1.9.3",
+    "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "dockerode": "^4.0.7",
     "dotenv": "^16.0.3",
@@ -33,6 +34,7 @@
     "netlify": "^22.3.0",
     "pg": "^8.16.3",
     "quickjs-emscripten": "^0.31.0",
+    "streamifier": "^0.1.1",
     "ws": "^8.17.0"
   },
   "devDependencies": {

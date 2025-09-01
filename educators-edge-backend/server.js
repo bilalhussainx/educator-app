@@ -21,7 +21,9 @@ const sessionRoutes = require('./routes/sessionRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 const recordingRoutes = require('./routes/recordingRoutes');
 const tradeRoutes = require('./src/routes/trade_routes'); // <-- IMPORT THE NEW TRADE ROUTES
-
+const webhookRoutes = require('./src/routes/webhookRoutes');
+const videoRoutes = require('./src/routes/videoRoutes');
+//...
 const app = express();
 app.use(express.json());
 
@@ -97,6 +99,8 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/recordings', recordingRoutes);
 app.use('/api/trade', tradeRoutes); // <-- REGISTER THE NEW TRADE ROUTES
 
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/videos', videoRoutes);
 // Server and WebSocket Initialization
 // We can simplify the WS config now
 const server = http.createServer(app);

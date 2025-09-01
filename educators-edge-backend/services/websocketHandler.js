@@ -1,10 +1,12 @@
 // services/websocketHandler.js
+// services/websocketHandler.js
 
 const jwt = require('jsonwebtoken');
 const url = require('url');
+const { v4: uuidv4 } = require('uuid');
 const { addSession, removeSession } = require('./sessionStore');
-const { executeCode } = require('../services/executionService'); // For running code
-const agoraRecordingService = require('./agoraRecordingService');
+const { executeCode } = require('../services/executionService');
+const agoraService = require('../services/agoraService'); // Corrected import to the new, robust service
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
@@ -59,13 +61,6 @@ function initializeWebSocket(wss) {
         const teacherSessionId = urlParams.get('teacherSessionId');
         const lessonId = urlParams.get('lessonId');
 
-        console.log('[WS DEBUG] Connection params:', { 
-            sessionId, 
-            hasToken: !!token, 
-            teacherSessionId, 
-            lessonId 
-        });
-
         if (!sessionId || !token) {
             console.log('[WS ERROR] Missing sessionId or token');
             return ws.close(4001, "Session ID and token are required");
@@ -73,10 +68,8 @@ function initializeWebSocket(wss) {
 
         let user;
         try {
-            console.log('[WS DEBUG] Verifying JWT with secret:', process.env.JWT_SECRET ? 'Present' : 'Missing');
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             user = decoded.user;
-            console.log('[WS DEBUG] JWT verified for user:', user.username, user.role);
         } catch (err) {
             console.error('[WS Auth] Connection rejected due to invalid token:', err.message);
             return ws.close(4001, "Invalid or expired authentication token");
@@ -84,8 +77,6 @@ function initializeWebSocket(wss) {
 
         const isHomeworkSession = !!teacherSessionId && !!lessonId;
         const sessionKey = isHomeworkSession ? teacherSessionId : sessionId;
-
-        console.log('[WS DEBUG] Session key:', sessionKey, 'isHomework:', isHomeworkSession);
 
         if (!sessions.has(sessionKey)) {
             if (isHomeworkSession) {
@@ -111,7 +102,8 @@ function initializeWebSocket(wss) {
                 videoConnections: new Map(),
                 recording: {
                     isRecording: false,
-                    recordingId: null,
+                    resourceId: null,
+                    sid: null,
                     startTime: null
                 }
             });
@@ -133,7 +125,7 @@ function initializeWebSocket(wss) {
                 sessionId,
                 teacherId: user.id,
                 teacherName: user.username,
-                courseId: 'default_course',
+                courseId: 'default_course', // This might need to become dynamic
                 courseName: 'General Session',
             });
         }
@@ -148,19 +140,12 @@ function initializeWebSocket(wss) {
              ws.send(JSON.stringify({ type: 'FREEZE_STATE_UPDATE', payload: { isFrozen: session.isFrozen } }));
              ws.send(JSON.stringify({ type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: session.controlledStudentId } }));
         } else {
-            // Send initial state to the client
             ws.send(JSON.stringify({ 
                 type: 'ROLE_ASSIGNED', 
                 payload: { 
-                    role: clientInfo.role,
-                    files: session.files,
-                    activeFile: session.activeFile,
-                    terminalOutput: session.terminalOutput,
-                    spotlightedStudentId: session.spotlightedStudentId,
-                    controlledStudentId: session.controlledStudentId,
-                    isFrozen: session.isFrozen,
-                    whiteboardLines: session.whiteboardLines,
-                    isWhiteboardVisible: session.isWhiteboardVisible,
+                    role: clientInfo.role, files: session.files, activeFile: session.activeFile, terminalOutput: session.terminalOutput,
+                    spotlightedStudentId: session.spotlightedStudentId, controlledStudentId: session.controlledStudentId,
+                    isFrozen: session.isFrozen, whiteboardLines: session.whiteboardLines, isWhiteboardVisible: session.isWhiteboardVisible,
                     teacherId: teacher ? teacher.id : null,
                 } 
             }));
@@ -184,10 +169,7 @@ function initializeWebSocket(wss) {
                 
                 if (data.type === 'PRIVATE_MESSAGE') {
                     const { to, text } = data.payload;
-                    sendToClient(session, to, {
-                        type: 'PRIVATE_MESSAGE',
-                        payload: { from: fromId, text, timestamp: new Date().toISOString() }
-                    });
+                    sendToClient(session, to, { type: 'PRIVATE_MESSAGE', payload: { from: fromId, text, timestamp: new Date().toISOString() } });
                     return;
                 }
 
@@ -205,14 +187,12 @@ function initializeWebSocket(wss) {
                     return;
                 }
 
-                // Handle student actions first
                 if (data.type === 'RAISE_HAND' && clientInfo.role === 'student') {
                     session.handsRaised.has(clientInfo.id) ? session.handsRaised.delete(clientInfo.id) : session.handsRaised.add(clientInfo.id);
                     broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) } });
                     return;
                 }
 
-                // Teacher-only actions
                 if (clientInfo.role !== 'teacher') return;
 
                 switch (data.type) {
@@ -260,103 +240,68 @@ function initializeWebSocket(wss) {
                         session.assignments.set(data.payload.studentId, data.payload);
                         break;
 
-                    // Recording functionality
                     case 'START_RECORDING':
                         if (session.recording.isRecording) {
-                            ws.send(JSON.stringify({ 
-                                type: 'RECORDING_ERROR', 
-                                payload: { message: 'Recording is already in progress' } 
-                            }));
+                            log(`Teacher ${clientInfo.username} tried to start an existing recording. Request denied.`);
+                            ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A recording is already in progress.' } }));
                             return;
                         }
                         
+                        const { courseId } = data.payload;
+                        if (!courseId) {
+                            log(`[RECORDING] Teacher ${clientInfo.username} tried to start recording without a courseId.`);
+                             ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A courseId is required to start a recording.' } }));
+                            return;
+                        }
+
+                        log(`Teacher ${clientInfo.username} is attempting to start a recording for channel: ${sessionKey}`);
+                        
                         try {
-                            const { channelName, courseId } = data.payload;
-                            const result = await agoraRecordingService.startRecording(channelName, courseId, user.id);
+                            const channelName = sessionKey;
+                            const recordingBotUid = uuidv4();
+                            const teacherId = user.id;
+
+                            const result = await agoraService.startCloudRecording(channelName, recordingBotUid, courseId, teacherId);
                             
-                            if (result.success) {
-                                session.recording = {
-                                    isRecording: true,
-                                    recordingId: result.recordingId,
-                                    startTime: new Date(),
-                                    channelName,
-                                    courseId
-                                };
-                                
-                                // Notify all participants that recording started
-                                broadcast(session, { 
-                                    type: 'RECORDING_STARTED', 
-                                    payload: { 
-                                        recordingId: result.recordingId,
-                                        startTime: session.recording.startTime
-                                    } 
-                                });
-                                
-                                log(`Recording started for session ${sessionKey}, recording ID: ${result.recordingId}`);
-                            } else {
-                                ws.send(JSON.stringify({ 
-                                    type: 'RECORDING_ERROR', 
-                                    payload: { message: result.error } 
-                                }));
-                            }
+                            session.recording = {
+                                isRecording: true,
+                                resourceId: result.resourceId,
+                                sid: result.sid,
+                                startTime: new Date()
+                            };
+                            
+                            broadcast(session, { type: 'RECORDING_STARTED', payload: { sid: result.sid, startTime: session.recording.startTime } });
+                            log(`Recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
+
                         } catch (error) {
-                            console.error('[RECORDING] Error starting recording:', error);
-                            ws.send(JSON.stringify({ 
-                                type: 'RECORDING_ERROR', 
-                                payload: { message: 'Failed to start recording' } 
-                            }));
+                            console.error(`[RECORDING] Critical error starting recording for session ${sessionKey}:`, error.message);
+                            ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to start. Please check backend logs.' } }));
                         }
                         break;
 
                     case 'STOP_RECORDING':
-                        if (!session.recording.isRecording) {
-                            ws.send(JSON.stringify({ 
-                                type: 'RECORDING_ERROR', 
-                                payload: { message: 'No active recording to stop' } 
-                            }));
+                        if (!session.recording.isRecording || !session.recording.resourceId) {
+                            ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'No active recording to stop.' } }));
                             return;
                         }
-                        
+
                         try {
-                            const result = await agoraRecordingService.stopRecording(session.recording.recordingId);
-                            
-                            if (result.success) {
-                                const recordingInfo = {
-                                    recordingId: session.recording.recordingId,
-                                    duration: Date.now() - session.recording.startTime.getTime()
-                                };
-                                
-                                session.recording = {
-                                    isRecording: false,
-                                    recordingId: null,
-                                    startTime: null
-                                };
-                                
-                                // Notify all participants that recording stopped
-                                broadcast(session, { 
-                                    type: 'RECORDING_STOPPED', 
-                                    payload: recordingInfo 
-                                });
-                                
-                                log(`Recording stopped for session ${sessionKey}, recording ID: ${recordingInfo.recordingId}`);
-                            } else {
-                                ws.send(JSON.stringify({ 
-                                    type: 'RECORDING_ERROR', 
-                                    payload: { message: result.error } 
-                                }));
-                            }
+                            const { resourceId, sid } = session.recording;
+                            // Future logic: await agoraService.stopCloudRecording(sessionKey, uuidv4(), resourceId, sid);
+                            log(`(Placeholder) Recording stopped for session ${sessionKey}, SID: ${sid}`);
+
+                            session.recording = { isRecording: false, resourceId: null, sid: null, startTime: null };
+                            broadcast(session, { type: 'RECORDING_STOPPED' });
+
                         } catch (error) {
-                            console.error('[RECORDING] Error stopping recording:', error);
-                            ws.send(JSON.stringify({ 
-                                type: 'RECORDING_ERROR', 
-                                payload: { message: 'Failed to stop recording' } 
-                            }));
+                            console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
+                            ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to stop correctly.' } }));
                         }
                         break;
 
                     case 'TERMINAL_IN':
                         const input = data.payload.data;
-                        if (input === '\r') { // User pressed Enter
+                        if (input === '\r') {
                             const command = session.terminalInputBuffer.trim();
                             session.terminalInputBuffer = '';
                             session.terminalOutput += '\n';
@@ -379,7 +324,7 @@ function initializeWebSocket(wss) {
                                     broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
                                 }
                             } else if (command.startsWith('pip install') || command.startsWith('npm install')) {
-                                const helpMessage = `[CoreZenith] Package installation is not supported in this terminal. Please ask your instructor to add libraries to the environment.\n$ `;
+                                const helpMessage = `[CoreZenith] Package installation is not supported in this terminal.\n$ `;
                                 session.terminalOutput += helpMessage;
                                 broadcast(session, { type: 'TERMINAL_OUT', payload: helpMessage });
                             } else if (command) {
@@ -413,24 +358,12 @@ function initializeWebSocket(wss) {
                          break;
 
                     case 'DOCKER_CODE_EXECUTION':
-                        // Handle Docker-based code execution broadcast from teacher to all students
                         if (clientInfo.role === 'teacher') {
                             const { language, code, result, error, fileName, timestamp } = data.payload;
-                            
                             console.log(`[WS] Broadcasting Docker code execution from teacher ${clientInfo.username}: ${language} code from ${fileName}`);
-                            
-                            // Broadcast to all students in the session
                             broadcastToAll(session, { 
                                 type: 'DOCKER_CODE_EXECUTION', 
-                                payload: {
-                                    language,
-                                    code,
-                                    result,
-                                    error,
-                                    fileName,
-                                    timestamp,
-                                    teacherName: clientInfo.username
-                                }
+                                payload: { language, code, result, error, fileName, timestamp, teacherName: clientInfo.username }
                             });
                         }
                         break;
@@ -481,6 +414,483 @@ function initializeWebSocket(wss) {
 }
 
 module.exports = initializeWebSocket;
+// const jwt = require('jsonwebtoken');
+// const url = require('url');
+// const { addSession, removeSession } = require('./sessionStore');
+// const { executeCode } = require('../services/executionService'); // For running code
+// const agoraRecordingService = require('./agoraRecordingService');
+
+// const log = (msg) => console.log(`[WSS] ${msg}`);
+// const sessions = new Map();
+
+// // --- Helper Functions ---
+// function broadcast(session, message) {
+//     if (!session || !session.clients) return;
+//     session.clients.forEach(client => {
+//         if (!client.isHomework && client.ws.readyState === client.ws.OPEN) {
+//             client.ws.send(JSON.stringify(message));
+//         }
+//     });
+// }
+
+// function broadcastToAll(session, message) {
+//     if (!session || !session.clients) return;
+//     session.clients.forEach(client => {
+//         if (client.ws.readyState === client.ws.OPEN) {
+//             client.ws.send(JSON.stringify(message));
+//         }
+//     });
+// }
+
+// function sendToClient(session, userId, message) {
+//     if (!session || !session.clients) return;
+//     const client = Array.from(session.clients).find(c => c.id === userId);
+//     if (client && client.ws.readyState === client.ws.OPEN) {
+//         client.ws.send(JSON.stringify(message));
+//     } else {
+//         console.log(`[WEBSOCKET] Could not find or send to client ID: ${userId}`);
+//     }
+// }
+
+// function getTeacher(session) {
+//     if (!session || !session.clients) return null;
+//     return Array.from(session.clients).find(c => c.role === 'teacher');
+// }
+
+// function getStudents(session) {
+//     if (!session || !session.clients) return [];
+//     return Array.from(session.clients).filter(c => c.role === 'student');
+// }
+
+// // --- Main WebSocket Initializer ---
+// function initializeWebSocket(wss) {
+//     wss.on('connection', async (ws, req) => {
+//         console.log('[WS DEBUG] New connection attempt');
+        
+//         const urlParams = new URLSearchParams(req.url.split('?')[1]);
+//         const sessionId = urlParams.get('sessionId');
+//         const token = urlParams.get('token');
+//         const teacherSessionId = urlParams.get('teacherSessionId');
+//         const lessonId = urlParams.get('lessonId');
+
+//         console.log('[WS DEBUG] Connection params:', { 
+//             sessionId, 
+//             hasToken: !!token, 
+//             teacherSessionId, 
+//             lessonId 
+//         });
+
+//         if (!sessionId || !token) {
+//             console.log('[WS ERROR] Missing sessionId or token');
+//             return ws.close(4001, "Session ID and token are required");
+//         }
+
+//         let user;
+//         try {
+//             console.log('[WS DEBUG] Verifying JWT with secret:', process.env.JWT_SECRET ? 'Present' : 'Missing');
+//             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//             user = decoded.user;
+//             console.log('[WS DEBUG] JWT verified for user:', user.username, user.role);
+//         } catch (err) {
+//             console.error('[WS Auth] Connection rejected due to invalid token:', err.message);
+//             return ws.close(4001, "Invalid or expired authentication token");
+//         }
+
+//         const isHomeworkSession = !!teacherSessionId && !!lessonId;
+//         const sessionKey = isHomeworkSession ? teacherSessionId : sessionId;
+
+//         console.log('[WS DEBUG] Session key:', sessionKey, 'isHomework:', isHomeworkSession);
+
+//         if (!sessions.has(sessionKey)) {
+//             if (isHomeworkSession) {
+//                 console.error(`[ERROR] Student tried to join homework for a non-existent session: ${sessionKey}`);
+//                 return ws.close(1011, "Cannot join homework for a session that does not exist.");
+//             }
+            
+//             log(`Creating new session: ${sessionKey}`);
+//             sessions.set(sessionKey, {
+//                 clients: new Set(),
+//                 files: [],
+//                 activeFile: '',
+//                 terminalOutput: `CoreZenith Virtual Terminal for session ${sessionKey}\n$ `,
+//                 terminalInputBuffer: '',
+//                 assignments: new Map(),
+//                 handsRaised: new Set(),
+//                 spotlightedStudentId: null,
+//                 studentWorkspaces: new Map(),
+//                 controlledStudentId: null,
+//                 isFrozen: false,
+//                 whiteboardLines: [],
+//                 isWhiteboardVisible: false,
+//                 videoConnections: new Map(),
+//                 recording: {
+//                     isRecording: false,
+//                     recordingId: null,
+//                     startTime: null
+//                 }
+//             });
+//         }
+//         const session = sessions.get(sessionKey);
+        
+//         const existingClient = Array.from(session.clients).find(c => c.id === user.id && c.isHomework === isHomeworkSession);
+//         if (existingClient) {
+//             log(`Found existing client for ${user.username}. Terminating old connection.`);
+//             existingClient.ws.terminate(); 
+//             session.clients.delete(existingClient);
+//         }
+
+//         const clientInfo = { id: user.id, username: user.username, role: user.role || 'student', ws: ws, isHomework: isHomeworkSession };
+//         session.clients.add(clientInfo);
+
+//         if (clientInfo.role === 'teacher' && !isHomeworkSession) {
+//             addSession(sessionId, {
+//                 sessionId,
+//                 teacherId: user.id,
+//                 teacherName: user.username,
+//                 courseId: 'default_course',
+//                 courseName: 'General Session',
+//             });
+//         }
+
+//         log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey} (Homework: ${isHomeworkSession}). Total clients: ${session.clients.size}`);
+//         const teacher = getTeacher(session);
+
+//         if (isHomeworkSession) {
+//             if (teacher) {
+//                 sendToClient(session, teacher.id, { type: 'HOMEWORK_JOIN', payload: { studentId: user.id } });
+//             }
+//              ws.send(JSON.stringify({ type: 'FREEZE_STATE_UPDATE', payload: { isFrozen: session.isFrozen } }));
+//              ws.send(JSON.stringify({ type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: session.controlledStudentId } }));
+//         } else {
+//             // Send initial state to the client
+//             ws.send(JSON.stringify({ 
+//                 type: 'ROLE_ASSIGNED', 
+//                 payload: { 
+//                     role: clientInfo.role,
+//                     files: session.files,
+//                     activeFile: session.activeFile,
+//                     terminalOutput: session.terminalOutput,
+//                     spotlightedStudentId: session.spotlightedStudentId,
+//                     controlledStudentId: session.controlledStudentId,
+//                     isFrozen: session.isFrozen,
+//                     whiteboardLines: session.whiteboardLines,
+//                     isWhiteboardVisible: session.isWhiteboardVisible,
+//                     teacherId: teacher ? teacher.id : null,
+//                 } 
+//             }));
+
+//             if (clientInfo.role === 'student' && session.assignments.has(user.id)) {
+//                 ws.send(JSON.stringify({ type: 'HOMEWORK_ASSIGNED', payload: session.assignments.get(user.id) }));
+//             }
+            
+//             ws.send(JSON.stringify({ type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) } }));
+
+//             const studentList = Array.from(session.clients).filter(c => c.role === 'student' && !c.isHomework).map(c => ({ id: c.id, username: c.username }));
+//             broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: studentList }});
+//         }
+
+//         ws.on('message', async (message) => {
+//             try {
+//                 const data = JSON.parse(message.toString());
+//                 const fromId = clientInfo.id;
+                
+//                 console.log(`[WS] Received message from ${clientInfo.username}: ${data.type}`);
+                
+//                 if (data.type === 'PRIVATE_MESSAGE') {
+//                     const { to, text } = data.payload;
+//                     sendToClient(session, to, {
+//                         type: 'PRIVATE_MESSAGE',
+//                         payload: { from: fromId, text, timestamp: new Date().toISOString() }
+//                     });
+//                     return;
+//                 }
+
+//                 if (clientInfo.isHomework) {
+//                     if (!teacher) return;
+//                     switch(data.type) {
+//                         case 'HOMEWORK_CODE_UPDATE':
+//                             session.studentWorkspaces?.set(user.id, data.payload);
+//                             sendToClient(session, teacher.id, { type: 'STUDENT_WORKSPACE_UPDATED', payload: { studentId: user.id, workspace: data.payload } });
+//                             break;
+//                         case 'HOMEWORK_TERMINAL_IN':
+//                             sendToClient(session, teacher.id, { type: 'HOMEWORK_TERMINAL_UPDATE', payload: { studentId: user.id, output: data.payload } });
+//                             break;
+//                     }
+//                     return;
+//                 }
+
+//                 // Handle student actions first
+//                 if (data.type === 'RAISE_HAND' && clientInfo.role === 'student') {
+//                     session.handsRaised.has(clientInfo.id) ? session.handsRaised.delete(clientInfo.id) : session.handsRaised.add(clientInfo.id);
+//                     broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) } });
+//                     return;
+//                 }
+
+//                 // Teacher-only actions
+//                 if (clientInfo.role !== 'teacher') return;
+
+//                 switch (data.type) {
+//                     case 'TOGGLE_WHITEBOARD':
+//                         session.isWhiteboardVisible = !session.isWhiteboardVisible;
+//                         broadcast(session, { type: 'WHITEBOARD_VISIBILITY_UPDATE', payload: { isVisible: session.isWhiteboardVisible } });
+//                         break;
+//                     case 'WHITEBOARD_DRAW':
+//                         session.whiteboardLines.push(data.payload.line);
+//                         broadcast(session, { type: 'WHITEBOARD_UPDATE', payload: { line: data.payload.line } });
+//                         break;
+//                     case 'WHITEBOARD_CLEAR':
+//                         session.whiteboardLines = [];
+//                         broadcast(session, { type: 'WHITEBOARD_CLEAR' });
+//                         break;
+//                     case 'TAKE_CONTROL':
+//                         session.controlledStudentId = data.payload.studentId;
+//                         broadcastToAll(session, { type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: session.controlledStudentId }});
+//                         break;
+//                     case 'TOGGLE_FREEZE':
+//                         session.isFrozen = !session.isFrozen;
+//                         broadcastToAll(session, { type: 'FREEZE_STATE_UPDATE', payload: { isFrozen: session.isFrozen }});
+//                         break;
+//                     case 'TEACHER_DIRECT_EDIT':
+//                         const { studentId, workspace } = data.payload;
+//                         session.studentWorkspaces?.set(studentId, workspace);
+//                         const studentClient = Array.from(session.clients).find(c => c.id === studentId && c.isHomework);
+//                         if (studentClient) {
+//                             studentClient.ws.send(JSON.stringify({ type: 'HOMEWORK_CODE_UPDATE', payload: workspace }));
+//                         }
+//                         broadcast(session, { type: 'STUDENT_WORKSPACE_UPDATED', payload: { studentId, workspace } });
+//                         break;
+//                     case 'SPOTLIGHT_STUDENT':
+//                         session.spotlightedStudentId = data.payload.studentId;
+//                         const spotlightWorkspace = data.payload.studentId ? session.studentWorkspaces?.get(data.payload.studentId) || null : null;
+//                         broadcast(session, { type: 'SPOTLIGHT_UPDATE', payload: { studentId: session.spotlightedStudentId, workspace: spotlightWorkspace }});
+//                         break;
+//                     case 'TEACHER_CODE_UPDATE':
+//                         session.files = data.payload.files;
+//                         session.activeFile = data.payload.activeFileName;
+//                         broadcast(session, { type: 'TEACHER_CODE_DID_UPDATE', payload: { files: session.files, activeFileName: session.activeFile } });
+//                         break;
+//                     case 'ASSIGN_HOMEWORK':
+//                         sendToClient(session, data.payload.studentId, { type: 'HOMEWORK_ASSIGNED', payload: data.payload });
+//                         session.assignments.set(data.payload.studentId, data.payload);
+//                         break;
+
+//                     // Recording functionality
+//                     case 'START_RECORDING':
+//             // [DEFINITIVE REPLACEMENT] This block replaces the old recording logic.
+//             if (session.recording.isRecording) {
+//                 log(`Teacher ${clientInfo.username} tried to start an existing recording. Request denied.`);
+//                 ws.send(JSON.stringify({ 
+//                     type: 'RECORDING_ERROR', 
+//                     payload: { message: 'A recording is already in progress for this session.' } 
+//                 }));
+//                 return;
+//             }
+            
+//             log(`Teacher ${clientInfo.username} is attempting to start a recording for channel: ${sessionKey}`);
+            
+//             try {
+//                 const channelName = sessionKey; // The session ID is the perfect unique channel name
+//                 const recordingBotUid = uuidv4(); // Generate a unique, temporary UID for the recording bot
+
+//                 // Call our new, robust service. It handles all the complex Agora API logic.
+//                 const result = await agoraService.startCloudRecording(channelName, recordingBotUid);
+                
+//                 // If the API call is successful, update our session state
+//                 session.recording = {
+//                     isRecording: true,
+//                     recordingId: result.resourceId, // The resourceId is what we need to stop it
+//                     sid: result.sid, // The sid is the unique identifier for this specific recording instance
+//                     startTime: new Date()
+//                 };
+                
+//                 // Notify everyone in the session that the recording has begun
+//                 broadcast(session, { 
+//                     type: 'RECORDING_STARTED', 
+//                     payload: { 
+//                         sid: result.sid,
+//                         startTime: session.recording.startTime
+//                     } 
+//                 });
+                
+//                 log(`Recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
+
+//             } catch (error) {
+//                 // If the agoraService throws an error, we catch it here.
+//                 console.error(`[RECORDING] Critical error starting recording for session ${sessionKey}:`, error.message);
+//                 // Send a specific, actionable error message back to the teacher.
+//                 ws.send(JSON.stringify({ 
+//                     type: 'RECORDING_FAILED', 
+//                     payload: { message: 'The recording service failed to start. Please check backend logs.' } 
+//                 }));
+//             }
+//             break;
+
+//         case 'STOP_RECORDING':
+//             // [DEFINITIVE REPLACEMENT] This block is a placeholder for future implementation.
+//             // The logic will be very similar to START_RECORDING.
+//             if (!session.recording.isRecording || !session.recording.recordingId) {
+//                 ws.send(JSON.stringify({ 
+//                     type: 'RECORDING_ERROR', 
+//                     payload: { message: 'No active recording to stop.' } 
+//                 }));
+//                 return;
+//             }
+
+//             try {
+//                 const { recordingId, sid, channelName } = session.recording;
+//                 const recordingBotUid = uuidv4(); // A UID is needed to stop as well.
+
+//                 // In the future, you will call:
+//                 // await agoraService.stopCloudRecording(channelName, recordingBotUid, recordingId, sid);
+
+//                 log(`Recording stopped for session ${sessionKey}, SID: ${sid}`);
+
+//                 // For now, we will just update the state
+//                 session.recording = {
+//                     isRecording: false,
+//                     recordingId: null,
+//                     sid: null,
+//                     startTime: null
+//                 };
+
+//                 broadcast(session, { type: 'RECORDING_STOPPED' });
+
+//             } catch (error) {
+//                 console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
+//                 ws.send(JSON.stringify({ 
+//                     type: 'RECORDING_FAILED', 
+//                     payload: { message: 'The recording service failed to stop correctly.' } 
+//                 }));
+//             }
+//             break;
+
+//                     case 'TERMINAL_IN':
+//                         const input = data.payload.data;
+//                         if (input === '\r') { // User pressed Enter
+//                             const command = session.terminalInputBuffer.trim();
+//                             session.terminalInputBuffer = '';
+//                             session.terminalOutput += '\n';
+//                             broadcast(session, { type: 'TERMINAL_OUT', payload: '\n' });
+
+//                             const runCommandMatch = command.match(/^(node|python3|ruby|go run|java)\s+([\w\.-]+)/);
+//                             if (runCommandMatch) {
+//                                 const activeFileInSession = session.files.find(f => f.name === session.activeFile);
+//                                 const language = activeFileInSession?.language || 'unknown';
+//                                 const code = activeFileInSession?.content || '';
+
+//                                 try {
+//                                     const executionResult = await executeCode(code, language);
+//                                     const output = executionResult.output || (executionResult.success ? '' : 'Execution failed.');
+//                                     session.terminalOutput += output + '\n$ ';
+//                                     broadcast(session, { type: 'TERMINAL_OUT', payload: output + '\n$ ' });
+//                                 } catch (err) {
+//                                     const errorMessage = `Execution failed: ${err.message}\n$ `;
+//                                     session.terminalOutput += errorMessage;
+//                                     broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
+//                                 }
+//                             } else if (command.startsWith('pip install') || command.startsWith('npm install')) {
+//                                 const helpMessage = `[CoreZenith] Package installation is not supported in this terminal. Please ask your instructor to add libraries to the environment.\n$ `;
+//                                 session.terminalOutput += helpMessage;
+//                                 broadcast(session, { type: 'TERMINAL_OUT', payload: helpMessage });
+//                             } else if (command) {
+//                                 const errorMessage = `/bin/sh: command not found: ${command}\n$ `;
+//                                 session.terminalOutput += errorMessage;
+//                                 broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
+//                             } else {
+//                                 session.terminalOutput += '$ ';
+//                                 broadcast(session, { type: 'TERMINAL_OUT', payload: '$ ' });
+//                             }
+//                         } else {
+//                             session.terminalInputBuffer += input;
+//                             session.terminalOutput += input;
+//                             broadcast(session, { type: 'TERMINAL_OUT', payload: input });
+//                         }
+//                         break;
+
+//                     case 'RUN_CODE':
+//                          const { language, code } = data.payload;
+//                          try {
+//                              const executionResult = await executeCode(code, language);
+//                              const output = executionResult.output || (executionResult.success ? 'Execution complete.' : 'Execution finished with errors.');
+//                              session.terminalOutput += `\n${output}\n$ `;
+//                              broadcast(session, { type: 'TERMINAL_OUT', payload: `\n${output}\n$ ` });
+//                          } catch (err) {
+//                              console.error("Error during remote code execution:", err);
+//                              const errorMessage = `\nExecution failed: ${err.message}\n$ `;
+//                              session.terminalOutput += errorMessage;
+//                              broadcast(session, { type: 'TERMINAL_OUT', payload: errorMessage });
+//                          }
+//                          break;
+
+//                     case 'DOCKER_CODE_EXECUTION':
+//                         // Handle Docker-based code execution broadcast from teacher to all students
+//                         if (clientInfo.role === 'teacher') {
+//                             const { language, code, result, error, fileName, timestamp } = data.payload;
+                            
+//                             console.log(`[WS] Broadcasting Docker code execution from teacher ${clientInfo.username}: ${language} code from ${fileName}`);
+                            
+//                             // Broadcast to all students in the session
+//                             broadcastToAll(session, { 
+//                                 type: 'DOCKER_CODE_EXECUTION', 
+//                                 payload: {
+//                                     language,
+//                                     code,
+//                                     result,
+//                                     error,
+//                                     fileName,
+//                                     timestamp,
+//                                     teacherName: clientInfo.username
+//                                 }
+//                             });
+//                         }
+//                         break;
+//                 }
+//             } catch (error) {
+//                 console.error('[WS] Error parsing message:', error);
+//             }
+//         });
+
+//         ws.on('close', async () => {
+//             session.clients.delete(clientInfo);
+//             log(`${clientInfo.role} ${clientInfo.username} disconnected. Total clients left: ${session.clients.size}`);
+
+//             if (session.handsRaised.has(clientInfo.id)) {
+//                 session.handsRaised.delete(clientInfo.id);
+//                 broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) }});
+//             }
+
+//             if (session.spotlightedStudentId === clientInfo.id) {
+//                 session.spotlightedStudentId = null;
+//                 broadcast(session, { type: 'SPOTLIGHT_UPDATE', payload: { studentId: null, workspace: null }});
+//             }
+//             if (session.controlledStudentId === clientInfo.id) {
+//                 session.controlledStudentId = null;
+//                 broadcastToAll(session, { type: 'CONTROL_STATE_UPDATE', payload: { controlledStudentId: null }});
+//             }
+            
+//             if (isHomeworkSession) {
+//                 if (teacher) {
+//                     sendToClient(session, teacher.id, { type: 'HOMEWORK_LEAVE', payload: { studentId: user.id } });
+//                 }
+//             } else if (session.clients.size === 0) {
+//                 log(`Last client left. Deleting session ${sessionId}`);
+//                 sessions.delete(sessionId);
+//                 removeSession(sessionId);
+//             } else {
+//                  const updatedStudentList = Array.from(session.clients)
+//                     .filter(c => c.role === 'student' && !c.isHomework)
+//                     .map(c => ({ id: c.id, username: c.username }));
+//                 broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: updatedStudentList }});
+//             }
+//         });
+
+//         ws.on('error', (error) => {
+//             console.error(`[WS] WebSocket error for ${clientInfo.username}:`, error);
+//         });
+//     });
+// }
+
+// module.exports = initializeWebSocket;
 // // services/websocketHandler.js
 
 // const jwt = require('jsonwebtoken');
