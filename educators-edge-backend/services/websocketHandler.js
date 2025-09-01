@@ -348,6 +348,8 @@ function initializeWebSocket(wss) {
                             if (error.response?.data?.reason === 'failed to find worker') {
                                 console.log(`[RECORDING] Recording may have already ended naturally. Resetting session state.`);
                                 
+                                const previousSid = session.recording.sid; // Store before resetting
+                                
                                 // Reset the session recording state
                                 session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
                                 
@@ -355,7 +357,7 @@ function initializeWebSocket(wss) {
                                 broadcast(session, { 
                                     type: 'RECORDING_STOPPED', 
                                     payload: { 
-                                        sid: session.recording.sid,
+                                        sid: previousSid,
                                         message: 'Recording ended (may have stopped automatically due to inactivity)'
                                     } 
                                 });
