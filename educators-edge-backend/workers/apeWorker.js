@@ -22,7 +22,7 @@ redisClient.on('connect', () => console.log('Redis client for Worker connected.'
 redisClient.on('error', (err) => console.error('Redis client for Worker Error:', err));
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // 2. Create workers for different job types
 // Original submission analysis worker
@@ -98,11 +98,11 @@ async function handleAiEnrichment(data) {
     try {
         console.log(`[ENRICH] Starting AI enrichment for recording ${recordingId}`);
         
-        if (!process.env.GOOGLE_AI_API_KEY) {
+        if (!process.env.GEMINI_API_KEY) {
             throw new Error('GOOGLE_AI_API_KEY is not configured');
         }
         
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
         const prompt = `You are an expert computer science educator tasked with cataloging a live tutorial session for students. The following is the full transcript of the session. Your job is to perform two tasks:
 

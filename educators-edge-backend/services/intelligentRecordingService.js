@@ -6,10 +6,10 @@ const db = require('../db');
 
 class IntelligentRecordingService {
     constructor() {
-        if (!process.env.GOOGLE_AI_API_KEY) {
+        if (!process.env.GEMINI_API_KEY) {
             console.warn('[INTELLIGENT_RECORDINGS] GOOGLE_AI_API_KEY not configured');
         }
-        this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     }
 
     // Search recordings using AI semantic matching

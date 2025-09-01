@@ -6,10 +6,10 @@ const db = require('../db');
 
 class TranslationService {
     constructor() {
-        if (!process.env.GOOGLE_AI_API_KEY) {
+        if (!process.env.GEMINI_API_KEY) {
             console.warn('[TRANSLATION] GOOGLE_AI_API_KEY not configured');
         }
-        this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+        this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         
         // Supported languages
         this.supportedLanguages = {
