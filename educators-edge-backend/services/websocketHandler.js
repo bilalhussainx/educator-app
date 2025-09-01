@@ -6,7 +6,7 @@ const url = require('url');
 const { v4: uuidv4 } = require('uuid');
 const { addSession, removeSession } = require('./sessionStore');
 const { executeCode } = require('../services/executionService');
-const agoraRecordingService = require('../services/agoraRecordingService'); // Complete Agora Recording Service
+const agoraRecordingService = require('../services/agoraService'); // Complete Agora Recording Service
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
