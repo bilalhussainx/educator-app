@@ -1,14 +1,24 @@
+// educators-edge-backend/src/services/agoraService.js
+
 const axios = require('axios');
 const db = require('../db');
 
 // --- Environment Variable Validation ---
 const { 
-    AGORA_APP_ID, AGORA_CUSTOMER_ID, AGORA_CUSTOMER_SECRET,
-    AGORA_AZURE_CONTAINER, AGORA_AZURE_ACCOUNT_NAME, AGORA_AZURE_ACCESS_KEY
+    AGORA_APP_ID, 
+    AGORA_CUSTOMER_ID, 
+    AGORA_CUSTOMER_SECRET,
 } = process.env;
 
-if (!AGORA_APP_ID || !AGORA_CUSTOMER_ID || !AGORA_CUSTOMER_SECRET || !AGORA_AZURE_CONTAINER || !AGORA_AZURE_ACCOUNT_NAME || !AGORA_AZURE_ACCESS_KEY) {
-    console.error("[AGORA SERVICE] CRITICAL ERROR: Missing required Agora or Azure Blob Storage environment variables. Recording will fail.");
+// [THE DEFINITIVE FIX - Part 1] The validation logic is now resilient.
+// It checks for the exact variables you have set.
+const AGORA_AZURE_BUCKET = process.env.AGORA_AZURE_BUCKET || process.env.AGORA_AZURE_CONTAINER;
+const AGORA_AZURE_ACCOUNT_NAME = process.env.AGORA_AZURE_ACCOUNT_NAME || process.env.AGORA_AZURE_ACCESS_KEY;
+const AGORA_AZURE_SECRET_KEY = process.env.AGORA_AZURE_SECRET_KEY;
+
+
+if (!AGORA_APP_ID || !AGORA_CUSTOMER_ID || !AGORA_CUSTOMER_SECRET || !AGORA_AZURE_BUCKET || !AGORA_AZURE_ACCOUNT_NAME || !AGORA_AZURE_SECRET_KEY) {
+    console.error("[AGORA SERVICE] CRITICAL ERROR: Missing required Agora or Azure Blob Storage environment variables. Please check AGORA_AZURE_BUCKET (or _CONTAINER), AGORA_AZURE_ACCOUNT_NAME (or _ACCESS_KEY), and AGORA_AZURE_SECRET_KEY.");
 }
 
 const AGORA_API_BASE_URL = 'https://api.agora.io/v1';
@@ -19,7 +29,7 @@ const getBasicAuthHeader = () => {
 };
 
 const startCloudRecording = async (channelName, courseId, teacherId) => {
-    let recordingBotUid; // Declare here to be accessible in catch block
+    let recordingBotUid;
     try {
         recordingBotUid = String(Math.floor(Math.random() * 10000000) + 1);
         
@@ -41,20 +51,20 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                 uid: recordingBotUid,
                 clientRequest: {
                     token: "",
+                    // [THE DEFINITIVE FIX - Part 2] The storageConfig now uses the resilient variables
+                    // and correctly maps them to Agora's confusing field names.
                     storageConfig: {
                         vendor: 5, // 5 = Microsoft Azure
                         region: 0,
-                        bucket: AGORA_AZURE_CONTAINER,
-                        accessKey: AGORA_AZURE_ACCOUNT_NAME,
-                        secretKey: AGORA_AZURE_ACCESS_KEY
+                        bucket: AGORA_AZURE_BUCKET,
+                        accessKey: AGORA_AZURE_ACCOUNT_NAME, // Correct Mapping: Agora's `accessKey` is Azure's `Account Name`
+                        secretKey: AGORA_AZURE_SECRET_KEY    // Correct Mapping: Agora's `secretKey` is Azure's `Access Key`
                     },
                     recordingConfig: {
                         channelType: 1,
                         streamTypes: 2,
                         transcodingConfig: { width: 1280, height: 720, fps: 30, bitrate: 2000, mixedVideoLayout: 1, backgroundColor: "#000000" }
                     },
-                    // [THE CRITICAL FIX] The `recordingFileConfig` and `fileNamePrefix` are completely removed.
-                    // This is the simplest and most robust way to pass Agora's validation.
                 }
             },
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
@@ -86,7 +96,7 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
     try {
         console.log(`[AGORA SERVICE] Stopping recording for SID: ${sid}`);
         const stopResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
             { cname: channelName, uid: uid, clientRequest: {} },
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
         );
