@@ -261,7 +261,7 @@ function initializeWebSocket(wss) {
                             const recordingBotUid = uuidv4();
                             const teacherId = user.id;
 
-                            const result = await agoraService.startCloudRecording(channelName, recordingBotUid, courseId, teacherId);
+                            const result = await agoraService.startCloudRecording(channelName, courseId, teacherId);
                             
                             session.recording = {
                                 isRecording: true,
