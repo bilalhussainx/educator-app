@@ -56,7 +56,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         const resourceId = acquireResponse.data.resourceId;
         console.log(`[AGORA SERVICE] Acquired resourceId: ${resourceId}`);
 
-        // [THE FIX] Correctly using the `AGORA_API_BASE_URL` constant.
+        // [THE FIX] Correctly using the `AGORA_API_BASE_URL` constant and adding required storageConfig
         const startResponse = await axios.post(
             `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
             {
@@ -64,6 +64,15 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                 uid: recordingBotUid,
                 clientRequest: {
                     token: "",
+                    // CRITICAL: storageConfig is REQUIRED to avoid "services not selected!" error
+                    storageConfig: {
+                        vendor: 5,  // 0: Qiniu, 1: Amazon S3, 2: Alibaba Cloud, 3: Tencent Cloud, 4: Kingsoft Cloud, 5: Microsoft Azure, 6: Google Cloud, 7: Huawei Cloud, 8: Baidu Cloud
+                        region: 0,  // Region varies by vendor - check Agora docs for your storage provider
+                        bucket: process.env.AGORA_AZURE_BUCKET,
+                        accessKey: process.env.AGORA_AZURE_ACCESS_KEY,
+                        secretKey: process.env.AGORA_AZURE_SECRET_KEY,
+                        fileNamePrefix: ["recordings", channelName]
+                    },
                     recordingConfig: {
                         channelType: 1,
                         streamTypes: 2,
@@ -113,8 +122,35 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
 
     } catch (error) {
         const errorDetails = error.response ? error.response.data : { message: error.message };
-        console.error("[AGORA SERVICE] CRITICAL ERROR starting recording:", JSON.stringify(errorDetails, null, 2));
-        throw new Error('Failed to start cloud recording via Agora API.');
+        
+        // Enhanced error logging with request details
+        console.error("[AGORA SERVICE] CRITICAL ERROR starting recording:");
+        console.error("Error Details:", JSON.stringify(errorDetails, null, 2));
+        console.error("Channel Name:", channelName);
+        console.error("Course ID:", courseId);
+        console.error("Teacher ID:", teacherId);
+        console.error("Recording Bot UID:", recordingBotUid);
+        
+        if (error.config) {
+            console.error("Request URL:", error.config.url);
+            console.error("Request Method:", error.config.method);
+            console.error("Request Headers:", JSON.stringify(error.config.headers, null, 2));
+            console.error("Request Data:", JSON.stringify(error.config.data, null, 2));
+        }
+        
+        // Provide specific error messages based on the error code
+        if (errorDetails.code === 2 && errorDetails.reason === "services not selected!") {
+            console.error("[AGORA SERVICE] ERROR DIAGNOSIS: Missing storageConfig in clientRequest. Cloud recording requires storage configuration.");
+            throw new Error('Failed to start recording: Storage configuration is missing. Please configure cloud storage settings.');
+        } else if (errorDetails.code === 101) {
+            console.error("[AGORA SERVICE] ERROR DIAGNOSIS: Invalid App ID or authentication credentials.");
+            throw new Error('Failed to start recording: Invalid App ID or authentication credentials.');
+        } else if (errorDetails.code === 3) {
+            console.error("[AGORA SERVICE] ERROR DIAGNOSIS: The Agora service is currently not available.");
+            throw new Error('Failed to start recording: Agora service temporarily unavailable.');
+        }
+        
+        throw new Error(`Failed to start cloud recording: ${errorDetails.reason || errorDetails.message || 'Unknown error'}`);
     }
 };
 

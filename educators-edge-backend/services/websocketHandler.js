@@ -286,11 +286,15 @@ function initializeWebSocket(wss) {
                                 timestamp: new Date().toISOString()
                             });
                             
-                            // Send detailed error to the teacher
-                            const errorMessage = error.message.includes('authentication') 
+                            // Send detailed error to the teacher with specific error handling
+                            const errorMessage = error.message.includes('authentication') || error.message.includes('Invalid App ID')
                                 ? 'Recording failed due to authentication issues. Please check Agora credentials.'
+                                : error.message.includes('Storage configuration is missing')
+                                ? 'Recording failed: Cloud storage is not configured. Please configure storage settings in the Agora project.'
                                 : error.message.includes('services not selected')
-                                ? 'Recording failed. Please ensure Cloud Recording is enabled in your Agora project.'
+                                ? 'Recording failed: Please ensure Cloud Recording and storage are properly configured in your Agora project.'
+                                : error.message.includes('Agora service temporarily unavailable')
+                                ? 'Recording failed: Agora service is temporarily unavailable. Please try again in a few minutes.'
                                 : error.message.includes('column')
                                 ? 'Recording failed due to database configuration issue. Please contact support.'
                                 : 'The recording service failed to start. Please try again or contact support.';
