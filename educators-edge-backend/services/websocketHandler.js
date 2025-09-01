@@ -326,6 +326,48 @@ function initializeWebSocket(wss) {
                                 log(`Recording stopped successfully for session ${sessionKey}, SID: ${sid}`);
                             }
 
+                            // Process recording completion - download and upload to Cloudinary
+                            try {
+                                console.log(`[RECORDING] Processing recording completion for SID: ${sid}`);
+                                
+                                // Process recording files (download from Agora, upload to Cloudinary)
+                                const recordingResult = await agoraService.processRecordingFiles(resourceId, sid);
+                                
+                                const db = require('../db');
+                                
+                                if (recordingResult) {
+                                    // Update recording with Cloudinary URL and mark as completed
+                                    await db.query(
+                                        'UPDATE recorded_sessions SET video_url = $1, processing_status = $2, updated_at = NOW() WHERE agora_recording_sid = $3',
+                                        [recordingResult.videoUrl, 'completed', sid]
+                                    );
+                                    
+                                    console.log(`[RECORDING] Recording ${sid} processed and saved to Cloudinary: ${recordingResult.videoUrl}`);
+                                } else {
+                                    // No files found, mark as failed
+                                    await db.query(
+                                        'UPDATE recorded_sessions SET processing_status = $1, updated_at = NOW() WHERE agora_recording_sid = $2',
+                                        ['failed', sid]
+                                    );
+                                    
+                                    console.log(`[RECORDING] Recording ${sid} marked as failed - no files found`);
+                                }
+                                
+                            } catch (processingError) {
+                                console.error(`[RECORDING] Error processing recording completion:`, processingError.message);
+                                
+                                // Mark as failed if processing error occurs
+                                try {
+                                    const db = require('../db');
+                                    await db.query(
+                                        'UPDATE recorded_sessions SET processing_status = $1, updated_at = NOW() WHERE agora_recording_sid = $2',
+                                        ['failed', sid]
+                                    );
+                                } catch (dbError) {
+                                    console.error(`[RECORDING] Error updating failed status:`, dbError.message);
+                                }
+                            }
+
                             session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
                             broadcast(session, { type: 'RECORDING_STOPPED' });
 

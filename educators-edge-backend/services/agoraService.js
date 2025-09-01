@@ -78,14 +78,6 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                             mixedVideoLayout: 1,
                             backgroundColor: "#000000"
                         }
-                    },
-                    storageConfig: {
-                        vendor: 1,
-                        region: 1,
-                        bucket: "agora-cloud-recording",
-                        accessKey: "temp",
-                        secretKey: "temp",
-                        fileNamePrefix: ["recordings"]
                     }
                 }
             },
@@ -98,9 +90,9 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         console.log(`[AGORA SERVICE] Recording started successfully with Agora SID: ${sid}`);
 
         await db.query(
-            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_recording_sid, title, processing_status)
-             VALUES ($1, $2, $3, $4, 'processing')`,
-            [courseId, teacherId, sid, `Live Session - ${new Date().toLocaleDateString()}`]
+            `INSERT INTO recorded_sessions (course_id, teacher_id, agora_recording_resource_id, agora_recording_sid, title, processing_status)
+             VALUES ($1, $2, $3, $4, $5, 'processing')`,
+            [courseId, teacherId, resourceId, sid, `Live Session - ${new Date().toLocaleDateString()}`]
         );
         console.log(`[DB] Placeholder record created for SID: ${sid}`);
 
@@ -143,6 +135,67 @@ const uploadToCloudinary = (fileBuffer, publicId) => {
     });
 };
 
+/**
+ * Downloads recording files from Agora and uploads them to Cloudinary
+ */
+const processRecordingFiles = async (resourceId, sid) => {
+    try {
+        console.log(`[AGORA SERVICE] Processing recording files for SID: ${sid}`);
+        
+        // Query recording to get file list
+        const queryResponse = await axios.get(
+            `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+            {
+                headers: {
+                    'Authorization': getBasicAuthHeader(),
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+        
+        console.log(`[AGORA SERVICE] Query response:`, JSON.stringify(queryResponse.data, null, 2));
+        
+        const fileList = queryResponse.data?.serverResponse?.fileList;
+        if (!fileList || fileList.length === 0) {
+            console.log(`[AGORA SERVICE] No files found for recording ${sid}`);
+            return null;
+        }
+        
+        // Find the MP4 video file
+        const videoFile = fileList.find(file => file.fileName.endsWith('.mp4'));
+        if (!videoFile) {
+            console.log(`[AGORA SERVICE] No MP4 file found for recording ${sid}`);
+            return null;
+        }
+        
+        console.log(`[AGORA SERVICE] Found video file: ${videoFile.fileName}`);
+        
+        // Download the file from Agora's CDN
+        const downloadResponse = await axios.get(videoFile.fileName, {
+            responseType: 'arraybuffer'
+        });
+        
+        const fileBuffer = Buffer.from(downloadResponse.data);
+        console.log(`[AGORA SERVICE] Downloaded file, size: ${fileBuffer.length} bytes`);
+        
+        // Upload to Cloudinary
+        const publicId = `recordings/${sid}`;
+        const cloudinaryResult = await uploadToCloudinary(fileBuffer, publicId);
+        
+        console.log(`[AGORA SERVICE] Uploaded to Cloudinary: ${cloudinaryResult.secure_url}`);
+        
+        return {
+            videoUrl: cloudinaryResult.secure_url,
+            duration: cloudinaryResult.duration,
+            format: cloudinaryResult.format,
+            publicId: cloudinaryResult.public_id
+        };
+        
+    } catch (error) {
+        console.error(`[AGORA SERVICE] Error processing recording files:`, error.message);
+        throw error;
+    }
+};
 
 /**
  * Stops a cloud recording using the same pattern as startCloudRecording
@@ -213,4 +266,5 @@ module.exports = {
     startCloudRecording,
     stopCloudRecording,
     uploadToCloudinary,
+    processRecordingFiles,
 };
