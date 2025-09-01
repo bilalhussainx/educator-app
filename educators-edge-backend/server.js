@@ -20,9 +20,9 @@ const stuckPointRoutes = require('./routes/stuckPointRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 const recordingRoutes = require('./routes/recordingRoutes');
-const tradeRoutes = require('./src/routes/trade_routes'); // <-- IMPORT THE NEW TRADE ROUTES
-const webhookRoutes = require('./src/routes/webhookRoutes');
-const videoRoutes = require('./src/routes/videoRoutes');
+const tradeRoutes = require('./routes/trade_routes'); // <-- IMPORT THE NEW TRADE ROUTES
+const webhookRoutes = require('./routes/webhookRoutes');
+const videoRoutes = require('./routes/videoRoutes');
 //...
 const app = express();
 app.use(express.json());
