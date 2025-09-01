@@ -1,3 +1,23 @@
+const axios = require('axios');
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
+const db = require('../db');
+
+const AGORA_API_BASE_URL = 'https://api.agora.io/v1';
+
+// Initialize Cloudinary SDK
+try {
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+        secure: true
+    });
+    console.log("[CLOUDINARY] SDK configured successfully.");
+} catch (error) {
+    console.error("[CLOUDINARY] CRITICAL ERROR: Could not configure Cloudinary SDK.", error.message);
+}
+
 const getBasicAuthHeader = () => {
     const credentials = `${process.env.AGORA_CUSTOMER_ID}:${process.env.AGORA_CUSTOMER_SECRET}`;
     return `Basic ${Buffer.from(credentials).toString('base64')}`;
