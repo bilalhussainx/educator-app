@@ -6,7 +6,7 @@ const url = require('url');
 const { v4: uuidv4 } = require('uuid');
 const { addSession, removeSession } = require('./sessionStore');
 const { executeCode } = require('../services/executionService');
-const agoraRecordingService = require('../services/agoraService'); // Complete Agora Recording Service
+const agoraService = require('../services/agoraService'); // Complete Agora Recording Service
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
@@ -379,7 +379,7 @@ function initializeWebSocket(wss) {
                             const { recordingId, resourceId, sid } = session.recording;
                             
                             // Call the complete Agora Recording Service to stop the recording
-                            const result = await agoraRecordingService.stopRecording(recordingId);
+                            const result = await agoraService.stopRecording(recordingId);
                             
                             if (!result.success) {
                                 throw new Error(result.error);
