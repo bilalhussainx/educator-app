@@ -283,7 +283,7 @@ const StudentCoursePage: React.FC = () => {
 
                             {/* Session Recordings Section */}
                             <div className="mt-8">
-                                <StudentRecordings courseId={course.id} />
+                                <StudentRecordings courseId={courseId!} />
                             </div>
                         </div>
 

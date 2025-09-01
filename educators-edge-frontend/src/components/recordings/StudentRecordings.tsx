@@ -66,9 +66,21 @@ export const StudentRecordings: React.FC<StudentRecordingsProps> = ({ courseId }
             const response = await apiClient.get(`/api/recordings/course/${courseId}/student`);
             setRecordings(response.data.recordings);
             setFilteredRecordings(response.data.recordings);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching recordings:', error);
-            toast.error('Failed to load recordings');
+            
+            // Enhanced error handling for UUID validation errors
+            if (error.response?.status === 400 && error.response?.data?.error?.includes('UUID')) {
+                console.error('[RECORDINGS] UUID Format Error:', {
+                    courseId,
+                    error: error.response.data.error,
+                    details: error.response.data.details,
+                    suggestion: error.response.data.suggestion
+                });
+                toast.error(`Invalid Course ID: ${error.response.data.details || 'Course ID must be a valid UUID format'}`);
+            } else {
+                toast.error('Failed to load recordings');
+            }
         } finally {
             setLoading(false);
         }
