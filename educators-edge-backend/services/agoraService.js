@@ -99,7 +99,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                         bucket: process.env.AGORA_AZURE_CONTAINER || process.env.AGORA_AZURE_BUCKET,  // Azure container name
                         accessKey: process.env.AGORA_AZURE_ACCOUNT_NAME || process.env.AGORA_AZURE_ACCESS_KEY,  // Azure storage account name
                         secretKey: process.env.AGORA_AZURE_ACCESS_KEY || process.env.AGORA_AZURE_SECRET_KEY,  // Azure access key
-                        fileNamePrefix: ["recordings", channelName]
+                        fileNamePrefix: ["recordings", channelName.replace(/-/g, "_")]  // Remove special characters from channel name
                     },
                     recordingConfig: {
                         channelType: 1,
