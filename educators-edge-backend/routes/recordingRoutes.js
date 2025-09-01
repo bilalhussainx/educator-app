@@ -104,6 +104,16 @@ router.get('/course/:courseId/student', async (req, res) => {
     try {
         const { courseId } = req.params;
         
+        console.log(`[RECORDINGS] Student recordings request for courseId: "${courseId}"`);
+        
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(courseId)) {
+            console.error(`[RECORDINGS] Invalid UUID format for courseId: "${courseId}"`);
+            return res.status(400).json({ error: 'Invalid course ID format. Expected UUID.' });
+        }
+        
+        // For now, show all recordings regardless of processing status for debugging
         const recordings = await db.query(`
             SELECT 
                 id,
@@ -112,16 +122,23 @@ router.get('/course/:courseId/student', async (req, res) => {
                 video_url,
                 ai_summary,
                 ai_topics,
-                recorded_at
+                recorded_at,
+                processing_status
             FROM recorded_sessions 
-            WHERE course_id = $1 AND processing_status = 'completed'
+            WHERE course_id = $1 
             ORDER BY recorded_at DESC
         `, [courseId]);
 
+        console.log(`[RECORDINGS] Found ${recordings.rows.length} completed recordings for course ${courseId}`);
         res.json({ recordings: recordings.rows });
         
     } catch (error) {
-        console.error('[RECORDINGS] Error fetching student recordings:', error);
+        console.error('[RECORDINGS] Error fetching student recordings:', {
+            error: error.message,
+            stack: error.stack,
+            courseId: req.params.courseId,
+            timestamp: new Date().toISOString()
+        });
         res.status(500).json({ error: 'Internal server error' });
     }
 });
