@@ -110,7 +110,11 @@ router.get('/course/:courseId/student', async (req, res) => {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(courseId)) {
             console.error(`[RECORDINGS] Invalid UUID format for courseId: "${courseId}"`);
-            return res.status(400).json({ error: 'Invalid course ID format. Expected UUID.' });
+            return res.status(400).json({ 
+                error: 'Invalid course ID format. Expected UUID.',
+                details: `Received courseId: "${courseId}". This should be a valid UUID format like: 123e4567-e89b-12d3-a456-426614174000`,
+                suggestion: 'Check that you are using the correct course ID from the course data. Course IDs should be UUIDs, not integers.'
+            });
         }
         
         // For now, show all recordings regardless of processing status for debugging
