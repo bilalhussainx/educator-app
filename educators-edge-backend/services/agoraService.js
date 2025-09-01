@@ -78,6 +78,16 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                             mixedVideoLayout: 1,
                             backgroundColor: "#000000"
                         }
+                    },
+                    recordingFileConfig: {
+                        avFileType: ["hls", "mp4"]
+                    },
+                    serviceParam: {
+                        serviceType: 0,  // Cloud recording
+                        maxIdleTime: 30,
+                        outputModeConfig: {
+                            outputMode: 1  // Mixed mode
+                        }
                     }
                 }
             },
