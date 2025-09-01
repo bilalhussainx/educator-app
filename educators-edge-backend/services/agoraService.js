@@ -80,7 +80,6 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                         audioProfile: 1,
                         videoStreamType: 0,
                         maxRecordingHour: 12,
-                        maxIdleTime: 120,    // Keep recording active for 2 minutes of inactivity
                         transcodingConfig: {
                             width: 1280,
                             height: 720,
@@ -91,9 +90,12 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                         }
                     },
                     storageConfig: {
-                        vendor: 0,        // Agora's built-in storage (no separate credentials needed)
-                        region: 1,        // US East (Virginia)
-                        fileNamePrefix: [`recordings/${courseId}/${Date.now()}`]
+                        vendor: 1,
+                        region: 1,
+                        bucket: "agora-cloud-recording",
+                        accessKey: "temp",
+                        secretKey: "temp",
+                        fileNamePrefix: ["recordings"]
                     }
                 }
             },
