@@ -141,7 +141,44 @@ const uploadToCloudinary = (fileBuffer, publicId) => {
 };
 
 
+/**
+ * Stops a cloud recording with proper Agora API integration
+ * @param {string} resourceId - The Agora resource ID from starting the recording
+ * @param {string} sid - The Agora session ID from starting the recording
+ * @param {string} channelName - The channel name used for recording
+ * @returns {Promise<object>} The response data from the Agora API
+ */
+const stopCloudRecording = async (resourceId, sid, channelName) => {
+    try {
+        console.log(`[AGORA SERVICE] Stopping recording for channel: ${channelName}, SID: ${sid}`);
+        
+        const stopResponse = await axios.post(
+            `${AGORA_API_BASE_URL}/apps/${process.env.AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
+            {
+                cname: channelName,
+                uid: "0", // Use string UID
+                clientRequest: {}
+            },
+            {
+                headers: {
+                    'Authorization': getBasicAuthHeader(),
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+
+        console.log(`[AGORA SERVICE] Recording stopped successfully for SID: ${sid}`);
+        return stopResponse.data;
+
+    } catch (error) {
+        const errorDetails = error.response ? error.response.data : { message: error.message };
+        console.error("[AGORA SERVICE] CRITICAL ERROR stopping recording:", JSON.stringify(errorDetails, null, 2));
+        throw new Error('Failed to stop cloud recording via Agora API.');
+    }
+};
+
 module.exports = {
     startCloudRecording,
+    stopCloudRecording,
     uploadToCloudinary,
 };

@@ -6,7 +6,7 @@ const url = require('url');
 const { v4: uuidv4 } = require('uuid');
 const { addSession, removeSession } = require('./sessionStore');
 const { executeCode } = require('../services/executionService');
-const agoraRecordingService = require('../services/agoraRecordingService'); // Complete Agora Recording Service
+const agoraService = require('../services/agoraService'); // Agora Service
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
@@ -102,7 +102,6 @@ function initializeWebSocket(wss) {
                 videoConnections: new Map(),
                 recording: {
                     isRecording: false,
-                    recordingId: null,
                     resourceId: null,
                     sid: null,
                     startTime: null
@@ -262,17 +261,12 @@ function initializeWebSocket(wss) {
                             const recordingBotUid = uuidv4();
                             const teacherId = user.id;
 
-                            const result = await agoraRecordingService.startRecording(channelName, courseId, teacherId);
-                            
-                            if (!result.success) {
-                                throw new Error(result.error);
-                            }
+                            const result = await agoraService.startCloudRecording(channelName, courseId, teacherId);
                             
                             session.recording = {
                                 isRecording: true,
-                                recordingId: result.recordingId, // Database ID
-                                resourceId: result.resourceId,   // Agora resource ID
-                                sid: result.sid,                 // Agora session ID
+                                resourceId: result.resourceId,
+                                sid: result.sid,
                                 startTime: new Date()
                             };
                             
@@ -310,28 +304,25 @@ function initializeWebSocket(wss) {
                         break;
 
                     case 'STOP_RECORDING':
-                        if (!session.recording.isRecording || !session.recording.recordingId) {
+                        if (!session.recording.isRecording || !session.recording.resourceId) {
                             ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'No active recording to stop.' } }));
                             return;
                         }
 
                         try {
-                            const { recordingId, resourceId, sid } = session.recording;
+                            const { resourceId, sid } = session.recording;
+                            const channelName = sessionKey;
                             
-                            // Call the complete Agora Recording Service to stop the recording
-                            const result = await agoraRecordingService.stopRecording(recordingId);
+                            // Call the agoraService to stop the recording
+                            const result = await agoraService.stopCloudRecording(resourceId, sid, channelName);
                             
-                            if (!result.success) {
-                                throw new Error(result.error);
-                            }
-                            
-                            log(`Recording stopped for session ${sessionKey}, SID: ${sid}, Recording ID: ${recordingId}`);
+                            log(`Recording stopped for session ${sessionKey}, SID: ${sid}`);
 
                             // Reset the session recording state
-                            session.recording = { isRecording: false, recordingId: null, resourceId: null, sid: null, startTime: null };
+                            session.recording = { isRecording: false, resourceId: null, sid: null, startTime: null };
                             
                             // Notify all clients that recording has stopped
-                            broadcast(session, { type: 'RECORDING_STOPPED', payload: { recordingId, fileList: result.fileList } });
+                            broadcast(session, { type: 'RECORDING_STOPPED', payload: { sid, fileList: result.serverResponse?.fileList || [] } });
 
                         } catch (error) {
                             console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
