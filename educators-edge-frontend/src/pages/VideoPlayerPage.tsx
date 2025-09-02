@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft } from 'lucide-react';
-import type { User } from '@/types/index.ts';
 
 interface VideoData {
     id: string;
@@ -20,12 +19,7 @@ interface VideoData {
     transcript?: string;
 }
 
-interface VideoPlayerPageProps {
-    user: User | null;
-    setUser: (user: User | null) => void;
-}
-
-const VideoPlayerPage: React.FC<VideoPlayerPageProps> = ({ user, setUser }) => {
+const VideoPlayerPage: React.FC = () => {
     const { recordingId } = useParams<{ recordingId: string }>();
     const [searchParams] = useSearchParams();
     const courseId = searchParams.get('courseId');

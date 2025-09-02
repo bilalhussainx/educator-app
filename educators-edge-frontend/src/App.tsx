@@ -150,7 +150,7 @@ export default function App() {
                 <Route path="/courses/:courseId/learn" element={<StudentCoursePage />} />
                 <Route path="/courses/:courseId/landing" element={<CourseLandingPage />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />`
-                <Route path="/watch/:recordingId" element={<VideoPlayerPage user={user} setUser={setUser} />} />
+                <Route path="/watch/:recordingId" element={<VideoPlayerPage />} />
                 
                 <Route path="/chapters/new" element={<CreateChapterPage />} /> {/* <-- 2. ADD THE NEW ROUTE */}
 
