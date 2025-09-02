@@ -40,7 +40,9 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
         try {
             setLoadingCourses(true);
             const response = await apiClient.get('/api/courses');
-            setCourses(response.data.courses || []);
+            const fetchedCourses = response.data || [];
+            console.log('Fetched courses:', fetchedCourses);
+            setCourses(fetchedCourses);
         } catch (error) {
             console.error('Error fetching courses:', error);
             toast.error('Failed to load courses');
@@ -76,7 +78,7 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl">
+            <DialogContent className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl max-w-md w-full relative z-50">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-3 text-cyan-300 text-2xl">
                         <RadioTower /> Live Session
@@ -99,29 +101,34 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
                                         <Loader className="h-5 w-5 animate-spin text-cyan-400 mr-2" />
                                         <span className="text-slate-400">Loading courses...</span>
                                     </div>
-                                ) : (
+                                ) : courses.length > 0 ? (
                                     <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
                                         <SelectTrigger className="w-full bg-slate-800 border-slate-600 focus:border-cyan-400 h-12 text-base">
                                             <SelectValue placeholder="Choose a course for this session" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-slate-800 border-slate-600">
+                                        <SelectContent 
+                                            className="bg-slate-800 border-slate-600 text-slate-200 z-[9999] max-h-[200px] overflow-y-auto"
+                                            position="popper"
+                                            sideOffset={8}
+                                            avoidCollisions={true}
+                                            sticky="always"
+                                        >
                                             {courses.map((course) => (
                                                 <SelectItem 
                                                     key={course.id} 
                                                     value={course.id}
-                                                    className="text-slate-200 focus:bg-slate-700 focus:text-cyan-300"
+                                                    className="text-slate-200 focus:bg-slate-700 focus:text-cyan-300 cursor-pointer"
                                                 >
-                                                    <div className="flex items-center">
-                                                        <BookOpen className="h-4 w-4 mr-2 text-cyan-400" />
-                                                        {course.title}
+                                                    <div className="flex items-center w-full">
+                                                        <BookOpen className="h-4 w-4 mr-2 text-cyan-400 flex-shrink-0" />
+                                                        <span className="truncate">{course.title}</span>
                                                     </div>
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                )}
-                                {courses.length === 0 && !loadingCourses && (
-                                    <div className="text-sm text-slate-500 bg-slate-800 p-3 rounded-md">
+                                ) : (
+                                    <div className="text-sm text-slate-500 bg-slate-800 p-3 rounded-md border border-slate-600">
                                         No courses found. Create a course first to link live sessions.
                                     </div>
                                 )}
