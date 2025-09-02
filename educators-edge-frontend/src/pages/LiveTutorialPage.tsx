@@ -339,6 +339,10 @@ const LiveTutorialPage: React.FC = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
     const token = localStorage.getItem('authToken');
+    
+    // Extract courseId from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get('courseId');
 
     // --- State Management ---
     const decodedToken = token ? simpleJwtDecode(token) : null;
@@ -857,7 +861,7 @@ const LiveTutorialPage: React.FC = () => {
     // Recording handlers
     const handleStartRecording = () => {
         console.log('[RECORDING] Start recording button clicked');
-        console.log('[RECORDING] Current state:', { isRecording, sessionId });
+        console.log('[RECORDING] Current state:', { isRecording, sessionId, courseId });
         
         if (!sessionId) {
             console.error('[RECORDING] No session ID available for recording');
@@ -865,9 +869,15 @@ const LiveTutorialPage: React.FC = () => {
             return;
         }
         
+        if (!courseId) {
+            console.error('[RECORDING] No courseId found in URL parameters');
+            toast.error('This session is not linked to a course. Please start a new session from the dashboard.');
+            return;
+        }
+        
         const startPayload = {
             channelName: sessionId,
-            courseId: sessionId // Use sessionId as fallback for courseId
+            courseId: courseId // Use the selected course ID from the modal
         };
         
         console.log('[RECORDING] Sending START_RECORDING message:', startPayload);
