@@ -9,6 +9,26 @@ const intelligentRecordingService = require('../services/intelligentRecordingSer
 const translationService = require('../services/translationService');
 const { verifyToken } = require('../middleware/authMiddleware');
 
+// Helper function to ensure video URL is a full Azure Blob Storage URL
+const ensureFullVideoUrl = (videoUrl) => {
+    if (!videoUrl) return null;
+    
+    // If it's already a full URL, return as is
+    if (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) {
+        return videoUrl;
+    }
+    
+    // If it's just a filename, construct the full Azure Blob Storage URL
+    const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY; // Storage account name
+    const azureContainer = process.env.AGORA_AZURE_BUCKET; // Container name
+    
+    if (azureAccountName && azureContainer) {
+        return `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${videoUrl}`;
+    }
+    
+    return videoUrl; // Return original if we can't construct full URL
+};
+
 // Webhook endpoint for Agora recording completion
 // Agora will call this when recording is finished
 router.post('/webhook/recording-complete', async (req, res) => {
@@ -34,13 +54,24 @@ router.post('/webhook/recording-complete', async (req, res) => {
 
         const recording = result.rows[0];
         
-        // Extract video URL from fileList (Agora provides download URLs)
+        // Extract video URL from fileList and construct Azure Blob Storage URL
         let videoUrl = null;
         if (fileList && fileList.length > 0) {
             // Find MP4 file or use first available file
             const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
             const targetFile = mp4File || fileList[0];
-            videoUrl = targetFile ? targetFile.fileName : null; // Agora provides download URL
+            
+            if (targetFile && targetFile.fileName) {
+                // Construct the full Azure Blob Storage URL
+                const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY; // Storage account name
+                const azureContainer = process.env.AGORA_AZURE_BUCKET; // Container name
+                const fileName = targetFile.fileName;
+                
+                // Azure Blob Storage URL format: https://{account}.blob.core.windows.net/{container}/{filename}
+                videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${fileName}`;
+                
+                console.log(`[RECORDING WEBHOOK] Constructed video URL: ${videoUrl}`);
+            }
         }
 
         // Update database with video URL and set status to transcribing
@@ -95,6 +126,11 @@ router.get('/course/:courseId', verifyToken, async (req, res) => {
             WHERE teacher_id = $1
             ORDER BY recorded_at DESC
         `, [userId]);
+
+        // Ensure all video URLs are full Azure Blob Storage URLs
+        recordings.rows.forEach(recording => {
+            recording.video_url = ensureFullVideoUrl(recording.video_url);
+        });
 
         console.log(`[RECORDINGS] Found ${recordings.rows.length} recordings created by teacher ${userId}`);
         res.json({ recordings: recordings.rows });
@@ -160,6 +196,11 @@ router.get('/course/:courseId/student', async (req, res) => {
             WHERE course_id = $1 AND processing_status IN ('completed', 'processing', 'transcribing', 'enriching')
             ORDER BY recorded_at DESC
         `, [actualCourseId]);
+
+        // Ensure all video URLs are full Azure Blob Storage URLs
+        recordings.rows.forEach(recording => {
+            recording.video_url = ensureFullVideoUrl(recording.video_url);
+        });
 
         console.log(`[RECORDINGS] Found ${recordings.rows.length} recordings for course ${courseId}`);
         res.json({ recordings: recordings.rows });
@@ -469,6 +510,9 @@ router.get('/:recordingId', verifyToken, async (req, res) => {
                 return res.status(403).json({ error: 'Recording not yet available' });
             }
         }
+
+        // Ensure video URL is a full Azure Blob Storage URL (for backward compatibility with existing records)
+        recording.video_url = ensureFullVideoUrl(recording.video_url);
 
         res.json(recording);
 
