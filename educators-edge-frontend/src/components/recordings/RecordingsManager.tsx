@@ -2,6 +2,7 @@
 // Teacher interface for managing recorded sessions
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +32,7 @@ interface RecordingsManagerProps {
 }
 
 export const RecordingsManager: React.FC<RecordingsManagerProps> = ({ courseId }) => {
+    const navigate = useNavigate();
     const [recordings, setRecordings] = useState<Recording[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingRecording, setEditingRecording] = useState<Recording | null>(null);
@@ -201,11 +203,13 @@ export const RecordingsManager: React.FC<RecordingsManagerProps> = ({ courseId }
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {recording.video_url && recording.processing_status === 'completed' && (
-                                            <Button size="sm" variant="outline" asChild>
-                                                <a href={recording.video_url} target="_blank" rel="noopener noreferrer">
-                                                    <Play className="h-4 w-4 mr-1" />
-                                                    Play
-                                                </a>
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline"
+                                                onClick={() => navigate(`/watch/${recording.id}?courseId=${courseId}`)}
+                                            >
+                                                <Play className="h-4 w-4 mr-1" />
+                                                Watch
                                             </Button>
                                         )}
                                         <Button size="sm" variant="outline" onClick={() => handleEdit(recording)}>

@@ -37,6 +37,7 @@ import { RecordingsPage } from './pages/RecordingsPage';
 import mixpanel from 'mixpanel-browser';
 import LessonLoaderPage from './pages/LessonLoaderPage';
 import CreateChapterPage from './pages/CreateChapterPage';
+import VideoPlayerPage from './pages/VideoPlayerPage';
 // --- Mixpanel Initialization ---
 const MIXPANEL_PROJECT_TOKEN = "ddb00402917fe523b477eafdf60f0580"; 
 if (MIXPANEL_PROJECT_TOKEN) {
@@ -149,6 +150,7 @@ export default function App() {
                 <Route path="/courses/:courseId/learn" element={<StudentCoursePage />} />
                 <Route path="/courses/:courseId/landing" element={<CourseLandingPage />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />`
+                <Route path="/watch/:recordingId" element={<VideoPlayerPage user={user} setUser={setUser} />} />
                 
                 <Route path="/chapters/new" element={<CreateChapterPage />} /> {/* <-- 2. ADD THE NEW ROUTE */}
 

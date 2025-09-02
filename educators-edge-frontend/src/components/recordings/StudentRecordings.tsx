@@ -2,6 +2,7 @@
 // Student interface for viewing completed recorded sessions
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +47,7 @@ interface StudentRecordingsProps {
 }
 
 export const StudentRecordings: React.FC<StudentRecordingsProps> = ({ courseId }) => {
+    const navigate = useNavigate();
     const [recordings, setRecordings] = useState<Recording[]>([]);
     const [filteredRecordings, setFilteredRecordings] = useState<Recording[]>([]);
     const [loading, setLoading] = useState(true);
@@ -496,12 +498,10 @@ export const StudentRecordings: React.FC<StudentRecordingsProps> = ({ courseId }
                                             <Button 
                                                 size="sm" 
                                                 className="bg-cyan-600 hover:bg-cyan-500 text-white"
-                                                asChild
+                                                onClick={() => navigate(`/watch/${recording.id}?courseId=${courseId}`)}
                                             >
-                                                <a href={recording.video_url} target="_blank" rel="noopener noreferrer">
-                                                    <Play className="h-4 w-4 mr-2" />
-                                                    Watch
-                                                </a>
+                                                <Play className="h-4 w-4 mr-2" />
+                                                Watch
                                             </Button>
                                         </div>
                                     </div>
