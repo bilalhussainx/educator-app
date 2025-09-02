@@ -78,7 +78,7 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl max-w-md w-full relative z-50">
+            <DialogContent className="bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl w-full max-w-md mx-4 my-8">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-3 text-cyan-300 text-2xl">
                         <RadioTower /> Live Session
@@ -87,7 +87,7 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
                         Instantly start or join a real-time instruction session.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="pt-4">
+                <div className="pt-4 space-y-6">
                     {/* Teacher-specific action */}
                     {user?.role === 'teacher' && (
                         <>
@@ -107,11 +107,10 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
                                             <SelectValue placeholder="Choose a course for this session" />
                                         </SelectTrigger>
                                         <SelectContent 
-                                            className="bg-slate-800 border-slate-600 text-slate-200 z-[9999] max-h-[200px] overflow-y-auto"
+                                            className="bg-slate-800 border-slate-600 text-slate-200 max-h-[200px] overflow-y-auto"
                                             position="popper"
                                             sideOffset={8}
                                             avoidCollisions={true}
-                                            sticky="always"
                                         >
                                             {courses.map((course) => (
                                                 <SelectItem 
