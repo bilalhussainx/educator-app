@@ -104,15 +104,47 @@ router.get('/course/:courseId', async (req, res) => {
     }
 });
 
-// Get recordings for students (all recordings from live sessions)
+// Get recordings for students (filtered by course)
 router.get('/course/:courseId/student', async (req, res) => {
     try {
         const { courseId } = req.params;
         
-        console.log(`[RECORDINGS] Student recordings request for courseId: "${courseId}" - showing all live session recordings`);
+        console.log(`[RECORDINGS] Student recordings request for courseId: "${courseId}"`);
         
-        // Since recordings are from live tutoring sessions (not course-specific),
-        // show ALL recordings to students regardless of the courseId parameter
+        // Handle both UUID and integer course IDs for backward compatibility
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        const isUuid = uuidRegex.test(courseId);
+        const isInteger = /^\d+$/.test(courseId);
+        
+        if (!isUuid && !isInteger) {
+            console.error(`[RECORDINGS] Invalid course ID format: "${courseId}"`);
+            return res.status(400).json({ 
+                error: 'Invalid course ID format. Expected UUID or integer.',
+                details: `Received courseId: "${courseId}". This should be either a UUID format or an integer.`,
+                suggestion: 'Check that you are using the correct course ID from the course data.'
+            });
+        }
+        
+        // If it's an integer, convert it to look up the course by its integer ID first, then get the UUID
+        let actualCourseId = courseId;
+        if (isInteger) {
+            console.log(`[RECORDINGS] Converting integer courseId "${courseId}" to UUID`);
+            // Look up the course by integer ID to get the UUID
+            const courseResult = await db.query(
+                'SELECT id FROM courses WHERE id::text = $1 OR title ILIKE $2',
+                [courseId, `%Course ${courseId}%`]
+            );
+            
+            if (courseResult.rows.length === 0) {
+                console.log(`[RECORDINGS] No course found for integer ID: "${courseId}"`);
+                return res.json({ recordings: [] }); // Return empty array instead of error for better UX
+            }
+            
+            actualCourseId = courseResult.rows[0].id;
+            console.log(`[RECORDINGS] Found course UUID: "${actualCourseId}" for integer ID: "${courseId}"`);
+        }
+        
+        // Show recordings for this specific course only
         const recordings = await db.query(`
             SELECT 
                 id,
@@ -122,14 +154,13 @@ router.get('/course/:courseId/student', async (req, res) => {
                 ai_summary,
                 ai_topics,
                 recorded_at,
-                processing_status,
-                course_id
+                processing_status
             FROM recorded_sessions 
-            WHERE processing_status IN ('completed', 'processing', 'transcribing', 'enriching')
+            WHERE course_id = $1 AND processing_status IN ('completed', 'processing', 'transcribing', 'enriching')
             ORDER BY recorded_at DESC
-        `);
+        `, [actualCourseId]);
 
-        console.log(`[RECORDINGS] Found ${recordings.rows.length} live session recordings available to all students`);
+        console.log(`[RECORDINGS] Found ${recordings.rows.length} recordings for course ${courseId}`);
         res.json({ recordings: recordings.rows });
         
     } catch (error) {
