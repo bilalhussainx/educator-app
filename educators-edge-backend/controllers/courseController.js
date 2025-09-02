@@ -48,6 +48,10 @@ exports.getAllCourses = async (req, res) => {
             lesson_count: parseInt(course.lesson_count, 10) || 0,
             student_count: 0 // Placeholder
         }));
+        
+        // Debug logging
+        console.log('[DEBUG] Courses returned to frontend:', courses.map(c => ({ id: c.id, title: c.title, idType: typeof c.id })));
+        
         res.json(courses);
     } catch (err) {
         console.error(err.message);
@@ -195,6 +199,10 @@ exports.getAllCourses = async (req, res) => {
             lesson_count: parseInt(course.lesson_count, 10) || 0,
             student_count: 0 // Placeholder
         }));
+        
+        // Debug logging
+        console.log('[DEBUG] Courses returned to frontend:', courses.map(c => ({ id: c.id, title: c.title, idType: typeof c.id })));
+        
         res.json(courses);
     } catch (err) {
         console.error(err.message);

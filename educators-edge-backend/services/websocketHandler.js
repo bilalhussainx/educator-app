@@ -316,6 +316,8 @@ function initializeWebSocket(wss) {
                     }
                     
                     const { courseId } = data.payload;
+                    console.log('[DEBUG] WebSocket received courseId:', courseId, 'type:', typeof courseId);
+                    
                     if (!courseId) {
                         log(`[RECORDING] Teacher ${clientInfo.username} tried to start recording without a courseId.`);
                          ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'A courseId is required to start a recording.' } }));
