@@ -7,6 +7,7 @@ const db = require('../db');
 const { addProcessingJob } = require('../services/processingService');
 const intelligentRecordingService = require('../services/intelligentRecordingService');
 const translationService = require('../services/translationService');
+const { verifyToken } = require('../middleware/authMiddleware');
 
 // Webhook endpoint for Agora recording completion
 // Agora will call this when recording is finished
@@ -70,7 +71,7 @@ router.post('/webhook/recording-complete', async (req, res) => {
 });
 
 // Get recordings for a course (teacher view - shows teacher's own live session recordings)
-router.get('/course/:courseId', async (req, res) => {
+router.get('/course/:courseId', verifyToken, async (req, res) => {
     try {
         const { courseId } = req.params;
         const { userId } = req.user; // From auth middleware
@@ -175,7 +176,7 @@ router.get('/course/:courseId/student', async (req, res) => {
 });
 
 // Update recording metadata (teacher only)
-router.put('/:recordingId', async (req, res) => {
+router.put('/:recordingId', verifyToken, async (req, res) => {
     try {
         const { recordingId } = req.params;
         const { title, description } = req.body;
@@ -210,7 +211,7 @@ router.put('/:recordingId', async (req, res) => {
 });
 
 // Delete recording (teacher only)
-router.delete('/:recordingId', async (req, res) => {
+router.delete('/:recordingId', verifyToken, async (req, res) => {
     try {
         const { recordingId } = req.params;
         const { userId } = req.user;
@@ -301,7 +302,7 @@ router.get('/translations/languages', (req, res) => {
 });
 
 // Translate a single recording
-router.post('/:recordingId/translate/:languageCode', async (req, res) => {
+router.post('/:recordingId/translate/:languageCode', verifyToken, async (req, res) => {
     try {
         const { recordingId, languageCode } = req.params;
         const { userId } = req.user; // From auth middleware
@@ -329,7 +330,7 @@ router.post('/:recordingId/translate/:languageCode', async (req, res) => {
 });
 
 // Get translation for a recording
-router.get('/:recordingId/translate/:languageCode', async (req, res) => {
+router.get('/:recordingId/translate/:languageCode', verifyToken, async (req, res) => {
     try {
         const { recordingId, languageCode } = req.params;
         const { userId } = req.user;
@@ -362,7 +363,7 @@ router.get('/:recordingId/translate/:languageCode', async (req, res) => {
 });
 
 // Get all available translations for a recording
-router.get('/:recordingId/translations', async (req, res) => {
+router.get('/:recordingId/translations', verifyToken, async (req, res) => {
     try {
         const { recordingId } = req.params;
         const { userId } = req.user;
@@ -390,7 +391,7 @@ router.get('/:recordingId/translations', async (req, res) => {
 });
 
 // Batch translate all recordings in a course (teacher only)
-router.post('/course/:courseId/batch-translate/:languageCode', async (req, res) => {
+router.post('/course/:courseId/batch-translate/:languageCode', verifyToken, async (req, res) => {
     try {
         const { courseId, languageCode } = req.params;
         const { userId } = req.user;
@@ -415,7 +416,7 @@ router.post('/course/:courseId/batch-translate/:languageCode', async (req, res) 
 });
 
 // Delete translation (teacher only)
-router.delete('/:recordingId/translate/:languageCode', async (req, res) => {
+router.delete('/:recordingId/translate/:languageCode', verifyToken, async (req, res) => {
     try {
         const { recordingId, languageCode } = req.params;
         const { userId } = req.user;
@@ -442,7 +443,7 @@ router.delete('/:recordingId/translate/:languageCode', async (req, res) => {
 });
 
 // Get individual recording by ID
-router.get('/:recordingId', async (req, res) => {
+router.get('/:recordingId', verifyToken, async (req, res) => {
     try {
         const { recordingId } = req.params;
         const { userId } = req.user;
