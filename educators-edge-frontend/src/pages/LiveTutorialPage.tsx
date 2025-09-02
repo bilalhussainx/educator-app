@@ -343,6 +343,12 @@ const LiveTutorialPage: React.FC = () => {
     // Extract courseId from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const courseId = urlParams.get('courseId');
+    
+    // Debug logging for courseId
+    useEffect(() => {
+        console.log('[DEBUG] LiveTutorialPage courseId from URL:', courseId);
+        console.log('[DEBUG] Full URL search params:', window.location.search);
+    }, [courseId]);
 
     // --- State Management ---
     const decodedToken = token ? simpleJwtDecode(token) : null;

@@ -57,12 +57,17 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
             return;
         }
 
+        console.log('[DEBUG] Creating session with selectedCourseId:', selectedCourseId);
+        console.log('[DEBUG] Selected course from courses array:', courses.find(c => c.id === selectedCourseId));
+
         const sessionId = crypto.randomUUID();
         onClose(); // Close the modal before navigating
         
         // Navigate with course ID as query parameter if teacher selected one
         if (selectedCourseId) {
-            navigate(`/session/${sessionId}?courseId=${selectedCourseId}`);
+            const navigationUrl = `/session/${sessionId}?courseId=${selectedCourseId}`;
+            console.log('[DEBUG] Navigating to:', navigationUrl);
+            navigate(navigationUrl);
         } else {
             navigate(`/session/${sessionId}`);
         }
