@@ -441,4 +441,40 @@ router.delete('/:recordingId/translate/:languageCode', async (req, res) => {
     }
 });
 
+// Get individual recording by ID
+router.get('/:recordingId', async (req, res) => {
+    try {
+        const { recordingId } = req.params;
+        const { userId } = req.user;
+
+        // Get recording and verify access (students can access all recordings, teachers can access their own)
+        const result = await db.query(`
+            SELECT rs.*, c.teacher_id, c.title as course_title
+            FROM recorded_sessions rs 
+            JOIN courses c ON rs.course_id = c.id 
+            WHERE rs.id = $1
+        `, [recordingId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Recording not found' });
+        }
+
+        const recording = result.rows[0];
+
+        // Check if user has access (either teacher who owns it or any authenticated user for student view)
+        if (recording.teacher_id !== userId) {
+            // For students, we allow access to all completed recordings
+            if (recording.processing_status !== 'completed') {
+                return res.status(403).json({ error: 'Recording not yet available' });
+            }
+        }
+
+        res.json(recording);
+
+    } catch (error) {
+        console.error('[RECORDINGS] Error fetching individual recording:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;
