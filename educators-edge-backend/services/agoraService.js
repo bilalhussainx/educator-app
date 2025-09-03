@@ -116,15 +116,77 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
         );
 
         console.log(`[AGORA SERVICE] Recording stopped successfully for SID: ${sid}`);
-        await db.query(`UPDATE recorded_sessions SET processing_status = 'completed' WHERE agora_recording_sid = $1`, [sid]);
-        console.log(`[DB] Updated status to 'completed' for SID: ${sid}`);
-        return stopResponse.data;
+        
+        // Query the recording to get the file list
+        console.log(`[AGORA SERVICE] Querying recording files for SID: ${sid}`);
+        const queryResponse = await axios.get(
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+            { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
+        );
+
+        let videoUrl = null;
+        const fileList = queryResponse.data?.serverResponse?.fileList;
+        if (fileList && fileList.length > 0) {
+            console.log(`[AGORA SERVICE] Found ${fileList.length} files:`, fileList.map(f => f.fileName));
+            
+            // Find MP4 file or use first available file
+            const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
+            const targetFile = mp4File || fileList[0];
+            
+            if (targetFile && targetFile.fileName) {
+                // Construct the full Azure Blob Storage URL
+                const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY; // Storage account name
+                const azureContainer = process.env.AGORA_AZURE_BUCKET; // Container name
+                const fileName = targetFile.fileName;
+                
+                // Azure Blob Storage URL format: https://{account}.blob.core.windows.net/{container}/{filename}
+                videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${fileName}`;
+                console.log(`[AGORA SERVICE] Constructed video URL: ${videoUrl}`);
+            }
+        }
+
+        // Update database with video URL and set status to completed
+        await db.query(
+            `UPDATE recorded_sessions SET video_url = $1, processing_status = 'completed', updated_at = NOW() WHERE agora_recording_sid = $2`,
+            [videoUrl, sid]
+        );
+        console.log(`[DB] Updated status to 'completed' and video URL for SID: ${sid}`);
+        
+        return { ...stopResponse.data, videoUrl };
     } catch (error) {
         const errorDetails = error.response ? error.response.data : { message: error.message };
         if (errorDetails.code === 404 && errorDetails.reason === 'failed to find worker') {
-            console.warn(`[AGORA SERVICE] Recording ${sid} may have already ended. Marking as complete.`);
-            await db.query(`UPDATE recorded_sessions SET processing_status = 'completed' WHERE agora_recording_sid = $1`, [sid]);
-            return { message: 'Recording already stopped or expired.', warning: true };
+            console.warn(`[AGORA SERVICE] Recording ${sid} may have already ended. Attempting to get file list.`);
+            
+            // Try to get the file list even if stop failed
+            let videoUrl = null;
+            try {
+                const queryResponse = await axios.get(
+                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+                    { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
+                );
+
+                const fileList = queryResponse.data?.serverResponse?.fileList;
+                if (fileList && fileList.length > 0) {
+                    const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
+                    const targetFile = mp4File || fileList[0];
+                    
+                    if (targetFile && targetFile.fileName) {
+                        const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY;
+                        const azureContainer = process.env.AGORA_AZURE_BUCKET;
+                        videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${targetFile.fileName}`;
+                        console.log(`[AGORA SERVICE] Found video URL for already-stopped recording: ${videoUrl}`);
+                    }
+                }
+            } catch (queryError) {
+                console.warn(`[AGORA SERVICE] Could not query files for stopped recording ${sid}:`, queryError.message);
+            }
+            
+            await db.query(
+                `UPDATE recorded_sessions SET video_url = $1, processing_status = 'completed', updated_at = NOW() WHERE agora_recording_sid = $2`,
+                [videoUrl, sid]
+            );
+            return { message: 'Recording already stopped or expired.', warning: true, videoUrl };
         }
         console.error("[AGORA SERVICE] Error stopping recording:", JSON.stringify(errorDetails, null, 2));
         throw new Error(`Failed to stop cloud recording: ${errorDetails.reason || errorDetails.message || 'Unknown error'}`);
