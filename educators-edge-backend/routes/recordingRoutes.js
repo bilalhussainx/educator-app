@@ -29,6 +29,57 @@ const ensureFullVideoUrl = (videoUrl) => {
     return videoUrl; // Return original if we can't construct full URL
 };
 
+// Get recording status by SID or recording ID
+router.get('/status/:recordingId', async (req, res) => {
+    try {
+        const { recordingId } = req.params;
+        
+        console.log(`[RECORDINGS] Status check for ID: ${recordingId}`);
+        
+        // Try to find by SID first, then by regular ID
+        const result = await db.query(`
+            SELECT 
+                id,
+                agora_recording_sid as sid,
+                processing_status as status,
+                video_url,
+                title,
+                recorded_at,
+                created_at,
+                updated_at
+            FROM recorded_sessions 
+            WHERE agora_recording_sid = $1 OR id = $1
+            ORDER BY created_at DESC
+            LIMIT 1
+        `, [recordingId]);
+        
+        if (result.rows.length === 0) {
+            console.log(`[RECORDINGS] Recording not found for ID: ${recordingId}`);
+            return res.status(404).json({ 
+                error: 'Recording not found',
+                recordingId: recordingId
+            });
+        }
+        
+        const recording = result.rows[0];
+        recording.video_url = ensureFullVideoUrl(recording.video_url);
+        
+        console.log(`[RECORDINGS] Status for ${recordingId}: ${recording.status}`);
+        
+        res.json({
+            success: true,
+            ...recording
+        });
+        
+    } catch (error) {
+        console.error('[RECORDINGS] Error getting recording status:', error);
+        res.status(500).json({ 
+            error: 'Failed to get recording status',
+            details: error.message
+        });
+    }
+});
+
 // Webhook endpoint for Agora recording completion
 // Agora will call this when recording is finished
 router.post('/webhook/recording-complete', async (req, res) => {

@@ -41,8 +41,15 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY; // This should be the storage account name
         const azureAccessKey = process.env.AGORA_AZURE_SECRET_KEY; // This should be the access key
 
+        console.log(`[AZURE DEBUG] Configuration check:`);
+        console.log(`[AZURE DEBUG] - Container: ${azureContainer ? '✓ SET' : '✗ MISSING'}`);
+        console.log(`[AZURE DEBUG] - Account Name: ${azureAccountName ? '✓ SET' : '✗ MISSING'}`);
+        console.log(`[AZURE DEBUG] - Access Key: ${azureAccessKey ? '✓ SET' : '✗ MISSING'}`);
+
         if (!azureContainer || !azureAccountName || !azureAccessKey) {
-            throw new Error(`Missing Azure storage configuration. Required: AGORA_AZURE_BUCKET, AGORA_AZURE_ACCESS_KEY (storage account name), AGORA_AZURE_SECRET_KEY (access key)`);
+            const error = `Missing Azure storage configuration. Required: AGORA_AZURE_BUCKET, AGORA_AZURE_ACCESS_KEY (storage account name), AGORA_AZURE_SECRET_KEY (access key)`;
+            console.error(`[AZURE ERROR] ${error}`);
+            throw new Error(error);
         }
 
         recordingBotUid = String(Math.floor(Math.random() * 10000000) + 1);
@@ -58,6 +65,11 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         const resourceId = acquireResponse.data.resourceId;
         console.log(`[AGORA SERVICE] Acquired resourceId: ${resourceId}`);
 
+        console.log(`[AGORA SERVICE] Starting recording with Azure storage config:`);
+        console.log(`[AGORA SERVICE] - Vendor: 5 (Azure Blob Storage)`);
+        console.log(`[AGORA SERVICE] - Container: ${azureContainer}`);
+        console.log(`[AGORA SERVICE] - Account: ${azureAccountName}`);
+        
         const startResponse = await axios.post(
             `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
             {
@@ -68,9 +80,9 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                     storageConfig: {
                         vendor: 5, // Microsoft Azure Blob Storage
                         region: 0, // Always 0 for Azure
-                        bucket: process.env.AGORA_AZURE_BUCKET,
-                        accessKey: process.env.AGORA_AZURE_ACCESS_KEY, // Storage account name
-                        secretKey: process.env.AGORA_AZURE_SECRET_KEY  // Access key
+                        bucket: azureContainer,
+                        accessKey: azureAccountName, // Storage account name
+                        secretKey: azureAccessKey  // Access key
                     },
                     recordingConfig: {
                         channelType: 1,
@@ -98,11 +110,27 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
 
     } catch (error) {
         const errorDetails = error.response ? error.response.data : { message: error.message };
-        console.error("[AGORA SERVICE] CRITICAL ERROR starting recording:", JSON.stringify(errorDetails, null, 2));
-        // Provide a more specific error message in the logs.
-        if (error.message.includes('check constraint')) {
-            console.error("[ARCHITECT'S NOTE] The CHECK constraint on `processing_status` in the `recorded_sessions` table does not allow the value the application is trying to insert. The application has been reverted to use 'processing'. Please ensure this value is allowed in your schema.");
+        console.error("[AGORA SERVICE] CRITICAL ERROR starting recording:");
+        console.error("[AGORA SERVICE] Error details:", JSON.stringify(errorDetails, null, 2));
+        console.error("[AGORA SERVICE] Channel:", channelName);
+        console.error("[AGORA SERVICE] Course ID:", courseId);
+        console.error("[AGORA SERVICE] Teacher ID:", teacherId);
+        
+        if (error.config) {
+            console.error("[AGORA SERVICE] Request URL:", error.config.url);
+            console.error("[AGORA SERVICE] Request data:", JSON.stringify(error.config.data, null, 2));
         }
+        
+        // Azure-specific error handling
+        if (errorDetails.code === 2 && errorDetails.reason === "services not selected!") {
+            console.error("[AZURE ERROR] Storage configuration issue - services not selected");
+            throw new Error('Azure storage configuration error: Recording service not properly configured. Check AGORA_AZURE_* environment variables.');
+        }
+        
+        if (error.message.includes('check constraint')) {
+            console.error("[DB ERROR] Database constraint violation in recorded_sessions table");
+        }
+        
         throw new Error(`Failed to start cloud recording: ${errorDetails.reason || errorDetails.message || 'Unknown error'}`);
     }
 };
@@ -126,6 +154,8 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
 
         let videoUrl = null;
         const fileList = queryResponse.data?.serverResponse?.fileList;
+        console.log(`[AGORA SERVICE] Query response:`, JSON.stringify(queryResponse.data, null, 2));
+        
         if (fileList && fileList.length > 0) {
             console.log(`[AGORA SERVICE] Found ${fileList.length} files:`, fileList.map(f => f.fileName));
             
@@ -139,18 +169,45 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
                 const azureContainer = process.env.AGORA_AZURE_BUCKET; // Container name
                 const fileName = targetFile.fileName;
                 
+                console.log(`[AZURE URL] Building URL with:`);
+                console.log(`[AZURE URL] - Account: ${azureAccountName}`);
+                console.log(`[AZURE URL] - Container: ${azureContainer}`);
+                console.log(`[AZURE URL] - File: ${fileName}`);
+                
                 // Azure Blob Storage URL format: https://{account}.blob.core.windows.net/{container}/{filename}
                 videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${fileName}`;
-                console.log(`[AGORA SERVICE] Constructed video URL: ${videoUrl}`);
+                console.log(`[AZURE URL] Constructed video URL: ${videoUrl}`);
+                
+                // Verify URL accessibility (optional ping)
+                try {
+                    const headResponse = await axios.head(videoUrl, { timeout: 5000 });
+                    console.log(`[AZURE URL] Video URL is accessible, status: ${headResponse.status}`);
+                } catch (urlError) {
+                    console.warn(`[AZURE URL] Warning: Could not verify video URL accessibility:`, urlError.message);
+                    console.warn(`[AZURE URL] This might be due to permissions or the file not being fully uploaded yet.`);
+                }
+            } else {
+                console.error(`[AGORA SERVICE] No valid file found in fileList`);
             }
+        } else {
+            console.error(`[AGORA SERVICE] No files found in recording query response`);
         }
 
         // Update database with video URL and set status to completed
-        await db.query(
+        console.log(`[DB] Updating recording status for SID: ${sid}`);
+        console.log(`[DB] Video URL to save: ${videoUrl || 'NULL'}`);
+        
+        const updateResult = await db.query(
             `UPDATE recorded_sessions SET video_url = $1, processing_status = 'completed', updated_at = NOW() WHERE agora_recording_sid = $2`,
             [videoUrl, sid]
         );
-        console.log(`[DB] Updated status to 'completed' and video URL for SID: ${sid}`);
+        
+        console.log(`[DB] Update result: ${updateResult.rowCount} row(s) affected`);
+        if (updateResult.rowCount === 0) {
+            console.warn(`[DB] Warning: No rows updated for SID: ${sid}. Recording may not exist in database.`);
+        } else {
+            console.log(`[DB] Successfully updated status to 'completed' and video URL for SID: ${sid}`);
+        }
         
         return { ...stopResponse.data, videoUrl };
     } catch (error) {
@@ -167,6 +224,8 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
                 );
 
                 const fileList = queryResponse.data?.serverResponse?.fileList;
+                console.log(`[AGORA SERVICE] Recovery query - found files:`, fileList?.map(f => f.fileName) || 'none');
+                
                 if (fileList && fileList.length > 0) {
                     const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
                     const targetFile = mp4File || fileList[0];
@@ -175,17 +234,30 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
                         const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY;
                         const azureContainer = process.env.AGORA_AZURE_BUCKET;
                         videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${targetFile.fileName}`;
-                        console.log(`[AGORA SERVICE] Found video URL for already-stopped recording: ${videoUrl}`);
+                        console.log(`[AGORA SERVICE] Recovery - constructed video URL: ${videoUrl}`);
+                        
+                        // Verify the recovered URL
+                        try {
+                            const headResponse = await axios.head(videoUrl, { timeout: 5000 });
+                            console.log(`[AZURE URL] Recovery URL verified, status: ${headResponse.status}`);
+                        } catch (urlError) {
+                            console.warn(`[AZURE URL] Recovery URL verification failed:`, urlError.message);
+                        }
                     }
+                } else {
+                    console.warn(`[AGORA SERVICE] No files found in recovery query for SID: ${sid}`);
                 }
             } catch (queryError) {
                 console.warn(`[AGORA SERVICE] Could not query files for stopped recording ${sid}:`, queryError.message);
             }
             
-            await db.query(
+            console.log(`[DB] Recovery update for SID: ${sid}, URL: ${videoUrl || 'NULL'}`);
+            const recoveryResult = await db.query(
                 `UPDATE recorded_sessions SET video_url = $1, processing_status = 'completed', updated_at = NOW() WHERE agora_recording_sid = $2`,
                 [videoUrl, sid]
             );
+            
+            console.log(`[DB] Recovery update result: ${recoveryResult.rowCount} row(s) affected`);
             return { message: 'Recording already stopped or expired.', warning: true, videoUrl };
         }
         console.error("[AGORA SERVICE] Error stopping recording:", JSON.stringify(errorDetails, null, 2));
