@@ -117,7 +117,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                             height: 1080, // Increased for better screen recording
                             fps: 30,
                             bitrate: 4000, // Increased for better quality screen content
-                            mixedVideoLayout: 0, // Floating layout for screen sharing priority
+                            mixedVideoLayout: 1, // Best fit layout - allows custom layoutConfig
                             backgroundColor: "#000000",
                             layoutConfig: [
                                 {

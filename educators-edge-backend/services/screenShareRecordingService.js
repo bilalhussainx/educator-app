@@ -97,7 +97,7 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
                             height: 1080,
                             fps: 30, // Higher FPS for smooth screen recording
                             bitrate: 4000, // Higher bitrate for screen content
-                            mixedVideoLayout: 0, // Floating layout - prioritizes larger streams (screen shares)
+                            mixedVideoLayout: 1, // Best fit layout - allows custom layoutConfig
                             backgroundColor: "#000000",
                             layoutConfig: [
                                 {
