@@ -234,7 +234,9 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
             }
 
             // Create screen share track using getDisplayMedia
-            const screenTrack = await AgoraRTC.createScreenVideoTrack();
+            const screenTrack = await AgoraRTC.createScreenVideoTrack({
+                encoderConfig: "1080p_1"
+            });
             screenShareTrack.current = screenTrack;
             
             // Unpublish camera track and publish screen track
