@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const { addSession, removeSession } = require('./sessionStore');
 const { executeCode } = require('../services/executionService');
 const agoraService = require('../services/agoraService'); // Complete Agora Recording Service
+const webPageRecordingService = require('../services/webPageRecordingService'); // Web Page Recording Service
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
@@ -327,25 +328,53 @@ function initializeWebSocket(wss) {
                     log(`Teacher ${clientInfo.username} is attempting to start a recording for channel: ${sessionKey}`);
                     
                     try {
-                        const channelName = sessionKey;
+                        const sessionId = sessionKey;
                         const teacherId = user.id;
 
-                        const result = await agoraService.startCloudRecording(channelName, courseId, teacherId);
+                        console.log(`[RECORDING] Starting WEB PAGE recording for educational content`);
+                        console.log(`[RECORDING] Session ID: ${sessionId}`);
+                        console.log(`[RECORDING] Course ID: ${courseId}`);
+                        console.log(`[RECORDING] This will record the entire web page including code editor, whiteboard, and terminal`);
+                        
+                        const result = await webPageRecordingService.startWebPageRecording(sessionId, courseId, teacherId);
                         
                         session.recording = {
                             isRecording: true,
                             resourceId: result.resourceId,
                             sid: result.sid,
                             uid: result.uid,
+                            recordingType: 'web_page',
                             startTime: new Date()
                         };
                         
-                        broadcast(session, { type: 'RECORDING_STARTED', payload: { sid: result.sid, startTime: session.recording.startTime } });
-                        log(`Recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
+                        broadcast(session, { 
+                            type: 'RECORDING_STARTED', 
+                            payload: { 
+                                sid: result.sid, 
+                                recordingType: 'web_page',
+                                startTime: session.recording.startTime,
+                                message: 'Web page recording started - capturing educational content'
+                            } 
+                        });
+                        log(`Web page recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
 
                     } catch (error) {
-                        console.error(`[RECORDING] Critical error starting recording for session ${sessionKey}:`, error.message);
-                        ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to start. Please check backend logs.' } }));
+                        console.error(`[RECORDING] Critical error starting web page recording for session ${sessionKey}:`, error.message);
+                        
+                        let errorMessage = 'The web page recording service failed to start.';
+                        if (error.message.includes('Web recording not enabled')) {
+                            errorMessage = 'Web page recording is not enabled for this project. Please enable it in Agora Console.';
+                        } else if (error.message.includes('Azure storage')) {
+                            errorMessage = 'Storage configuration error. Please check server configuration.';
+                        }
+                        
+                        ws.send(JSON.stringify({ 
+                            type: 'RECORDING_FAILED', 
+                            payload: { 
+                                message: errorMessage,
+                                details: 'Check backend logs for more information.'
+                            } 
+                        }));
                     }
                     break;
 
@@ -356,18 +385,42 @@ function initializeWebSocket(wss) {
                     }
 
                     try {
-                        const { resourceId, sid, uid } = session.recording;
-                        const channelName = sessionKey;
+                        const { resourceId, sid, uid, recordingType } = session.recording;
+                        const sessionId = sessionKey;
 
-                        await agoraService.stopCloudRecording(channelName, resourceId, sid, uid);
+                        console.log(`[RECORDING] Stopping ${recordingType || 'web_page'} recording for session ${sessionId}`);
                         
-                        log(`Recording stop command sent successfully for session ${sessionKey}`);
-                        session.recording = { isRecording: false, resourceId: null, sid: null, uid: null, startTime: null };
-                        broadcast(session, { type: 'RECORDING_STOPPED' });
+                        // Use web page recording service to stop
+                        const result = await webPageRecordingService.stopWebPageRecording(sessionId, resourceId, sid, uid);
+                        
+                        log(`Web page recording stop command sent successfully for session ${sessionKey}`);
+                        session.recording = { 
+                            isRecording: false, 
+                            resourceId: null, 
+                            sid: null, 
+                            uid: null, 
+                            recordingType: null,
+                            startTime: null 
+                        };
+                        
+                        broadcast(session, { 
+                            type: 'RECORDING_STOPPED',
+                            payload: {
+                                message: 'Web page recording stopped and processing',
+                                videoUrl: result.videoUrl,
+                                recordingType: 'web_page'
+                            }
+                        });
 
                     } catch (error) {
-                        console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
-                        ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to stop correctly.' } }));
+                        console.error(`[RECORDING] Critical error stopping web page recording for session ${sessionKey}:`, error.message);
+                        ws.send(JSON.stringify({ 
+                            type: 'RECORDING_FAILED', 
+                            payload: { 
+                                message: 'The web page recording service failed to stop correctly.',
+                                details: error.message
+                            } 
+                        }));
                     }
                     break;
 

@@ -106,16 +106,30 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                     recordingConfig: {
                         channelType: 0,
                         streamTypes: 2, // Record both audio and video
-                        audioProfile: 1, // Required for audio recording
-                        videoStreamType: 0, // Required for video recording
+                        audioProfile: 1, // Required for audio recording  
+                        videoStreamType: 0, // High-quality stream (includes screen sharing)
                         maxRecordingHour: 12,
+                        subscribeVideoUids: ["#allstream#"], // Subscribe to all video streams including screen sharing
+                        subscribeAudioUids: ["#allstream#"], // Subscribe to all audio streams
+                        subscribeUidGroup: 0, // Subscribe to all streams
                         transcodingConfig: {
-                            width: 1280,
-                            height: 720,
+                            width: 1920, // Increased for better screen recording
+                            height: 1080, // Increased for better screen recording
                             fps: 30,
-                            bitrate: 2260, // Adjusted as per documentation
-                            mixedVideoLayout: 1,
-                            backgroundColor: "#000000" // Add background color
+                            bitrate: 4000, // Increased for better quality screen content
+                            mixedVideoLayout: 0, // Floating layout for screen sharing priority
+                            backgroundColor: "#000000",
+                            layoutConfig: [
+                                {
+                                    "uid": "1", // Screen sharing stream priority
+                                    "x_axis": 0.0,
+                                    "y_axis": 0.0, 
+                                    "width": 1.0,
+                                    "height": 1.0,
+                                    "alpha": 1.0,
+                                    "render_mode": 1 // Fit mode for screen content
+                                }
+                            ]
                         }
                     },
                     recordingFileConfig: {
@@ -191,6 +205,10 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
 
         console.log(`[AGORA SERVICE] Recording stopped successfully for SID: ${sid}`);
         
+        // Wait for file processing before querying (MP4 generation takes time)
+        console.log(`[AGORA SERVICE] Waiting 30 seconds for file processing...`);
+        await new Promise(resolve => setTimeout(resolve, 30000));
+        
         // Query the recording to get the file list
         console.log(`[AGORA SERVICE] Querying recording files for SID: ${sid}`);
         const queryResponse = await axios.get(
@@ -203,34 +221,78 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
         console.log(`[AGORA SERVICE] Query response:`, JSON.stringify(queryResponse.data, null, 2));
         
         if (fileList && fileList.length > 0) {
-            console.log(`[AGORA SERVICE] Found ${fileList.length} files:`, fileList.map(f => f.fileName));
+            console.log(`[AGORA SERVICE] Found ${fileList.length} files:`, fileList.map(f => `${f.fileName} (${f.fileSize || 'unknown size'})`));
             
-            // Find MP4 file or use first available file
+            // Prioritize MP4 files for better compatibility
             const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
-            const targetFile = mp4File || fileList[0];
+            const m3u8File = fileList.find(file => file.fileName.endsWith('.m3u8'));
+            
+            // If no MP4 but M3U8 exists, try polling for MP4 for up to 2 minutes
+            let targetFile = mp4File;
+            if (!mp4File && m3u8File) {
+                console.log(`[AGORA SERVICE] No MP4 found initially, polling for MP4 generation...`);
+                const maxPolls = 4; // Poll 4 times with 30-second intervals
+                
+                for (let poll = 1; poll <= maxPolls && !targetFile; poll++) {
+                    console.log(`[AGORA SERVICE] MP4 Poll attempt ${poll}/${maxPolls}...`);
+                    await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+                    
+                    try {
+                        const pollQuery = await axios.get(
+                            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+                            { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
+                        );
+                        
+                        const pollFileList = pollQuery.data?.serverResponse?.fileList;
+                        if (pollFileList) {
+                            const pollMp4 = pollFileList.find(file => file.fileName.endsWith('.mp4'));
+                            if (pollMp4) {
+                                console.log(`[AGORA SERVICE] ✅ MP4 file found on poll ${poll}: ${pollMp4.fileName}`);
+                                targetFile = pollMp4;
+                                // Update the main fileList for logging
+                                fileList.length = 0;
+                                fileList.push(...pollFileList);
+                                break;
+                            }
+                        }
+                    } catch (pollError) {
+                        console.warn(`[AGORA SERVICE] Poll ${poll} failed:`, pollError.message);
+                    }
+                }
+            }
+            
+            // Fall back to M3U8 or first file if MP4 still not found
+            if (!targetFile) {
+                targetFile = m3u8File || fileList[0];
+                if (!mp4File && m3u8File) {
+                    console.warn(`[AGORA SERVICE] ⚠️  MP4 not generated after polling, using M3U8`);
+                }
+            }
             
             if (targetFile && targetFile.fileName) {
-                // Construct the full Azure Blob Storage URL
-                const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY; // Storage account name
-                const azureContainer = process.env.AGORA_AZURE_BUCKET; // Container name
+                const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY;
+                const azureContainer = process.env.AGORA_AZURE_BUCKET;
                 const fileName = targetFile.fileName;
+                const fileType = fileName.split('.').pop().toLowerCase();
                 
                 console.log(`[AZURE URL] Building URL with:`);
                 console.log(`[AZURE URL] - Account: ${azureAccountName}`);
                 console.log(`[AZURE URL] - Container: ${azureContainer}`);
                 console.log(`[AZURE URL] - File: ${fileName}`);
+                console.log(`[AZURE URL] - File Type: ${fileType} ${mp4File ? '(MP4 preferred)' : '(using available format)'}`);
                 
-                // Azure Blob Storage URL format: https://{account}.blob.core.windows.net/{container}/{filename}
                 videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${fileName}`;
                 console.log(`[AZURE URL] Constructed video URL: ${videoUrl}`);
                 
-                // Verify URL accessibility (optional ping)
-                try {
-                    const headResponse = await axios.head(videoUrl, { timeout: 5000 });
-                    console.log(`[AZURE URL] Video URL is accessible, status: ${headResponse.status}`);
-                } catch (urlError) {
-                    console.warn(`[AZURE URL] Warning: Could not verify video URL accessibility:`, urlError.message);
-                    console.warn(`[AZURE URL] This might be due to permissions or the file not being fully uploaded yet.`);
+                // Log file info for troubleshooting
+                if (targetFile.fileSize) {
+                    console.log(`[AZURE URL] File size: ${targetFile.fileSize} bytes`);
+                }
+                
+                if (fileType === 'm3u8') {
+                    console.warn(`[AZURE URL] Warning: M3U8 file detected. This is a playlist file, not a direct video.`);
+                    console.warn(`[AZURE URL] You may need to download the M3U8 and associated TS segments for playback.`);
+                    console.warn(`[AZURE URL] Consider checking if MP4 generation is enabled in your Agora configuration.`);
                 }
             } else {
                 console.error(`[AGORA SERVICE] No valid file found in fileList`);
@@ -282,12 +344,11 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
                         videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${targetFile.fileName}`;
                         console.log(`[AGORA SERVICE] Recovery - constructed video URL: ${videoUrl}`);
                         
-                        // Verify the recovered URL
-                        try {
-                            const headResponse = await axios.head(videoUrl, { timeout: 5000 });
-                            console.log(`[AZURE URL] Recovery URL verified, status: ${headResponse.status}`);
-                        } catch (urlError) {
-                            console.warn(`[AZURE URL] Recovery URL verification failed:`, urlError.message);
+                        // Log recovered URL without verification to avoid 409 errors
+                        console.log(`[AZURE URL] Recovery URL constructed: ${videoUrl}`);
+                        const fileType = targetFile.fileName.split('.').pop().toLowerCase();
+                        if (fileType === 'm3u8') {
+                            console.warn(`[AZURE URL] Recovery: M3U8 playlist file detected`);
                         }
                     }
                 } else {
