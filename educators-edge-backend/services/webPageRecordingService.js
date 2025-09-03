@@ -73,14 +73,7 @@ const startWebPageRecording = async (sessionId, courseId, teacherId) => {
                         streamTypes: 2, // Record both audio and video
                         audioProfile: 1,
                         videoStreamType: 0,
-                        maxRecordingHour: 12,
-                        transcodingConfig: {
-                            width: 1920, // Full HD for educational content
-                            height: 1080,
-                            fps: 15, // Lower FPS for web content
-                            bitrate: 3000,
-                            backgroundColor: "#FFFFFF" // White background for educational content
-                        }
+                        maxRecordingHour: 12
                     },
                     recordingFileConfig: {
                         avFileType: ["hls", "mp4"] // Generate both formats
@@ -92,6 +85,8 @@ const startWebPageRecording = async (sessionId, courseId, teacherId) => {
                                 errorHandlePolicy: "error_abort", // Abort on errors
                                 serviceParam: {
                                     url: webPageUrl,
+                                    videoWidth: 1920, // Required parameter for web recording
+                                    videoHeight: 1080, // Required parameter for web recording
                                     videoBitrate: 3000,
                                     videoFps: 15,
                                     mobile: false, // Desktop view
