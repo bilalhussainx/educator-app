@@ -81,18 +81,8 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
                             bitrate: 4000, // Higher bitrate for screen content
                             mixedVideoLayout: 0, // Floating layout - prioritizes larger streams (screen shares)
                             backgroundColor: "#000000",
-                            defaultUserBackgroundImage: "", // No background image
-                            layoutConfig: [
-                                {
-                                    uid: "1", // Screen sharing stream gets priority
-                                    x_axis: 0.0,
-                                    y_axis: 0.0,
-                                    width: 1.0,
-                                    height: 1.0,
-                                    alpha: 1.0,
-                                    render_mode: 1 // Fit mode for screen content
-                                }
-                            ]
+                            defaultUserBackgroundImage: "https://via.placeholder.com/1x1/000000/000000.png" // Minimal placeholder image
+                            // Note: layoutConfig is not allowed when using template mode (mixedVideoLayout: 0)
                         }
                     },
                     recordingFileConfig: {

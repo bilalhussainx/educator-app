@@ -94,9 +94,11 @@ class AgoraRecordingService {
                             avFileType: ["hls", "mp4"] // Generate both HLS and MP4
                         },
                         storageConfig: {
-                            // For MVP: Use local file storage on server
-                            vendor: 0, // Agora's own storage (free with account)
-                            region: 1, // US East (Virginia) 
+                            vendor: 5, // Microsoft Azure Blob Storage
+                            region: 0, // Region parameter has no effect for Azure
+                            bucket: process.env.AGORA_AZURE_BUCKET || 'virtualvidoes',
+                            accessKey: process.env.AGORA_AZURE_ACCESS_KEY || 'virtualclassroom',
+                            secretKey: process.env.AGORA_AZURE_SECRET_KEY,
                             fileNamePrefix: [`recordings/${courseId}/${Date.now()}`]
                         }
                     }

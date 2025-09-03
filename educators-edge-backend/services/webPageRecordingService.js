@@ -56,6 +56,11 @@ const startWebPageRecording = async (sessionId, courseId, teacherId) => {
         const webPageUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/session/${sessionId}`;
         console.log(`[WEB RECORDING] Recording web page: ${webPageUrl}`);
         
+        // Check if URL is localhost - Agora cannot access localhost URLs
+        if (webPageUrl.includes('localhost') || webPageUrl.includes('127.0.0.1')) {
+            throw new Error('Web recording cannot access localhost URLs. Set FRONTEND_URL to a publicly accessible URL or use screen share recording instead.');
+        }
+        
         console.log(`[WEB RECORDING] Starting web page recording with Azure storage config:`);
         console.log(`[WEB RECORDING] - Vendor: 5 (Azure Blob Storage)`);
         console.log(`[WEB RECORDING] - Container: ${azureContainer}`);
