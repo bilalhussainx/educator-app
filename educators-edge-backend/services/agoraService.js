@@ -70,24 +70,49 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         console.log(`[AGORA SERVICE] - Container: ${azureContainer}`);
         console.log(`[AGORA SERVICE] - Account: ${azureAccountName}`);
         
+        // Generate a temporary token for recording (using existing token generation logic)
+        const { RtcTokenBuilder, RtcRole } = require('agora-token');
+        const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+        const expirationTimeInSeconds = 3600;
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+        
+        const recordingToken = RtcTokenBuilder.buildTokenWithUid(
+            AGORA_APP_ID,
+            appCertificate,
+            channelName,
+            parseInt(recordingBotUid),
+            RtcRole.PUBLISHER,
+            privilegeExpiredTs
+        );
+        
+        console.log(`[AGORA SERVICE] Generated recording token for UID: ${recordingBotUid}`);
+        
+        // Use composite recording mode as per Agora documentation
         const startResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/composite/start`,
             {
                 cname: channelName,
                 uid: recordingBotUid,
                 clientRequest: {
-                    token: "",
+                    token: recordingToken, // Required token as per documentation
                     storageConfig: {
-                        vendor: 5, // Microsoft Azure Blob Storage
-                        region: 0, // Always 0 for Azure
+                        vendor: 0, // Following documentation format
+                        region: 0,
                         bucket: azureContainer,
-                        accessKey: azureAccountName, // Storage account name
-                        secretKey: azureAccessKey  // Access key
+                        accessKey: azureAccountName,
+                        secretKey: azureAccessKey
                     },
                     recordingConfig: {
-                        channelType: 1,
+                        channelType: 0, // Changed to 0 as per documentation
                         streamTypes: 2,
-                        transcodingConfig: { "width": 1280, "height": 720, "fps": 30, "bitrate": 2000, "mixedVideoLayout": 1 },
+                        transcodingConfig: {
+                            width: 1280,
+                            height: 720,
+                            fps: 30,
+                            bitrate: 2000,
+                            mixedVideoLayout: 1
+                        }
                     }
                 },
             },
@@ -138,8 +163,12 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
     try {
         console.log(`[AGORA SERVICE] Stopping recording for SID: ${sid}`);
         const stopResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
-            { cname: channelName, uid: uid, clientRequest: {} },
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/composite/stop`,
+            { 
+                cname: channelName, 
+                uid: uid, 
+                clientRequest: {} 
+            },
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
         );
 
@@ -148,7 +177,7 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
         // Query the recording to get the file list
         console.log(`[AGORA SERVICE] Querying recording files for SID: ${sid}`);
         const queryResponse = await axios.get(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/composite/query`,
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
         );
 
@@ -219,7 +248,7 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
             let videoUrl = null;
             try {
                 const queryResponse = await axios.get(
-                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/composite/query`,
                     { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
                 );
 
