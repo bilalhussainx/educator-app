@@ -97,19 +97,9 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
                             height: 1080,
                             fps: 30, // Higher FPS for smooth screen recording
                             bitrate: 4000, // Higher bitrate for screen content
-                            mixedVideoLayout: 1, // Best fit layout - allows custom layoutConfig
-                            backgroundColor: "#000000",
-                            layoutConfig: [
-                                {
-                                    "uid": "1", // Screen sharing stream priority
-                                    "x_axis": 0.0,
-                                    "y_axis": 0.0, 
-                                    "width": 1.0,
-                                    "height": 1.0,
-                                    "alpha": 1.0,
-                                    "render_mode": 1 // Fit mode for screen content
-                                }
-                            ]
+                            mixedVideoLayout: 1, // Best fit template layout (no custom layout allowed)
+                            backgroundColor: "#000000"
+                            // Note: layoutConfig removed - template mode doesn't allow custom layouts
                         }
                     },
                     recordingFileConfig: {

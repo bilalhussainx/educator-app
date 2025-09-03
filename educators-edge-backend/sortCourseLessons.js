@@ -1,3 +1,4 @@
+// FILE: sortCourseLessons.js
 require('dotenv').config();
 const db = require('./src/db');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -46,16 +47,15 @@ async function sortCourse(courseId) {
         // 2. Ask Gemini for the precise order
         console.log(`\n[Step 2/3] Asking Gemini to determine the optimal lesson order...`);
         const prompt = `
-            You are an expert computer science curriculum designer with a PhD in pedagogy.
-            Your task is to re-order the following list of lessons for a course to create the most effective and logical learning path, from easiest to most difficult.
+            You are an expert JavaScript curriculum designer with a PhD in pedagogy.
+            Your task is to re-order the following list of JavaScript lessons to create the most effective and logical learning path, from easiest to most difficult.
 
             CRITICAL PRINCIPLES FOR ORDERING:
-            1.  **Foundations First:** Lessons covering fundamental concepts, basic syntax, or definitions MUST come before lessons that apply them.
-            2.  **Build Sequentially:** Each lesson should ideally build upon knowledge from the previous ones.
-            3.  **Simple to Complex:** Simple, single-concept lessons should come before complex, multi-concept projects.
-            4.  **No Gaps:** Ensure the flow is smooth and logical.
+            1.  **Foundations First:** Lessons on basic syntax (variables, data types) MUST come before lessons on logic (loops, conditionals), which MUST come before lessons on functions and objects.
+            2.  **Build Sequentially:** Ensure each lesson builds upon knowledge from the previous ones. For example, a lesson on '.map()' should come after a lesson on basic arrays.
+            3.  **Simple to Complex:** Simple, single-concept lessons should come before complex, multi-concept projects (like 'Build a Palindrome Checker').
 
-            Here is the list of lessons to sort, each with its unique ID, title, and description:
+            Here is the list of JavaScript lessons to sort, each with its unique ID, title, and description:
             ${JSON.stringify(lessons, null, 2)}
 
             Your response MUST be ONLY a single, raw JSON array of the lesson IDs, in the new, correct order.
@@ -74,14 +74,9 @@ async function sortCourse(courseId) {
         // 3. Update the database with the new order
         console.log(`\n[Step 3/3] Updating the database with the new order...`);
         await client.query('BEGIN');
-
         const updatePromises = sortedIds.map((lessonId, index) => {
-            return client.query(
-                'UPDATE lessons SET order_index = $1 WHERE id = $2',
-                [index, lessonId] // The index in the array is the new order_index
-            );
+            return client.query('UPDATE lessons SET order_index = $1 WHERE id = $2', [index, lessonId]);
         });
-
         await Promise.all(updatePromises);
         await client.query('COMMIT');
         console.log(` -> Successfully updated the order for ${sortedIds.length} lessons.`);
@@ -90,8 +85,7 @@ async function sortCourse(courseId) {
 
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error("\n--- FAILED to sort course ---");
-        console.error(error.message);
+        console.error("\n--- FAILED to sort course ---", error.message);
     } finally {
         client.release();
         await db.pool.end();
