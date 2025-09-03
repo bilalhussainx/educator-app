@@ -45,11 +45,11 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
         const resourceId = acquireResponse.data.resourceId;
         console.log(`[SCREEN RECORDING] Acquired resourceId: ${resourceId}`);
 
-        console.log(`[SCREEN RECORDING] Starting screen share prioritized recording with Azure storage config:`);
-        console.log(`[SCREEN RECORDING] - Vendor: 5 (Azure Blob Storage)`);
+        console.log(`[SCREEN RECORDING] Starting INDIVIDUAL mode recording for screen share prioritization:`);
+        console.log(`[SCREEN RECORDING] - Mode: individual (captures each stream separately)`);
         console.log(`[SCREEN RECORDING] - Container: ${azureContainer}`);
         console.log(`[SCREEN RECORDING] - Account: ${azureAccountName}`);
-        console.log(`[SCREEN RECORDING] This will prioritize screen sharing content over webcam feeds`);
+        console.log(`[SCREEN RECORDING] Individual mode will record screen share and webcam as separate files`);
         
         // Generate recording token (required for proper authentication)
         const { RtcTokenBuilder, RtcRole } = require('agora-token');
@@ -70,7 +70,7 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
         console.log(`[SCREEN RECORDING] Generated recording token for UID: ${recordingBotUid}`);
 
         const startResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/individual/start`,
             {
                 cname: sessionId,
                 uid: recordingBotUid,
@@ -87,20 +87,11 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
                         channelType: 0,
                         streamTypes: 2, // Record both audio and video
                         audioProfile: 1,
-                        videoStreamType: 1, // High stream (screen sharing priority)
+                        videoStreamType: 0, // High-quality stream (includes screen share)
                         maxRecordingHour: 12,
                         subscribeVideoUids: ["#allstream#"], // Subscribe to all video streams
                         subscribeAudioUids: ["#allstream#"], // Subscribe to all audio streams
-                        subscribeUidGroup: 0, // Subscribe to all users
-                        transcodingConfig: {
-                            width: 1920, // Full HD for screen content
-                            height: 1080,
-                            fps: 30, // Higher FPS for smooth screen recording
-                            bitrate: 4000, // Higher bitrate for screen content
-                            mixedVideoLayout: 1, // Best fit template layout (no custom layout allowed)
-                            backgroundColor: "#000000"
-                            // Note: layoutConfig removed - template mode doesn't allow custom layouts
-                        }
+                        subscribeUidGroup: 0 // Subscribe to all users - individual mode records each UID separately
                     },
                     recordingFileConfig: {
                         avFileType: ["hls", "mp4"] // Generate both formats
@@ -145,7 +136,7 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
         console.log(`[SCREEN RECORDING] Stopping recording for SID: ${sid}`);
         
         const stopResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/stop`,
             { 
                 cname: sessionId, 
                 uid: uid, 
@@ -163,7 +154,7 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
         // Query for files with MP4 polling
         console.log(`[SCREEN RECORDING] Querying recording files for SID: ${sid}`);
         const queryResponse = await axios.get(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`,
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
         );
 
@@ -186,7 +177,7 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
                     
                     try {
                         const pollQuery = await axios.get(
-                            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+                            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`,
                             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
                         );
                         
@@ -243,7 +234,7 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
             try {
                 console.log(`[SCREEN RECORDING] Attempting recovery query for files...`);
                 const queryResponse = await axios.get(
-                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`,
                     { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
                 );
 
