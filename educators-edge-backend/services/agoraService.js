@@ -88,31 +88,38 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         
         console.log(`[AGORA SERVICE] Generated recording token for UID: ${recordingBotUid}`);
         
-        // Use composite recording mode as per Agora documentation
+        // Use composite recording mode (mix) as per Agora documentation
         const startResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/composite/start`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
             {
                 cname: channelName,
                 uid: recordingBotUid,
                 clientRequest: {
                     token: recordingToken, // Required token as per documentation
                     storageConfig: {
-                        vendor: 0, // Following documentation format
+                        vendor: 5, // Microsoft Azure Blob Storage (correct value)
                         region: 0,
                         bucket: azureContainer,
                         accessKey: azureAccountName,
                         secretKey: azureAccessKey
                     },
                     recordingConfig: {
-                        channelType: 0, // Changed to 0 as per documentation
-                        streamTypes: 2,
+                        channelType: 0,
+                        streamTypes: 2, // Record both audio and video
+                        audioProfile: 1, // Required for audio recording
+                        videoStreamType: 0, // Required for video recording
+                        maxRecordingHour: 12,
                         transcodingConfig: {
                             width: 1280,
                             height: 720,
                             fps: 30,
-                            bitrate: 2000,
-                            mixedVideoLayout: 1
+                            bitrate: 2260, // Adjusted as per documentation
+                            mixedVideoLayout: 1,
+                            backgroundColor: "#000000" // Add background color
                         }
+                    },
+                    recordingFileConfig: {
+                        avFileType: ["hls", "mp4"] // Generate both HLS and MP4 files
                     }
                 },
             },
@@ -152,6 +159,16 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
             throw new Error('Azure storage configuration error: Recording service not properly configured. Check AGORA_AZURE_* environment variables.');
         }
         
+        if (errorDetails.code === 7 && errorDetails.reason?.includes('streamTypes')) {
+            console.error("[AGORA ERROR] Invalid streamTypes configuration");
+            throw new Error('Recording configuration error: streamTypes must be set correctly for audio/video recording.');
+        }
+        
+        if (errorDetails.code === 8) {
+            console.error("[AGORA ERROR] Invalid recording configuration");
+            throw new Error('Recording configuration error: Check audioProfile, videoStreamType, and transcodingConfig settings.');
+        }
+        
         if (error.message.includes('check constraint')) {
             console.error("[DB ERROR] Database constraint violation in recorded_sessions table");
         }
@@ -163,7 +180,7 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
     try {
         console.log(`[AGORA SERVICE] Stopping recording for SID: ${sid}`);
         const stopResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/composite/stop`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
             { 
                 cname: channelName, 
                 uid: uid, 
@@ -177,7 +194,7 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
         // Query the recording to get the file list
         console.log(`[AGORA SERVICE] Querying recording files for SID: ${sid}`);
         const queryResponse = await axios.get(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/composite/query`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
         );
 
@@ -248,7 +265,7 @@ const stopCloudRecording = async (channelName, resourceId, sid, uid) => {
             let videoUrl = null;
             try {
                 const queryResponse = await axios.get(
-                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/composite/query`,
+                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
                     { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
                 );
 
