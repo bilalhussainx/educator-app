@@ -6,6 +6,8 @@ import apiClient from '../services/apiClient';
 // Import BOTH of your powerful IDE components
 import AscentIDE from './AscentIDE.tsx';
 import AscentWebIDE from '../components/AscentWebIDE.tsx';
+import ViewChapterPage from './ViewChapterPage.tsx'; // <-- 1. Import the new page
+
 
 // A simple loading component
 const LoadingScreen = () => <div className="h-screen bg-[#0a091a] flex items-center justify-center text-white">Loading Lesson...</div>;

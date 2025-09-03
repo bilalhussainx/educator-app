@@ -8,6 +8,9 @@ export interface VideoManagerHandle {
     startRecording: (courseId?: string) => Promise<void>;
     stopRecording: () => Promise<void>;
     recordingStatus: 'idle' | 'recording' | 'processing' | 'completed' | 'failed';
+    startScreenShare: () => Promise<void>;
+    stopScreenShare: () => Promise<void>;
+    isScreenSharing: boolean;
 }
 
 interface VideoManagerProps {
@@ -27,8 +30,10 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
 }, ref) => {
     const agoraClient = useRef<IAgoraRTCClient | null>(null);
     const localTracks = useRef<{ videoTrack: ILocalVideoTrack, audioTrack: ILocalAudioTrack } | null>(null);
+    const screenShareTrack = useRef<ILocalVideoTrack | null>(null);
     const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'processing' | 'completed' | 'failed'>('idle');
     const [recordingData, setRecordingData] = useState<{ sid?: string; resourceId?: string; uid?: string } | null>(null);
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
 
     useEffect(() => {
         // Initialize Agora Client
@@ -96,8 +101,12 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
             if (recordingStatus === 'recording') {
                 stopRecording().catch(console.error);
             }
+            if (isScreenSharing) {
+                stopScreenShare().catch(console.error);
+            }
             localTracks.current?.videoTrack.close();
             localTracks.current?.audioTrack.close();
+            screenShareTrack.current?.close();
             client.leave();
         };
     }, [sessionId]);
@@ -218,12 +227,79 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
         poll();
     };
 
+    const startScreenShare = async () => {
+        try {
+            if (!agoraClient.current || isScreenSharing) {
+                return;
+            }
+
+            // Create screen share track using getDisplayMedia
+            const screenTrack = await AgoraRTC.createScreenVideoTrack();
+            screenShareTrack.current = screenTrack;
+            
+            // Unpublish camera track and publish screen track
+            if (localTracks.current?.videoTrack) {
+                await agoraClient.current.unpublish(localTracks.current.videoTrack);
+            }
+            
+            await agoraClient.current.publish(screenTrack);
+            
+            // Play screen share in local video element
+            if (localVideoRef.current) {
+                screenTrack.play(localVideoRef.current);
+            }
+            
+            setIsScreenSharing(true);
+            toast.success('Screen sharing started');
+            
+            // Handle screen share ending (user clicks browser stop sharing)
+            screenTrack.on('track-ended', async () => {
+                await stopScreenShare();
+            });
+            
+        } catch (error) {
+            console.error('Failed to start screen sharing:', error);
+            toast.error('Failed to start screen sharing. Please check permissions.');
+        }
+    };
+
+    const stopScreenShare = async () => {
+        try {
+            if (!agoraClient.current || !isScreenSharing || !screenShareTrack.current) {
+                return;
+            }
+
+            // Unpublish screen track
+            await agoraClient.current.unpublish(screenShareTrack.current);
+            screenShareTrack.current.close();
+            screenShareTrack.current = null;
+            
+            // Republish camera track
+            if (localTracks.current?.videoTrack) {
+                await agoraClient.current.publish(localTracks.current.videoTrack);
+                if (localVideoRef.current) {
+                    localTracks.current.videoTrack.play(localVideoRef.current);
+                }
+            }
+            
+            setIsScreenSharing(false);
+            toast.success('Screen sharing stopped');
+            
+        } catch (error) {
+            console.error('Failed to stop screen sharing:', error);
+            toast.error('Failed to stop screen sharing');
+        }
+    };
+
     // Expose recording methods through ref
     useImperativeHandle(ref, () => ({
         startRecording,
         stopRecording,
-        recordingStatus
-    }), [recordingStatus]);
+        recordingStatus,
+        startScreenShare,
+        stopScreenShare,
+        isScreenSharing
+    }), [recordingStatus, isScreenSharing]);
 
     return null; // This is a manager component, it has no UI of its own
 });

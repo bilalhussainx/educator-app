@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp, Circle, Square } from 'lucide-react';
+import { PhoneOff, ChevronRight, FilePlus, Play, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp, Circle, Square, Monitor, MonitorOff } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
 
@@ -365,6 +365,10 @@ const LiveTutorialPage: React.FC = () => {
     
     // --- RECORDING STATE ---
     const [isRecording, setIsRecording] = useState(false);
+    
+    // --- SCREEN SHARING STATE ---
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const screenShareTrack = useRef<ILocalVideoTrack | null>(null);
 
     // --- APPLICATION STATE ---
     const [files, setFiles] = useState<CodeFile[]>([]);
@@ -501,6 +505,7 @@ const LiveTutorialPage: React.FC = () => {
             ws.current?.close();
             localTracks.current?.videoTrack.close();
             localTracks.current?.audioTrack.close();
+            screenShareTrack.current?.close();
             client.leave();
             // DockerTerminal cleanup is handled internally
         };
@@ -904,6 +909,71 @@ const LiveTutorialPage: React.FC = () => {
         sendWsMessage('STOP_RECORDING', {});
     };
 
+    // Screen sharing handlers
+    const handleStartScreenShare = async () => {
+        try {
+            if (!agoraClient.current || isScreenSharing) {
+                return;
+            }
+
+            // Create screen share track using getDisplayMedia
+            const screenTrack = await AgoraRTC.createScreenVideoTrack();
+            screenShareTrack.current = screenTrack;
+            
+            // Unpublish camera track and publish screen track
+            if (localTracks.current?.videoTrack) {
+                await agoraClient.current.unpublish(localTracks.current.videoTrack);
+            }
+            
+            await agoraClient.current.publish(screenTrack);
+            
+            // Play screen share in local video element
+            if (localVideoRef.current) {
+                screenTrack.play(localVideoRef.current);
+            }
+            
+            setIsScreenSharing(true);
+            toast.success('Screen sharing started');
+            
+            // Handle screen share ending (user clicks browser stop sharing)
+            screenTrack.on('track-ended', async () => {
+                await handleStopScreenShare();
+            });
+            
+        } catch (error) {
+            console.error('Failed to start screen sharing:', error);
+            toast.error('Failed to start screen sharing. Please check permissions.');
+        }
+    };
+
+    const handleStopScreenShare = async () => {
+        try {
+            if (!agoraClient.current || !isScreenSharing || !screenShareTrack.current) {
+                return;
+            }
+
+            // Unpublish screen track
+            await agoraClient.current.unpublish(screenShareTrack.current);
+            screenShareTrack.current.close();
+            screenShareTrack.current = null;
+            
+            // Republish camera track
+            if (localTracks.current?.videoTrack) {
+                await agoraClient.current.publish(localTracks.current.videoTrack);
+                if (localVideoRef.current) {
+                    localTracks.current.videoTrack.play(localVideoRef.current);
+                }
+            }
+            
+            setIsScreenSharing(false);
+            toast.success('Screen sharing stopped');
+            
+        } catch (error) {
+            console.error('Failed to stop screen sharing:', error);
+            toast.error('Failed to stop screen sharing');
+        }
+    };
+
     if (role === 'student' && isDoingHomework && pendingHomework && homeworkFiles) {
         return <HomeworkView 
             lessonId={pendingHomework.lessonId} 
@@ -1001,21 +1071,40 @@ const LiveTutorialPage: React.FC = () => {
                         
                         {/* Recording Controls - Teacher Only */}
                         {role === 'teacher' && (
-                            <Button 
-                                size="sm" 
-                                onClick={() => {
-                                    console.log(`[RECORDING] Recording button clicked - Current state: isRecording=${isRecording}`);
-                                    if (isRecording) {
-                                        handleStopRecording();
-                                    } else {
-                                        handleStartRecording();
-                                    }
-                                }}
-                                variant={isRecording ? "destructive" : "outline"}
-                                className={isRecording ? "animate-pulse" : ""}
-                            >
-                                {isRecording ? <Square className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-                            </Button>
+                            <>
+                                <Button 
+                                    size="sm" 
+                                    onClick={() => {
+                                        console.log(`[RECORDING] Recording button clicked - Current state: isRecording=${isRecording}`);
+                                        if (isRecording) {
+                                            handleStopRecording();
+                                        } else {
+                                            handleStartRecording();
+                                        }
+                                    }}
+                                    variant={isRecording ? "destructive" : "outline"}
+                                    className={isRecording ? "animate-pulse" : ""}
+                                >
+                                    {isRecording ? <Square className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                                </Button>
+                                
+                                {/* Screen Share Button - Teacher Only */}
+                                <Button 
+                                    size="sm" 
+                                    onClick={() => {
+                                        console.log(`[SCREEN SHARE] Screen share button clicked - Current state: isScreenSharing=${isScreenSharing}`);
+                                        if (isScreenSharing) {
+                                            handleStopScreenShare();
+                                        } else {
+                                            handleStartScreenShare();
+                                        }
+                                    }}
+                                    variant={isScreenSharing ? "default" : "outline"}
+                                    className={isScreenSharing ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                                >
+                                    {isScreenSharing ? <MonitorOff className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
+                                </Button>
+                            </>
                         )}
                     </div>
 
