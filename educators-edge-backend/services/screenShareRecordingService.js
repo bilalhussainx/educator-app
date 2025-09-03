@@ -51,13 +51,31 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
         console.log(`[SCREEN RECORDING] - Account: ${azureAccountName}`);
         console.log(`[SCREEN RECORDING] This will prioritize screen sharing content over webcam feeds`);
         
+        // Generate recording token (required for proper authentication)
+        const { RtcTokenBuilder, RtcRole } = require('agora-token');
+        const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+        const expirationTimeInSeconds = 3600;
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+        
+        const recordingToken = RtcTokenBuilder.buildTokenWithUid(
+            AGORA_APP_ID,
+            appCertificate,
+            sessionId,
+            parseInt(recordingBotUid),
+            RtcRole.PUBLISHER,
+            privilegeExpiredTs
+        );
+        
+        console.log(`[SCREEN RECORDING] Generated recording token for UID: ${recordingBotUid}`);
+
         const startResponse = await axios.post(
             `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
             {
                 cname: sessionId,
                 uid: recordingBotUid,
                 clientRequest: {
-                    token: "", // No token needed for screen recording
+                    token: recordingToken, // Use generated token like working agoraService
                     storageConfig: {
                         vendor: 5, // Microsoft Azure Blob Storage
                         region: 0,
@@ -81,8 +99,17 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
                             bitrate: 4000, // Higher bitrate for screen content
                             mixedVideoLayout: 0, // Floating layout - prioritizes larger streams (screen shares)
                             backgroundColor: "#000000",
-                            defaultUserBackgroundImage: "https://via.placeholder.com/1x1/000000/000000.png" // Minimal placeholder image
-                            // Note: layoutConfig is not allowed when using template mode (mixedVideoLayout: 0)
+                            layoutConfig: [
+                                {
+                                    "uid": "1", // Screen sharing stream priority
+                                    "x_axis": 0.0,
+                                    "y_axis": 0.0, 
+                                    "width": 1.0,
+                                    "height": 1.0,
+                                    "alpha": 1.0,
+                                    "render_mode": 1 // Fit mode for screen content
+                                }
+                            ]
                         }
                     },
                     recordingFileConfig: {
