@@ -34,11 +34,18 @@ const startWebPageRecording = async (sessionId, courseId, teacherId) => {
 
         recordingBotUid = String(Math.floor(Math.random() * 10000000) + 1);
         
-        console.log(`[WEB RECORDING] Acquiring resource for session: ${sessionId} with Bot UID: ${recordingBotUid}`);
+        console.log(`[WEB RECORDING] Acquiring WEB resource for session: ${sessionId} with Bot UID: ${recordingBotUid}`);
         
         const acquireResponse = await axios.post(
             `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/acquire`,
-            { cname: sessionId, uid: recordingBotUid, clientRequest: { resourceExpiredHour: 24 } },
+            { 
+                cname: sessionId, 
+                uid: recordingBotUid, 
+                clientRequest: { 
+                    resourceExpiredHour: 24,
+                    scene: 2 // Web page recording scene
+                } 
+            },
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
         );
 

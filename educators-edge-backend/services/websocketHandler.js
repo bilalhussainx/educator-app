@@ -8,6 +8,7 @@ const { addSession, removeSession } = require('./sessionStore');
 const { executeCode } = require('../services/executionService');
 const agoraService = require('../services/agoraService'); // Complete Agora Recording Service
 const webPageRecordingService = require('../services/webPageRecordingService'); // Web Page Recording Service
+const screenShareRecordingService = require('../services/screenShareRecordingService'); // Screen Share Recording Service
 
 const log = (msg) => console.log(`[WSS] ${msg}`);
 const sessions = new Map();
@@ -331,32 +332,47 @@ function initializeWebSocket(wss) {
                         const sessionId = sessionKey;
                         const teacherId = user.id;
 
-                        console.log(`[RECORDING] Starting WEB PAGE recording for educational content`);
+                        console.log(`[RECORDING] Starting SCREEN SHARE recording for educational content`);
                         console.log(`[RECORDING] Session ID: ${sessionId}`);
                         console.log(`[RECORDING] Course ID: ${courseId}`);
-                        console.log(`[RECORDING] This will record the entire web page including code editor, whiteboard, and terminal`);
+                        console.log(`[RECORDING] This will record screen shares and educational content with high priority`);
                         
-                        const result = await webPageRecordingService.startWebPageRecording(sessionId, courseId, teacherId);
+                        // Try web page recording first, fall back to screen share recording
+                        let result;
+                        try {
+                            console.log(`[RECORDING] Attempting web page recording first...`);
+                            result = await webPageRecordingService.startWebPageRecording(sessionId, courseId, teacherId);
+                            console.log(`[RECORDING] ✅ Web page recording started successfully`);
+                        } catch (webError) {
+                            console.log(`[RECORDING] ⚠️ Web page recording failed: ${webError.message}`);
+                            console.log(`[RECORDING] 🔄 Falling back to screen share recording...`);
+                            result = await screenShareRecordingService.startScreenShareRecording(sessionId, courseId, teacherId);
+                            console.log(`[RECORDING] ✅ Screen share recording started successfully`);
+                        }
                         
                         session.recording = {
                             isRecording: true,
                             resourceId: result.resourceId,
                             sid: result.sid,
                             uid: result.uid,
-                            recordingType: 'web_page',
+                            recordingType: result.recordingType,
                             startTime: new Date()
                         };
+                        
+                        const recordingMessage = result.recordingType === 'web_page' 
+                            ? 'Web page recording started - capturing educational content'
+                            : 'Screen share recording started - prioritizing shared content';
                         
                         broadcast(session, { 
                             type: 'RECORDING_STARTED', 
                             payload: { 
                                 sid: result.sid, 
-                                recordingType: 'web_page',
+                                recordingType: result.recordingType,
                                 startTime: session.recording.startTime,
-                                message: 'Web page recording started - capturing educational content'
+                                message: recordingMessage
                             } 
                         });
-                        log(`Web page recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
+                        log(`${result.recordingType} recording successfully started for session ${sessionKey}. SID: ${result.sid}`);
 
                     } catch (error) {
                         console.error(`[RECORDING] Critical error starting web page recording for session ${sessionKey}:`, error.message);
@@ -388,12 +404,17 @@ function initializeWebSocket(wss) {
                         const { resourceId, sid, uid, recordingType } = session.recording;
                         const sessionId = sessionKey;
 
-                        console.log(`[RECORDING] Stopping ${recordingType || 'web_page'} recording for session ${sessionId}`);
+                        console.log(`[RECORDING] Stopping ${recordingType || 'screen_share'} recording for session ${sessionId}`);
                         
-                        // Use web page recording service to stop
-                        const result = await webPageRecordingService.stopWebPageRecording(sessionId, resourceId, sid, uid);
+                        // Use appropriate recording service to stop
+                        let result;
+                        if (recordingType === 'web_page') {
+                            result = await webPageRecordingService.stopWebPageRecording(sessionId, resourceId, sid, uid);
+                        } else {
+                            result = await screenShareRecordingService.stopScreenShareRecording(sessionId, resourceId, sid, uid);
+                        }
                         
-                        log(`Web page recording stop command sent successfully for session ${sessionKey}`);
+                        log(`${recordingType || 'Screen share'} recording stop command sent successfully for session ${sessionKey}`);
                         session.recording = { 
                             isRecording: false, 
                             resourceId: null, 
@@ -403,12 +424,16 @@ function initializeWebSocket(wss) {
                             startTime: null 
                         };
                         
+                        const stopMessage = recordingType === 'web_page' 
+                            ? 'Web page recording stopped and processing'
+                            : 'Screen share recording stopped and processing';
+                        
                         broadcast(session, { 
                             type: 'RECORDING_STOPPED',
                             payload: {
-                                message: 'Web page recording stopped and processing',
+                                message: stopMessage,
                                 videoUrl: result.videoUrl,
-                                recordingType: 'web_page'
+                                recordingType: recordingType || 'screen_share'
                             }
                         });
 
