@@ -1,8 +1,14 @@
 // src/components/classroom/VideoManager.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 import apiClient from '../../services/apiClient';
 import { toast } from 'sonner';
+
+export interface VideoManagerHandle {
+    startRecording: (courseId?: string) => Promise<void>;
+    stopRecording: () => Promise<void>;
+    recordingStatus: 'idle' | 'recording' | 'processing' | 'completed' | 'failed';
+}
 
 interface VideoManagerProps {
     sessionId: string;
@@ -12,13 +18,13 @@ interface VideoManagerProps {
     onVideoProcessingUpdate?: (message: string) => void;
 }
 
-const VideoManager: React.FC<VideoManagerProps> = ({ 
+const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({ 
     sessionId, 
     localVideoRef, 
     remoteVideoRef, 
     onRecordingStatusChange,
     onVideoProcessingUpdate 
-}) => {
+}, ref) => {
     const agoraClient = useRef<IAgoraRTCClient | null>(null);
     const localTracks = useRef<{ videoTrack: ILocalVideoTrack, audioTrack: ILocalAudioTrack } | null>(null);
     const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'processing' | 'completed' | 'failed'>('idle');
@@ -164,7 +170,8 @@ const VideoManager: React.FC<VideoManagerProps> = ({
             try {
                 attempts++;
                 const response = await apiClient.get(`/api/recordings/${recordingId}/status`);
-                const { status, videoUrl } = response.data;
+                const { status } = response.data;
+                // videoUrl available but not used in this polling context
                 
                 onVideoProcessingUpdate?.(`Processing... (${Math.round((attempts / maxAttempts) * 100)}%)`);
                 
@@ -211,14 +218,15 @@ const VideoManager: React.FC<VideoManagerProps> = ({
         poll();
     };
 
-    // Expose recording methods
-    React.useImperativeHandle(ref => ({
+    // Expose recording methods through ref
+    useImperativeHandle(ref, () => ({
         startRecording,
         stopRecording,
         recordingStatus
-    }), [recordingStatus, recordingData]);
+    }), [recordingStatus]);
 
     return null; // This is a manager component, it has no UI of its own
-};
+});
 
+VideoManager.displayName = 'VideoManager';
 export default VideoManager;
