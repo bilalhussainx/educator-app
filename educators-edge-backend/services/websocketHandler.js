@@ -424,9 +424,17 @@ function initializeWebSocket(wss) {
                             startTime: null 
                         };
                         
-                        const stopMessage = recordingType === 'web_page' 
-                            ? 'Web page recording stopped and processing'
-                            : 'Screen share recording stopped and processing';
+                        // Check if this was a recovery scenario (recording had already stopped)
+                        let stopMessage;
+                        if (result.warning) {
+                            stopMessage = recordingType === 'web_page' 
+                                ? 'Web page recording was already stopped - video recovered successfully'
+                                : 'Screen share recording was already stopped - video recovered successfully';
+                        } else {
+                            stopMessage = recordingType === 'web_page' 
+                                ? 'Web page recording stopped and processing'
+                                : 'Screen share recording stopped and processing';
+                        }
                         
                         broadcast(session, { 
                             type: 'RECORDING_STOPPED',

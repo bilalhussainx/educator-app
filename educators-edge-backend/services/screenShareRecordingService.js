@@ -216,6 +216,57 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
         
     } catch (error) {
         const errorDetails = error.response ? error.response.data : { message: error.message };
+        
+        // Handle the common "failed to find worker" error gracefully
+        if (errorDetails.code === 404 && errorDetails.reason === 'failed to find worker') {
+            console.log(`[SCREEN RECORDING] Recording ${sid} worker not found - recording may have already ended or expired`);
+            
+            // Try to get the file list even if stop failed
+            let videoUrl = null;
+            try {
+                console.log(`[SCREEN RECORDING] Attempting recovery query for files...`);
+                const queryResponse = await axios.get(
+                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
+                    { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
+                );
+
+                const fileList = queryResponse.data?.serverResponse?.fileList;
+                console.log(`[SCREEN RECORDING] Recovery query - found files:`, fileList?.map(f => f.fileName) || 'none');
+                
+                if (fileList && fileList.length > 0) {
+                    const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
+                    const targetFile = mp4File || fileList[0];
+                    
+                    if (targetFile && targetFile.fileName) {
+                        const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY;
+                        const azureContainer = process.env.AGORA_AZURE_BUCKET;
+                        videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${targetFile.fileName}`;
+                        console.log(`[SCREEN RECORDING] Recovery - constructed video URL: ${videoUrl}`);
+                    }
+                } else {
+                    console.warn(`[SCREEN RECORDING] No files found in recovery query for SID: ${sid}`);
+                }
+            } catch (queryError) {
+                console.warn(`[SCREEN RECORDING] Could not query files for stopped recording ${sid}:`, queryError.message);
+            }
+            
+            // Update database with recovered video URL
+            console.log(`[SCREEN RECORDING] Recovery database update for SID: ${sid}, URL: ${videoUrl || 'NULL'}`);
+            const recoveryResult = await db.query(
+                `UPDATE recorded_sessions SET video_url = $1, processing_status = 'completed', updated_at = NOW() WHERE agora_recording_sid = $2`,
+                [videoUrl, sid]
+            );
+            
+            console.log(`[SCREEN RECORDING] Recovery update result: ${recoveryResult.rowCount} row(s) affected`);
+            
+            return { 
+                message: 'Recording already stopped or expired - recovered successfully', 
+                warning: true, 
+                videoUrl,
+                recordingType: 'screen_share'
+            };
+        }
+        
         console.error("[SCREEN RECORDING] Error stopping recording:", JSON.stringify(errorDetails, null, 2));
         throw new Error(`Failed to stop screen share recording: ${errorDetails.reason || errorDetails.message || 'Unknown error'}`);
     }
