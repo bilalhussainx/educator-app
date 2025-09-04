@@ -75,7 +75,8 @@ class AgoraRecordingService {
 
             // Step 2: Start recording
             const recordingToken = this.generateRecordingToken(channelName);
-            const fileNamePrefix = [`course${courseId}_${Date.now()}`];
+            // fileNamePrefix must be an array of strings without special characters
+            const fileNamePrefix = [`course${courseId}`, `session${Date.now()}`];
             console.log(`[AGORA] Generated fileNamePrefix: ${JSON.stringify(fileNamePrefix)}`);
             
             const startResponse = await axios.post(
