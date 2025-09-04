@@ -93,7 +93,7 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
                         subscribeUidGroup: 0 // Subscribe to all users - individual mode records each UID separately
                     },
                     recordingFileConfig: {
-                        avFileType: ["hls", "mp4"] // Generate both formats
+                        avFileType: ["hls"] // Individual mode only supports HLS format
                     }
                 },
             },
@@ -164,14 +164,14 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
         if (fileList && fileList.length > 0) {
             console.log(`[SCREEN RECORDING] Found ${fileList.length} files:`, fileList.map(f => `${f.fileName} (${f.fileSize || 'unknown size'})`));
             
-            // Prioritize MP4 files with polling
-            let mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
+            // Look for HLS playlist file (.m3u8) - individual mode generates HLS
+            let m3u8File = fileList.find(file => file.fileName.endsWith('.m3u8'));
             
-            // Poll for MP4 if not found initially
-            if (!mp4File) {
-                console.log(`[SCREEN RECORDING] No MP4 found initially, polling for MP4 generation...`);
+            // Poll for HLS if not found initially
+            if (!m3u8File) {
+                console.log(`[SCREEN RECORDING] No HLS found initially, polling for HLS generation...`);
                 for (let poll = 1; poll <= 4; poll++) {
-                    console.log(`[SCREEN RECORDING] MP4 Poll attempt ${poll}/4...`);
+                    console.log(`[SCREEN RECORDING] HLS Poll attempt ${poll}/4...`);
                     await new Promise(resolve => setTimeout(resolve, 30000));
                     
                     try {
@@ -182,10 +182,10 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
                         
                         const pollFileList = pollQuery.data?.serverResponse?.fileList;
                         if (pollFileList) {
-                            const pollMp4 = pollFileList.find(file => file.fileName.endsWith('.mp4'));
-                            if (pollMp4) {
-                                console.log(`[SCREEN RECORDING] ✅ MP4 file found on poll ${poll}: ${pollMp4.fileName}`);
-                                mp4File = pollMp4;
+                            const pollM3u8 = pollFileList.find(file => file.fileName.endsWith('.m3u8'));
+                            if (pollM3u8) {
+                                console.log(`[SCREEN RECORDING] ✅ HLS file found on poll ${poll}: ${pollM3u8.fileName}`);
+                                m3u8File = pollM3u8;
                                 break;
                             }
                         }
@@ -195,7 +195,7 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
                 }
             }
             
-            const targetFile = mp4File || fileList[0];
+            const targetFile = m3u8File || fileList[0];
             
             if (targetFile && targetFile.fileName) {
                 const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY;
@@ -205,8 +205,10 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
                 videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${fileName}`;
                 console.log(`[SCREEN RECORDING] Constructed video URL: ${videoUrl}`);
                 
-                if (!mp4File) {
-                    console.warn(`[SCREEN RECORDING] ⚠️ Using non-MP4 file: ${fileName}`);
+                if (!m3u8File) {
+                    console.warn(`[SCREEN RECORDING] ⚠️ Using non-HLS file: ${fileName}`);
+                } else {
+                    console.log(`[SCREEN RECORDING] ✅ Using HLS playlist file for individual recording: ${fileName}`);
                 }
             }
         }
@@ -241,8 +243,8 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
                 console.log(`[SCREEN RECORDING] Recovery query - found files:`, fileList?.map(f => f.fileName) || 'none');
                 
                 if (fileList && fileList.length > 0) {
-                    const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
-                    const targetFile = mp4File || fileList[0];
+                    const m3u8File = fileList.find(file => file.fileName.endsWith('.m3u8'));
+                    const targetFile = m3u8File || fileList[0];
                     
                     if (targetFile && targetFile.fileName) {
                         const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY;
