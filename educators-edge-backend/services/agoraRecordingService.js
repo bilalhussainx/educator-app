@@ -75,17 +75,9 @@ class AgoraRecordingService {
 
             // Step 2: Start recording
             const recordingToken = this.generateRecordingToken(channelName);
-            
-            // Create descriptive filename with timestamp for better organization
-            const now = new Date();
-            const dateStamp = now.toISOString().split('T')[0]; // YYYY-MM-DD
-            const timeStamp = now.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
-            const recordingSession = `${dateStamp}_${timeStamp}_course${courseId}`;
-            
             // fileNamePrefix must be an array of strings without special characters
-            const fileNamePrefix = [`recordings`, `${dateStamp}`, `course${courseId}`, `session${Date.now()}`];
+            const fileNamePrefix = [`course${courseId}`, `session${Date.now()}`];
             console.log(`[AGORA] Generated fileNamePrefix: ${JSON.stringify(fileNamePrefix)}`);
-            console.log(`[AGORA] Recording session identifier: ${recordingSession}`);
             
             const startResponse = await axios.post(
                 `${this.baseUrl}/${this.appId}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
@@ -107,19 +99,13 @@ class AgoraRecordingService {
                             width: 1920, // Full HD width for screen capture
                             height: 1080, // Full HD height for screen capture
                             fps: 30,
-                            bitrate: 8000, // Higher bitrate for screen content
-                            mixedVideoLayout: 0, // Floating layout - first user takes full canvas
-                            backgroundColor: "#000000",
-                            // Ensure screen share gets priority as the main stream
-                            defaultUserBackgroundImage: "",
-                            backgroundConfig: {
-                                uid: "1",
-                                image_url: "",
-                                render_mode: 1
-                            }
+                            bitrate: 6000, // Higher bitrate for screen content
+                            maxResolutionUid: "1", // Screen share typically gets highest resolution
+                            mixedVideoLayout: 0, // Floating layout - main screen takes full canvas
+                            backgroundColor: "#000000"
                         },
                         recordingFileConfig: {
-                            avFileType: ["mp4"] // Generate MP4 only to reduce file clutter
+                            avFileType: ["hls", "mp4"] // Generate both HLS and MP4
                         },
                         storageConfig: {
                             vendor: 5, // Microsoft Azure Blob Storage
