@@ -95,6 +95,15 @@ class AgoraRecordingService {
                             subscribeAudioUids: ["#allstream#"], // Record all audio
                             subscribeUidGroup: 0
                         },
+                        transcoding: {
+                            width: 1920, // Full HD width for screen capture
+                            height: 1080, // Full HD height for screen capture
+                            fps: 30,
+                            bitrate: 4000, // Higher bitrate for screen content
+                            maxResolutionUid: "1", // Ensure highest resolution
+                            mixedVideoLayout: 0, // Floating layout - main screen takes full canvas
+                            backgroundColor: "#000000"
+                        },
                         recordingFileConfig: {
                             avFileType: ["hls", "mp4"] // Generate both HLS and MP4
                         },
