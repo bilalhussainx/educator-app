@@ -53,6 +53,8 @@ class AgoraRecordingService {
     async startRecording(channelName, courseId, teacherId) {
         try {
             console.log(`[AGORA] Starting recording for channel: ${channelName}`);
+            console.log(`[AGORA] CourseId: ${courseId} (type: ${typeof courseId})`);
+            console.log(`[AGORA] TeacherId: ${teacherId}`);
             
             // Step 1: Acquire recording resource
             const resourceResponse = await axios.post(
@@ -73,6 +75,8 @@ class AgoraRecordingService {
 
             // Step 2: Start recording
             const recordingToken = this.generateRecordingToken(channelName);
+            const fileNamePrefix = [`course${courseId}_${Date.now()}`];
+            console.log(`[AGORA] Generated fileNamePrefix: ${JSON.stringify(fileNamePrefix)}`);
             
             const startResponse = await axios.post(
                 `${this.baseUrl}/${this.appId}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
@@ -99,7 +103,7 @@ class AgoraRecordingService {
                             bucket: process.env.AGORA_AZURE_BUCKET || 'virtualvidoes',
                             accessKey: process.env.AGORA_AZURE_ACCESS_KEY || 'virtualclassroom',
                             secretKey: process.env.AGORA_AZURE_SECRET_KEY,
-                            fileNamePrefix: [`recordings/${courseId}/${Date.now()}`]
+                            fileNamePrefix: fileNamePrefix
                         }
                     }
                 },
