@@ -101,8 +101,19 @@ class AgoraRecordingService {
                             fps: 30,
                             bitrate: 6000, // Higher bitrate for screen content
                             maxResolutionUid: "1", // Screen share typically gets highest resolution
-                            mixedVideoLayout: 0, // Floating layout - main screen takes full canvas
-                            backgroundColor: "#000000"
+                            mixedVideoLayout: 3, // Custom layout for precise control
+                            backgroundColor: "#000000",
+                            layoutConfig: [
+                                {
+                                    uid: "1", // Screen share user
+                                    x_axis: 0.0,
+                                    y_axis: 0.0,
+                                    width: 1.0, // Full width
+                                    height: 1.0, // Full height
+                                    alpha: 1.0,
+                                    render_mode: 0 // Crop mode to fill entire region
+                                }
+                            ]
                         },
                         recordingFileConfig: {
                             avFileType: ["hls", "mp4"] // Generate both HLS and MP4
