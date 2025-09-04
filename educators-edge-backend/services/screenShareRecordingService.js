@@ -113,6 +113,14 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
 
         const { sid } = startResponse.data;
         console.log(`[SCREEN RECORDING] Recording started successfully with Agora SID: ${sid}`);
+        
+        // Debug: Log what the recording configuration was sent to Agora
+        console.log(`[SCREEN RECORDING DEBUG] Recording will capture:`);
+        console.log(`[SCREEN RECORDING DEBUG] - Channel: ${sessionId}`);
+        console.log(`[SCREEN RECORDING DEBUG] - Video UIDs: ${JSON.stringify(["#allstream#"])}`);
+        console.log(`[SCREEN RECORDING DEBUG] - Audio UIDs: ${JSON.stringify(["#allstream#"])}`);
+        console.log(`[SCREEN RECORDING DEBUG] - Recording Bot UID: ${recordingBotUid}`);
+        console.log(`[SCREEN RECORDING DEBUG] - Expected to find active streams in channel when recording starts`);
 
         // Create database record for screen share recording
         await db.query(

@@ -337,31 +337,21 @@ function initializeWebSocket(wss) {
                         console.log(`[RECORDING] Course ID: ${courseId}`);
                         console.log(`[RECORDING] This will record screen shares and educational content with high priority`);
                         
-                        // Try web page recording first, fall back to screen share recording
-                        let result;
-                        try {
-                            console.log(`[RECORDING] Attempting web page recording first...`);
-                            result = await webPageRecordingService.startWebPageRecording(sessionId, courseId, teacherId);
-                            console.log(`[RECORDING] ✅ Web page recording started successfully`);
-                        } catch (webError) {
-                            console.log(`[RECORDING] ⚠️ Web page recording failed: ${webError.message}`);
-                            console.log(`[RECORDING] 🔄 Falling back to screen share recording...`);
-                            result = await screenShareRecordingService.startScreenShareRecording(sessionId, courseId, teacherId);
-                            console.log(`[RECORDING] ✅ Screen share recording started successfully`);
-                        }
+                        // Use the working agoraRecordingService that was working last night around 7pm
+                        console.log(`[RECORDING] Using working Agora Recording Service...`);
+                        const agoraRecordingService = new (require('../services/agoraRecordingService'))();
+                        const result = await agoraRecordingService.startRecording(sessionId, courseId, teacherId);
+                        console.log(`[RECORDING] ✅ Recording started successfully using working service`);
                         
                         session.recording = {
                             isRecording: true,
-                            resourceId: result.resourceId,
-                            sid: result.sid,
-                            uid: result.uid,
-                            recordingType: result.recordingType,
+                            recordingId: result.recordingId,  // Database ID from working service
+                            resourceId: result.resourceId,   // Agora resource ID
+                            sid: result.sid,                 // Agora session ID
                             startTime: new Date()
                         };
                         
-                        const recordingMessage = result.recordingType === 'web_page' 
-                            ? 'Web page recording started - capturing educational content'
-                            : 'Screen share recording started - prioritizing shared content';
+                        const recordingMessage = 'Recording started successfully - capturing all channel content';
                         
                         broadcast(session, { 
                             type: 'RECORDING_STARTED', 
@@ -395,7 +385,7 @@ function initializeWebSocket(wss) {
                     break;
 
                 case 'STOP_RECORDING':
-                    if (!session.recording.isRecording || !session.recording.resourceId) {
+                    if (!session.recording.isRecording || !session.recording.recordingId) {
                         ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'No active recording to stop.' } }));
                         return;
                     }
@@ -409,53 +399,42 @@ function initializeWebSocket(wss) {
                     session.recording.isStopping = true;
 
                     try {
-                        const { resourceId, sid, uid, recordingType } = session.recording;
-                        const sessionId = sessionKey;
+                        const { recordingId } = session.recording;
 
-                        console.log(`[RECORDING] Stopping ${recordingType || 'screen_share'} recording for session ${sessionId}`);
+                        console.log(`[RECORDING] Stopping recording for session ${sessionKey} using working service`);
                         
-                        // Use appropriate recording service to stop
-                        let result;
-                        if (recordingType === 'web_page') {
-                            result = await webPageRecordingService.stopWebPageRecording(sessionId, resourceId, sid, uid);
-                        } else {
-                            result = await screenShareRecordingService.stopScreenShareRecording(sessionId, resourceId, sid, uid);
+                        // Use the working agoraRecordingService that was working last night
+                        const agoraRecordingService = new (require('../services/agoraRecordingService'))();
+                        const result = await agoraRecordingService.stopRecording(recordingId);
+                        
+                        if (!result.success) {
+                            throw new Error(result.error);
                         }
                         
-                        log(`${recordingType || 'Screen share'} recording stop command sent successfully for session ${sessionKey}`);
+                        log(`Recording stopped for session ${sessionKey}, SID: ${session.recording.sid}, Recording ID: ${recordingId}`);
+                        
+                        // Reset the session recording state
                         session.recording = { 
                             isRecording: false, 
+                            recordingId: null, 
                             resourceId: null, 
                             sid: null, 
-                            uid: null, 
-                            recordingType: null,
                             startTime: null,
                             isStopping: false
                         };
                         
-                        // Check if this was a recovery scenario (recording had already stopped)
-                        let stopMessage;
-                        if (result.warning) {
-                            stopMessage = recordingType === 'web_page' 
-                                ? 'Web page recording was already stopped - video recovered successfully'
-                                : 'Screen share recording was already stopped - video recovered successfully';
-                        } else {
-                            stopMessage = recordingType === 'web_page' 
-                                ? 'Web page recording stopped and processing'
-                                : 'Screen share recording stopped and processing';
-                        }
-                        
+                        // Notify all clients that recording has stopped
                         broadcast(session, { 
                             type: 'RECORDING_STOPPED',
                             payload: {
-                                message: stopMessage,
-                                videoUrl: result.videoUrl,
-                                recordingType: recordingType || 'screen_share'
+                                recordingId,
+                                fileList: result.fileList,
+                                message: 'Recording stopped and saved successfully'
                             }
                         });
 
                     } catch (error) {
-                        console.error(`[RECORDING] Critical error stopping web page recording for session ${sessionKey}:`, error.message);
+                        console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
                         
                         // Reset the stopping flag on error
                         if (session.recording) {
@@ -465,7 +444,7 @@ function initializeWebSocket(wss) {
                         ws.send(JSON.stringify({ 
                             type: 'RECORDING_FAILED', 
                             payload: { 
-                                message: 'The web page recording service failed to stop correctly.',
+                                message: 'The recording service failed to stop correctly.',
                                 details: error.message
                             } 
                         }));
