@@ -49,6 +49,8 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
         console.log(`[SCREEN RECORDING] - Mode: individual (captures each stream separately)`);
         console.log(`[SCREEN RECORDING] - Container: ${azureContainer}`);
         console.log(`[SCREEN RECORDING] - Account: ${azureAccountName}`);
+        console.log(`[SCREEN RECORDING] - Session/Channel: ${sessionId}`);
+        console.log(`[SCREEN RECORDING] - Recording Bot UID: ${recordingBotUid}`);
         console.log(`[SCREEN RECORDING] Individual mode will record screen share and webcam as separate files`);
         
         // Generate recording token (required for proper authentication)
@@ -146,12 +148,14 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
 
         console.log(`[SCREEN RECORDING] Recording stopped successfully for SID: ${sid}`);
         
-        // Wait for file processing
-        console.log(`[SCREEN RECORDING] Waiting 30 seconds for file processing...`);
-        await new Promise(resolve => setTimeout(resolve, 30000));
+        // Wait for file processing - individual mode may take longer
+        console.log(`[SCREEN RECORDING] Waiting 60 seconds for individual mode file processing...`);
+        await new Promise(resolve => setTimeout(resolve, 60000));
         
         // Query for files with MP4 polling
         console.log(`[SCREEN RECORDING] Querying recording files for SID: ${sid}`);
+        console.log(`[SCREEN RECORDING] Query URL: ${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`);
+        
         const queryResponse = await axios.get(
             `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`,
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
@@ -159,7 +163,9 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
 
         let videoUrl = null;
         const fileList = queryResponse.data?.serverResponse?.fileList;
-        console.log(`[SCREEN RECORDING] Query response:`, JSON.stringify(queryResponse.data, null, 2));
+        console.log(`[SCREEN RECORDING] Full query response:`, JSON.stringify(queryResponse.data, null, 2));
+        console.log(`[SCREEN RECORDING] Server response status:`, queryResponse.data?.serverResponse?.status);
+        console.log(`[SCREEN RECORDING] File list:`, fileList);
         
         if (fileList && fileList.length > 0) {
             console.log(`[SCREEN RECORDING] Found ${fileList.length} files:`, fileList.map(f => `${f.fileName} (${f.fileSize || 'unknown size'})`));
