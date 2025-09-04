@@ -339,7 +339,7 @@ function initializeWebSocket(wss) {
                         
                         // Use the working agoraRecordingService that was working last night around 7pm
                         console.log(`[RECORDING] Using working Agora Recording Service...`);
-                        const agoraRecordingService = new (require('../services/agoraRecordingService'))();
+                        const agoraRecordingService = require('../services/agoraRecordingService');
                         const result = await agoraRecordingService.startRecording(sessionId, courseId, teacherId);
                         console.log(`[RECORDING] ✅ Recording started successfully using working service`);
                         
@@ -404,7 +404,7 @@ function initializeWebSocket(wss) {
                         console.log(`[RECORDING] Stopping recording for session ${sessionKey} using working service`);
                         
                         // Use the working agoraRecordingService that was working last night
-                        const agoraRecordingService = new (require('../services/agoraRecordingService'))();
+                        const agoraRecordingService = require('../services/agoraRecordingService');
                         const result = await agoraRecordingService.stopRecording(recordingId);
                         
                         if (!result.success) {
