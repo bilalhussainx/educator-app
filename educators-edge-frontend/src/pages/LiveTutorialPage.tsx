@@ -925,11 +925,26 @@ const LiveTutorialPage: React.FC = () => {
             const screenTrack = Array.isArray(screenTrackResult) ? screenTrackResult[0] : screenTrackResult;
             screenShareTrack.current = screenTrack;
             
-            // Unpublish camera track and publish screen track
-            if (localTracks.current?.videoTrack) {
-                await agoraClient.current.unpublish(localTracks.current.videoTrack);
+            // CRITICAL FIX: Unpublish ALL video tracks before publishing screen share
+            try {
+                // Get currently published tracks
+                const publishedTracks = agoraClient.current.localTracks;
+                const videoTracks = publishedTracks.filter(track => track.trackMediaType === 'video');
+                
+                if (videoTracks.length > 0) {
+                    console.log(`[SCREEN SHARE] Unpublishing ${videoTracks.length} existing video tracks before screen share`);
+                    await agoraClient.current.unpublish(videoTracks);
+                    console.log('[SCREEN SHARE] Successfully unpublished existing video tracks');
+                }
+            } catch (unpublishError) {
+                console.warn('[SCREEN SHARE] Error unpublishing existing tracks:', unpublishError);
+                // Continue anyway - the screen share publish might still work
             }
             
+            // Wait a moment for the unpublish to complete
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            console.log('[SCREEN SHARE] Publishing screen share track');
             await agoraClient.current.publish(screenTrack);
             
             // Play screen share in local video element
