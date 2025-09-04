@@ -400,6 +400,14 @@ function initializeWebSocket(wss) {
                         return;
                     }
 
+                    // Prevent duplicate stop requests
+                    if (session.recording.isStopping) {
+                        console.log(`[RECORDING] Stop request ignored - already stopping recording for session ${sessionKey}`);
+                        return;
+                    }
+                    
+                    session.recording.isStopping = true;
+
                     try {
                         const { resourceId, sid, uid, recordingType } = session.recording;
                         const sessionId = sessionKey;
@@ -421,7 +429,8 @@ function initializeWebSocket(wss) {
                             sid: null, 
                             uid: null, 
                             recordingType: null,
-                            startTime: null 
+                            startTime: null,
+                            isStopping: false
                         };
                         
                         // Check if this was a recovery scenario (recording had already stopped)
@@ -447,6 +456,12 @@ function initializeWebSocket(wss) {
 
                     } catch (error) {
                         console.error(`[RECORDING] Critical error stopping web page recording for session ${sessionKey}:`, error.message);
+                        
+                        // Reset the stopping flag on error
+                        if (session.recording) {
+                            session.recording.isStopping = false;
+                        }
+                        
                         ws.send(JSON.stringify({ 
                             type: 'RECORDING_FAILED', 
                             payload: { 
@@ -457,35 +472,6 @@ function initializeWebSocket(wss) {
                     }
                     break;
 
-                    case 'STOP_RECORDING':
-                        if (!session.recording.isRecording || !session.recording.recordingId) {
-                            ws.send(JSON.stringify({ type: 'RECORDING_ERROR', payload: { message: 'No active recording to stop.' } }));
-                            return;
-                        }
-
-                        try {
-                            const { recordingId, resourceId, sid } = session.recording;
-                            
-                            // Call the complete Agora Recording Service to stop the recording
-                            const result = await agoraService.stopRecording(recordingId);
-                            
-                            if (!result.success) {
-                                throw new Error(result.error);
-                            }
-                            
-                            log(`Recording stopped for session ${sessionKey}, SID: ${sid}, Recording ID: ${recordingId}`);
-
-                            // Reset the session recording state
-                            session.recording = { isRecording: false, recordingId: null, resourceId: null, sid: null, startTime: null };
-                            
-                            // Notify all clients that recording has stopped
-                            broadcast(session, { type: 'RECORDING_STOPPED', payload: { recordingId, fileList: result.fileList } });
-
-                        } catch (error) {
-                            console.error(`[RECORDING] Critical error stopping recording for session ${sessionKey}:`, error.message);
-                            ws.send(JSON.stringify({ type: 'RECORDING_FAILED', payload: { message: 'The recording service failed to stop correctly.' } }));
-                        }
-                        break;
 
                     case 'TERMINAL_IN':
                         const input = data.payload.data;
