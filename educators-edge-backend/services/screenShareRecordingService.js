@@ -45,13 +45,13 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
         const resourceId = acquireResponse.data.resourceId;
         console.log(`[SCREEN RECORDING] Acquired resourceId: ${resourceId}`);
 
-        console.log(`[SCREEN RECORDING] Starting INDIVIDUAL mode recording for screen share prioritization:`);
-        console.log(`[SCREEN RECORDING] - Mode: individual (captures each stream separately)`);
+        console.log(`[SCREEN RECORDING] Starting MIX mode recording for screen share prioritization:`);
+        console.log(`[SCREEN RECORDING] - Mode: mix (combines all streams into single video)`);
         console.log(`[SCREEN RECORDING] - Container: ${azureContainer}`);
         console.log(`[SCREEN RECORDING] - Account: ${azureAccountName}`);
         console.log(`[SCREEN RECORDING] - Session/Channel: ${sessionId}`);
         console.log(`[SCREEN RECORDING] - Recording Bot UID: ${recordingBotUid}`);
-        console.log(`[SCREEN RECORDING] Individual mode will record screen share and webcam as separate files`);
+        console.log(`[SCREEN RECORDING] Mix mode will record screen share with priority layout and generate MP4 files`);
         
         // Generate recording token (required for proper authentication)
         const { RtcTokenBuilder, RtcRole } = require('agora-token');
@@ -72,7 +72,7 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
         console.log(`[SCREEN RECORDING] Generated recording token for UID: ${recordingBotUid}`);
 
         const startResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/individual/start`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
             {
                 cname: sessionId,
                 uid: recordingBotUid,
@@ -88,14 +88,34 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
                     recordingConfig: {
                         channelType: 0,
                         streamTypes: 2, // Record both audio and video
-                        videoStreamType: 0, // High-quality stream (includes screen share)
+                        audioProfile: 1, // Required for audio recording  
+                        videoStreamType: 0, // High-quality stream (includes screen sharing)
                         maxRecordingHour: 12,
-                        subscribeVideoUids: ["#allstream#"], // Subscribe to all video streams
+                        subscribeVideoUids: ["#allstream#"], // Subscribe to all video streams including screen sharing
                         subscribeAudioUids: ["#allstream#"], // Subscribe to all audio streams
-                        subscribeUidGroup: 0 // Subscribe to all users - individual mode records each UID separately
+                        subscribeUidGroup: 0, // Subscribe to all streams
+                        transcodingConfig: {
+                            width: 1920, // Increased for better screen recording
+                            height: 1080, // Increased for better screen recording
+                            fps: 30,
+                            bitrate: 4000, // Increased for better quality screen content
+                            mixedVideoLayout: 1, // Best fit layout - allows custom layoutConfig
+                            backgroundColor: "#000000",
+                            layoutConfig: [
+                                {
+                                    "uid": "1", // Screen sharing stream priority
+                                    "x_axis": 0.0,
+                                    "y_axis": 0.0, 
+                                    "width": 1.0,
+                                    "height": 1.0,
+                                    "alpha": 1.0,
+                                    "render_mode": 1 // Fit mode for screen content
+                                }
+                            ]
+                        }
                     },
                     recordingFileConfig: {
-                        avFileType: ["hls"] // Individual mode only supports HLS format
+                        avFileType: ["hls", "mp4"] // Generate both HLS and MP4 files
                     }
                 },
             },
@@ -137,7 +157,7 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
         console.log(`[SCREEN RECORDING] Stopping recording for SID: ${sid}`);
         
         const stopResponse = await axios.post(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/stop`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`,
             { 
                 cname: sessionId, 
                 uid: uid, 
@@ -148,50 +168,53 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
 
         console.log(`[SCREEN RECORDING] Recording stopped successfully for SID: ${sid}`);
         
-        // Wait for file processing - individual mode may take longer
-        console.log(`[SCREEN RECORDING] Waiting 60 seconds for individual mode file processing...`);
-        await new Promise(resolve => setTimeout(resolve, 60000));
+        // Wait for file processing before querying (MP4 generation takes time) - SAME AS WORKING VERSION
+        console.log(`[SCREEN RECORDING] Waiting 30 seconds for file processing...`);
+        await new Promise(resolve => setTimeout(resolve, 30000));
         
-        // Query for files with MP4 polling
+        // Query the recording to get the file list - SAME AS WORKING VERSION
         console.log(`[SCREEN RECORDING] Querying recording files for SID: ${sid}`);
-        console.log(`[SCREEN RECORDING] Query URL: ${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`);
-        
         const queryResponse = await axios.get(
-            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`,
+            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
         );
 
         let videoUrl = null;
         const fileList = queryResponse.data?.serverResponse?.fileList;
-        console.log(`[SCREEN RECORDING] Full query response:`, JSON.stringify(queryResponse.data, null, 2));
-        console.log(`[SCREEN RECORDING] Server response status:`, queryResponse.data?.serverResponse?.status);
-        console.log(`[SCREEN RECORDING] File list:`, fileList);
+        console.log(`[SCREEN RECORDING] Query response:`, JSON.stringify(queryResponse.data, null, 2));
         
         if (fileList && fileList.length > 0) {
             console.log(`[SCREEN RECORDING] Found ${fileList.length} files:`, fileList.map(f => `${f.fileName} (${f.fileSize || 'unknown size'})`));
             
-            // Look for HLS playlist file (.m3u8) - individual mode generates HLS
-            let m3u8File = fileList.find(file => file.fileName.endsWith('.m3u8'));
+            // Prioritize MP4 files for better compatibility - SAME AS WORKING VERSION
+            const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
+            const m3u8File = fileList.find(file => file.fileName.endsWith('.m3u8'));
             
-            // Poll for HLS if not found initially
-            if (!m3u8File) {
-                console.log(`[SCREEN RECORDING] No HLS found initially, polling for HLS generation...`);
-                for (let poll = 1; poll <= 4; poll++) {
-                    console.log(`[SCREEN RECORDING] HLS Poll attempt ${poll}/4...`);
-                    await new Promise(resolve => setTimeout(resolve, 30000));
+            // If no MP4 but M3U8 exists, try polling for MP4 for up to 2 minutes - SAME AS WORKING VERSION
+            let targetFile = mp4File;
+            if (!mp4File && m3u8File) {
+                console.log(`[SCREEN RECORDING] No MP4 found initially, polling for MP4 generation...`);
+                const maxPolls = 4; // Poll 4 times with 30-second intervals
+                
+                for (let poll = 1; poll <= maxPolls && !targetFile; poll++) {
+                    console.log(`[SCREEN RECORDING] MP4 Poll attempt ${poll}/${maxPolls}...`);
+                    await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
                     
                     try {
                         const pollQuery = await axios.get(
-                            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`,
+                            `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
                             { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
                         );
                         
                         const pollFileList = pollQuery.data?.serverResponse?.fileList;
                         if (pollFileList) {
-                            const pollM3u8 = pollFileList.find(file => file.fileName.endsWith('.m3u8'));
-                            if (pollM3u8) {
-                                console.log(`[SCREEN RECORDING] ✅ HLS file found on poll ${poll}: ${pollM3u8.fileName}`);
-                                m3u8File = pollM3u8;
+                            const pollMp4 = pollFileList.find(file => file.fileName.endsWith('.mp4'));
+                            if (pollMp4) {
+                                console.log(`[SCREEN RECORDING] ✅ MP4 file found on poll ${poll}: ${pollMp4.fileName}`);
+                                targetFile = pollMp4;
+                                // Update the main fileList for logging
+                                fileList.length = 0;
+                                fileList.push(...pollFileList);
                                 break;
                             }
                         }
@@ -201,21 +224,41 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
                 }
             }
             
-            const targetFile = m3u8File || fileList[0];
+            // Fall back to M3U8 or first file if MP4 still not found - SAME AS WORKING VERSION
+            if (!targetFile) {
+                targetFile = m3u8File || fileList[0];
+                if (!mp4File && m3u8File) {
+                    console.warn(`[SCREEN RECORDING] ⚠️  MP4 not generated after polling, using M3U8`);
+                }
+            }
             
             if (targetFile && targetFile.fileName) {
                 const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY;
                 const azureContainer = process.env.AGORA_AZURE_BUCKET;
                 const fileName = targetFile.fileName;
+                const fileType = fileName.split('.').pop().toLowerCase();
+                
+                console.log(`[AZURE URL] Building URL with:`);
+                console.log(`[AZURE URL] - Account: ${azureAccountName}`);
+                console.log(`[AZURE URL] - Container: ${azureContainer}`);
+                console.log(`[AZURE URL] - File: ${fileName}`);
+                console.log(`[AZURE URL] - File Type: ${fileType} ${mp4File ? '(MP4 preferred)' : '(using available format)'}`);
                 
                 videoUrl = `https://${azureAccountName}.blob.core.windows.net/${azureContainer}/${fileName}`;
-                console.log(`[SCREEN RECORDING] Constructed video URL: ${videoUrl}`);
+                console.log(`[AZURE URL] Constructed video URL: ${videoUrl}`);
                 
-                if (!m3u8File) {
-                    console.warn(`[SCREEN RECORDING] ⚠️ Using non-HLS file: ${fileName}`);
-                } else {
-                    console.log(`[SCREEN RECORDING] ✅ Using HLS playlist file for individual recording: ${fileName}`);
+                // Log file info for troubleshooting
+                if (targetFile.fileSize) {
+                    console.log(`[AZURE URL] File size: ${targetFile.fileSize} bytes`);
                 }
+                
+                if (fileType === 'm3u8') {
+                    console.warn(`[AZURE URL] Warning: M3U8 file detected. This is a playlist file, not a direct video.`);
+                    console.warn(`[AZURE URL] You may need to download the M3U8 and associated TS segments for playback.`);
+                    console.warn(`[AZURE URL] Consider checking if MP4 generation is enabled in your Agora configuration.`);
+                }
+            } else {
+                console.error(`[SCREEN RECORDING] No valid file found in fileList`);
             }
         }
 
@@ -241,7 +284,7 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
             try {
                 console.log(`[SCREEN RECORDING] Attempting recovery query for files...`);
                 const queryResponse = await axios.get(
-                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/individual/query`,
+                    `${AGORA_API_BASE_URL}/apps/${AGORA_APP_ID}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/query`,
                     { headers: { 'Authorization': getBasicAuthHeader(), 'Content-Type': 'application/json' } }
                 );
 
@@ -249,8 +292,8 @@ const stopScreenShareRecording = async (sessionId, resourceId, sid, uid) => {
                 console.log(`[SCREEN RECORDING] Recovery query - found files:`, fileList?.map(f => f.fileName) || 'none');
                 
                 if (fileList && fileList.length > 0) {
-                    const m3u8File = fileList.find(file => file.fileName.endsWith('.m3u8'));
-                    const targetFile = m3u8File || fileList[0];
+                    const mp4File = fileList.find(file => file.fileName.endsWith('.mp4'));
+                    const targetFile = mp4File || fileList[0];
                     
                     if (targetFile && targetFile.fileName) {
                         const azureAccountName = process.env.AGORA_AZURE_ACCESS_KEY;
