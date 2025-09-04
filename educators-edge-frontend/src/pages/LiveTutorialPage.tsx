@@ -365,6 +365,7 @@ const LiveTutorialPage: React.FC = () => {
     
     // --- RECORDING STATE ---
     const [isRecording, setIsRecording] = useState(false);
+    const [isRecordingOperationInProgress, setIsRecordingOperationInProgress] = useState(false);
     
     // --- SCREEN SHARING STATE ---
     const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -691,6 +692,7 @@ const LiveTutorialPage: React.FC = () => {
                 case 'RECORDING_STARTED':
                     console.log('[RECORDING] Received RECORDING_STARTED message:', message);
                     setIsRecording(true);
+                    setIsRecordingOperationInProgress(false);
                     toast.success('Recording started', {
                         description: 'This session is now being recorded.'
                     });
@@ -699,6 +701,7 @@ const LiveTutorialPage: React.FC = () => {
                 case 'RECORDING_STOPPED':
                     console.log('[RECORDING] Received RECORDING_STOPPED message:', message);
                     setIsRecording(false);
+                    setIsRecordingOperationInProgress(false);
                     toast.success('Recording stopped', {
                         description: 'Session recording has been saved.'
                     });
@@ -706,6 +709,8 @@ const LiveTutorialPage: React.FC = () => {
                     
                 case 'RECORDING_FAILED':
                     console.error('[RECORDING] Received RECORDING_FAILED message:', message);
+                    setIsRecording(false);
+                    setIsRecordingOperationInProgress(false);
                     toast.error('Recording Failed', {
                         description: message.payload?.message || 'Recording operation failed'
                     });
@@ -713,6 +718,7 @@ const LiveTutorialPage: React.FC = () => {
                     
                 case 'RECORDING_ERROR':
                     console.error('[RECORDING] Received RECORDING_ERROR message:', message);
+                    setIsRecordingOperationInProgress(false);
                     toast.error('Recording Error', {
                         description: message.payload.message
                     });
@@ -871,6 +877,11 @@ const LiveTutorialPage: React.FC = () => {
 
     // Recording handlers
     const handleStartRecording = () => {
+        if (isRecordingOperationInProgress) {
+            console.log('[RECORDING] Operation already in progress, ignoring click');
+            return;
+        }
+        
         console.log('[RECORDING] Start recording button clicked');
         console.log('[RECORDING] Current state:', { isRecording, sessionId, courseId });
         
@@ -886,9 +897,12 @@ const LiveTutorialPage: React.FC = () => {
             return;
         }
         
+        setIsRecordingOperationInProgress(true);
+        toast.info('Starting recording...');
+        
         const startPayload = {
             channelName: sessionId,
-            courseId: courseId // Use the selected course ID from the modal
+            courseId: courseId
         };
         
         console.log('[RECORDING] Sending START_RECORDING message:', startPayload);
@@ -896,6 +910,11 @@ const LiveTutorialPage: React.FC = () => {
     };
 
     const handleStopRecording = () => {
+        if (isRecordingOperationInProgress) {
+            console.log('[RECORDING] Operation already in progress, ignoring click');
+            return;
+        }
+        
         console.log('[RECORDING] Stop recording button clicked');
         console.log('[RECORDING] Current state:', { isRecording, sessionId });
         
@@ -904,6 +923,9 @@ const LiveTutorialPage: React.FC = () => {
             toast.warning('No active recording to stop');
             return;
         }
+        
+        setIsRecordingOperationInProgress(true);
+        toast.info('Stopping recording...');
         
         console.log('[RECORDING] Sending STOP_RECORDING message');
         sendWsMessage('STOP_RECORDING', {});
@@ -1095,7 +1117,7 @@ const LiveTutorialPage: React.FC = () => {
                                 <Button 
                                     size="sm" 
                                     onClick={() => {
-                                        console.log(`[RECORDING] Recording button clicked - Current state: isRecording=${isRecording}`);
+                                        console.log(`[RECORDING] Recording button clicked - Current state: isRecording=${isRecording}, inProgress=${isRecordingOperationInProgress}`);
                                         if (isRecording) {
                                             handleStopRecording();
                                         } else {
@@ -1104,8 +1126,15 @@ const LiveTutorialPage: React.FC = () => {
                                     }}
                                     variant={isRecording ? "destructive" : "outline"}
                                     className={isRecording ? "animate-pulse" : ""}
+                                    disabled={isRecordingOperationInProgress}
                                 >
-                                    {isRecording ? <Square className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                                    {isRecordingOperationInProgress ? (
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                                    ) : isRecording ? (
+                                        <Square className="h-4 w-4" />
+                                    ) : (
+                                        <Circle className="h-4 w-4" />
+                                    )}
                                 </Button>
                                 
                                 {/* Screen Share Button - Teacher Only */}
