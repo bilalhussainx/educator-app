@@ -66,7 +66,7 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
         console.log(`[AGORA SERVICE] Acquired resourceId: ${resourceId}`);
 
         console.log(`[AGORA SERVICE] Starting recording with Azure storage config:`);
-        console.log(`[AGORA SERVICE] - Vendor: 5 (Azure Blob Storage)`);
+        console.log(`[AGORA SERVICE] - Vendor: 3 (Microsoft Azure)`);
         console.log(`[AGORA SERVICE] - Container: ${azureContainer}`);
         console.log(`[AGORA SERVICE] - Account: ${azureAccountName}`);
         
@@ -97,11 +97,11 @@ const startCloudRecording = async (channelName, courseId, teacherId) => {
                 clientRequest: {
                     token: recordingToken, // Required token as per documentation
                     storageConfig: {
-                        vendor: 5, // Microsoft Azure Blob Storage (correct value)
-                        region: 0,
+                        vendor: 3, // Microsoft Azure Blob Storage (correct vendor code)
+                        region: 16, // NA_Ashburn region
                         bucket: azureContainer,
-                        accessKey: azureAccountName,
-                        secretKey: azureAccessKey
+                        accessKey: azureAccountName, // Storage account name
+                        secretKey: azureAccessKey // Access key
                     },
                     recordingConfig: {
                         channelType: 0,

@@ -77,16 +77,15 @@ const startScreenShareRecording = async (sessionId, courseId, teacherId) => {
                 clientRequest: {
                     token: recordingToken, // Use generated token like working agoraService
                     storageConfig: {
-                        vendor: 5, // Microsoft Azure Blob Storage
-                        region: 0,
+                        vendor: 3, // Microsoft Azure Blob Storage (correct vendor code)
+                        region: 16, // NA_Ashburn region for better performance
                         bucket: azureContainer,
-                        accessKey: azureAccountName,
-                        secretKey: azureAccessKey
+                        accessKey: azureAccountName, // Storage account name
+                        secretKey: azureAccessKey // Access key
                     },
                     recordingConfig: {
                         channelType: 0,
                         streamTypes: 2, // Record both audio and video
-                        audioProfile: 1,
                         videoStreamType: 0, // High-quality stream (includes screen share)
                         maxRecordingHour: 12,
                         subscribeVideoUids: ["#allstream#"], // Subscribe to all video streams
