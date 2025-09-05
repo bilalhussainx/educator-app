@@ -31,6 +31,7 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
     const agoraClient = useRef<IAgoraRTCClient | null>(null);
     const localTracks = useRef<{ videoTrack: ILocalVideoTrack, audioTrack: ILocalAudioTrack } | null>(null);
     const screenShareTrack = useRef<ILocalVideoTrack | null>(null);
+    const screenAudioTrack = useRef<ILocalAudioTrack | null>(null);
     const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'processing' | 'completed' | 'failed'>('idle');
     const [recordingData, setRecordingData] = useState<{ sid?: string; resourceId?: string; uid?: string } | null>(null);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -107,6 +108,7 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
             localTracks.current?.videoTrack.close();
             localTracks.current?.audioTrack.close();
             screenShareTrack.current?.close();
+            screenAudioTrack.current?.close();
             client.leave();
         };
     }, [sessionId]);
@@ -233,15 +235,26 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
                 return;
             }
 
-            // Create screen share track using getDisplayMedia with audio
-            const screenTrackResult = await AgoraRTC.createScreenVideoTrack({
-                encoderConfig: "1080p_2", // Full HD preset with higher bitrate
-                withAudio: "enable" // Enable audio capture from screen share (system audio)
+            // Create screen share video track
+            const screenVideoTrack = await AgoraRTC.createScreenVideoTrack({
+                encoderConfig: "1080p_2" // Full HD preset with higher bitrate
             });
             
-            // Handle both single track and array of tracks
-            const screenTrack = Array.isArray(screenTrackResult) ? screenTrackResult[0] : screenTrackResult;
+            // Handle both single track and array of tracks for video
+            const screenTrack = Array.isArray(screenVideoTrack) ? screenVideoTrack[0] : screenVideoTrack;
             screenShareTrack.current = screenTrack;
+            
+            // Try to create screen audio track (system audio)
+            let screenAudio = null;
+            try {
+                screenAudio = await AgoraRTC.createMicrophoneAudioTrack({
+                    encoderConfig: "music_standard", // Higher quality for system audio
+                });
+                screenAudioTrack.current = screenAudio;
+            } catch (audioError) {
+                console.warn('[SCREEN SHARE] Could not capture system audio:', audioError);
+                // Continue without system audio - screen video will still work
+            }
             
             // CRITICAL FIX: Unpublish ALL video tracks before publishing screen share
             try {
@@ -263,7 +276,12 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
             await new Promise(resolve => setTimeout(resolve, 100));
             
             console.log('[SCREEN SHARE] Publishing screen share track');
-            await agoraClient.current.publish(screenTrack);
+            const tracksToPublish = [screenTrack];
+            if (screenAudio) {
+                tracksToPublish.push(screenAudio);
+                console.log('[SCREEN SHARE] Publishing screen share with system audio');
+            }
+            await agoraClient.current.publish(tracksToPublish);
             
             // Play screen share in local video element
             if (localVideoRef.current) {
@@ -290,10 +308,22 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
                 return;
             }
 
-            // Unpublish screen track
-            await agoraClient.current.unpublish(screenShareTrack.current);
+            // Unpublish screen tracks
+            const tracksToUnpublish = [screenShareTrack.current];
+            if (screenAudioTrack.current) {
+                tracksToUnpublish.push(screenAudioTrack.current);
+            }
+            
+            await agoraClient.current.unpublish(tracksToUnpublish);
+            
+            // Close screen tracks
             screenShareTrack.current.close();
             screenShareTrack.current = null;
+            
+            if (screenAudioTrack.current) {
+                screenAudioTrack.current.close();
+                screenAudioTrack.current = null;
+            }
             
             // Republish camera track
             if (localTracks.current?.videoTrack) {
