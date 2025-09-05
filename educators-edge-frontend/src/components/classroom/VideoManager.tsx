@@ -117,9 +117,22 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
             onRecordingStatusChange?.('recording');
             onVideoProcessingUpdate?.('Starting video recording...');
             
+            // Capture current screen/video dimensions for dynamic recording
+            let screenDimensions = null;
+            if (localVideoRef.current) {
+                const videoElement = localVideoRef.current;
+                screenDimensions = {
+                    width: videoElement.videoWidth || window.screen.width || 1680,
+                    height: videoElement.videoHeight || window.screen.height || 1080,
+                    aspectRatio: (videoElement.videoWidth || window.screen.width || 1680) / (videoElement.videoHeight || window.screen.height || 1080)
+                };
+                console.log('[RECORDING] Captured screen dimensions:', screenDimensions);
+            }
+            
             const response = await apiClient.post(`/api/recordings/start`, {
                 sessionId,
-                courseId
+                courseId,
+                screenDimensions
             });
             
             const { sid, resourceId, uid } = response.data;
