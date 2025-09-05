@@ -900,13 +900,35 @@ const LiveTutorialPage: React.FC = () => {
         setIsRecordingOperationInProgress(true);
         toast.info('Starting recording...');
         
-        // [DEFINITIVE FIX] Simple, clean payload - no client-side complexity
+        // --- [DEFINITIVE IMPLEMENTATION] Capture actual video dimensions ---
+        let screenDimensions = { width: 1920, height: 1080 }; // Default fallback
+
+        // Find the actual video element rendered by the Agora SDK
+        const videoElement = localVideoRef.current?.querySelector('video');
+
+        if (videoElement && videoElement.videoWidth > 0) {
+            // The best source of truth is the rendered video element itself
+            screenDimensions = {
+                width: videoElement.videoWidth,
+                height: videoElement.videoHeight,
+            };
+            console.log(`[RECORDING] Captured dimensions from video element: ${screenDimensions.width}x${screenDimensions.height}`);
+        } else {
+            // As a fallback, use the screen's dimensions
+            screenDimensions = {
+                width: window.screen.width,
+                height: window.screen.height
+            };
+            console.log(`[RECORDING] Using fallback screen dimensions: ${screenDimensions.width}x${screenDimensions.height}`);
+        }
+        
         const startPayload = {
             channelName: sessionId,
-            courseId: courseId
+            courseId: courseId,
+            screenDimensions: screenDimensions // Send the captured dimensions
         };
         
-        console.log('[RECORDING] Sending START_RECORDING message:', startPayload);
+        console.log('[RECORDING] Sending START_RECORDING with dynamic dimensions:', startPayload);
         sendWsMessage('START_RECORDING', startPayload);
     };
 
