@@ -50,11 +50,17 @@ class AgoraRecordingService {
     }
 
     // Start Cloud Recording
-    async startRecording(channelName, courseId, teacherId) {
+    async startRecording(channelName, courseId, teacherId, screenDimensions = null) {
         try {
             console.log(`[AGORA] Starting recording for channel: ${channelName}`);
             console.log(`[AGORA] CourseId: ${courseId} (type: ${typeof courseId})`);
             console.log(`[AGORA] TeacherId: ${teacherId}`);
+            console.log(`[AGORA] Screen dimensions:`, screenDimensions);
+            
+            // Dynamic dimensions based on screen capture or defaults
+            const recordingWidth = screenDimensions?.width || 1680;
+            const recordingHeight = screenDimensions?.height || 1080;
+            console.log(`[AGORA] Using recording dimensions: ${recordingWidth}x${recordingHeight}`);
             
             // Step 1: Acquire recording resource
             const resourceResponse = await axios.post(
@@ -95,12 +101,23 @@ class AgoraRecordingService {
                         subscribeUidGroup: 0
                     },
                     transcoding: {
-                        width: 1920,
-                        height: 1080,
+                        width: recordingWidth,
+                        height: recordingHeight,
                         fps: 30,
                         bitrate: 6000,
-                        mixedVideoLayout: 1,
-                        backgroundColor: "#000000"
+                        mixedVideoLayout: 3, // Customized layout - prevents cropping
+                        backgroundColor: "#000000",
+                        layoutConfig: [
+                            {
+                                uid: "#allstream#",
+                                x_axis: 0,
+                                y_axis: 0,
+                                width: 1,
+                                height: 1,
+                                alpha: 1,
+                                render_mode: 1 // Scaled to fit mode - no cropping
+                            }
+                        ]
                     },
                     recordingFileConfig: {
                         avFileType: ["hls", "mp4"]
@@ -135,12 +152,23 @@ class AgoraRecordingService {
                             subscribeUidGroup: 0
                         },
                         transcoding: {
-                            width: 1920, // Full HD width for screen capture
-                            height: 1080, // Full HD height for screen capture
+                            width: recordingWidth, // Dynamic width based on screen capture
+                            height: recordingHeight, // Dynamic height based on screen capture
                             fps: 30,
                             bitrate: 6000, // Higher bitrate for screen content
-                            mixedVideoLayout: 1, // Best fit layout - automatically scales to fit
-                            backgroundColor: "#000000"
+                            mixedVideoLayout: 3, // Customized layout - prevents cropping
+                            backgroundColor: "#000000",
+                            layoutConfig: [
+                                {
+                                    uid: "#allstream#",
+                                    x_axis: 0,
+                                    y_axis: 0,
+                                    width: 1,
+                                    height: 1,
+                                    alpha: 1,
+                                    render_mode: 1 // Scaled to fit mode - no cropping
+                                }
+                            ]
                         },
                         recordingFileConfig: {
                             avFileType: ["hls", "mp4"] // Generate both HLS and MP4

@@ -317,8 +317,9 @@ function initializeWebSocket(wss) {
                         return;
                     }
                     
-                    const { courseId } = data.payload;
+                    const { courseId, screenDimensions } = data.payload;
                     console.log('[DEBUG] WebSocket received courseId:', courseId, 'type:', typeof courseId);
+                    console.log('[DEBUG] WebSocket received screenDimensions:', screenDimensions);
                     
                     if (!courseId) {
                         log(`[RECORDING] Teacher ${clientInfo.username} tried to start recording without a courseId.`);
@@ -335,12 +336,13 @@ function initializeWebSocket(wss) {
                         console.log(`[RECORDING] Starting SCREEN SHARE recording for educational content`);
                         console.log(`[RECORDING] Session ID: ${sessionId}`);
                         console.log(`[RECORDING] Course ID: ${courseId}`);
+                        console.log(`[RECORDING] Screen Dimensions:`, screenDimensions);
                         console.log(`[RECORDING] This will record screen shares and educational content with high priority`);
                         
-                        // Use the working agoraRecordingService that was working last night around 7pm
-                        console.log(`[RECORDING] Using working Agora Recording Service...`);
+                        // Use the working agoraRecordingService with dynamic dimensions to fix quarter-screen issue
+                        console.log(`[RECORDING] Using working Agora Recording Service with dynamic dimensions...`);
                         const agoraRecordingService = require('../services/agoraRecordingService');
-                        const result = await agoraRecordingService.startRecording(sessionId, courseId, teacherId);
+                        const result = await agoraRecordingService.startRecording(sessionId, courseId, teacherId, screenDimensions);
                         console.log(`[RECORDING] ✅ Recording started successfully using working service`);
                         
                         session.recording = {

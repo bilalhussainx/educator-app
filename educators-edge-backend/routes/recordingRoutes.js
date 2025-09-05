@@ -9,6 +9,9 @@ const intelligentRecordingService = require('../services/intelligentRecordingSer
 const translationService = require('../services/translationService');
 const { verifyToken } = require('../middleware/authMiddleware');
 
+// Import the recording service
+const agoraRecordingService = require('../services/agoraRecordingService');
+
 // Helper function to ensure video URL is a full Azure Blob Storage URL
 const ensureFullVideoUrl = (videoUrl) => {
     if (!videoUrl) return null;
@@ -28,6 +31,99 @@ const ensureFullVideoUrl = (videoUrl) => {
     
     return videoUrl; // Return original if we can't construct full URL
 };
+
+// Start recording endpoint
+router.post('/start', verifyToken, async (req, res) => {
+    try {
+        const { sessionId, courseId, screenDimensions } = req.body;
+        const { userId } = req.user; // From auth middleware
+        
+        console.log(`[RECORDINGS] Starting recording for session: ${sessionId}, course: ${courseId}`);
+        console.log(`[RECORDINGS] Screen dimensions:`, screenDimensions);
+        
+        if (!sessionId || !courseId) {
+            return res.status(400).json({ 
+                error: 'sessionId and courseId are required' 
+            });
+        }
+
+        // Start recording with dynamic dimensions
+        const result = await agoraRecordingService.startRecording(
+            sessionId, 
+            courseId, 
+            userId, 
+            screenDimensions
+        );
+
+        if (!result.success) {
+            return res.status(500).json({ 
+                error: result.error || 'Failed to start recording' 
+            });
+        }
+
+        res.json({
+            success: true,
+            recordingId: result.recordingId,
+            resourceId: result.resourceId,
+            sid: result.sid,
+            message: 'Recording started successfully'
+        });
+
+    } catch (error) {
+        console.error('[RECORDINGS] Error starting recording:', error);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: error.message 
+        });
+    }
+});
+
+// Stop recording endpoint  
+router.post('/stop', verifyToken, async (req, res) => {
+    try {
+        const { sessionId, resourceId, sid } = req.body;
+        
+        console.log(`[RECORDINGS] Stopping recording for session: ${sessionId}`);
+        
+        if (!sessionId || !resourceId || !sid) {
+            return res.status(400).json({ 
+                error: 'sessionId, resourceId, and sid are required' 
+            });
+        }
+
+        // Find recording by resourceId and sid
+        const recordingQuery = await db.query(
+            'SELECT id FROM recorded_sessions WHERE agora_recording_resource_id = $1 AND agora_recording_sid = $2',
+            [resourceId, sid]
+        );
+
+        if (recordingQuery.rows.length === 0) {
+            return res.status(404).json({ error: 'Recording not found' });
+        }
+
+        const recordingId = recordingQuery.rows[0].id;
+        const result = await agoraRecordingService.stopRecording(recordingId);
+
+        if (!result.success) {
+            return res.status(500).json({ 
+                error: result.error || 'Failed to stop recording' 
+            });
+        }
+
+        res.json({
+            success: true,
+            recordingId: recordingId,
+            message: 'Recording stopped successfully'
+        });
+
+    } catch (error) {
+        console.error('[RECORDINGS] Error stopping recording:', error);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: error.message 
+        });
+    }
+});
 
 // Get recording status by SID or recording ID
 router.get('/status/:recordingId', async (req, res) => {
