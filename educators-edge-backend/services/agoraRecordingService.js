@@ -71,6 +71,11 @@ class AgoraRecordingService {
             const recordingHeight = screenDimensions?.height || 1080;
             console.log(`[AGORA] Using dynamic recording canvas: ${recordingWidth}x${recordingHeight}`);
             
+            // [DEFINITIVE FIX] Generate deterministic UIDs for explicit layout targeting
+            const teacherNumericUid = parseInt(teacherId.replace(/-/g, '').substring(0, 8), 16) % 2147483647;
+            const screenShareNumericUid = teacherNumericUid + 1; // Convention: screen share is teacher UID + 1
+            console.log(`[AGORA] Teacher UID: ${teacherNumericUid}, Screen Share UID: ${screenShareNumericUid}`);
+            
             // Step 1: Acquire recording resource
             const resourceResponse = await axios.post(
                 `${this.baseUrl}/${this.appId}/cloud_recording/acquire`,
@@ -117,23 +122,28 @@ class AgoraRecordingService {
                             bitrate: 6000,           // High bitrate for screen content quality
                             mixedVideoLayout: 3,     // 3 = Customized Layout - Essential for control
                             backgroundColor: "#000000",
+                            // [DEFINITIVE FIX] Explicit UID-based dual-stream layout
                             layoutConfig: [
                                 {
-                                    // This rule handles the primary video stream (teacher's screen share)
-                                    // Works for ANY screen size automatically
-                                    uid: "#allstream#",  // Applies to all video streams
-                                    x_axis: 0.0,         // Top-left corner
-                                    y_axis: 0.0,         // Top-left corner
-                                    width: 1.0,          // Use 100% of canvas width
-                                    height: 1.0,         // Use 100% of canvas height
+                                    // TARGET: Teacher's SCREEN SHARE stream (main content)
+                                    uid: String(screenShareNumericUid),
+                                    x_axis: 0.0,         // Full canvas from top-left
+                                    y_axis: 0.0,
+                                    width: 1.0,          // 100% of canvas width
+                                    height: 1.0,         // 100% of canvas height
                                     alpha: 1.0,          // Fully opaque
-                                    render_mode: 1       // 1 = RENDER_MODE_FIT (Scale to fit, NO CROPPING)
+                                    render_mode: 1       // Scale to fit, NO CROPPING
+                                },
+                                {
+                                    // TARGET: Teacher's CAMERA stream (picture-in-picture)
+                                    uid: String(teacherNumericUid),
+                                    x_axis: 0.75,        // Bottom-right corner
+                                    y_axis: 0.75,
+                                    width: 0.2,          // 20% of canvas width
+                                    height: 0.2,         // 20% of canvas height
+                                    alpha: 1.0,          // Fully opaque
+                                    render_mode: 1       // Scale to fit, NO CROPPING
                                 }
-                                // This single layout handles all cases:
-                                // - Any screen resolution (1674x1080, 1920x1080, 2560x1440, etc.)
-                                // - Any aspect ratio (16:9, 21:9, 4:3, etc.)
-                                // - Window resizing during recording
-                                // - Multiple users with different screens
                             ]
                         },
                         recordingFileConfig: {
