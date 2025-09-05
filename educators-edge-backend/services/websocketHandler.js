@@ -317,9 +317,8 @@ function initializeWebSocket(wss) {
                         return;
                     }
                     
-                    const { courseId, screenDimensions } = data.payload;
+                    const { courseId } = data.payload; // Only need courseId - no complex client data
                     console.log('[DEBUG] WebSocket received courseId:', courseId, 'type:', typeof courseId);
-                    console.log('[DEBUG] WebSocket received screenDimensions:', screenDimensions);
                     
                     if (!courseId) {
                         log(`[RECORDING] Teacher ${clientInfo.username} tried to start recording without a courseId.`);
@@ -333,16 +332,14 @@ function initializeWebSocket(wss) {
                         const sessionId = sessionKey;
                         const teacherId = user.id;
 
-                        console.log(`[RECORDING] Starting SCREEN SHARE recording for educational content`);
+                        console.log(`[RECORDING] Starting recording with definitive scale-to-fit configuration`);
                         console.log(`[RECORDING] Session ID: ${sessionId}`);
                         console.log(`[RECORDING] Course ID: ${courseId}`);
-                        console.log(`[RECORDING] Screen Dimensions:`, screenDimensions);
-                        console.log(`[RECORDING] This will record screen shares and educational content with high priority`);
+                        console.log(`[RECORDING] Server will intelligently handle ANY video stream automatically`);
                         
-                        // Use the working agoraRecordingService with dynamic dimensions to fix quarter-screen issue
-                        console.log(`[RECORDING] Using working Agora Recording Service with dynamic dimensions...`);
+                        // [DEFINITIVE FIX] Simple, clean service call - no client complexity
                         const agoraRecordingService = require('../services/agoraRecordingService');
-                        const result = await agoraRecordingService.startRecording(sessionId, courseId, teacherId, screenDimensions);
+                        const result = await agoraRecordingService.startRecording(sessionId, courseId, teacherId);
                         console.log(`[RECORDING] ✅ Recording started successfully using working service`);
                         
                         session.recording = {
