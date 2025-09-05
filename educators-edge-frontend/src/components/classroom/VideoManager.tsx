@@ -250,24 +250,32 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
             // Try different encoder configurations in sequence
             const encoderConfigs = [
                 {
-                    name: "4K_1",
-                    config: { encoderConfig: "4K_1", optimizationMode: "detail" }
+                    name: "custom_1920x1080_max",
+                    config: {
+                        encoderConfig: {
+                            width: 1920,
+                            height: 1080,
+                            frameRate: 30,
+                            bitrateMax: 10000,
+                            bitrateMin: 2000
+                        }
+                    }
                 },
                 {
-                    name: "1440p_1", 
-                    config: { encoderConfig: "1440p_1", optimizationMode: "detail" }
-                },
-                {
-                    name: "1080p_3",
-                    config: { encoderConfig: "1080p_3", optimizationMode: "detail" }
+                    name: "1080p_2",
+                    config: { encoderConfig: "1080p_2" }
                 },
                 {
                     name: "1080p_1",
-                    config: { encoderConfig: "1080p_1", optimizationMode: "detail" }
+                    config: { encoderConfig: "1080p_1" }
                 },
                 {
-                    name: "720p_2",
-                    config: { encoderConfig: "720p_2", optimizationMode: "detail" }
+                    name: "720p_1",
+                    config: { encoderConfig: "720p_1" }
+                },
+                {
+                    name: "480p_1",
+                    config: { encoderConfig: "480p_1" }
                 },
                 {
                     name: "custom_1920x1080",
@@ -278,8 +286,7 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
                             frameRate: 30,
                             bitrateMax: 8000,
                             bitrateMin: 1000
-                        },
-                        optimizationMode: "detail"
+                        }
                     }
                 },
                 {
