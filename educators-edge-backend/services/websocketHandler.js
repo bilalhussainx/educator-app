@@ -317,8 +317,8 @@ function initializeWebSocket(wss) {
                         return;
                     }
                     
-                    const { courseId } = data.payload; // Only need courseId - no complex client data
-                    console.log('[DEBUG] WebSocket received courseId:', courseId, 'type:', typeof courseId);
+                    const { courseId, screenDimensions } = data.payload;
+                    console.log('[DEBUG] WebSocket received courseId:', courseId, 'screenDimensions:', screenDimensions);
                     
                     if (!courseId) {
                         log(`[RECORDING] Teacher ${clientInfo.username} tried to start recording without a courseId.`);
@@ -339,7 +339,7 @@ function initializeWebSocket(wss) {
                         
                         // [DEFINITIVE FIX] Simple, clean service call - no client complexity
                         const agoraRecordingService = require('../services/agoraRecordingService');
-                        const result = await agoraRecordingService.startRecording(sessionId, courseId, teacherId);
+                        const result = await agoraRecordingService.startRecording(sessionId, courseId, teacherId, screenDimensions);
                         console.log(`[RECORDING] ✅ Recording started successfully using working service`);
                         
                         session.recording = {

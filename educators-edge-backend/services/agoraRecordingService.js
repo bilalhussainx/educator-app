@@ -59,12 +59,17 @@ class AgoraRecordingService {
      * @param {string} teacherId - The ID of the teacher.
      * @returns {Promise<object>} The response data from the Agora API.
      */
-    async startRecording(channelName, courseId, teacherId) {
+    async startRecording(channelName, courseId, teacherId, screenDimensions) {
         try {
             console.log(`[AGORA] Starting recording for channel: ${channelName}`);
             console.log(`[AGORA] CourseId: ${courseId} (type: ${typeof courseId})`);
             console.log(`[AGORA] TeacherId: ${teacherId}`);
-            console.log(`[AGORA] Using definitive scale-to-fit configuration - no client dimensions needed`);
+            console.log(`[AGORA] ScreenDimensions:`, screenDimensions);
+            
+            // Use dynamic dimensions with safe fallback
+            const recordingWidth = screenDimensions?.width || 1920;
+            const recordingHeight = screenDimensions?.height || 1080;
+            console.log(`[AGORA] Using dynamic recording canvas: ${recordingWidth}x${recordingHeight}`);
             
             // Step 1: Acquire recording resource
             const resourceResponse = await axios.post(
@@ -106,8 +111,8 @@ class AgoraRecordingService {
                         },
                         // [THE CRITICAL FIX] This transcodingConfig is the entire solution.
                         transcodingConfig: {
-                            width: 1920,             // Standard 16:9 HD canvas - robust and consistent
-                            height: 1080,            // Standard 16:9 HD canvas - robust and consistent
+                            width: recordingWidth,   // Use dynamic width from client
+                            height: recordingHeight, // Use dynamic height from client
                             fps: 30,
                             bitrate: 6000,           // High bitrate for screen content quality
                             mixedVideoLayout: 3,     // 3 = Customized Layout - Essential for control
