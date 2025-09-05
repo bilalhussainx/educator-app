@@ -79,6 +79,45 @@ class AgoraRecordingService {
             const fileNamePrefix = [`course${courseId}`, `session${Date.now()}`];
             console.log(`[AGORA] Generated fileNamePrefix: ${JSON.stringify(fileNamePrefix)}`);
             
+            // Log the complete recording configuration for diagnostics
+            const recordingConfig = {
+                cname: channelName,
+                uid: '0',
+                clientRequest: {
+                    token: recordingToken,
+                    recordingConfig: {
+                        maxIdleTime: 30,
+                        streamTypes: 2,
+                        channelType: 0,
+                        videoStreamType: 0,
+                        subscribeVideoUids: ["#allstream#"],
+                        subscribeAudioUids: ["#allstream#"],
+                        subscribeUidGroup: 0
+                    },
+                    transcoding: {
+                        width: 1920,
+                        height: 1080,
+                        fps: 30,
+                        bitrate: 6000,
+                        mixedVideoLayout: 1,
+                        backgroundColor: "#000000"
+                    },
+                    recordingFileConfig: {
+                        avFileType: ["hls", "mp4"]
+                    },
+                    storageConfig: {
+                        vendor: 5,
+                        region: 0,
+                        bucket: process.env.AGORA_AZURE_BUCKET || 'virtualvidoes',
+                        accessKey: process.env.AGORA_AZURE_ACCESS_KEY || 'virtualclassroom',
+                        secretKey: process.env.AGORA_AZURE_SECRET_KEY,
+                        fileNamePrefix: fileNamePrefix
+                    }
+                }
+            };
+            
+            console.log(`[AGORA] Starting recording with configuration:`, JSON.stringify(recordingConfig, null, 2));
+            
             const startResponse = await axios.post(
                 `${this.baseUrl}/${this.appId}/cloud_recording/resourceid/${resourceId}/mode/mix/start`,
                 {
@@ -121,6 +160,7 @@ class AgoraRecordingService {
 
             const sid = startResponse.data.sid;
             console.log(`[AGORA] Recording started with SID: ${sid}`);
+            console.log(`[AGORA] Full start response:`, JSON.stringify(startResponse.data, null, 2));
 
             // Step 3: Store recording info in database
             const recordingData = await db.query(`
