@@ -233,9 +233,10 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
                 return;
             }
 
-            // Create screen share track using getDisplayMedia
+            // Create screen share track using getDisplayMedia with audio
             const screenTrackResult = await AgoraRTC.createScreenVideoTrack({
-                encoderConfig: "1080p_1"
+                encoderConfig: "1080p_2", // Full HD preset with higher bitrate
+                withAudio: "enable" // Enable audio capture from screen share (system audio)
             });
             
             // Handle both single track and array of tracks
