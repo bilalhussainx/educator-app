@@ -230,17 +230,108 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
     const startScreenShare = async () => {
         try {
             if (!agoraClient.current || isScreenSharing) {
+                console.warn('[SCREEN SHARE] Cannot start - client not ready or already sharing');
                 return;
             }
 
-            // Create screen share track (may include both video and audio)
-            const screenTrackResult = await AgoraRTC.createScreenVideoTrack({
-                encoderConfig: "1080p_2" // Full HD preset with higher bitrate
+            console.log('[SCREEN SHARE] Starting screen capture with diagnostics...');
+            console.log('[SCREEN SHARE] Browser info:', {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                devicePixelRatio: window.devicePixelRatio
+            });
+
+            // Create screen share track with detailed logging - trying different configurations
+            console.log('[SCREEN SHARE] Attempting to create screen track with custom config...');
+            let screenTrackResult;
+            
+            // Try different encoder configurations in sequence
+            const encoderConfigs = [
+                {
+                    name: "4K_1",
+                    config: { encoderConfig: "4K_1", optimizationMode: "detail" }
+                },
+                {
+                    name: "1440p_1", 
+                    config: { encoderConfig: "1440p_1", optimizationMode: "detail" }
+                },
+                {
+                    name: "1080p_3",
+                    config: { encoderConfig: "1080p_3", optimizationMode: "detail" }
+                },
+                {
+                    name: "1080p_1",
+                    config: { encoderConfig: "1080p_1", optimizationMode: "detail" }
+                },
+                {
+                    name: "720p_2",
+                    config: { encoderConfig: "720p_2", optimizationMode: "detail" }
+                },
+                {
+                    name: "custom_1920x1080",
+                    config: {
+                        encoderConfig: {
+                            width: 1920,
+                            height: 1080,
+                            frameRate: 30,
+                            bitrateMax: 8000,
+                            bitrateMin: 1000
+                        },
+                        optimizationMode: "detail"
+                    }
+                },
+                {
+                    name: "default",
+                    config: {}
+                }
+            ];
+            
+            let configUsed = null;
+            for (const configOption of encoderConfigs) {
+                try {
+                    console.log(`[SCREEN SHARE] Trying ${configOption.name}...`);
+                    screenTrackResult = await AgoraRTC.createScreenVideoTrack(configOption.config);
+                    configUsed = configOption.name;
+                    console.log(`[SCREEN SHARE] Successfully created with ${configOption.name}`);
+                    break;
+                } catch (error) {
+                    console.warn(`[SCREEN SHARE] ${configOption.name} failed:`, error);
+                    continue;
+                }
+            }
+            
+            if (!screenTrackResult) {
+                throw new Error('All encoder configurations failed');
+            }
+            
+            console.log(`[SCREEN SHARE] Final config used: ${configUsed}`);
+            
+            console.log('[SCREEN SHARE] Screen track created:', {
+                isArray: Array.isArray(screenTrackResult),
+                type: typeof screenTrackResult,
+                trackResult: screenTrackResult
             });
             
             // Handle both single track and array of tracks
             const screenTrack = Array.isArray(screenTrackResult) ? screenTrackResult[0] : screenTrackResult;
             screenShareTrack.current = screenTrack;
+            
+            // Log track properties for diagnostics
+            console.log('[SCREEN SHARE] Track properties:', {
+                trackType: screenTrack.trackMediaType,
+                enabled: screenTrack.enabled,
+                muted: screenTrack.muted,
+                // @ts-ignore - accessing video track specific properties
+                videoWidth: screenTrack.getVideoTrack?.()?.getSettings?.()?.width,
+                // @ts-ignore
+                videoHeight: screenTrack.getVideoTrack?.()?.getSettings?.()?.height,
+                // @ts-ignore
+                displaySurface: screenTrack.getVideoTrack?.()?.getSettings?.()?.displaySurface,
+                // @ts-ignore
+                cursor: screenTrack.getVideoTrack?.()?.getSettings?.()?.cursor
+            });
             
             // CRITICAL FIX: Unpublish ALL video tracks before publishing screen share
             try {
@@ -262,11 +353,49 @@ const VideoManager = forwardRef<VideoManagerHandle, VideoManagerProps>(({
             await new Promise(resolve => setTimeout(resolve, 100));
             
             console.log('[SCREEN SHARE] Publishing screen share track');
+            console.log('[SCREEN SHARE] Publishing track with config:', {
+                trackMediaType: screenTrack.trackMediaType,
+                enabled: screenTrack.enabled,
+                // Log the actual video element dimensions if available
+                localVideoElement: localVideoRef.current ? {
+                    videoWidth: localVideoRef.current.videoWidth,
+                    videoHeight: localVideoRef.current.videoHeight,
+                    clientWidth: localVideoRef.current.clientWidth,
+                    clientHeight: localVideoRef.current.clientHeight
+                } : 'not available'
+            });
+            
             await agoraClient.current.publish(screenTrack);
+            
+            console.log('[SCREEN SHARE] Track published successfully');
             
             // Play screen share in local video element
             if (localVideoRef.current) {
-                screenTrack.play(localVideoRef.current);
+                await screenTrack.play(localVideoRef.current);
+                
+                // Add a delay to allow video to start playing, then log dimensions
+                setTimeout(() => {
+                    console.log('[SCREEN SHARE] Video element after play:', {
+                        videoWidth: localVideoRef.current?.videoWidth,
+                        videoHeight: localVideoRef.current?.videoHeight,
+                        clientWidth: localVideoRef.current?.clientWidth,
+                        clientHeight: localVideoRef.current?.clientHeight,
+                        offsetWidth: localVideoRef.current?.offsetWidth,
+                        offsetHeight: localVideoRef.current?.offsetHeight,
+                        style: {
+                            width: localVideoRef.current?.style.width,
+                            height: localVideoRef.current?.style.height,
+                            objectFit: localVideoRef.current?.style.objectFit
+                        }
+                    });
+                    
+                    // Also log the actual MediaStreamTrack settings
+                    const videoTrack = screenTrack.getMediaStreamTrack();
+                    if (videoTrack) {
+                        const settings = videoTrack.getSettings();
+                        console.log('[SCREEN SHARE] MediaStreamTrack settings:', settings);
+                    }
+                }, 1000);
             }
             
             setIsScreenSharing(true);
