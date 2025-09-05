@@ -900,36 +900,10 @@ const LiveTutorialPage: React.FC = () => {
         setIsRecordingOperationInProgress(true);
         toast.info('Starting recording...');
         
-        // Capture current screen/video dimensions for dynamic recording
-        let screenDimensions = null;
-        try {
-            const videoElement = localVideoRef.current;
-            if (videoElement) {
-                screenDimensions = {
-                    width: videoElement.videoWidth || window.screen.width || 1680,
-                    height: videoElement.videoHeight || window.screen.height || 1080,
-                    aspectRatio: (videoElement.videoWidth || window.screen.width || 1680) / (videoElement.videoHeight || window.screen.height || 1080),
-                    source: videoElement.videoWidth ? 'video_element' : 'screen_fallback'
-                };
-                console.log('[RECORDING] Captured screen dimensions:', screenDimensions);
-            } else {
-                screenDimensions = {
-                    width: window.screen.width || 1680,
-                    height: window.screen.height || 1080,
-                    aspectRatio: (window.screen.width || 1680) / (window.screen.height || 1080),
-                    source: 'screen_fallback'
-                };
-                console.log('[RECORDING] Using fallback screen dimensions:', screenDimensions);
-            }
-        } catch (error) {
-            console.error('[RECORDING] Error capturing screen dimensions:', error);
-            screenDimensions = { width: 1680, height: 1080, aspectRatio: 1.56, source: 'error_fallback' };
-        }
-        
+        // [DEFINITIVE FIX] Simple, clean payload - no client-side complexity
         const startPayload = {
             channelName: sessionId,
-            courseId: courseId,
-            screenDimensions: screenDimensions
+            courseId: courseId
         };
         
         console.log('[RECORDING] Sending START_RECORDING message:', startPayload);
