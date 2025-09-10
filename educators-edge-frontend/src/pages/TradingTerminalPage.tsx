@@ -146,7 +146,6 @@ const TradingTerminalPage: React.FC = () => {
             connectionStatus={connectionStatus}
             activeSymbol={activeSymbol}
             onSymbolSelect={setActiveSymbol}
-            latestTrade={latestTrade}
           />
         </div>
 

@@ -36,8 +36,8 @@ interface AIMessage {
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
-    type?: 'suggestion' | 'feedback' | 'question' | 'analysis' | 'proactive' | 'ideation' | 'counselor';
-    section?: 'intro' | 'body' | 'conclusion' | 'overall' | 'selection' | 'brainstorm';
+    type?: 'suggestion' | 'feedback' | 'question' | 'analysis' | 'proactive' | 'ideation' | 'counselor' | 'comprehensive-review';
+    section?: 'intro' | 'body' | 'conclusion' | 'overall' | 'selection' | 'brainstorm' | 'full-document';
     selectedText?: string;
     isIdeationPhase?: boolean;
     requiresDocumentEdit?: boolean;
@@ -46,6 +46,7 @@ interface AIMessage {
         position?: number;
         content?: string;
         originalText?: string;
+        reason?: string;
     };
 }
 
@@ -1823,7 +1824,7 @@ Ask just ONE question at a time, keep it conversational and encouraging. Make th
                     
                     // Flash highlight the new content to show what changed
                     setTimeout(() => {
-                        const newPosition = findAndSelectText(edit.content);
+                        const newPosition = findAndSelectText(edit.content || '');
                         if (newPosition) {
                             editorInstance.commands.setTextSelection(newPosition);
                             editorInstance.commands.setHighlight({ color: '#22c55e' }); // Green highlight for applied edits
@@ -2036,7 +2037,7 @@ Ask just ONE question at a time, keep it conversational and encouraging. Make th
             for (const pattern of suggestionPatterns) {
                 let match;
                 while ((match = pattern.exec(content)) !== null) {
-                    const [fullMatch, originalText, suggestedText] = match;
+                    const [, originalText, suggestedText] = match;
                     if (originalText && suggestedText && originalText !== suggestedText) {
                         createSuggestion(messageId, originalText, suggestedText, 'AI suggested improvement');
                         foundSuggestions = true;
@@ -2588,7 +2589,7 @@ ESSAY TEXT: ${plainText}`, 'weakPhrases');
         }
         
         // Estimate current grade level based on patterns
-        const gradeEstimate = estimateGradeLevel(plainText, detectedIssues, avgSentenceLength);
+        const gradeEstimate = estimateGradeLevel(detectedIssues, avgSentenceLength);
         const targetGrade = determineTargetGrade(requirements.audience);
         
         const analysis = {
@@ -2619,7 +2620,7 @@ ESSAY TEXT: ${plainText}`, 'weakPhrases');
         }
         
         // Priority based on detected issues severity and context
-        const contextPriorities = educationalKnowledge.contextualPatterns[detectedContext]?.improvement_priority || [];
+        const contextPriorities = (educationalKnowledge.contextualPatterns as any)[detectedContext]?.improvement_priority || [];
         const issuePriorities = detectedIssues
             .sort((a, b) => b.severity - a.severity)
             .map(issue => {
@@ -2639,7 +2640,7 @@ ESSAY TEXT: ${plainText}`, 'weakPhrases');
     };
     
     // Estimate grade level based on educational patterns
-    const estimateGradeLevel = (text: string, issues: any[], avgSentenceLength: number) => {
+    const estimateGradeLevel = (issues: any[], avgSentenceLength: number): 'A-level' | 'B-level' | 'C-level' => {
         let score = 0.7; // Start at B-level
         
         // Deduct for issues
@@ -2658,7 +2659,7 @@ ESSAY TEXT: ${plainText}`, 'weakPhrases');
     };
     
     // Determine target grade from requirements
-    const determineTargetGrade = (audience?: string) => {
+    const determineTargetGrade = (audience?: string): 'A-level' | 'B-level' | 'C-level' => {
         if (!audience) return 'B-level';
         if (audience.toLowerCase().includes('college') || audience.toLowerCase().includes('university')) return 'A-level';
         if (audience.toLowerCase().includes('scholarship')) return 'A-level';
@@ -2684,12 +2685,12 @@ ESSAY TEXT: ${plainText}`, 'weakPhrases');
         
         // Adjust based on historical effectiveness and recent usage
         Object.keys(commands).forEach(cmd => {
-            const stats = commands[cmd];
+            const stats = (commands as any)[cmd];
             const recencyFactor = Date.now() - stats.lastUsed > 300000 ? 1.1 : 0.8; // 5 mins
             const effectivenessFactor = stats.effectiveness;
             const usageBalance = stats.used > 5 ? 0.9 : 1.0; // Slight reduction if overused
             
-            priorities[cmd] = (baseScores[cmd] || 0.5) * effectivenessFactor * recencyFactor * usageBalance;
+            priorities[cmd] = ((baseScores as any)[cmd] || 0.5) * effectivenessFactor * recencyFactor * usageBalance;
         });
         
         // Normalize to percentages
@@ -2705,7 +2706,7 @@ ESSAY TEXT: ${plainText}`, 'weakPhrases');
     const trackCommandUsage = (commandName: string, wasSuccessful?: boolean) => {
         setEditingStats(prev => {
             const newStats = { ...prev };
-            const cmd = newStats.commands[commandName];
+            const cmd = (newStats.commands as any)[commandName];
             
             if (cmd) {
                 cmd.used += 1;
@@ -2753,7 +2754,7 @@ ESSAY TEXT: ${plainText}`, 'weakPhrases');
 
         // Add college application specific guidance
         if (essayNeeds.detectedContext === 'college_application') {
-            const essayTypeData = educationalKnowledge.admissionsCounselorAdvice.essayTypes[essayNeeds.collegeEssayType || 'personal_statement'];
+            const essayTypeData = (educationalKnowledge.admissionsCounselorAdvice.essayTypes as any)[essayNeeds.collegeEssayType || 'personal_statement'];
             
             adaptivePrompt += `\n\nADMISSIONS COUNSELOR EXPERTISE:
 - Essay Type: ${essayNeeds.collegeEssayType} (${essayTypeData?.word_limits.common || 650} word target)
@@ -3140,7 +3141,7 @@ As an AI with access to patterns from thousands of teacher feedback sessions, ad
                 // Auto-detect writing type if set to auto-detect
                 if (writingType === 'auto-detect' && wordCount > 50) {
                     const detectedCategory = analyzeDocumentCategory(plainText);
-                    if (detectedCategory && detectedCategory.confidence > 0.7) {
+                    if (detectedCategory && detectedCategory.confidence > 0.7 && detectedCategory.category) {
                         setWritingType(detectedCategory.category.toLowerCase().replace(/\s+/g, '-'));
                         
                         // Send notification to AI about detected category

@@ -7,19 +7,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
 import {
     Search, Filter, Star, MapPin, Clock, DollarSign, Users, Award, Sparkles,
     Brain, Target, TrendingUp, Zap, Heart, GraduationCap, BarChart3,
-    BookOpen, MessageCircle, Calendar, Eye, ChevronRight, Compass, User, Crown
+    BookOpen, Calendar, User, Crown, CheckCircle
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { TierBadge } from '../components/ui/TierBadge';
 
 interface Teacher {
   user_id: string;
   display_name: string;
+  username?: string;
   first_name?: string;
   last_name?: string;
   bio: string;
@@ -73,12 +73,6 @@ interface AISearchResults {
   aiProcessedAt: string;
 }
 
-// TALENT CRUCIBLE: Enhanced styling configurations
-const TIER_STYLES = {
-    pathfinder: { color: 'text-amber-400', bgColor: 'bg-amber-500/10', borderColor: 'border-amber-500/30' },
-    explorer: { color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/30' },
-    navigator: { color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', borderColor: 'border-cyan-500/30' }
-};
 
 const PILLAR_ICONS = {
     academic: { icon: GraduationCap, color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
@@ -88,14 +82,11 @@ const PILLAR_ICONS = {
 };
 
 const TeacherSearchPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [activeSearchMode, setActiveSearchMode] = useState<'browse' | 'ai' | 'talent-crucible'>('browse');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<AISearchResults | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [browseResults, setBrowseResults] = useState<Teacher[]>([]);
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [personalizedRecommendations, setPersonalizedRecommendations] = useState<any>(null);
 
   // TALENT CRUCIBLE: Enhanced filter states with Four Pillars
@@ -125,7 +116,7 @@ const TeacherSearchPage: React.FC = () => {
   });
 
   // Student preferences for AI search
-  const [preferences, setPreferences] = useState({
+  const [preferences] = useState({
     budget: '',
     schedule: '',
     learningStyle: '',
@@ -166,7 +157,7 @@ const TeacherSearchPage: React.FC = () => {
     try {
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== '' && value !== false) {
+        if (value && value !== '' && value !== false && typeof value !== 'object') {
           queryParams.append(key, value.toString());
         }
       });
