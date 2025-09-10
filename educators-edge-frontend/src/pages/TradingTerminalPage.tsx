@@ -40,19 +40,19 @@ const TradingTerminalPage: React.FC = () => {
   // Connection status indicator
   const getConnectionIndicator = () => {
     switch (connectionStatus) {
-      case 'Connected':
+      case 'connected':
         return {
           icon: <Wifi className="h-4 w-4" />,
           color: 'text-green-400 border-green-400',
           text: 'Connected'
         };
-      case 'Connecting':
+      case 'connecting':
         return {
           icon: <Activity className="h-4 w-4 animate-spin" />,
           color: 'text-yellow-400 border-yellow-400',
           text: 'Connecting'
         };
-      case 'Disconnected':
+      case 'disconnected':
         return {
           icon: <WifiOff className="h-4 w-4" />,
           color: 'text-red-400 border-red-400',
@@ -125,7 +125,7 @@ const TradingTerminalPage: React.FC = () => {
           </Badge>
 
           {/* Reconnect Button */}
-          {connectionStatus === 'Disconnected' && (
+          {connectionStatus === 'disconnected' && (
             <button
               onClick={reconnect}
               className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded"

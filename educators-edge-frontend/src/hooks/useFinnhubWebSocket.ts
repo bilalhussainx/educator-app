@@ -4,6 +4,10 @@ export interface MarketData {
   price: number;
   volume: number;
   timestamp: number;
+  lastUpdated: number;
+  change: number;
+  changePercent: number;
+  previousPrice: number;
 }
 
 export interface LatestTrade {
@@ -113,10 +117,16 @@ export const useFinnhubWebSocket = (
           console.log(`[Finnhub] Processing trade:`, { symbol, price, volume, timestamp });
           
           if (symbol && price && typeof price === 'number') {
+            // Get previous data to calculate change
+            const prevData = marketData.get(symbol);
             const tradeData: MarketData = {
               price,
               volume: volume || 0,
-              timestamp: timestamp || Date.now()
+              timestamp: timestamp || Date.now(),
+              lastUpdated: Date.now(),
+              change: prevData ? price - prevData.price : 0,
+              changePercent: prevData && prevData.price ? ((price - prevData.price) / prevData.price) * 100 : 0,
+              previousPrice: prevData?.price || price
             };
 
             // Update market data map
@@ -172,7 +182,11 @@ export const useFinnhubWebSocket = (
         const marketDataItem: MarketData = {
           price: basePrices[symbol],
           volume: Math.floor(Math.random() * 100000) + 10000,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          lastUpdated: Date.now(),
+          change: 0,
+          changePercent: 0,
+          previousPrice: basePrices[symbol]
         };
         
         setMarketData(prev => {
@@ -206,10 +220,15 @@ export const useFinnhubWebSocket = (
           // Update stored price
           currentPrices[randomSymbol] = newPrice;
           
+          const prevData = marketData.get(randomSymbol);
           const updatedMarketData: MarketData = {
             price: newPrice,
             volume: Math.floor(Math.random() * 100000) + 10000,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            lastUpdated: Date.now(),
+            change: prevData ? newPrice - prevData.price : 0,
+            changePercent: prevData && prevData.price ? ((newPrice - prevData.price) / prevData.price) * 100 : 0,
+            previousPrice: prevData?.price || newPrice
           };
 
           setMarketData(prev => {
@@ -349,7 +368,11 @@ export const useFinnhubWebSocket = (
               const marketDataItem: MarketData = {
                 price: fallbackPrices[symbol],
                 volume: Math.floor(Math.random() * 100000) + 10000,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                lastUpdated: Date.now(),
+                change: 0,
+                changePercent: 0,
+                previousPrice: fallbackPrices[symbol]
               };
               
               setMarketData(prev => {
@@ -369,7 +392,11 @@ export const useFinnhubWebSocket = (
             const marketDataItem: MarketData = {
               price: data.c, // Current price
               volume: 0, // Volume not available in quote API
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              lastUpdated: Date.now(),
+              change: 0,
+              changePercent: 0,
+              previousPrice: data.c
             };
             
             setMarketData(prev => {

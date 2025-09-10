@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import {
     Search, Filter, Star, MapPin, Clock, DollarSign, Users, Award, Sparkles,
     Brain, Target, TrendingUp, Zap, Heart, GraduationCap, BarChart3,
-    BookOpen, MessageCircle, Calendar, Eye, ChevronRight, Compass
+    BookOpen, MessageCircle, Calendar, Eye, ChevronRight, Compass, User, Crown
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { toast } from 'sonner';
@@ -53,6 +53,7 @@ interface SearchResult {
   teacherId: string;
   matchScore: number;
   compatibilityScore?: number;
+  learningPathwayMatch?: string;
   compatibilityReasons: string[];
   learningOutcomes: string[];
   sessionStructure: string;
@@ -114,6 +115,12 @@ const TeacherSearchPage: React.FC = () => {
     location: '',
     languages: '',
     serviceType: '',
+    pillars: {
+        Academic: 0,
+        Community: 0,
+        Mentorship: 0,
+        Analytical: 0
+    },
     verified: false
   });
 
@@ -565,7 +572,7 @@ const TeacherSearchPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {searchResults.recommendations.map((result, index) => (
+              {searchResults.recommendations.map((result) => (
                 <TeacherCard key={result.teacherId} teacher={result.teacher} searchResult={result} />
               ))}
             </div>
