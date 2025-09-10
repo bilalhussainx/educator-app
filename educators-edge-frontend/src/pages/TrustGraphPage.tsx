@@ -167,6 +167,7 @@ const TrustGraphPage: React.FC = () => {
     const [sessionDescription, setSessionDescription] = useState('');
     const [sessionType, setSessionType] = useState('mentoring');
     const [sessionRequests, setSessionRequests] = useState([]);
+    const [showSessionRequests, setShowSessionRequests] = useState(false);
 
     useEffect(() => {
         fetchNetworkData();
@@ -427,10 +428,9 @@ const TrustGraphPage: React.FC = () => {
                 
                 if (action === 'accept') {
                     // Navigate to the session when accepted
-                    const session = response.data.session;
                     toast.success('Session created! You can now start the live editing session.');
                     // You could navigate to the session page here
-                    // navigate(`/session/${session.id}`);
+                    // navigate(`/session/${response.data.session.id}`);
                 }
             } else {
                 throw new Error(response.data.message || `Failed to ${action} session request`);
