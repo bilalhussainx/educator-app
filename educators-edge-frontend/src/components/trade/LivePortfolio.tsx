@@ -4,7 +4,7 @@ import { MarketData, ConnectionStatus } from '../../hooks/useFinnhubWebSocket';
 
 interface LivePortfolioProps {
   portfolioData: any;
-  marketData: Map<string, MarketData>;
+  marketData: { [symbol: string]: MarketData };
   connectionStatus: ConnectionStatus;
   activeSymbol: string;
 }
@@ -31,7 +31,7 @@ export const LivePortfolio: React.FC<LivePortfolioProps> = ({
 
     let totalHoldingsValue = 0;
     let totalPnL = 0;
-    const positions = [];
+    const positions: any[] = [];
 
     Object.entries(holdings).forEach(([symbol, shares]: [string, any]) => {
       const currentPrice = marketData[symbol]?.price || 150; // Fallback
@@ -96,7 +96,7 @@ export const LivePortfolio: React.FC<LivePortfolioProps> = ({
           <PieChart className="h-4 w-4 text-cyan-500" />
           <span className="text-white font-semibold">Portfolio</span>
           <div className={`w-2 h-2 rounded-full ml-auto ${
-            connectionStatus === 'Connected' ? 'bg-green-400' : 'bg-red-400'
+            connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'
           }`}></div>
         </div>
 
@@ -216,7 +216,7 @@ export const LivePortfolio: React.FC<LivePortfolioProps> = ({
               </div>
 
               {/* Real-time update indicator */}
-              {connectionStatus === 'Connected' && (
+              {connectionStatus === 'connected' && (
                 <div className="mt-2 flex justify-end">
                   <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
                 </div>

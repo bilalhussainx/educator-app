@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { BookOpen, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface OrderBookLevel {
   price: number;

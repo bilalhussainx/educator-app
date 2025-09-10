@@ -6,19 +6,15 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
-import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import { useUser } from '@/hooks/useUser';
 import apiClient from '@/services/apiClient';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Loader2, ChevronLeft, User, Bot, MessageSquare, Sparkles, Send, FileEdit, Lightbulb, BookOpen, CheckCircle, File, Users, Eye, RadioTower, Target, Zap, MessageCircle, HelpCircle, Download, Save, Brain, Palette, Settings, Edit3, FileText, Wand2, X } from 'lucide-react';
+import { Loader2, ChevronLeft, Bot, Sparkles, Send, FileEdit, Lightbulb, BookOpen, CheckCircle, File, Users, Eye, RadioTower, Target, Zap, MessageCircle, HelpCircle, Download, Save, Brain, Palette, Settings, Edit3, FileText, Wand2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Simple WebSocket-based collaboration
@@ -253,7 +249,11 @@ const CollaborativeEditor = ({
             // Notify parent that editor is ready
             onEditorReady?.(editor);
             
-            return () => editor.off('update', handleUpdate);
+            return () => {
+                if (editor) {
+                    editor.off('update', handleUpdate);
+                }
+            };
         }
     }, [editor, onContentUpdate, onEditorReady]);
 

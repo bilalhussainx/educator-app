@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, ArrowUpRight, ArrowDownRight, Clock, Volume, DollarSign } from 'lucide-react';
 import { MarketDataState } from '../../hooks/useMarketData';
 
@@ -13,7 +13,7 @@ interface TradeData {
 
 interface LiveTradeFeedProps {
   symbols: string[];
-  marketData: MarketDataState;
+  marketData: { [symbol: string]: any };
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
   maxTrades?: number;
   showVolume?: boolean;
@@ -132,11 +132,9 @@ export const LiveTradeFeed: React.FC<LiveTradeFeedProps> = ({
                     ? 'bg-slate-800/80 border-slate-600 shadow-md' 
                     : 'bg-slate-800/50 border-slate-700'
                 }`}
-                style={{
-                  animationName: index === 0 ? 'fadeInDown' : 'none',
-                  animationDuration: '300ms',
-                  animationFillMode: 'both'
-                }}
+                style={index === 0 ? {
+                  animation: 'fadeInDown 300ms both'
+                } : {}}
               >
                 <div className="flex items-center justify-between">
                   {/* Symbol and Side */}
@@ -196,7 +194,7 @@ export const LiveTradeFeed: React.FC<LiveTradeFeedProps> = ({
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeInDown {
           from {
             opacity: 0;

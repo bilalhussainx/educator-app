@@ -9,7 +9,7 @@
  */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { Course, Lesson } from '../types/index.ts';
+import type { Course } from '../types/index.ts';
 import { useDebounce } from '../hooks/useDebounce';
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import * as SwitchPrimitives from "@radix-ui/react-switch";

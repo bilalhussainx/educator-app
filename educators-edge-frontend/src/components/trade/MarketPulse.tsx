@@ -128,7 +128,7 @@ export const MarketPulse: React.FC<MarketPulseProps> = ({
         <div className="flex items-center justify-between text-xs">
           <span className="text-slate-400">Live Prices</span>
           <div className={`w-2 h-2 rounded-full ${
-            connectionStatus === 'Connected' || connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'
+            connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'
           }`}></div>
         </div>
       </div>
@@ -205,9 +205,9 @@ export const MarketPulse: React.FC<MarketPulseProps> = ({
             {Object.keys(marketData).length} symbols active
           </span>
           <span className={`font-mono ${
-            connectionStatus === 'Connected' || connectionStatus === 'connected'
+            connectionStatus === 'connected'
               ? 'text-green-400' 
-              : connectionStatus === 'Connecting' || connectionStatus === 'connecting'
+              : connectionStatus === 'connecting'
               ? 'text-yellow-400'
               : 'text-red-400'
           }`}>

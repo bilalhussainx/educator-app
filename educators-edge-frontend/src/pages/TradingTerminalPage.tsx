@@ -165,7 +165,7 @@ const TradingTerminalPage: React.FC = () => {
           <div className="h-1/3">
             <LivePortfolio
               portfolioData={portfolioData}
-              marketData={Object.fromEntries(marketData)}
+              marketData={marketData}
               connectionStatus={connectionStatus}
               activeSymbol={activeSymbol}
             />

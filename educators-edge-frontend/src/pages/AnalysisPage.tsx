@@ -246,7 +246,6 @@ export default function AnalysisPage() {
               symbol={currentSymbol}
               marketData={new Map()} // Analysis page doesn't use live market data
               connectionStatus="connected" // Always show as connected for OHLC data
-              latestTrade={null}
               height={384}
             />
           </div>

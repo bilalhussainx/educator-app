@@ -4,13 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import TierBadge from "@/components/ui/TierBadge";
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import apiClient from '../services/apiClient';
 import { 
     ChevronLeft, MapPin, Clock, Star, DollarSign, 
     BookOpen, MessageSquare, FileEdit, Video, MessageCircle,
-    Calendar, Award, ExternalLink, GraduationCap, Languages,
-    Verified, Globe, Mail, Phone, CheckCircle, AlertCircle,
+    Award, ExternalLink, GraduationCap, Languages,
+    Verified, Globe, CheckCircle, AlertCircle,
     Users, Trophy
 } from 'lucide-react';
 
