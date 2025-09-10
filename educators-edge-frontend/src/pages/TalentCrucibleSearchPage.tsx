@@ -1,18 +1,16 @@
 // src/pages/TalentCrucibleSearchPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
-    Search,
     Sparkles,
     Brain,
     Target,
@@ -30,7 +28,6 @@ import {
     BookOpen,
     MessageCircle,
     Calendar,
-    Filter,
     SlidersHorizontal,
     Lightbulb,
     Compass,
@@ -207,7 +204,6 @@ const TalentCrucibleSearchPage: React.FC = () => {
     
     // UI states
     const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-    const [selectedMentor, setSelectedMentor] = useState<TalentCrucibleMentor | null>(null);
 
     // Talent Crucible Discovery
     const handleTalentCrucibleSearch = async () => {
@@ -723,7 +719,7 @@ const TalentCrucibleSearchPage: React.FC = () => {
                                     Mentor Discoveries ({talentResults.discoveries.length})
                                 </h3>
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {talentResults.discoveries.map((discovery, index) => renderMentorCard(discovery, true))}
+                                    {talentResults.discoveries.map((discovery) => renderMentorCard(discovery, true))}
                                 </div>
                             </div>
 

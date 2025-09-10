@@ -1,5 +1,5 @@
 // src/pages/TalentCruciblePage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,15 +16,10 @@ import {
     TrendingUp,
     Users,
     Star,
-    Clock,
-    MapPin,
     Zap,
-    Award,
     Heart,
     GraduationCap,
     BarChart3,
-    ChevronRight,
-    BookOpen,
     MessageCircle,
     Calendar
 } from 'lucide-react';
@@ -314,7 +309,7 @@ const TalentCruciblePage: React.FC = () => {
         </div>
     );
 
-    const renderMentorCard = (discovery: MentorDiscovery, index: number) => {
+    const renderMentorCard = (discovery: MentorDiscovery) => {
         const compatibilityStyle = COMPATIBILITY_STYLES[discovery.compatibilityType];
         const tierStyle = TIER_STYLES[discovery.mentor.user_tier];
 
@@ -370,7 +365,7 @@ const TalentCruciblePage: React.FC = () => {
                     <div>
                         <h4 className="text-sm font-medium text-cyan-300 mb-2">Four Pillars Alignment</h4>
                         <div className="grid grid-cols-2 gap-2">
-                            {Object.entries(discovery.fourPillarsAlignment).map(([pillar, description]) => {
+                            {Object.entries(discovery.fourPillarsAlignment).map(([pillar]) => {
                                 const Icon = PILLAR_ICONS[pillar as keyof typeof PILLAR_ICONS];
                                 const value = discovery.mentor[`pillar_${pillar}` as keyof typeof discovery.mentor] as number;
                                 
@@ -482,7 +477,7 @@ const TalentCruciblePage: React.FC = () => {
 
                 {/* Mentor Discoveries */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {results.discoveries.map((discovery, index) => renderMentorCard(discovery, index))}
+                    {results.discoveries.map((discovery) => renderMentorCard(discovery))}
                 </div>
 
                 {/* Alternative Strategies */}

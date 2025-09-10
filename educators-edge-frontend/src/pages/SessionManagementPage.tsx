@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -15,7 +14,6 @@ import {
     Clock,
     User,
     Star,
-    MessageSquare,
     Video,
     CheckCircle,
     XCircle,
@@ -115,7 +113,6 @@ const SessionManagementPage: React.FC = () => {
         payment_method: 'all',
         date_range: 'all'
     });
-    const [selectedSession, setSelectedSession] = useState<Session | null>(null);
     const [reviewText, setReviewText] = useState('');
     const [rating, setRating] = useState(5);
 
