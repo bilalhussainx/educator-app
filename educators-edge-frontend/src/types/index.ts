@@ -176,7 +176,14 @@ export type TierLevel = 'pathfinder' | 'explorer' | 'navigator';
 export type ServiceType = 'mentoring' | 'counseling' | 'essay_editing';
 export type PaymentMethod = 'sparks' | 'usd' | 'free';
 export type SessionStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-export type ConnectionStatus = 'pending' | 'accepted' | 'declined';
+export type ProfileConnectionStatus = 'pending' | 'accepted' | 'declined';
+
+// Filter interface for search functionality
+export interface SearchFilters {
+    role?: string;
+    location?: string;
+    [key: string]: any;
+}
 
 // Ascendia user profile with Four Pillars
 export interface AscendiaProfile {

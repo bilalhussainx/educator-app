@@ -135,7 +135,7 @@ interface NetworkInsight {
 }
 
 // Tier styling
-const TIER_STYLES = {
+const TIER_STYLES: Record<string, { color: string; bgColor: string; borderColor: string }> = {
     pathfinder: { color: 'text-amber-400', bgColor: 'bg-amber-500/10', borderColor: 'border-amber-500/30' },
     explorer: { color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', borderColor: 'border-emerald-500/30' },
     navigator: { color: 'text-cyan-400', bgColor: 'bg-cyan-500/10', borderColor: 'border-cyan-500/30' },
@@ -155,7 +155,7 @@ const TrustGraphPage: React.FC = () => {
     const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
     const [networkInsights, setNetworkInsights] = useState<NetworkInsight[]>([]);
     const [suggestedConnections, setSuggestedConnections] = useState([]);
-    const [discoverProfiles, setDiscoverProfiles] = useState([]);
+    const [discoverProfiles, setDiscoverProfiles] = useState<any[]>([]);
     const [discoverFilters, setDiscoverFilters] = useState({
         tier: '',
         role: '',
@@ -174,7 +174,7 @@ const TrustGraphPage: React.FC = () => {
         fetchDiscoverProfiles();
     }, []);
 
-    const fetchDiscoverProfiles = async (filters = {}) => {
+    const fetchDiscoverProfiles = async (filters: Record<string, any> = {}) => {
         try {
             setIsDiscovering(true);
             
@@ -905,7 +905,7 @@ const TrustGraphPage: React.FC = () => {
                                         </div>
                                     ) : (
                                         <div className="divide-y divide-slate-700">
-                                            {recentActivity.slice(0, 10).map((activity, index) => (
+                                            {recentActivity.slice(0, 10).map((activity) => (
                                                 <div key={activity.id} className="p-4 hover:bg-slate-800/50 transition-colors">
                                                     <div className="flex items-start gap-3">
                                                         <div className={cn(
@@ -1129,7 +1129,7 @@ const TrustGraphPage: React.FC = () => {
                                     Popular Specializations
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {['Web Development', 'Data Science', 'College Prep'].map((community, i) => (
+                                    {['Web Development', 'Data Science', 'College Prep'].map((community) => (
                                         <Card key={community} className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white">
                                             <CardContent className="p-6">
                                                 <div className="flex items-center gap-3 mb-4">
@@ -1139,8 +1139,8 @@ const TrustGraphPage: React.FC = () => {
                                                     <div>
                                                         <h4 className="font-semibold text-white">{community}</h4>
                                                         <p className="text-sm text-slate-400">
-                                                            {discoverProfiles.filter(p => 
-                                                                p.specializations?.some(s => 
+                                                            {discoverProfiles.filter((p: any) => 
+                                                                p.specializations?.some((s: any) => 
                                                                     s.name.toLowerCase().includes(community.split(' ')[0].toLowerCase())
                                                                 )
                                                             ).length || Math.floor(Math.random() * 20) + 5} mentors available

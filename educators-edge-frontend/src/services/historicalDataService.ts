@@ -6,7 +6,7 @@
  */
 
 import apiClient from './apiClient';
-import { OHLCData } from '../types';
+import { OHLCData } from '../types/index';
 
 export interface HistoricalDataRequest {
   symbol: string;

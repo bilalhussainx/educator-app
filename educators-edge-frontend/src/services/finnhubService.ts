@@ -1,4 +1,4 @@
-import { QuoteData } from '../types';
+import { QuoteData } from '../types/index';
 
 const FINNHUB_API_KEY = import.meta.env.VITE_FINNHUB_API_KEY || 'd3076l9r01qnmrsd9irgd3076l9r01qnmrsd9is0';
 const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';

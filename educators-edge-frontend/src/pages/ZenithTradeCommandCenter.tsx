@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSimulation } from '../context/SimulationContext';
 import { FinancialLayout } from '../components/layout/FinancialLayout';
@@ -7,7 +7,7 @@ import { TheStage } from '../components/trade/TheStage';
 import { TheCockpit } from '../components/trade/TheCockpit';
 import { SimulationControls } from '../components/trade/SimulationControls';
 import { Badge } from '../components/ui/badge';
-import { Activity, Wifi, WifiOff, BarChart3, TrendingUp, PieChart, DollarSign, Clock } from 'lucide-react';
+import { Activity, Wifi, WifiOff, BarChart3, TrendingUp, PieChart, DollarSign } from 'lucide-react';
 
 type MobileTab = 'chart' | 'market' | 'portfolio' | 'trade';
 
