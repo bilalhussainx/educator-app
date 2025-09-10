@@ -1,19 +1,17 @@
 import React, { useMemo } from 'react';
-import { TrendingUp, TrendingDown, PieChart, DollarSign, BarChart3 } from 'lucide-react';
-import { MarketDataState } from '../../hooks/useMarketData';
+import { TrendingDown, PieChart, DollarSign, BarChart3 } from 'lucide-react';
+import { MarketData } from '../../hooks/useFinnhubWebSocket';
 
 interface PortfolioDashboardProps {
   portfolioData: any;
-  marketData: MarketDataState;
+  marketData: Map<string, MarketData>;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
-  refreshInterval?: number;
 }
 
 export const PortfolioDashboard: React.FC<PortfolioDashboardProps> = ({ 
   portfolioData,
   marketData,
-  connectionStatus,
-  refreshInterval = 1000 
+  connectionStatus
 }) => {
   // Calculate portfolio metrics based on current market data
   const portfolioMetrics = useMemo(() => {

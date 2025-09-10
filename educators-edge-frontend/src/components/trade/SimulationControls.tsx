@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Pause, RotateCcw, Calendar, Clock, TrendingUp, Settings } from 'lucide-react';
+import { Play, Pause, RotateCcw, Calendar, Clock, TrendingUp } from 'lucide-react';
 import { useSimulation } from '../../context/SimulationContext';
 import { HISTORICAL_PERIODS } from '../../constants/simulation';
 

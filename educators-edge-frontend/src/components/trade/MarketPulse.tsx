@@ -34,7 +34,7 @@ export const MarketPulse: React.FC<MarketPulseProps> = ({
   onSymbolSelect
 }) => {
   const [flashes, setFlashes] = useState<Map<string, SymbolFlash>>(new Map());
-  const [lastPrices, setLastPrices] = useState<Map<string, number>>(new Map());
+  const [, setLastPrices] = useState<Map<string, number>>(new Map());
 
   // Handle price flashing on uptick/downtick
   useEffect(() => {

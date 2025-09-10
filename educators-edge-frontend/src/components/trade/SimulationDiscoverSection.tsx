@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useMarketData } from '../../hooks/useMarketData';
 import { useSimulationPortfolio } from '../../hooks/useSimulationPortfolio';
 import { historicalDataService } from '../../services/historicalDataService';
@@ -13,10 +13,7 @@ import {
   Eye,
   Zap,
   Target,
-  Award,
   BookOpen,
-  ArrowRight,
-  BarChart3,
   Briefcase
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';

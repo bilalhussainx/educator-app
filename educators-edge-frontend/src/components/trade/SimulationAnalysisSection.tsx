@@ -439,7 +439,7 @@ export const SimulationAnalysisSection: React.FC = () => {
             {symbol}
             {marketData.get(symbol) && (
               <span className={`ml-2 text-xs ${
-                marketData.get(symbol)?.change >= 0 ? 'text-green-400' : 'text-red-400'
+                (marketData.get(symbol)?.change ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'
               }`}>
                 {marketData.get(symbol)?.changePercent.toFixed(1)}%
               </span>

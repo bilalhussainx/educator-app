@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TrendingUp, TrendingDown, Minus, AlertCircle, X, Info } from 'lucide-react';
 import { getPatternRecognition, PatternRecognition } from '../../services/finnhubService';
-import { OHLCData } from '../../types';
+import { OHLCData } from '../../types/index';
 
 interface ChartOverlayProps {
   symbol: string;

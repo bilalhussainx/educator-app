@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, BarChart3, Activity, TrendingDown, Volume2, Target } from 'lucide-react';
 import { fetchOHLCData } from '../../services/finnhubService';
 import { mockMarketDataService } from '../../services/mockMarketDataService';
-import { MarketData, LatestTrade, ConnectionStatus } from '../../hooks/useFinnhubWebSocket';
-import { OHLCData } from '../../types';
+import { MarketData, ConnectionStatus } from '../../hooks/useFinnhubWebSocket';
+import { OHLCData } from '../../types/index';
 
 export type ChartType = 'candlestick' | 'line' | 'area' | 'volume';
 

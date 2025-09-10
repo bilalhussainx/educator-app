@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, ArrowUpRight, ArrowDownRight, Clock, Volume, DollarSign } from 'lucide-react';
-import { MarketDataState } from '../../hooks/useMarketData';
 
 interface TradeData {
   id: string;

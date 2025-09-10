@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BarChart3, Activity } from 'lucide-react';
-import { MarketData } from '../../hooks/useMarketData';
+import { MarketData } from '../../hooks/useFinnhubWebSocket';
 
 interface CandleData {
   timestamp: number;
@@ -23,7 +23,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   symbol,
   marketData,
   connectionStatus,
-  timeframe = '1m',
+  timeframe: _ = '1m',
   height = 400
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);

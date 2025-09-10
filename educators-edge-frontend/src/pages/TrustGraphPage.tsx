@@ -167,11 +167,11 @@ const TrustGraphPage: React.FC = () => {
     const [sessionDescription, setSessionDescription] = useState('');
     const [sessionType, setSessionType] = useState('mentoring');
     const [sessionRequests, setSessionRequests] = useState([]);
-    const [showSessionRequests, setShowSessionRequests] = useState(false);
 
     useEffect(() => {
         fetchNetworkData();
         fetchDiscoverProfiles();
+        fetchSessionRequests();
     }, []);
 
     const fetchDiscoverProfiles = async (filters: Record<string, any> = {}) => {
@@ -399,6 +399,45 @@ const TrustGraphPage: React.FC = () => {
         } catch (error: any) {
             console.error('Session request error:', error);
             toast.error(error.response?.data?.error || error.message || 'Failed to send session request');
+        }
+    };
+
+    const fetchSessionRequests = async () => {
+        try {
+            const response = await apiClient.get('/api/sessions/requests?type=incoming');
+            if (response.data.success) {
+                setSessionRequests(response.data.requests);
+            }
+        } catch (error: any) {
+            console.error('Fetch session requests error:', error);
+            // Don't show toast error as this is a background fetch
+        }
+    };
+
+    const respondToSessionRequest = async (requestId: string, action: 'accept' | 'decline', scheduledTime?: string) => {
+        try {
+            const response = await apiClient.post(`/api/sessions/requests/${requestId}/respond`, {
+                action,
+                scheduledTime
+            });
+
+            if (response.data.success) {
+                toast.success(`Session request ${action}ed successfully!`);
+                fetchSessionRequests(); // Refresh the list
+                
+                if (action === 'accept') {
+                    // Navigate to the session when accepted
+                    const session = response.data.session;
+                    toast.success('Session created! You can now start the live editing session.');
+                    // You could navigate to the session page here
+                    // navigate(`/session/${session.id}`);
+                }
+            } else {
+                throw new Error(response.data.message || `Failed to ${action} session request`);
+            }
+        } catch (error: any) {
+            console.error(`${action} session request error:`, error);
+            toast.error(error.response?.data?.error || error.message || `Failed to ${action} session request`);
         }
     };
 
@@ -759,7 +798,11 @@ const TrustGraphPage: React.FC = () => {
                             className="border-slate-600 hover:bg-slate-700 relative"
                         >
                             <Bell className="h-4 w-4" />
-                            <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
+                            {sessionRequests.filter((req: any) => req.status === 'pending').length > 0 && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+                                    {sessionRequests.filter((req: any) => req.status === 'pending').length}
+                                </span>
+                            )}
                         </Button>
                         
                         {showNotifications && (
@@ -769,23 +812,59 @@ const TrustGraphPage: React.FC = () => {
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <div className="max-h-64 overflow-y-auto">
-                                        <div className="p-3 hover:bg-slate-800 cursor-pointer border-b border-slate-700">
-                                            <p className="text-xs text-slate-300">
-                                                <strong>Sarah Chen</strong> accepted your connection request
-                                            </p>
-                                            <span className="text-xs text-slate-400">2 hours ago</span>
-                                        </div>
-                                        <div className="p-3 hover:bg-slate-800 cursor-pointer border-b border-slate-700">
-                                            <p className="text-xs text-slate-300">
-                                                <strong>Alex Rodriguez</strong> started following you
-                                            </p>
-                                            <span className="text-xs text-slate-400">1 day ago</span>
-                                        </div>
-                                        <div className="p-3 text-center">
-                                            <Button variant="ghost" size="sm" className="text-xs">
-                                                View All Notifications
-                                            </Button>
-                                        </div>
+                                        {sessionRequests.filter((req: any) => req.status === 'pending').length > 0 ? (
+                                            <>
+                                                {sessionRequests.filter((req: any) => req.status === 'pending').map((request: any) => (
+                                                    <div key={request.id} className="p-3 border-b border-slate-700 bg-blue-900/20">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div>
+                                                                <p className="text-xs text-slate-300">
+                                                                    <strong>{request.student_display_name || request.student_username}</strong> requested a session
+                                                                </p>
+                                                                <p className="text-xs text-slate-400 mt-1">
+                                                                    {request.session_type} • {new Date(request.created_at).toLocaleDateString()}
+                                                                </p>
+                                                                <p className="text-xs text-slate-300 mt-1 line-clamp-2">
+                                                                    {request.description}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <Button 
+                                                                size="sm"
+                                                                onClick={() => respondToSessionRequest(request.id, 'accept')}
+                                                                className="bg-green-600 hover:bg-green-500 text-xs py-1 px-2"
+                                                            >
+                                                                Accept
+                                                            </Button>
+                                                            <Button 
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => respondToSessionRequest(request.id, 'decline')}
+                                                                className="border-slate-600 hover:bg-slate-700 text-xs py-1 px-2"
+                                                            >
+                                                                Decline
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <div className="p-3 text-center">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        className="text-xs"
+                                                        onClick={() => setShowSessionRequests(true)}
+                                                    >
+                                                        View All Session Requests
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="p-6 text-center">
+                                                <Bell className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                                                <p className="text-xs text-slate-400">No new notifications</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
