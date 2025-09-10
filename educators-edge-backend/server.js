@@ -2,12 +2,10 @@
 
 const express = require('express');
 const http = require('http');
-const { WebSocketServer } = require('ws');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
-const initializeWebSocket = require('./services/websocketHandler');
-const terminalWebSocketHandler = require('./services/websocketTerminalHandler');
+const initializeWebSocketRouting = require('./src/services/websocketRouter'); // Import the new router
 const aiRoutes = require('./routes/aiRoutes');
 const userRoutes = require('./routes/userRoutes');
 const conceptRoutes = require('./routes/conceptRoutes');
@@ -21,8 +19,16 @@ const sessionRoutes = require('./routes/sessionRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 const recordingRoutes = require('./routes/recordingRoutes');
 const tradeRoutes = require('./routes/trade_routes'); // <-- IMPORT THE NEW TRADE ROUTES
+const patternAnalysisRoutes = require('./routes/patternAnalysisRoutes'); // <-- IMPORT PATTERN ANALYSIS ROUTES
+const ascendiaRoutes = require('./routes/ascendia_routes'); // <-- IMPORT THE NEW ASCENDIA ROUTES
+const profileRoutes = require('./routes/profileRoutes'); // <-- IMPORT THE NEW PROFILE ROUTES
+const marketDataRoutes = require('./routes/marketDataRoutes'); // <-- IMPORT THE NEW MARKET DATA ROUTES
 const webhookRoutes = require('./routes/webhookRoutes');
 const videoRoutes = require('./routes/videoRoutes');
+const liveblocksRoutes = require('./routes/liveblocksRoutes');
+const documentRoutes = require('./routes/documentRoutes'); // <-- IMPORT THE NEW ROUTE
+const simulationPortfolioRoutes = require('./routes/simulationPortfolioRoutes'); // <-- SIMULATION PORTFOLIO ROUTES
+
 //...
 const app = express();
 app.use(express.json());
@@ -98,106 +104,22 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/recordings', recordingRoutes);
 app.use('/api/trade', tradeRoutes); // <-- REGISTER THE NEW TRADE ROUTES
+app.use('/api/trade/analysis', patternAnalysisRoutes); // <-- REGISTER PATTERN ANALYSIS ROUTES
+app.use('/api/ascendia', ascendiaRoutes); // <-- REGISTER THE NEW ASCENDIA ROUTES
+app.use('/api/profiles', profileRoutes); // <-- REGISTER THE NEW PROFILE ROUTES
+app.use('/api/market', marketDataRoutes); // <-- REGISTER THE NEW MARKET DATA ROUTES
+app.use('/api/ai-bots', require('./routes/aiBotRoutes')); // <-- AI BOT ROUTES
 
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/videos', videoRoutes);
-// Server and WebSocket Initialization
-// We can simplify the WS config now
-const server = http.createServer(app);
-console.log('🔧 Creating WebSocket servers...');
+app.use('/api/liveblocks', liveblocksRoutes);
+app.use('/api/documents', documentRoutes); // <-- REGISTER THE NEW ROUTE
+app.use('/api/simulation', simulationPortfolioRoutes); // <-- REGISTER SIMULATION PORTFOLIO ROUTES
 
-// Create single WebSocket server to avoid conflicts
-const wss = new WebSocketServer({ 
-    server,
-    verifyClient: (info) => {
-        const url = new URL(info.req.url, 'http://localhost');
-        const origin = info.origin;
-        
-        console.log(`🔍 WS verification for path: ${url.pathname} from origin: ${origin}`);
-        
-        // Check if origin is allowed
-        const isOriginAllowed = !origin || allowedOrigins.includes(origin);
-        const isValidPath = url.pathname === '/ws' || url.pathname === '/terminal';
-        
-        console.log(`🔍 WS verification - Origin allowed: ${isOriginAllowed}, Path valid: ${isValidPath} (${url.pathname})`);
-        
-        if (!isOriginAllowed) {
-            console.log(`❌ WS: Origin ${origin} not allowed`);
-            return false;
-        }
-        
-        if (!isValidPath) {
-            console.log(`❌ WS: Path ${url.pathname} not allowed`);
-            return false;
-        }
-        
-        console.log(`✅ WS verification passed for ${url.pathname}`);
-        return true;
-    }
-}); 
-console.log('✅ Single WebSocket server created for paths: /ws and /terminal');
+const server = http.createServer(app); // Create an HTTP server from your Express app
 
-// Note: Removed custom upgrade handler to let WebSocket servers handle their own upgrades
-
-app.get('/test-ws', (req, res) => {
-    res.json({ 
-        wsReady: wss.clients.size >= 0,
-        jwtSecret: !!process.env.JWT_SECRET,
-        timestamp: Date.now()
-    });
-});
-
-console.log('🔧 Initializing WebSocket handlers...');
-
-// Create a filtered WebSocket server wrapper that only handles /ws connections
-const filteredWss = {
-    clients: wss.clients,
-    on: function(event, handler) {
-        if (event === 'connection') {
-            // Wrap the handler to only call it for /ws connections
-            wss.on('connection', async (ws, req) => {
-                const url = new URL(req.url, 'http://localhost');
-                if (url.pathname === '/ws') {
-                    console.log('🎯 Calling main WebSocket handler for /ws connection');
-                    await handler(ws, req);
-                }
-                // Don't call handler for other paths - they'll be handled separately
-            });
-        } else {
-            wss.on(event, handler);
-        }
-    }
-};
-
-// Initialize main WebSocket handler with filtered server
-initializeWebSocket(filteredWss);
-console.log('✅ Main WebSocket handler initialized (filtered for /ws only)');
-
-// Add terminal routing
-wss.on('connection', async (ws, req) => {
-    const url = new URL(req.url, 'http://localhost');
-    console.log(`🔌 WebSocket connection received for path: ${url.pathname}`);
-    
-    if (url.pathname === '/terminal') {
-        console.log('🎯 Routing to terminal handler');
-        await terminalWebSocketHandler.handleConnection(ws, req);
-    } else if (url.pathname === '/ws') {
-        console.log('🎯 Main WebSocket handler will process this connection');
-        // Main handler already set up above with filtered wrapper
-    } else {
-        console.log(`❌ Unknown WebSocket path: ${url.pathname}`);
-        ws.close(4004, 'Invalid path');
-    }
-});
-
-console.log('✅ Path-based WebSocket routing initialized');
-
-// Add server-level upgrade logging
-server.on('upgrade', (request, socket, head) => {
-    const url = new URL(request.url, 'http://localhost');
-    console.log(`🔄 Server upgrade event: ${url.pathname} with query: ${url.search}`);
-    console.log('🔍 Headers:', request.headers);
-});
+// [THE CRITICAL FIX] Initialize the WebSocket router and pass it the HTTP server.
+initializeWebSocketRouting(server);
 
 
 const PORT = process.env.PORT || 10000;

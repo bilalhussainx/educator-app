@@ -41,7 +41,7 @@ class IntelligentRecordingService {
             }
 
             // Use Gemini to analyze the query and match it with recordings
-            const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+            const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             
             const recordingContext = recordings.rows.map((recording, index) => {
                 return `Recording ${index + 1}:
@@ -159,7 +159,7 @@ If no recordings match well, return empty relevantRecordings array but still pro
                 };
             }
 
-            const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+            const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             
             const recordingsText = recordings.rows.map((r, i) => 
                 `${i + 1}. ${r.title} (Topics: ${r.ai_topics?.join(', ') || 'Various'}) - ${r.ai_summary?.substring(0, 100)}...`

@@ -547,11 +547,35 @@ exports.createChapter = async (req, res) => {
         if (courseQuery.rows[0].teacher_id !== userId && role !== 'admin') {
             return res.status(403).json({ error: 'You are not authorized to add a chapter to this course.' });
         }
-        // ... (rest of the function is correct)
+        // Get the next order index for this course
         const orderQuery = await db.query('SELECT MAX(order_index) as max_order FROM lessons WHERE course_id = $1', [courseId]);
         const nextOrderIndex = (orderQuery.rows[0].max_order || -1) + 1;
-        const newChapter = { /* ... */ };
-        const { rows } = await db.query( /* ... */ );
+        
+        // Insert the chapter into the lessons table with timestamp
+        const { rows } = await db.query(
+            `INSERT INTO lessons (
+                title, 
+                description, 
+                course_id, 
+                teacher_id, 
+                lesson_type, 
+                language, 
+                objective, 
+                order_index, 
+                created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) RETURNING *`,
+            [
+                title,
+                content, // description field for chapter content
+                courseId,
+                userId, // teacher_id
+                'chapter', // lesson_type for chapters
+                'plaintext', // language (chapters are text-based)
+                'Chapter content and overview', // objective
+                nextOrderIndex // order_index
+            ]
+        );
+        
         res.status(201).json(rows[0]);
     } catch (error) {
         console.error('Error creating chapter:', error);

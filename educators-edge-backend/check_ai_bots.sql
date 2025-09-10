@@ -1,0 +1,1 @@
+SELECT ab.bot_name, u.username, up.display_name, up.is_searchable_teacher FROM ai_bots ab JOIN users u ON ab.user_id = u.id LEFT JOIN user_profiles up ON u.id = up.user_id WHERE ab.is_active = true LIMIT 10;

@@ -156,3 +156,109 @@ exports.getConceptualFeedback = async (req, res) => {
         res.status(500).json({ error: 'Server Error' });
     }
 };
+
+/**
+ * Get specific edit suggestions for selected text using specialized agent
+ */
+exports.getEditSuggestions = async (req, res) => {
+    try {
+        const { selectedText, fullEssay, message, essayType } = req.body;
+        const geminiService = require('../services/geminiService');
+        
+        if (!selectedText) {
+            return res.status(400).json({ error: 'Selected text is required for edit suggestions' });
+        }
+        
+        const context = {
+            selectedText: selectedText,
+            fullEssay: fullEssay,
+            essayType: essayType
+        };
+        
+        const request = message || `Please provide specific edit suggestions for the selected text to improve clarity, style, and impact.`;
+        
+        const result = await geminiService.generateAgentResponse('editSuggestionAgent', request, context);
+        
+        res.json({
+            success: result.success,
+            response: result.response,
+            agentUsed: result.agentUsed,
+            selectedText: selectedText,
+            fromFallback: result.fromFallback
+        });
+        
+    } catch (error) {
+        console.error("Error in getEditSuggestions:", error.message);
+        res.status(500).json({ error: 'Failed to generate edit suggestions' });
+    }
+};
+
+/**
+ * Get general writing feedback using specialized agent
+ */
+exports.getWritingFeedback = async (req, res) => {
+    try {
+        const { fullEssay, message, essayType } = req.body;
+        const geminiService = require('../services/geminiService');
+        
+        if (!fullEssay) {
+            return res.status(400).json({ error: 'Essay content is required for feedback' });
+        }
+        
+        const context = {
+            fullEssay: fullEssay,
+            essayType: essayType
+        };
+        
+        const request = message || `Please provide comprehensive feedback on the overall structure, flow, and writing quality of this essay.`;
+        
+        const result = await geminiService.generateAgentResponse('feedbackAgent', request, context);
+        
+        res.json({
+            success: result.success,
+            response: result.response,
+            agentUsed: result.agentUsed,
+            fromFallback: result.fromFallback
+        });
+        
+    } catch (error) {
+        console.error("Error in getWritingFeedback:", error.message);
+        res.status(500).json({ error: 'Failed to generate writing feedback' });
+    }
+};
+
+/**
+ * Get contextual comments for selected text using specialized agent
+ */
+exports.getContextualComments = async (req, res) => {
+    try {
+        const { selectedText, fullEssay, message, essayType } = req.body;
+        const geminiService = require('../services/geminiService');
+        
+        if (!selectedText) {
+            return res.status(400).json({ error: 'Selected text is required for contextual comments' });
+        }
+        
+        const context = {
+            selectedText: selectedText,
+            fullEssay: fullEssay,
+            essayType: essayType
+        };
+        
+        const request = message || `Please provide specific, contextual feedback and suggestions for improvement on the selected text passage.`;
+        
+        const result = await geminiService.generateAgentResponse('commentAgent', request, context);
+        
+        res.json({
+            success: result.success,
+            response: result.response,
+            agentUsed: result.agentUsed,
+            selectedText: selectedText,
+            fromFallback: result.fromFallback
+        });
+        
+    } catch (error) {
+        console.error("Error in getContextualComments:", error.message);
+        res.status(500).json({ error: 'Failed to generate contextual comments' });
+    }
+};

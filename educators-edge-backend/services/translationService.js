@@ -78,7 +78,7 @@ class TranslationService {
                 return existingTranslation.rows[0];
             }
 
-            const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+            const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             const languageName = this.supportedLanguages[targetLanguage];
 
             // Create translation prompt

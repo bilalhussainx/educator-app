@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon -r dotenv/config server.js",
-    "worker": "dotenv -e .env -- node workers/apeWorker.js"
+    "worker": "dotenv -e .env -- node workers/apeWorker.js",
+    "restart": "node scripts/restart-server.js",
+    "seed-market": "node scripts/seedMarketDataFixed.js",
+    "stop-all": "taskkill /F /IM node.exe"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.28.0",
@@ -14,12 +17,13 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@google/generative-ai": "^0.24.1",
+    "@liveblocks/node": "^3.6.0",
     "agora-token": "^2.0.5",
     "archiver": "^7.0.1",
     "axios": "^1.11.0",
     "axios-http-adapter": "^0.0.3",
     "bcryptjs": "^2.4.3",
-    "bullmq": "^5.56.9",
+    "bullmq": "^5.58.5",
     "canvas-confetti": "^1.9.3",
     "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
@@ -32,11 +36,16 @@
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
+    "mammoth": "^1.10.0",
+    "multer": "^2.0.2",
     "netlify": "^22.3.0",
+    "node-cache": "^5.1.2",
+    "pdf-parse": "^1.1.1",
     "pg": "^8.16.3",
     "quickjs-emscripten": "^0.31.0",
     "streamifier": "^0.1.1",
-    "ws": "^8.17.0"
+    "stripe": "^18.5.0",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "netlify-cli": "^22.3.0",

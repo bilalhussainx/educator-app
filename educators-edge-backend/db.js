@@ -4,12 +4,49 @@ require('dotenv').config();
 
 const { Pool } = pg;
 
+// Parse DATABASE_URL to determine if it's a cloud database  
+const databaseUrl = process.env.DATABASE_URL?.replace(/['"]/g, ''); // Remove quotes
+const isCloudDatabase = databaseUrl && (databaseUrl.includes('neon.tech') || databaseUrl.includes('railway') || databaseUrl.includes('supabase'));
+
+console.log('Raw DATABASE_URL:', process.env.DATABASE_URL);
+console.log('Cleaned DATABASE_URL:', databaseUrl);
+console.log('Is Cloud Database:', isCloudDatabase);
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
+  connectionString: databaseUrl,
+  ssl: isCloudDatabase ? {
     rejectUnauthorized: false,
-  },
+  } : false, // Disable SSL for local databases
+  // Reduced connection limits for Neon free tier
+  connectionTimeoutMillis: 15000,
+  idleTimeoutMillis: 10000,
+  max: 3, // Reduce max connections to avoid "too many clients"
+  min: 0, // Allow pool to scale down to 0
+  acquireTimeoutMillis: 20000,
 });
+
+console.log(`Database configuration: ${isCloudDatabase ? 'Cloud (SSL enabled)' : 'Local (SSL disabled)'}`);
+console.log(`Connecting to: ${databaseUrl?.split('@')[1]?.split('/')[0] || 'Unknown host'}`);
+
+// Add error handling for pool events
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+});
+
+pool.on('connect', () => {
+  console.log('✅ Database connected successfully');
+});
+
+// Test the connection when the module loads
+pool.connect()
+  .then(client => {
+    console.log('✅ Initial database connection test successful');
+    client.release();
+  })
+  .catch(err => {
+    console.error('❌ Initial database connection failed:', err.message);
+    console.error('Database host:', process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'Unknown');
+  });
 
 // Use module.exports to export a flat object.
 module.exports = {

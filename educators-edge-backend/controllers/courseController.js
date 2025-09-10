@@ -90,8 +90,8 @@ exports.getCourseById = async (req, res) => {
         }
         const course = courseResult.rows[0];
         const lessonsResult = await db.query(
-            // IMPORTANT: Fetch lessons ordered by their order_index
-            'SELECT id, title, description, order_index, lesson_type FROM lessons WHERE course_id = $1 ORDER BY order_index ASC',
+            // IMPORTANT: Fetch lessons ordered by their order_index, including timestamps and description for cards
+            'SELECT id, title, description, order_index, lesson_type, created_at FROM lessons WHERE course_id = $1 ORDER BY order_index ASC',
             [id]
         );
         const lessons = lessonsResult.rows;
@@ -326,7 +326,7 @@ exports.getPublicCourseById = async (req, res) => {
         }
         const course = courseResult.rows[0];
         const lessonsResult = await db.query(
-            'SELECT id, title FROM lessons WHERE course_id = $1 ORDER BY created_at ASC',
+            'SELECT id, title, lesson_type FROM lessons WHERE course_id = $1 ORDER BY order_index ASC',
             [courseId]
         );
         const lessons = lessonsResult.rows;

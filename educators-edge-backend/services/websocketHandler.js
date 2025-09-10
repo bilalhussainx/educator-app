@@ -47,6 +47,32 @@ function getTeacher(session) {
     return Array.from(session.clients).find(c => c.role === 'teacher');
 }
 
+function broadcastParticipantList(session) {
+    if (!session || !session.clients) return;
+    
+    const participants = Array.from(session.clients)
+        .filter(client => !client.isHomework)
+        .map(client => ({
+            id: client.id,
+            username: client.username,
+            role: client.role,
+            tier: client.tier || 'standard',
+            tierName: client.tierName || 'Standard User',
+            zCredits: client.zCredits || 0
+        }));
+
+    const message = {
+        type: 'PARTICIPANT_LIST',
+        payload: { participants }
+    };
+
+    session.clients.forEach(client => {
+        if (!client.isHomework && client.ws.readyState === client.ws.OPEN) {
+            client.ws.send(JSON.stringify(message));
+        }
+    });
+}
+
 function getStudents(session) {
     if (!session || !session.clients) return [];
     return Array.from(session.clients).filter(c => c.role === 'student');
@@ -75,6 +101,15 @@ function initializeWebSocket(wss) {
         } catch (err) {
             console.error('[WS Auth] Connection rejected due to invalid token:', err.message);
             return ws.close(4001, "Invalid or expired authentication token");
+        }
+
+        // Get user's tier information
+        let tierInfo = { balance: 0, tier: 'standard', tierName: 'Standard User' };
+        try {
+            const { getUserTierInfo } = require('../middleware/tierMiddleware');
+            tierInfo = await getUserTierInfo(user.id);
+        } catch (error) {
+            console.error('[WS] Error fetching tier info for user:', user.username, error.message);
         }
 
         const isHomeworkSession = !!teacherSessionId && !!lessonId;
@@ -120,7 +155,16 @@ function initializeWebSocket(wss) {
             session.clients.delete(existingClient);
         }
 
-        const clientInfo = { id: user.id, username: user.username, role: user.role || 'student', ws: ws, isHomework: isHomeworkSession };
+        const clientInfo = { 
+            id: user.id, 
+            username: user.username, 
+            role: user.role || 'student', 
+            ws: ws, 
+            isHomework: isHomeworkSession,
+            tier: tierInfo.tier,
+            tierName: tierInfo.tierName,
+            zCredits: tierInfo.balance
+        };
         session.clients.add(clientInfo);
 
         if (clientInfo.role === 'teacher' && !isHomeworkSession) {
@@ -133,8 +177,13 @@ function initializeWebSocket(wss) {
             });
         }
 
-        log(`${clientInfo.role} ${clientInfo.username} connected to session ${sessionKey} (Homework: ${isHomeworkSession}). Total clients: ${session.clients.size}`);
+        log(`${clientInfo.role} ${clientInfo.username} (${clientInfo.tierName}) connected to session ${sessionKey} (Homework: ${isHomeworkSession}). Total clients: ${session.clients.size}`);
         const teacher = getTeacher(session);
+
+        // Broadcast updated participant list with tier information
+        if (!isHomeworkSession) {
+            setTimeout(() => broadcastParticipantList(session), 100); // Small delay to ensure connection is fully established
+        }
 
         if (isHomeworkSession) {
             if (teacher) {
@@ -146,7 +195,11 @@ function initializeWebSocket(wss) {
             ws.send(JSON.stringify({ 
                 type: 'ROLE_ASSIGNED', 
                 payload: { 
-                    role: clientInfo.role, files: session.files, activeFile: session.activeFile, terminalOutput: session.terminalOutput,
+                    role: clientInfo.role, 
+                    tier: clientInfo.tier,
+                    tierName: clientInfo.tierName,
+                    zCredits: clientInfo.zCredits,
+                    files: session.files, activeFile: session.activeFile, terminalOutput: session.terminalOutput,
                     spotlightedStudentId: session.spotlightedStudentId, controlledStudentId: session.controlledStudentId,
                     isFrozen: session.isFrozen, whiteboardLines: session.whiteboardLines, isWhiteboardVisible: session.isWhiteboardVisible,
                     teacherId: teacher ? teacher.id : null,
@@ -519,6 +572,119 @@ function initializeWebSocket(wss) {
                             });
                         }
                         break;
+
+                    // Trading WebSocket handlers
+                    case 'subscribe_ticker':
+                        console.log(`[TRADING] Subscribing to ticker: ${data.symbol}`);
+                        // Mock ticker data - in production, this would connect to Finnhub
+                        const tickerData = {
+                            symbol: data.symbol,
+                            price: Math.random() * 200 + 50,
+                            volume: Math.floor(Math.random() * 1000000),
+                            timestamp: Date.now(),
+                            previousPrice: Math.random() * 200 + 50
+                        };
+                        ws.send(JSON.stringify({
+                            type: 'ticker_update',
+                            data: tickerData
+                        }));
+                        break;
+
+                    case 'subscribe_trades':
+                        console.log(`[TRADING] Subscribing to trades: ${data.symbol}`);
+                        // Mock trade data
+                        const tradeData = {
+                            id: `trade_${Date.now()}`,
+                            symbol: data.symbol,
+                            price: Math.random() * 200 + 50,
+                            volume: Math.floor(Math.random() * 1000),
+                            timestamp: Date.now(),
+                            conditions: []
+                        };
+                        ws.send(JSON.stringify({
+                            type: 'trade_update',
+                            data: tradeData
+                        }));
+                        break;
+
+                    case 'subscribe_candles':
+                        console.log(`[TRADING] Subscribing to candles: ${data.symbol}`);
+                        // Mock candle data
+                        const candleData = {
+                            symbol: data.symbol,
+                            timestamp: Date.now(),
+                            open: Math.random() * 200 + 50,
+                            high: Math.random() * 200 + 60,
+                            low: Math.random() * 200 + 40,
+                            close: Math.random() * 200 + 55,
+                            volume: Math.floor(Math.random() * 10000)
+                        };
+                        ws.send(JSON.stringify({
+                            type: 'candle_update',
+                            data: candleData
+                        }));
+                        break;
+
+                    case 'subscribe_depth':
+                        console.log(`[TRADING] Subscribing to depth: ${data.symbol}`);
+                        // Mock depth data
+                        const bids = Array.from({length: data.levels || 10}, (_, i) => ({
+                            price: 100 - i * 0.5,
+                            volume: Math.floor(Math.random() * 1000),
+                            total: Math.floor(Math.random() * 5000),
+                            orders: Math.floor(Math.random() * 50)
+                        }));
+                        const asks = Array.from({length: data.levels || 10}, (_, i) => ({
+                            price: 100.5 + i * 0.5,
+                            volume: Math.floor(Math.random() * 1000),
+                            total: Math.floor(Math.random() * 5000),
+                            orders: Math.floor(Math.random() * 50)
+                        }));
+                        
+                        const depthData = {
+                            symbol: data.symbol,
+                            bids,
+                            asks,
+                            spread: 0.5,
+                            spreadPercent: 0.5,
+                            timestamp: Date.now()
+                        };
+                        ws.send(JSON.stringify({
+                            type: 'depth_update',
+                            data: depthData
+                        }));
+                        break;
+
+                    case 'subscribe_portfolio':
+                        console.log('[TRADING] Subscribing to portfolio updates');
+                        // Mock portfolio data - this would normally come from the database
+                        const portfolioData = {
+                            totalValue: Math.random() * 50000 + 10000,
+                            totalCost: Math.random() * 45000 + 10000,
+                            totalPnL: Math.random() * 5000 - 2500,
+                            totalPnLPercent: Math.random() * 20 - 10,
+                            dayChange: Math.random() * 1000 - 500,
+                            dayChangePercent: Math.random() * 5 - 2.5,
+                            assets: [
+                                {
+                                    symbol: 'AAPL',
+                                    quantity: 10,
+                                    averageCostBasis: 150,
+                                    currentPrice: 155,
+                                    marketValue: 1550,
+                                    unrealizedPnL: 50,
+                                    unrealizedPnLPercent: 3.33,
+                                    allocation: 25
+                                }
+                            ],
+                            cash: Math.random() * 10000 + 5000,
+                            riskScore: Math.random() * 100
+                        };
+                        ws.send(JSON.stringify({
+                            type: 'portfolio_update',
+                            data: portfolioData
+                        }));
+                        break;
                 }
             } catch (error) {
                 console.error('[WS] Error parsing message:', error);
@@ -532,6 +698,11 @@ function initializeWebSocket(wss) {
             if (session.handsRaised.has(clientInfo.id)) {
                 session.handsRaised.delete(clientInfo.id);
                 broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) }});
+            }
+
+            // Broadcast updated participant list after disconnect
+            if (!isHomeworkSession) {
+                broadcastParticipantList(session);
             }
 
             if (session.spotlightedStudentId === clientInfo.id) {
