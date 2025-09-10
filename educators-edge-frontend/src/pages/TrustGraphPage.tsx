@@ -171,7 +171,6 @@ const TrustGraphPage: React.FC = () => {
     const [sessionDescription, setSessionDescription] = useState('');
     const [sessionType, setSessionType] = useState('mentoring');
     const [sessionRequests, setSessionRequests] = useState([]);
-    const [showSessionRequests, setShowSessionRequests] = useState(false);
 
     useEffect(() => {
         fetchNetworkData();
@@ -455,6 +454,8 @@ const TrustGraphPage: React.FC = () => {
     const renderUserCard = (user: any, showActions: boolean = true, connectionStatus?: string) => {
         const tierStyle = TIER_STYLES[user.user_tier || 'pathfinder'] || TIER_STYLES['pathfinder'];
         const isAIBot = user.is_ai_bot || user.ai_bot_id;
+        
+        // User data now includes role and is_searchable_teacher fields
         
         return (
             <Card key={user.id} className={cn(

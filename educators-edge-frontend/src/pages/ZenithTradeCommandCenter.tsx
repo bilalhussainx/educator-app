@@ -45,6 +45,7 @@ export const ZenithTradeCommandCenter: React.FC = () => {
     return {
       price: data.close,
       volume: data.volume,
+      timestamp: Date.now(),
       lastUpdated: Date.now(),
       change: change,
       changePercent: changePercent,

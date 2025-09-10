@@ -45,7 +45,7 @@ import ProfileViewPage from './pages/ProfileViewPage';
 import ProfileSearchPage from './pages/ProfileSearchPage';
 import TalentCruciblePage from './pages/TalentCruciblePage';
 import SessionManagementPage from './pages/SessionManagementPage';
-import TrustGraphPage from './pages/TrustGraphPage';
+import TrustGraphPage from './pages/TrustGraphSimple';
 import AIChatPage from './pages/AIChatPage';
 import TradingTerminalPage from './pages/TradingTerminalPage';
 import { ZenithTradeCommandCenter } from './pages/ZenithTradeCommandCenter';
