@@ -55,6 +55,7 @@ const AIChatPage: React.FC = () => {
     const [isTyping, setIsTyping] = useState(false);
     const [currentBot, setCurrentBot] = useState<AIBot | null>(null);
     const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
+    const [, setSessionActive] = useState(false);
     const [showIDE, setShowIDE] = useState(false);
     const [showScribe, setShowScribe] = useState(false);
     const [ideUrl, setIdeUrl] = useState<string>('');

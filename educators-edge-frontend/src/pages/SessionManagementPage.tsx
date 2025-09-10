@@ -115,7 +115,7 @@ const SessionManagementPage: React.FC = () => {
     });
     const [reviewText, setReviewText] = useState('');
     const [rating, setRating] = useState(5);
-    const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+    const [, setSelectedSession] = useState<Session | null>(null);
 
     const navigate = useNavigate();
 

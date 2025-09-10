@@ -162,6 +162,12 @@ const TrustGraphPage: React.FC = () => {
     const [showUrgentRequestModal, setShowUrgentRequestModal] = useState(false);
     const [selectedAIBot, setSelectedAIBot] = useState<any>(null);
     const [isCleaningUpSessions, setIsCleaningUpSessions] = useState(false);
+    const [showSessionRequestModal, setShowSessionRequestModal] = useState(false);
+    const [selectedMentor, setSelectedMentor] = useState<any>(null);
+    const [sessionDescription, setSessionDescription] = useState('');
+    const [sessionType, setSessionType] = useState('mentoring');
+    const [sessionRequests, setSessionRequests] = useState([]);
+    const [showSessionRequests, setShowSessionRequests] = useState(false);
 
     useEffect(() => {
         fetchNetworkData();
@@ -361,6 +367,41 @@ const TrustGraphPage: React.FC = () => {
         }
     };
 
+    const handleSessionRequest = (mentor: any) => {
+        setSelectedMentor(mentor);
+        setSessionDescription('');
+        setSessionType(mentor.is_mentor ? 'mentoring' : 'collaboration');
+        setShowSessionRequestModal(true);
+    };
+
+    const submitSessionRequest = async () => {
+        if (!selectedMentor || !sessionDescription.trim()) {
+            toast.error('Please provide a description for your session request');
+            return;
+        }
+
+        try {
+            const response = await apiClient.post('/api/sessions/request', {
+                mentorId: selectedMentor.id,
+                sessionType: sessionType,
+                description: sessionDescription.trim(),
+                preferredTool: selectedMentor.is_mentor ? 'ascendialaunchpad' : 'essayeditor'
+            });
+
+            if (response.data.success) {
+                toast.success('Session request sent successfully! You will be notified when the mentor responds.');
+                setShowSessionRequestModal(false);
+                setSelectedMentor(null);
+                setSessionDescription('');
+            } else {
+                throw new Error(response.data.message || 'Failed to send session request');
+            }
+        } catch (error: any) {
+            console.error('Session request error:', error);
+            toast.error(error.response?.data?.error || error.message || 'Failed to send session request');
+        }
+    };
+
     const renderUserCard = (user: any, showActions: boolean = true, connectionStatus?: string) => {
         const tierStyle = TIER_STYLES[user.user_tier || 'pathfinder'] || TIER_STYLES['pathfinder'];
         const isAIBot = user.is_ai_bot || user.ai_bot_id;
@@ -393,7 +434,7 @@ const TrustGraphPage: React.FC = () => {
                                 <CardTitle className="text-lg text-white font-semibold flex items-center gap-2">
                                     {user.display_name || user.username || 'Unknown User'}
                                     {isAIBot && (
-                                        <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-2 py-1 text-xs">
+                                        <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-2 py-1 text-xs font-medium">
                                             <Bot className="h-3 w-3 mr-1" />
                                             AI Mentor
                                         </Badge>
@@ -405,17 +446,17 @@ const TrustGraphPage: React.FC = () => {
                                 <div className="flex items-center gap-2 mt-1">
                                     {!isAIBot && (
                                         <>
-                                            <Badge className={cn("px-2 py-1 text-xs", tierStyle.bgColor, tierStyle.color)}>
+                                            <Badge className={cn("px-2 py-1 text-xs font-medium", tierStyle.bgColor, tierStyle.color)}>
                                                 {(user.user_tier || 'pathfinder').charAt(0).toUpperCase() + (user.user_tier || 'pathfinder').slice(1)}
                                             </Badge>
-                                            <div className="flex items-center gap-1 text-sm text-slate-300">
+                                            <div className="flex items-center gap-1 text-sm text-slate-300 font-medium">
                                                 <Zap className="h-3 w-3 text-yellow-400" />
                                                 {user.ascendia_score || 0}
                                             </div>
                                         </>
                                     )}
                                     {isAIBot && user.personality_type && (
-                                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-2 py-1 text-xs">
+                                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-2 py-1 text-xs font-medium">
                                             {user.personality_type}
                                         </Badge>
                                     )}
@@ -430,7 +471,7 @@ const TrustGraphPage: React.FC = () => {
                                         <Button 
                                             size="sm"
                                             onClick={() => handleAIBotChat(user)}
-                                            className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                                            className="bg-cyan-500 hover:bg-cyan-600 text-white font-medium shadow-lg hover:shadow-cyan-500/25 transition-all duration-200"
                                         >
                                             <MessageSquare className="h-3 w-3 mr-1" />
                                             Chat Now
@@ -438,7 +479,7 @@ const TrustGraphPage: React.FC = () => {
                                         <Button 
                                             size="sm"
                                             onClick={() => handleUrgentRequest(user)}
-                                            className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
+                                            className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 font-medium shadow-lg hover:shadow-red-500/25 transition-all duration-200"
                                         >
                                             <Zap className="h-3 w-3 mr-1" />
                                             Urgent Help
@@ -447,29 +488,40 @@ const TrustGraphPage: React.FC = () => {
                                 ) : (
                                     <>
                                         {connectionStatus === 'pending' ? (
-                                            <Badge className="bg-yellow-500/10 text-yellow-400">Pending</Badge>
+                                            <Badge className="bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/30">Pending</Badge>
                                         ) : connectionStatus === 'connected' ? (
-                                            <Badge className="bg-green-500/10 text-green-400">Connected</Badge>
+                                            <Badge className="bg-green-500/10 text-green-400 font-medium border border-green-500/30">Connected</Badge>
                                         ) : (
                                             <Button 
                                                 size="sm"
                                                 onClick={() => handleConnectionRequest(user.id, 'send')}
-                                                className="bg-blue-600 hover:bg-blue-500"
+                                                className="bg-blue-600 hover:bg-blue-500 font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
                                             >
                                                 <UserPlus className="h-3 w-3 mr-1" />
                                                 Connect
                                             </Button>
                                         )}
                                         
-                                        <Button 
-                                            size="sm" 
-                                            variant="outline"
-                                            onClick={() => handleFollow(user.id, false)}
-                                            className="border-slate-600 hover:bg-slate-700"
-                                        >
-                                            <UserCheck className="h-3 w-3 mr-1" />
-                                            Follow
-                                        </Button>
+                                        {user.is_mentor ? (
+                                            <Button 
+                                                size="sm"
+                                                onClick={() => navigate(`/sessions?mentor=${user.id}`)}
+                                                className="bg-purple-600 hover:bg-purple-500 font-medium shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
+                                            >
+                                                <MessageSquare className="h-3 w-3 mr-1" />
+                                                Book Session
+                                            </Button>
+                                        ) : (
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline"
+                                                onClick={() => handleFollow(user.id, false)}
+                                                className="border-slate-600 hover:bg-slate-700 font-medium hover:border-slate-500 transition-all duration-200"
+                                            >
+                                                <UserCheck className="h-3 w-3 mr-1" />
+                                                Follow
+                                            </Button>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -480,7 +532,7 @@ const TrustGraphPage: React.FC = () => {
                 <CardContent className="space-y-3">
                     {/* Bio */}
                     {user.bio && (
-                        <p className="text-sm text-slate-300 line-clamp-2">{user.bio}</p>
+                        <p className="text-sm text-slate-300 line-clamp-2 leading-relaxed">{user.bio}</p>
                     )}
 
                     {/* Four Pillars (if available) */}
@@ -537,26 +589,36 @@ const TrustGraphPage: React.FC = () => {
                         {user.location && (
                             <div className="flex items-center gap-1">
                                 <MapPin className="h-3 w-3" />
-                                {user.location}
+                                <span className="font-medium">{user.location}</span>
                             </div>
                         )}
                         {user.is_mentor && user.total_sessions > 0 && (
                             <div className="flex items-center gap-1">
                                 <Star className="h-3 w-3 text-yellow-400" />
-                                {(user.average_rating && typeof user.average_rating === 'number') ? user.average_rating.toFixed(1) : 'N/A'} ({user.total_sessions} sessions)
+                                <span className="font-medium">{(user.average_rating && typeof user.average_rating === 'number') ? user.average_rating.toFixed(1) : 'N/A'} ({user.total_sessions} sessions)</span>
                             </div>
                         )}
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-2">
-                        <Button size="sm" variant="outline" className="flex-1 border-slate-600 hover:bg-slate-700">
+                        <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => navigate(`/profile/view/${user.id}`)}
+                            className="flex-1 border-slate-600 hover:bg-slate-700 font-medium hover:border-slate-500 transition-all duration-200"
+                        >
                             <Eye className="h-3 w-3 mr-1" />
                             Profile
                         </Button>
-                        <Button size="sm" variant="outline" className="flex-1 border-slate-600 hover:bg-slate-700">
+                        <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => user.is_mentor ? handleSessionRequest(user) : navigate(`/messages?user=${user.id}`)}
+                            className="flex-1 border-slate-600 hover:bg-slate-700 font-medium hover:border-slate-500 transition-all duration-200"
+                        >
                             <MessageCircle className="h-3 w-3 mr-1" />
-                            Message
+                            {user.is_mentor ? 'Request Session' : 'Message'}
                         </Button>
                     </div>
                 </CardContent>
@@ -952,27 +1014,201 @@ const TrustGraphPage: React.FC = () => {
                 </TabsContent>
 
                 <TabsContent value="connections">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {connections
-                            .filter(c => c.status === 'accepted')
-                            .map(connection => renderUserCard(connection.connected_user, false, 'connected'))}
+                    <div className="space-y-6">
+                        {/* Connected Mentors Section */}
+                        {connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor === true).length > 0 && (
+                            <div>
+                                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                                    <GraduationCap className="h-5 w-5" />
+                                    Connected Mentors ({connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor === true).length})
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {connections
+                                        .filter(c => c.status === 'accepted' && c.connected_user?.is_mentor === true)
+                                        .map(connection => renderUserCard(connection.connected_user, true, 'connected'))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Other Connections */}
+                        {connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor !== true).length > 0 && (
+                            <div>
+                                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                                    <Users className="h-5 w-5" />
+                                    Other Connections ({connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor !== true).length})
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {connections
+                                        .filter(c => c.status === 'accepted' && c.connected_user?.is_mentor !== true)
+                                        .map(connection => renderUserCard(connection.connected_user, true, 'connected'))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* No connections message */}
+                        {connections.filter(c => c.status === 'accepted').length === 0 && (
+                            <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
+                                <CardContent className="p-12 text-center">
+                                    <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-slate-300 mb-2">No connections yet</h3>
+                                    <p className="text-slate-400 mb-4">Start connecting with mentors and peers to build your network</p>
+                                    <Button 
+                                        onClick={() => setActiveTab('discover')}
+                                        className="bg-blue-600 hover:bg-blue-500"
+                                    >
+                                        <Search className="h-4 w-4 mr-2" />
+                                        Discover People
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </TabsContent>
 
                 <TabsContent value="followers">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {followers.map(follower => renderUserCard(follower.user, false))}
+                    <div className="space-y-6">
+                        {/* Mentor Followers */}
+                        {followers.filter(f => f.user?.is_mentor === true).length > 0 && (
+                            <div>
+                                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                                    <GraduationCap className="h-5 w-5" />
+                                    Mentor Followers ({followers.filter(f => f.user?.is_mentor === true).length})
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {followers
+                                        .filter(f => f.user?.is_mentor === true)
+                                        .map(follower => renderUserCard(follower.user, true))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Other Followers */}
+                        {followers.filter(f => f.user?.is_mentor !== true).length > 0 && (
+                            <div>
+                                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                                    <Users className="h-5 w-5" />
+                                    Other Followers ({followers.filter(f => f.user?.is_mentor !== true).length})
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {followers
+                                        .filter(f => f.user?.is_mentor !== true)
+                                        .map(follower => renderUserCard(follower.user, true))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* No followers message */}
+                        {followers.length === 0 && (
+                            <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
+                                <CardContent className="p-12 text-center">
+                                    <UserCheck className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-slate-300 mb-2">No followers yet</h3>
+                                    <p className="text-slate-400">Build your network and engage with the community to gain followers</p>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </TabsContent>
 
                 <TabsContent value="following">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {following.map(follow => renderUserCard(follow.user, false))}
+                    <div className="space-y-6">
+                        {/* Following Mentors */}
+                        {following.filter(f => f.user?.is_mentor === true).length > 0 && (
+                            <div>
+                                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                                    <GraduationCap className="h-5 w-5" />
+                                    Following Mentors ({following.filter(f => f.user?.is_mentor === true).length})
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {following
+                                        .filter(f => f.user?.is_mentor === true)
+                                        .map(follow => renderUserCard(follow.user, true))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Following Others */}
+                        {following.filter(f => f.user?.is_mentor !== true).length > 0 && (
+                            <div>
+                                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                                    <Users className="h-5 w-5" />
+                                    Following Others ({following.filter(f => f.user?.is_mentor !== true).length})
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {following
+                                        .filter(f => f.user?.is_mentor !== true)
+                                        .map(follow => renderUserCard(follow.user, true))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* No following message */}
+                        {following.length === 0 && (
+                            <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
+                                <CardContent className="p-12 text-center">
+                                    <Eye className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-medium text-slate-300 mb-2">Not following anyone yet</h3>
+                                    <p className="text-slate-400 mb-4">Follow mentors and peers to stay updated with their activities</p>
+                                    <Button 
+                                        onClick={() => setActiveTab('discover')}
+                                        className="bg-blue-600 hover:bg-blue-500"
+                                    >
+                                        <Search className="h-4 w-4 mr-2" />
+                                        Discover People
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </TabsContent>
 
                 <TabsContent value="discover">
                     <div className="space-y-6">
+                        {/* Quick Mentor Access */}
+                        <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30">
+                            <CardHeader>
+                                <CardTitle className="text-white flex items-center gap-2">
+                                    <GraduationCap className="h-5 w-5 text-blue-400" />
+                                    Quick Mentor Access
+                                </CardTitle>
+                                <p className="text-slate-300 text-sm">View profiles of mentors you're connected with or following</p>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <Button 
+                                        onClick={() => setActiveTab('connections')}
+                                        className="bg-green-600 hover:bg-green-500 font-medium p-4 h-auto flex flex-col gap-2"
+                                    >
+                                        <Users className="h-6 w-6" />
+                                        <div className="text-center">
+                                            <div className="font-semibold">Connected Mentors</div>
+                                            <div className="text-xs opacity-75">{connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor === true).length} mentors</div>
+                                        </div>
+                                    </Button>
+                                    <Button 
+                                        onClick={() => setActiveTab('following')}
+                                        className="bg-blue-600 hover:bg-blue-500 font-medium p-4 h-auto flex flex-col gap-2"
+                                    >
+                                        <Eye className="h-6 w-6" />
+                                        <div className="text-center">
+                                            <div className="font-semibold">Following Mentors</div>
+                                            <div className="text-xs opacity-75">{following.filter(f => f.user?.is_mentor === true).length} mentors</div>
+                                        </div>
+                                    </Button>
+                                    <Button 
+                                        onClick={() => navigate('/sessions')}
+                                        className="bg-purple-600 hover:bg-purple-500 font-medium p-4 h-auto flex flex-col gap-2"
+                                    >
+                                        <MessageSquare className="h-6 w-6" />
+                                        <div className="text-center">
+                                            <div className="font-semibold">Book Session</div>
+                                            <div className="text-xs opacity-75">Find & book mentors</div>
+                                        </div>
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         {/* Discovery Filters */}
                         <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
                             <CardHeader>
@@ -1316,6 +1552,108 @@ const TrustGraphPage: React.FC = () => {
                     )}
                 </TabsContent>
             </Tabs>
+
+            {/* Session Request Modal */}
+            <Dialog open={showSessionRequestModal} onOpenChange={setShowSessionRequestModal}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl text-white flex items-center gap-2">
+                            <MessageSquare className="h-5 w-5 text-blue-400" />
+                            Request Session with {selectedMentor?.display_name || selectedMentor?.username}
+                        </DialogTitle>
+                    </DialogHeader>
+                    
+                    <div className="space-y-6 py-4">
+                        {/* Mentor Info */}
+                        {selectedMentor && (
+                            <div className="flex items-center gap-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                                <Avatar className="h-12 w-12 border border-slate-600">
+                                    <AvatarImage src={`/api/avatars/${selectedMentor.id}`} />
+                                    <AvatarFallback className="bg-slate-700 text-white">
+                                        {(selectedMentor.display_name || selectedMentor.username)?.charAt(0) || '?'}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <h3 className="font-semibold text-white">{selectedMentor.display_name || selectedMentor.username}</h3>
+                                    <p className="text-sm text-slate-400">
+                                        {selectedMentor.is_mentor ? 'Mentor' : 'Peer'} • {selectedMentor.user_tier}
+                                    </p>
+                                    {selectedMentor.bio && (
+                                        <p className="text-sm text-slate-300 mt-1 line-clamp-2">{selectedMentor.bio}</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Session Type */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Session Type</label>
+                            <select 
+                                value={sessionType}
+                                onChange={(e) => setSessionType(e.target.value)}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="mentoring">Mentoring Session</option>
+                                <option value="tutoring">Tutoring Session</option>
+                                <option value="essay_editing">Essay Editing</option>
+                                <option value="collaboration">Collaboration</option>
+                                <option value="counseling">Academic Counseling</option>
+                            </select>
+                        </div>
+
+                        {/* Session Description */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                Why do you want this session? <span className="text-red-400">*</span>
+                            </label>
+                            <textarea
+                                value={sessionDescription}
+                                onChange={(e) => setSessionDescription(e.target.value)}
+                                placeholder="Describe what you'd like help with, your goals for the session, and any specific topics you want to cover..."
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                rows={5}
+                                maxLength={500}
+                            />
+                            <div className="text-right text-xs text-slate-400 mt-1">
+                                {sessionDescription.length}/500 characters
+                            </div>
+                        </div>
+
+                        {/* Tools Info */}
+                        <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                            <h4 className="text-sm font-medium text-blue-300 mb-2 flex items-center gap-2">
+                                <Sparkles className="h-4 w-4" />
+                                Session Tools
+                            </h4>
+                            <p className="text-sm text-slate-300">
+                                {selectedMentor?.is_mentor 
+                                    ? "Once approved, you'll use AscendiaLaunchpad for collaborative editing and real-time mentoring."
+                                    : "Once approved, you'll use the Essay Editor for collaborative editing and peer review."
+                                }
+                            </p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3 pt-4">
+                            <Button 
+                                onClick={() => setShowSessionRequestModal(false)}
+                                variant="outline"
+                                className="flex-1 border-slate-600 hover:bg-slate-700"
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                onClick={submitSessionRequest}
+                                disabled={!sessionDescription.trim()}
+                                className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Send Request
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Urgent Session Request Modal */}
             <Dialog open={showUrgentRequestModal} onOpenChange={setShowUrgentRequestModal}>

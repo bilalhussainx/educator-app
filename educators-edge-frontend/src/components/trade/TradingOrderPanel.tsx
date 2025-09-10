@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { 
   ArrowUpCircle, 
   ArrowDownCircle, 
-  DollarSign,
   Wallet,
   TrendingUp,
   CheckCircle,
@@ -90,10 +89,10 @@ export const TradingOrderPanel: React.FC<TradingOrderPanelProps> = ({
     
     try {
       await executeOrder({
-        symbol: selectedSymbol,
+        assetSymbol: selectedSymbol,
         orderType,
         quantity,
-        price: currentPrice
+        orderPrice: currentPrice
       });
 
       setOrderMessage({

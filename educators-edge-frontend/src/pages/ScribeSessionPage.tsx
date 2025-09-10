@@ -3881,7 +3881,7 @@ What would you like me to focus on next?`;
                                         if (analysis && analysis.category && typeof analysis.category === 'string') {
                                             setRequirements(prev => ({
                                                 ...prev,
-                                                writingCategory: analysis.category
+                                                writingCategory: analysis.category || ''
                                             }));
                                             
                                             // Ask AI to confirm and get more details

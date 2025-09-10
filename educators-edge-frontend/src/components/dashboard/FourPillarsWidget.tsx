@@ -14,7 +14,6 @@ import {
     Zap
 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
-import { toast } from 'sonner';
 
 // Types
 interface FourPillarsData {

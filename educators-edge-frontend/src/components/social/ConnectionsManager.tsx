@@ -77,7 +77,6 @@ export const ConnectionsManager: React.FC<ConnectionsManagerProps> = ({
     const [filterTier, setFilterTier] = useState('');
     const [filterType, setFilterType] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [, setSelectedConnection] = useState<Connection | null>(null);
 
     useEffect(() => {
         fetchConnections();

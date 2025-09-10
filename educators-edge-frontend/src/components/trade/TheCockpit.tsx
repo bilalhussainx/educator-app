@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, Target, ArrowUpCircle, ArrowDownCircle, CheckCircle, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Target, ArrowUpCircle, ArrowDownCircle, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { usePortfolio } from '../../hooks/usePortfolio';

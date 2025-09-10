@@ -80,7 +80,7 @@ const TeacherSearchPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [browseResults, setBrowseResults] = useState<Teacher[]>([]);
   const [personalizedRecommendations, setPersonalizedRecommendations] = useState<any>(null);
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [, setSelectedTeacher] = useState<Teacher | null>(null);
 
   // TALENT CRUCIBLE: Enhanced filter states with Four Pillars
   const [filters, setFilters] = useState({

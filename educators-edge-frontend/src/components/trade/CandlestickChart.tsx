@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { TrendingUp, TrendingDown, BarChart3, Settings, Activity } from 'lucide-react';
-import { MarketDataState } from '../../hooks/useMarketData';
+import React, { useEffect, useRef, useState } from 'react';
+import { BarChart3, Activity } from 'lucide-react';
+import { MarketData } from '../../hooks/useMarketData';
 
 interface CandleData {
   timestamp: number;
@@ -13,7 +13,7 @@ interface CandleData {
 
 interface CandlestickChartProps {
   symbol: string;
-  marketData: MarketDataState;
+  marketData: Map<string, MarketData>;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
   timeframe?: string;
   height?: number;
@@ -37,7 +37,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   const [lastMouseX, setLastMouseX] = useState(0);
 
   // Get current market data for the symbol with safe access
-  const currentMarketData = marketData && typeof marketData === 'object' ? marketData[symbol] : undefined;
+  const currentMarketData = marketData?.get(symbol);
 
   // Generate simulated historical data and update with real-time ticks
   useEffect(() => {

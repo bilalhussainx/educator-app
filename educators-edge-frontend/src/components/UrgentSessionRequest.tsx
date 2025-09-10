@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import apiClient from '../services/apiClient';
 import {
-    Clock, Bot, Zap, CheckCircle, AlertCircle, MessageCircle, 
+    Clock, Bot, Zap, CheckCircle, MessageCircle, 
     Code, FileEdit, UserCheck, Calendar, ArrowRight, Upload, File, X
 } from 'lucide-react';
 import { toast } from 'sonner';

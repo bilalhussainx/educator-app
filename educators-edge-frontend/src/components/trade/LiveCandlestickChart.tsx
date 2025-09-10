@@ -31,7 +31,7 @@ export const LiveCandlestickChart: React.FC<LiveCandlestickChartProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [lastMouseX, setLastMouseX] = useState(0);
 
-  const currentSymbolData = marketData[symbol];
+  const currentSymbolData = marketData.get(symbol);
 
   // Generate initial historical data
   useEffect(() => {
@@ -297,7 +297,7 @@ export const LiveCandlestickChart: React.FC<LiveCandlestickChartProps> = ({
             <ZoomOut className="h-4 w-4" />
           </button>
           <div className={`w-2 h-2 rounded-full ${
-            connectionStatus === 'Connected' ? 'bg-green-400' : 'bg-red-400'
+            connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'
           }`}></div>
         </div>
       </div>
@@ -324,11 +324,11 @@ export const LiveCandlestickChart: React.FC<LiveCandlestickChartProps> = ({
         </div>
 
         {/* Connection Status Overlay */}
-        {connectionStatus !== 'Connected' && (
+        {connectionStatus !== 'connected' && (
           <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center">
             <div className="text-center">
               <div className="text-slate-400 mb-2">
-                {connectionStatus === 'Connecting' ? 'Connecting to market data...' : 'Market data disconnected'}
+                {connectionStatus === 'connecting' ? 'Connecting to market data...' : 'Market data disconnected'}
               </div>
               <div className="text-sm text-slate-500">
                 Chart will update when connection is restored

@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import TierBadge from "@/components/ui/TierBadge";
 import apiClient from '../services/apiClient';
-import { Coins, TrendingUp, Gift, MessageCircle, Video, Crown, Star, User } from 'lucide-react';
+import { Coins, Gift, MessageCircle, Video, Crown } from 'lucide-react';
 
 interface TierInfo {
     balance: number;

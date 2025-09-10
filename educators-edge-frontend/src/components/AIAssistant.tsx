@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import apiClient from '../services/apiClient';
 import {
@@ -303,9 +302,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
                         </div>
                     </div>
                 ) : (
-                    <ScrollArea className="h-full" ref={scrollAreaRef}>
+                    <div className="h-full overflow-y-auto" ref={scrollAreaRef}>
                         <div className="space-y-4 pr-4">
-                            {messages.map((message, index) => (
+                            {messages.map((message) => (
                                 <div
                                     key={message.id}
                                     className={cn(
@@ -402,7 +401,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
                             )}
                             <div ref={messageEndRef} />
                         </div>
-                    </ScrollArea>
+                    </div>
                 )}
             </CardContent>
 

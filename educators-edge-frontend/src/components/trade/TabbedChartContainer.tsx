@@ -186,10 +186,10 @@ export const TabbedChartContainer: React.FC<TabbedChartContainerProps> = ({
           
           {/* Connection Status */}
           <div className={`flex items-center gap-2 text-sm ${
-            connectionStatus === 'Connected' ? 'text-green-400' : 'text-red-400'
+            connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400'
           }`}>
             <div className={`w-2 h-2 rounded-full ${
-              connectionStatus === 'Connected' ? 'bg-green-400' : 'bg-red-400'
+              connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'
             }`}></div>
             {connectionStatus}
           </div>
@@ -244,7 +244,7 @@ interface ChartProps {
   symbol: string;
 }
 
-const CandlestickChart: React.FC<ChartProps> = ({ data, symbol }) => {
+const CandlestickChart: React.FC<ChartProps> = ({ data }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   React.useEffect(() => {
@@ -322,7 +322,7 @@ const CandlestickChart: React.FC<ChartProps> = ({ data, symbol }) => {
   );
 };
 
-const LineChart: React.FC<ChartProps> = ({ data, symbol }) => {
+const LineChart: React.FC<ChartProps> = ({ data }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   React.useEffect(() => {
@@ -389,7 +389,7 @@ const LineChart: React.FC<ChartProps> = ({ data, symbol }) => {
   );
 };
 
-const AreaChart: React.FC<ChartProps> = ({ data, symbol }) => {
+const AreaChart: React.FC<ChartProps> = ({ data }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   React.useEffect(() => {
@@ -483,7 +483,7 @@ const AreaChart: React.FC<ChartProps> = ({ data, symbol }) => {
   );
 };
 
-const VolumeChart: React.FC<ChartProps> = ({ data, symbol }) => {
+const VolumeChart: React.FC<ChartProps> = ({ data }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   React.useEffect(() => {
@@ -505,7 +505,6 @@ const VolumeChart: React.FC<ChartProps> = ({ data, symbol }) => {
     // Calculate volume range
     const volumes = data.map(d => d.volume);
     const maxVolume = Math.max(...volumes);
-    const minVolume = Math.min(...volumes);
 
     const chartHeight = rect.height - 40;
     const chartWidth = rect.width - 80;
