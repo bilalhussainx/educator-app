@@ -238,23 +238,21 @@ const CollaborativeEditor = ({
 
     // Monitor content changes for continuous analysis
     React.useEffect(() => {
-        if (editor) {
-            const handleUpdate = () => {
-                const content = editor.getHTML();
-                onContentUpdate?.(content);
-            };
+        if (!editor) return;
 
-            editor.on('update', handleUpdate);
-            
-            // Notify parent that editor is ready
-            onEditorReady?.(editor);
-            
-            return () => {
-                if (editor) {
-                    editor.off('update', handleUpdate);
-                }
-            };
-        }
+        const handleUpdate = () => {
+            const content = editor.getHTML();
+            onContentUpdate?.(content);
+        };
+
+        editor.on('update', handleUpdate);
+        
+        // Notify parent that editor is ready
+        onEditorReady?.(editor);
+        
+        return () => {
+            editor.off('update', handleUpdate);
+        };
     }, [editor, onContentUpdate, onEditorReady]);
 
     return (
@@ -826,8 +824,8 @@ ${localAnalysis.improvements.map(i => `• ${i}`).join('\n')}
                     role: 'assistant',
                     content: fallbackMessage,
                     timestamp: new Date(),
-                    type: 'local-analysis',
-                    section: 'fallback'
+                    type: 'analysis',
+                    section: 'overall'
                 };
                 
                 setAiMessages(prev => [...prev, aiMessage]);
@@ -872,7 +870,6 @@ ${localAnalysis.improvements.map(i => `• ${i}`).join('\n')}
     const sessionParam = searchParams.get('session');
     const mentorParam = searchParams.get('mentor');
     const typeParam = searchParams.get('type');
-    const courseIdParam = searchParams.get('courseId');
     const docId = documentParam || documentId;
 
     // Determine if this is a teacher-led live session or urgent AI session
@@ -3881,7 +3878,7 @@ What would you like me to focus on next?`;
                                         }
                                         
                                         const analysis = analyzeDocumentCategory(currentContent);
-                                        if (analysis && analysis.category) {
+                                        if (analysis && analysis.category && typeof analysis.category === 'string') {
                                             setRequirements(prev => ({
                                                 ...prev,
                                                 writingCategory: analysis.category

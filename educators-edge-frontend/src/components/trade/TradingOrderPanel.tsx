@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePortfolio } from '../../hooks/usePortfolio';
-import { MarketDataState } from '../../hooks/useMarketData';
+// import { MarketDataState } from '../../hooks/useMarketData';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -18,7 +18,7 @@ interface TradingOrderPanelProps {
   watchlistSymbols: string[];
   selectedSymbol: string;
   onSymbolChange: (symbol: string) => void;
-  marketData: MarketDataState;
+  marketData: { [symbol: string]: any };
   portfolioData: any;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
 }

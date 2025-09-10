@@ -1,6 +1,6 @@
 import React from 'react';
 import { CandlestickChart } from './CandlestickChart';
-import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 
 interface MarketData {
   price: number;
@@ -82,6 +82,8 @@ export const TheStage: React.FC<TheStageProps> = ({
         {symbolData ? (
           <CandlestickChart 
             symbol={selectedSymbol}
+            marketData={new Map(Object.entries(marketData))}
+            connectionStatus={isConnected ? 'connected' : 'disconnected'}
             height={400}
             timeframe="1m"
           />
@@ -108,7 +110,7 @@ export const TheStage: React.FC<TheStageProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div className="text-center">
             <div className="text-slate-400">Symbols</div>
-            <div className="text-white font-medium">{marketData.size}</div>
+            <div className="text-white font-medium">{Object.keys(marketData).length}</div>
           </div>
           <div className="text-center">
             <div className="text-slate-400">Active</div>

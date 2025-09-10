@@ -317,11 +317,11 @@ export const TheCockpit: React.FC<TheCockpitProps> = ({
             <div>
               <div className="text-slate-400">Total P&L</div>
               <div className={`font-medium ${
-                (portfolioData?.portfolio?.totalPnl || 0) >= 0 
+                ((portfolioData?.portfolio as any)?.totalPnl || 0) >= 0 
                   ? 'text-green-400' 
                   : 'text-red-400'
               }`}>
-                ${portfolioData?.portfolio?.totalPnl?.toFixed(2) || '0.00'}
+                ${((portfolioData?.portfolio as any)?.totalPnl?.toFixed(2)) || '0.00'}
               </div>
             </div>
             <div>

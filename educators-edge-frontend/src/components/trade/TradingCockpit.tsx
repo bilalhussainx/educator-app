@@ -21,11 +21,11 @@ interface TradingCockpitProps {
 
 export const TradingCockpit: React.FC<TradingCockpitProps> = ({
   activeSymbol,
-  availableSymbols,
+  availableSymbols: _,
   marketData,
   portfolioData,
   connectionStatus,
-  onSymbolChange,
+  onSymbolChange: __,
   executeOrder
 }) => {
   const [quantity, setQuantity] = useState(1);

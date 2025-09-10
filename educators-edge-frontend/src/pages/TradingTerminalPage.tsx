@@ -24,7 +24,6 @@ const TradingTerminalPage: React.FC = () => {
   const { 
     connectionStatus, 
     marketData, 
-    latestTrade, 
     reconnect
   } = useFinnhubWebSocket();
 
@@ -165,7 +164,7 @@ const TradingTerminalPage: React.FC = () => {
           <div className="h-1/3">
             <LivePortfolio
               portfolioData={portfolioData}
-              marketData={marketData}
+              marketData={Object.fromEntries(marketData)}
               connectionStatus={connectionStatus}
               activeSymbol={activeSymbol}
             />

@@ -390,8 +390,8 @@ const TrustGraphPage: React.FC = () => {
                                 </AvatarFallback>
                             </Avatar>
                             <div>
-                                <CardTitle className="text-lg text-white flex items-center gap-2">
-                                    {user.display_name || user.username}
+                                <CardTitle className="text-lg text-white font-semibold flex items-center gap-2">
+                                    {user.display_name || user.username || 'Unknown User'}
                                     {isAIBot && (
                                         <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-2 py-1 text-xs">
                                             <Bot className="h-3 w-3 mr-1" />
