@@ -1,13 +1,12 @@
 // src/pages/TrustGraphPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import UrgentSessionRequest from '../components/UrgentSessionRequest';
@@ -30,22 +29,17 @@ import {
     GraduationCap,
     BarChart3,
     MapPin,
-    Calendar,
     Clock,
     Filter,
     Bell,
     Activity,
     UserMinus,
     Shield,
-    Gift,
     Crown,
     Target,
     Bookmark,
-    Share2,
-    ThumbsUp,
     Sparkles,
     ChevronRight,
-    Plus,
     Settings,
     Globe
 } from 'lucide-react';

@@ -13,7 +13,7 @@ export interface LatestTrade {
   timestamp: number;
 }
 
-export type ConnectionStatus = 'Connecting' | 'Connected' | 'Disconnected';
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
 
 export interface UseFinnhubWebSocketReturn {
   connectionStatus: ConnectionStatus;
@@ -54,7 +54,7 @@ console.log(`[Finnhub] Using ${USE_SIMULATION ? 'SIMULATION' : 'REAL'} mode`);
 export const useFinnhubWebSocket = (
   initialSymbols: string[] = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'NFLX']
 ): UseFinnhubWebSocketReturn => {
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('Disconnected');
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [marketData, setMarketData] = useState<Map<string, MarketData>>(new Map());
   const [latestTrade, setLatestTrade] = useState<LatestTrade | null>(null);
   
@@ -152,7 +152,7 @@ export const useFinnhubWebSocket = (
   const startSimulation = useCallback(() => {
     console.log('[Finnhub] Starting simulation mode with realistic market data');
     console.log('[Finnhub] Subscribed symbols:', Array.from(subscribedSymbolsRef.current));
-    setConnectionStatus('Connected');
+    setConnectionStatus('connected');
     
     // Initialize base prices for symbols (updated with current market prices)
     const basePrices: { [key: string]: number } = {
@@ -253,7 +253,7 @@ export const useFinnhubWebSocket = (
       reconnectTimeoutRef.current = null;
     }
 
-    setConnectionStatus('Connecting');
+    setConnectionStatus('connecting');
     console.log('[Finnhub] Connecting to WebSocket...');
     console.log('[Finnhub] API Key check:', FINNHUB_API_KEY ? 'Present' : 'Missing');
 
@@ -263,7 +263,7 @@ export const useFinnhubWebSocket = (
 
       ws.onopen = () => {
         console.log('[Finnhub] WebSocket connected successfully');
-        setConnectionStatus('Connected');
+        setConnectionStatus('connected');
         reconnectAttemptsRef.current = 0;
 
         // Subscribe to all symbols
@@ -284,7 +284,7 @@ export const useFinnhubWebSocket = (
 
       ws.onclose = (event) => {
         console.log(`[Finnhub] WebSocket closed:`, event.code, event.reason);
-        setConnectionStatus('Disconnected');
+        setConnectionStatus('disconnected');
 
         // Only attempt reconnection if it wasn't a clean close and we haven't exceeded max attempts
         if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
@@ -304,7 +304,7 @@ export const useFinnhubWebSocket = (
 
       ws.onerror = (error) => {
         console.warn('[Finnhub] WebSocket connection failed - API may be unavailable');
-        setConnectionStatus('Disconnected');
+        setConnectionStatus('disconnected');
         
         // Switch to simulation immediately on connection errors
         console.log('[Finnhub] Switching to simulation mode for reliable data');
@@ -315,7 +315,7 @@ export const useFinnhubWebSocket = (
 
     } catch (error) {
       console.error('[Finnhub] Failed to create WebSocket connection:', error);
-      setConnectionStatus('Disconnected');
+      setConnectionStatus('disconnected');
     }
   }, [handleMessage]);
 

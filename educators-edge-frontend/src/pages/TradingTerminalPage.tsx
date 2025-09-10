@@ -25,9 +25,7 @@ const TradingTerminalPage: React.FC = () => {
     connectionStatus, 
     marketData, 
     latestTrade, 
-    reconnect, 
-    subscribe, 
-    unsubscribe 
+    reconnect
   } = useFinnhubWebSocket();
 
   // Portfolio data
@@ -144,7 +142,7 @@ const TradingTerminalPage: React.FC = () => {
         <div className="bg-slate-900 border-r border-slate-700 overflow-hidden">
           <MarketPulse
             symbols={availableSymbols}
-            marketData={marketData}
+            marketData={Object.fromEntries(marketData)}
             connectionStatus={connectionStatus}
             activeSymbol={activeSymbol}
             onSymbolSelect={setActiveSymbol}

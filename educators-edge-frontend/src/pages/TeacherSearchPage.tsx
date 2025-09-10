@@ -20,6 +20,8 @@ import { useNavigate } from 'react-router-dom';
 interface Teacher {
   user_id: string;
   display_name: string;
+  first_name?: string;
+  last_name?: string;
   bio: string;
   teacher_bio: string;
   location: string;
@@ -50,6 +52,7 @@ interface Teacher {
 interface SearchResult {
   teacherId: string;
   matchScore: number;
+  compatibilityScore?: number;
   compatibilityReasons: string[];
   learningOutcomes: string[];
   sessionStructure: string;
