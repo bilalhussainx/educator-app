@@ -8,12 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
-    Search, Filter, Star, MapPin, Clock, DollarSign, Users, Award, Sparkles,
-    Brain, Target, TrendingUp, Zap, Heart, GraduationCap, BarChart3,
+    Search, Filter, Star, MapPin, Clock, Users, Sparkles,
+    Target, TrendingUp, Zap, Heart, GraduationCap, BarChart3,
     BookOpen, Calendar, User, Crown, CheckCircle
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
-import { useNavigate } from 'react-router-dom';
 import { TierBadge } from '../components/ui/TierBadge';
 
 interface Teacher {

@@ -277,7 +277,7 @@ const CollaborativeEditor = ({
                         <Users className="h-4 w-4 text-slate-400" />
                         <span className="text-sm text-slate-400">{collaborators.length + 1} collaborators</span>
                         <div className="flex -space-x-2">
-                            {collaborators.slice(0, 3).map((collab, index) => (
+                            {collaborators.slice(0, 3).map((collab) => (
                                 <Avatar key={collab.id} className="h-6 w-6 border-2 border-slate-700">
                                     <AvatarFallback 
                                         className="text-xs text-white"
@@ -322,7 +322,7 @@ const ScribeSessionPage: React.FC = () => {
     const [currentContent, setCurrentContent] = useState('');
     const [aiMentor, setAiMentor] = useState<any>(null);
     const [uploadedDocument, setUploadedDocument] = useState<any>(null);
-    const [isLoadingDocument, setIsLoadingDocument] = useState(false);
+    const [, setIsLoadingDocument] = useState(false);
     const [collaborators, setCollaborators] = useState<CollaborationUser[]>([]);
     const [selectedText, setSelectedText] = useState('');
     const [selectionRange, setSelectionRange] = useState<{ from: number; to: number } | null>(null);
@@ -426,7 +426,7 @@ const ScribeSessionPage: React.FC = () => {
     const [showEditApproval, setShowEditApproval] = useState(false);
 
     // Educational Data Learning State - Patterns from Teacher-Student Interactions
-    const [educationalKnowledge, setEducationalKnowledge] = useState({
+    const [educationalKnowledge] = useState({
         commonIssues: {
             // Patterns learned from teacher feedback data
             weakOpenings: { pattern: /^(In this essay|This essay|There are|It is)/, severity: 0.8, suggestions: ['Start with a hook', 'Begin with a strong statement', 'Use an anecdote'] },
@@ -573,7 +573,7 @@ const ScribeSessionPage: React.FC = () => {
 
     // Draft History State
     const [draftHistory, setDraftHistory] = useState<DraftVersion[]>([]);
-    const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
+    const [, setCurrentVersionId] = useState<string | null>(null);
 
     // Comprehensive Writing Categories System
     const writingCategories = {
@@ -627,8 +627,6 @@ const ScribeSessionPage: React.FC = () => {
         if (plainText.length < 100) return null; // Not enough content to analyze
         
         const wordCount = plainText.split(/\s+/).length;
-        const sentences = plainText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        const paragraphs = plainText.split(/\n\s*\n/).filter(p => p.trim().length > 0);
         
         // Detection patterns for different categories
         const patterns = {
@@ -689,7 +687,7 @@ const ScribeSessionPage: React.FC = () => {
                 bestMatch = {
                     category: category,
                     confidence: confidence,
-                    questions: generateClarifyingQuestions(category, wordCount, plainText)
+                    questions: generateClarifyingQuestions(category, plainText)
                 };
             }
         }
@@ -697,7 +695,7 @@ const ScribeSessionPage: React.FC = () => {
         return bestMatch.confidence > 0.6 ? bestMatch : null;
     };
     
-    const generateClarifyingQuestions = (category: string, wordCount: number, content: string) => {
+    const generateClarifyingQuestions = (category: string, content: string) => {
         const questions = {
             'Personal Statement': [
                 "Is this for college admissions or graduate school applications?",
@@ -2172,8 +2170,7 @@ Ask just ONE question at a time, keep it conversational and encouraging. Make th
                 action: 'replace',
                 content: suggestedText,
                 originalText: originalText,
-                reason: reason,
-                highlightText: originalText // Text to highlight in editor
+                reason: reason
             }
         };
         setPendingEdits(prev => [...prev, message]);
@@ -3142,7 +3139,7 @@ As an AI with access to patterns from thousands of teacher feedback sessions, ad
                 if (writingType === 'auto-detect' && wordCount > 50) {
                     const detectedCategory = analyzeDocumentCategory(plainText);
                     if (detectedCategory && detectedCategory.confidence > 0.7 && detectedCategory.category) {
-                        setWritingType(detectedCategory.category.toLowerCase().replace(/\s+/g, '-'));
+                        setWritingType(String(detectedCategory.category).toLowerCase().replace(/\s+/g, '-'));
                         
                         // Send notification to AI about detected category
                         if (aiSessionId) {
@@ -3252,12 +3249,12 @@ What would you like me to focus on next?`;
         
         // Update user profile based on what they accepted
         setTimeout(() => {
-            analyzeAcceptedEdit(previousContent, currentContent, message.content);
+            analyzeAcceptedEdit(previousContent, currentContent);
         }, 100);
     };
 
     // Analyze what the user accepted to learn their preferences
-    const analyzeAcceptedEdit = (beforeContent: string, afterContent: string, suggestion: string) => {
+    const analyzeAcceptedEdit = (beforeContent: string, afterContent: string) => {
         const changes = detectContentChanges(beforeContent, afterContent);
         
         setUserWritingProfile(prev => {
@@ -3317,10 +3314,10 @@ What would you like me to focus on next?`;
     
 
     return (
-        <AppLayout>
+        <AppLayout user={user} setUser={() => {}}>
             <div className="w-full h-full flex flex-col bg-slate-950 text-white font-sans overflow-hidden">
                 {/* CSS Styles for AI Suggestion Highlighting */}
-                <style jsx>{`
+                <style>{`
                     .ai-suggestion-highlight {
                         background-color: rgba(59, 130, 246, 0.3) !important;
                         border: 2px solid #3b82f6 !important;
@@ -4094,7 +4091,7 @@ What would you like me to focus on next?`;
                                 <Button
                                     variant="outline"
                                     onClick={() => {
-                                        setRequirements({ wordCount: '', audience: '', purpose: '', tone: '', specificPrompt: '' });
+                                        setRequirements({ writingCategory: '', subCategory: '', wordCount: '', audience: '', purpose: '', tone: '', specificPrompt: '' });
                                         setShowRequirements(false);
                                     }}
                                     className="border-slate-600 text-slate-300 hover:bg-slate-700"
@@ -4340,7 +4337,7 @@ What would you like me to focus on next?`;
                                             size="sm"
                                             variant="outline"
                                             onClick={() => {
-                                                highlightTextInEditor(edit.suggestedEdit.originalText);
+                                                highlightTextInEditor(edit.suggestedEdit?.originalText || '');
                                                 toast.info('Text highlighted in editor');
                                             }}
                                             className="border-blue-500 text-blue-300 hover:bg-blue-600/20 text-xs"
