@@ -93,7 +93,7 @@ const MarketWidget: React.FC<MarketWidgetProps> = ({ title, icon: Icon, data, is
         <h3 className="font-semibold text-white">{title}</h3>
       </div>
       <div className="space-y-3">
-        {data.slice(0, 5).map((item, index) => (
+        {data.slice(0, 5).map((item) => (
           <Link
             key={item.symbol}
             to={`/analysis/${item.symbol}`}

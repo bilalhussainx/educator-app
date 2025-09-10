@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +11,7 @@ import apiClient from '../services/apiClient';
 import { 
     Search, Filter, MapPin, Clock, Star, DollarSign, 
     BookOpen, MessageSquare, FileEdit, Video, Eye, 
-    ChevronLeft, ChevronRight, Users, GraduationCap, 
-    Languages, Verified, AlertCircle
+    ChevronLeft, Users, Verified, AlertCircle
 } from 'lucide-react';
 
 interface Profile {

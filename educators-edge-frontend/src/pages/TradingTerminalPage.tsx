@@ -166,7 +166,7 @@ const TradingTerminalPage: React.FC = () => {
           <div className="h-1/3">
             <LivePortfolio
               portfolioData={portfolioData}
-              marketData={marketData}
+              marketData={Object.fromEntries(marketData)}
               connectionStatus={connectionStatus}
               activeSymbol={activeSymbol}
             />
@@ -178,7 +178,7 @@ const TradingTerminalPage: React.FC = () => {
           <TradingCockpit
             activeSymbol={activeSymbol}
             availableSymbols={availableSymbols}
-            marketData={marketData}
+            marketData={Object.fromEntries(marketData)}
             portfolioData={portfolioData}
             connectionStatus={connectionStatus}
             onSymbolChange={setActiveSymbol}

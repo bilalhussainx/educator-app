@@ -7,7 +7,7 @@ import { ArrowUpCircle, ArrowDownCircle, DollarSign, Wallet, AlertTriangle, Chec
 interface TradingCockpitProps {
   activeSymbol: string;
   availableSymbols: string[];
-  marketData: Map<string, MarketData>;
+  marketData: { [symbol: string]: MarketData };
   portfolioData: any;
   connectionStatus: ConnectionStatus;
   onSymbolChange: (symbol: string) => void;
@@ -66,7 +66,7 @@ export const TradingCockpit: React.FC<TradingCockpitProps> = ({
 
   const handleExecuteOrder = async (orderType: 'BUY' | 'SELL') => {
     // Connection check
-    if (connectionStatus !== 'Connected') {
+    if (connectionStatus !== 'connected') {
       setOrderMessage({
         type: 'error',
         message: 'Market data connection required for trading'
@@ -94,12 +94,21 @@ export const TradingCockpit: React.FC<TradingCockpitProps> = ({
     setIsExecutingOrder(true);
 
     try {
+      console.log('[TradingCockpit] Executing order:', {
+        assetSymbol: activeSymbol,
+        orderType,
+        quantity,
+        orderPrice: currentPrice
+      });
+
       const result = await executeOrder({
         assetSymbol: activeSymbol,
         orderType,
         quantity,
         orderPrice: currentPrice
       });
+
+      console.log('[TradingCockpit] Order execution result:', result);
 
       if (result.success) {
         setOrderMessage({
@@ -127,7 +136,7 @@ export const TradingCockpit: React.FC<TradingCockpitProps> = ({
   };
 
   const getConnectionWarning = () => {
-    if (connectionStatus !== 'Connected') {
+    if (connectionStatus !== 'connected') {
       return (
         <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-4">
           <div className="flex items-center gap-2">
@@ -221,7 +230,7 @@ export const TradingCockpit: React.FC<TradingCockpitProps> = ({
       <div className="grid grid-cols-2 gap-3 mb-4">
         <Button
           onClick={() => handleExecuteOrder('BUY')}
-          disabled={isExecutingOrder || !canAffordBuy || connectionStatus !== 'Connected'}
+          disabled={isExecutingOrder || !canAffordBuy || connectionStatus !== 'connected'}
           className="h-14 font-bold text-white bg-green-600 hover:bg-green-700 disabled:bg-green-900/50 disabled:cursor-not-allowed"
           title={!canAffordBuy ? `Need $${orderValue.toFixed(2)}, have $${userCash.toFixed(2)}` : ''}
         >
@@ -231,7 +240,7 @@ export const TradingCockpit: React.FC<TradingCockpitProps> = ({
 
         <Button
           onClick={() => handleExecuteOrder('SELL')}
-          disabled={isExecutingOrder || !canSell || connectionStatus !== 'Connected'}
+          disabled={isExecutingOrder || !canSell || connectionStatus !== 'connected'}
           className="h-14 font-bold text-white bg-red-600 hover:bg-red-700 disabled:bg-red-900/50 disabled:cursor-not-allowed"
           title={!canSell ? `Need ${quantity} shares, have ${userHoldings}` : ''}
         >

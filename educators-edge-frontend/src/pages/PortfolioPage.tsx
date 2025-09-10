@@ -5,7 +5,7 @@ import { usePortfolio } from '../hooks/usePortfolio';
 import { useMarketData } from '../hooks/useMarketData';
 import { 
   TrendingUp, TrendingDown, PieChart, DollarSign, 
-  BarChart3, Target, Plus, ExternalLink 
+  BarChart3, Target, ExternalLink 
 } from 'lucide-react';
 
 interface Position {
@@ -220,7 +220,7 @@ const AllocationChart: React.FC<{ positions: Position[] }> = ({ positions }) => 
 export default function PortfolioPage() {
   // Get real portfolio data from the usePortfolio hook
   const { portfolioData, loading, error } = usePortfolio();
-  const { marketData } = useMarketData();
+  useMarketData();
 
   // Convert portfolio data to the expected format
   const portfolio: PortfolioSummary | null = portfolioData ? {

@@ -92,22 +92,32 @@ export const usePortfolio = (): UsePortfolioReturn => {
     orderPrice?: number;
   }) => {
     try {
+      console.log('[usePortfolio] Executing order:', order);
       const response = await apiClient.post('/api/trade/orders/execute', order);
+      console.log('[usePortfolio] Order response:', response.data);
       
       if (response.data.success) {
+        console.log('[usePortfolio] Order successful, refreshing portfolio...');
         await refreshPortfolio();
         return { success: true };
       } else {
+        console.error('[usePortfolio] Order failed:', response.data.message);
         return { 
           success: false, 
           message: response.data.message || 'Order execution failed' 
         };
       }
     } catch (err: any) {
-      console.error('Order execution error:', err);
+      console.error('[usePortfolio] Order execution error:', err);
+      console.error('[usePortfolio] Error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message
+      });
       return { 
         success: false, 
-        message: err.response?.data?.message || 'Order execution failed' 
+        message: err.response?.data?.message || err.message || 'Trade execution failed due to system error'
       };
     }
   }, [refreshPortfolio]);

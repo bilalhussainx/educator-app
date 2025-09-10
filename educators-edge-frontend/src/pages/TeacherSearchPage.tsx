@@ -13,7 +13,7 @@ import {
     BookOpen, Calendar, User, Crown, CheckCircle
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
-import { TierBadge } from '../components/ui/TierBadge';
+import TierBadge from '../components/ui/TierBadge';
 
 interface Teacher {
   user_id: string;

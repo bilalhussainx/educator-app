@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import apiClient from '../services/apiClient';
 import { 
-    User, MapPin, Clock, GraduationCap, Languages, DollarSign, 
+    User, DollarSign, 
     BookOpen, MessageSquare, FileEdit, Save, Plus, X, ChevronLeft, ChevronRight,
     AlertCircle, CheckCircle, Star, Briefcase, Globe, Target, Award
 } from 'lucide-react';
@@ -100,7 +100,6 @@ const ProfileSetupPage: React.FC = () => {
     // Available specializations
     const [availableSpecializations, setAvailableSpecializations] = useState<Specialization[]>([]);
     const [newLanguage, setNewLanguage] = useState('');
-    const [customSpecialization, setCustomSpecialization] = useState('');
 
     // Load existing profile and specializations
     useEffect(() => {

@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Volume2, Wifi, WifiOff } from 'lucide-react';
-import { MarketDataState, MarketTick } from '../../hooks/useMarketData';
+import { MarketData } from '../../hooks/useMarketData';
 
 interface PriceTickerProps {
   symbols: string[];
-  marketData: MarketDataState;
+  marketData: { [symbol: string]: MarketData };
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
   onSymbolClick?: (symbol: string) => void;
   selectedSymbol?: string;
@@ -16,8 +16,7 @@ export const PriceTicker: React.FC<PriceTickerProps> = ({
   marketData,
   connectionStatus,
   onSymbolClick,
-  selectedSymbol,
-  updateInterval = 500 
+  selectedSymbol
 }) => {
   const formatPrice = (price: number): string => {
     return price.toFixed(2);

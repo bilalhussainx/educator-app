@@ -27,7 +27,7 @@ export const TheCockpit: React.FC<TheCockpitProps> = ({
   symbolData,
   isConnected,
 }) => {
-  const { portfolioData, refetchPortfolio } = usePortfolio();
+  const { portfolioData, refreshPortfolio } = usePortfolio();
   const watchlistSymbols = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'NFLX'];
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy');
   const [quantity, setQuantity] = useState(1);
@@ -106,7 +106,7 @@ export const TheCockpit: React.FC<TheCockpitProps> = ({
         });
         
         // Trigger portfolio refresh to update UI
-        await refetchPortfolio();
+        await refreshPortfolio();
         
         // Reset form
         setQuantity(1);

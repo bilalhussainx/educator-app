@@ -245,7 +245,7 @@ export default function AnalysisPage() {
             <TabbedChartContainer
               symbol={currentSymbol}
               marketData={new Map()} // Analysis page doesn't use live market data
-              connectionStatus="Connected" // Always show as connected for OHLC data
+              connectionStatus="connected" // Always show as connected for OHLC data
               latestTrade={null}
               height={384}
             />
@@ -257,7 +257,7 @@ export default function AnalysisPage() {
           <FundamentalDataGrid data={quoteData} />
           
           {/* Simulation-Powered Analysis Section */}
-          <SimulationAnalysisSection symbol={currentSymbol} />
+          <SimulationAnalysisSection />
         </div>
       </div>
     </FinancialLayout>

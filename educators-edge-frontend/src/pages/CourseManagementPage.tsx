@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, PlusCircle, BookOpen, AlertCircle, ChevronRight, Settings, Users, RadioTower, Search, Plus, Sparkles, Trash2, Eye, BookCopy, BookText, FileCode, FilePlus2, Loader2 } from 'lucide-react';
+import { ChevronLeft, BookOpen, AlertCircle, Settings, Users, RadioTower, Search, Plus, Sparkles, Trash2, Eye, BookCopy, BookText, FileCode, FilePlus2, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // --- CoreZenith UI Primitives (Styled for the theme) ---

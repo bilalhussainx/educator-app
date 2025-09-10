@@ -13,15 +13,10 @@ import {
   Target,
   Lightbulb,
   BookOpen,
-  Calendar,
   Clock,
   Zap,
   Eye,
-  ArrowRight,
-  DollarSign,
-  PieChart,
-  Activity,
-  Award
+  PieChart
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -94,7 +89,7 @@ export const SimulationAnalysisSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const { marketData } = useMarketData();
-  const { currentSession, portfolioData, executeTrade } = useSimulationPortfolio();
+  const { currentSession, executeTrade } = useSimulationPortfolio();
   const navigate = useNavigate();
 
   const periods = historicalDataService.getHistoricalPeriods();
@@ -108,10 +103,10 @@ export const SimulationAnalysisSection: React.FC = () => {
       const symbols = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'NFLX'];
 
       symbols.forEach(symbol => {
-        const data = marketData[symbol];
+        const data = marketData.get(symbol);
         if (data) {
           // Generate contextual insights based on historical period
-          const periodContext = getPeriodContext(symbol, currentSession?.historical_period);
+          const periodContext = getPeriodContext(currentSession?.historical_period);
           
           if (data.changePercent > 5) {
             insights.push({
@@ -255,7 +250,7 @@ export const SimulationAnalysisSection: React.FC = () => {
     setLoading(false);
   }, []);
 
-  const getPeriodContext = (symbol: string, period?: string) => {
+  const getPeriodContext = (period?: string) => {
     const contexts: Record<string, any> = {
       'great-depression': {
         context: 'During the Great Depression, quality companies often presented exceptional value opportunities.',
@@ -343,9 +338,11 @@ export const SimulationAnalysisSection: React.FC = () => {
   };
 
   const handleQuickTrade = async (symbol: string, type: 'BUY' | 'SELL') => {
-    if (!currentSession || !marketData[symbol]) return;
+    if (!currentSession || !marketData.get(symbol)) return;
 
-    const price = marketData[symbol].price;
+    const symbolData = marketData.get(symbol);
+    if (!symbolData) return;
+    const price = symbolData.price;
     const quantity = 10; // Default quantity
 
     try {
@@ -440,11 +437,11 @@ export const SimulationAnalysisSection: React.FC = () => {
             }`}
           >
             {symbol}
-            {marketData[symbol] && (
+            {marketData.get(symbol) && (
               <span className={`ml-2 text-xs ${
-                marketData[symbol].change >= 0 ? 'text-green-400' : 'text-red-400'
+                marketData.get(symbol)?.change >= 0 ? 'text-green-400' : 'text-red-400'
               }`}>
-                {marketData[symbol].changePercent.toFixed(1)}%
+                {marketData.get(symbol)?.changePercent.toFixed(1)}%
               </span>
             )}
           </button>

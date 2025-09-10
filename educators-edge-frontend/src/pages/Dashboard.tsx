@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import apiClient from '../services/apiClient'; // The centralized API client
 import axios from 'axios'; // Import axios to check for specific error types
 import { PortfolioWidget } from '../components/trade/PortfolioWidget'; // <-- 1. IMPORT THE WIDGET
-import FourPillarsWidget from '../components/dashboard/FourPillarsWidget';
 
 // --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
