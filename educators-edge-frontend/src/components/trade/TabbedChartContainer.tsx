@@ -57,6 +57,7 @@ export const TabbedChartContainer: React.FC<TabbedChartContainerProps> = ({
           // Convert mock data format to OHLC format
           const convertedData: OHLCData[] = mockData.map(item => ({
             timestamp: item.timestamp,
+            date: new Date(item.timestamp).toISOString(),
             open: item.open,
             high: item.high,
             low: item.low,
@@ -95,7 +96,7 @@ export const TabbedChartContainer: React.FC<TabbedChartContainerProps> = ({
   }, [symbol]);
 
   // Generate basic mock data as last resort
-  const generateBasicMockData = (symbol: string): OHLCData[] => {
+  const generateBasicMockData = (_: string): OHLCData[] => {
     const data: OHLCData[] = [];
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
@@ -110,7 +111,15 @@ export const TabbedChartContainer: React.FC<TabbedChartContainerProps> = ({
       const low = Math.min(open, close) * (1 - Math.random() * 0.01);
       const volume = Math.floor(1000000 + Math.random() * 2000000);
       
-      data.push({ timestamp, open, high, low, close, volume });
+      data.push({ 
+        timestamp, 
+        date: new Date(timestamp).toISOString().split('T')[0],
+        open, 
+        high, 
+        low, 
+        close, 
+        volume 
+      });
       price = close;
     }
     

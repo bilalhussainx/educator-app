@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { TrendingDown, PieChart, DollarSign, BarChart3 } from 'lucide-react';
+import { PieChart, DollarSign, BarChart3 } from 'lucide-react';
 import { MarketData } from '../../hooks/useFinnhubWebSocket';
 
 interface PortfolioDashboardProps {
@@ -26,10 +26,18 @@ export const PortfolioDashboard: React.FC<PortfolioDashboardProps> = ({
 
     let totalHoldingsValue = 0;
     let totalPnL = 0;
-    const positions = [];
+    const positions: Array<{
+      symbol: string;
+      shares: number;
+      currentPrice: number;
+      value: number;
+      avgCost: number;
+      pnl: number;
+      pnlPercent: number;
+    }> = [];
 
     Object.entries(holdings).forEach(([symbol, shares]: [string, any]) => {
-      const currentPrice = marketData[symbol]?.price || 150; // Fallback price
+      const currentPrice = marketData.get(symbol)?.price || 150; // Fallback price
       const value = currentPrice * shares;
       const avgCost = 140; // Simulated average cost
       const pnl = (currentPrice - avgCost) * shares;

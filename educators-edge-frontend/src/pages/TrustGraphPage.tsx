@@ -69,6 +69,8 @@ interface Connection {
         specializations: string[];
         is_mentor: boolean;
         verified_mentor: boolean;
+        role?: string;
+        is_searchable_teacher?: boolean;
         total_sessions: number;
         average_rating: number;
     };
@@ -91,6 +93,8 @@ interface Follower {
         specializations: string[];
         is_mentor: boolean;
         verified_mentor: boolean;
+        role?: string;
+        is_searchable_teacher?: boolean;
     };
 }
 
@@ -368,10 +372,17 @@ const TrustGraphPage: React.FC = () => {
         }
     };
 
-    const handleSessionRequest = (mentor: any) => {
-        setSelectedMentor(mentor);
+    const handleSessionRequest = (user: any) => {
+        setSelectedMentor(user);
         setSessionDescription('');
-        setSessionType(mentor.is_mentor ? 'mentoring' : 'collaboration');
+        // Determine session type based on user role/type
+        if (user.is_mentor) {
+            setSessionType('mentoring');
+        } else if (user.role === 'teacher' || user.is_searchable_teacher) {
+            setSessionType('tutoring');
+        } else {
+            setSessionType('collaboration');
+        }
         setShowSessionRequestModal(true);
     };
 
@@ -481,6 +492,12 @@ const TrustGraphPage: React.FC = () => {
                                     {user.verified_mentor && (
                                         <Award className="h-4 w-4 text-blue-400" />
                                     )}
+                                    {(user.role === 'teacher' || user.is_searchable_teacher) && (
+                                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30 px-2 py-1 text-xs font-medium">
+                                            <GraduationCap className="h-3 w-3 mr-1" />
+                                            Teacher
+                                        </Badge>
+                                    )}
                                 </CardTitle>
                                 <div className="flex items-center gap-2 mt-1">
                                     {!isAIBot && (
@@ -541,10 +558,10 @@ const TrustGraphPage: React.FC = () => {
                                             </Button>
                                         )}
                                         
-                                        {user.is_mentor ? (
+                                        {(user.is_mentor || user.role === 'teacher' || user.is_searchable_teacher) ? (
                                             <Button 
                                                 size="sm"
-                                                onClick={() => navigate(`/sessions?mentor=${user.id}`)}
+                                                onClick={() => navigate(`/sessions?${user.is_mentor ? 'mentor' : 'teacher'}=${user.id}`)}
                                                 className="bg-purple-600 hover:bg-purple-500 font-medium shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
                                             >
                                                 <MessageSquare className="h-3 w-3 mr-1" />
@@ -644,7 +661,7 @@ const TrustGraphPage: React.FC = () => {
                         <Button 
                             size="sm" 
                             variant="outline" 
-                            onClick={() => navigate(`/profile/view/${user.id}`)}
+                            onClick={() => navigate(`/profile/${user.id}`)}
                             className="flex-1 border-slate-600 hover:bg-slate-700 font-medium hover:border-slate-500 transition-all duration-200"
                         >
                             <Eye className="h-3 w-3 mr-1" />
@@ -653,11 +670,11 @@ const TrustGraphPage: React.FC = () => {
                         <Button 
                             size="sm" 
                             variant="outline" 
-                            onClick={() => user.is_mentor ? handleSessionRequest(user) : navigate(`/messages?user=${user.id}`)}
+                            onClick={() => (user.is_mentor || user.role === 'teacher' || user.is_searchable_teacher) ? handleSessionRequest(user) : navigate(`/messages/compose?to=${user.id}`)}
                             className="flex-1 border-slate-600 hover:bg-slate-700 font-medium hover:border-slate-500 transition-all duration-200"
                         >
                             <MessageCircle className="h-3 w-3 mr-1" />
-                            {user.is_mentor ? 'Request Session' : 'Message'}
+                            {(user.is_mentor || user.role === 'teacher' || user.is_searchable_teacher) ? 'Request Session' : 'Message'}
                         </Button>
                     </div>
                 </CardContent>
@@ -1094,31 +1111,31 @@ const TrustGraphPage: React.FC = () => {
 
                 <TabsContent value="connections">
                     <div className="space-y-6">
-                        {/* Connected Mentors Section */}
-                        {connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor === true).length > 0 && (
+                        {/* Connected Mentors & Teachers Section */}
+                        {connections.filter(c => c.status === 'accepted' && (c.connected_user?.is_mentor === true || c.connected_user?.role === 'teacher' || c.connected_user?.is_searchable_teacher === true)).length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                                     <GraduationCap className="h-5 w-5" />
-                                    Connected Mentors ({connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor === true).length})
+                                    Connected Mentors & Teachers ({connections.filter(c => c.status === 'accepted' && (c.connected_user?.is_mentor === true || c.connected_user?.role === 'teacher' || c.connected_user?.is_searchable_teacher === true)).length})
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {connections
-                                        .filter(c => c.status === 'accepted' && c.connected_user?.is_mentor === true)
+                                        .filter(c => c.status === 'accepted' && (c.connected_user?.is_mentor === true || c.connected_user?.role === 'teacher' || c.connected_user?.is_searchable_teacher === true))
                                         .map(connection => renderUserCard(connection.connected_user, true, 'connected'))}
                                 </div>
                             </div>
                         )}
                         
                         {/* Other Connections */}
-                        {connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor !== true).length > 0 && (
+                        {connections.filter(c => c.status === 'accepted' && !(c.connected_user?.is_mentor === true || c.connected_user?.role === 'teacher' || c.connected_user?.is_searchable_teacher === true)).length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                                     <Users className="h-5 w-5" />
-                                    Other Connections ({connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor !== true).length})
+                                    Other Connections ({connections.filter(c => c.status === 'accepted' && !(c.connected_user?.is_mentor === true || c.connected_user?.role === 'teacher' || c.connected_user?.is_searchable_teacher === true)).length})
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {connections
-                                        .filter(c => c.status === 'accepted' && c.connected_user?.is_mentor !== true)
+                                        .filter(c => c.status === 'accepted' && !(c.connected_user?.is_mentor === true || c.connected_user?.role === 'teacher' || c.connected_user?.is_searchable_teacher === true))
                                         .map(connection => renderUserCard(connection.connected_user, true, 'connected'))}
                                 </div>
                             </div>
@@ -1146,31 +1163,31 @@ const TrustGraphPage: React.FC = () => {
 
                 <TabsContent value="followers">
                     <div className="space-y-6">
-                        {/* Mentor Followers */}
-                        {followers.filter(f => f.user?.is_mentor === true).length > 0 && (
+                        {/* Mentor & Teacher Followers */}
+                        {followers.filter(f => f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true).length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                                     <GraduationCap className="h-5 w-5" />
-                                    Mentor Followers ({followers.filter(f => f.user?.is_mentor === true).length})
+                                    Mentor & Teacher Followers ({followers.filter(f => f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true).length})
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {followers
-                                        .filter(f => f.user?.is_mentor === true)
+                                        .filter(f => f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true)
                                         .map(follower => renderUserCard(follower.user, true))}
                                 </div>
                             </div>
                         )}
                         
                         {/* Other Followers */}
-                        {followers.filter(f => f.user?.is_mentor !== true).length > 0 && (
+                        {followers.filter(f => !(f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true)).length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                                     <Users className="h-5 w-5" />
-                                    Other Followers ({followers.filter(f => f.user?.is_mentor !== true).length})
+                                    Other Followers ({followers.filter(f => !(f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true)).length})
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {followers
-                                        .filter(f => f.user?.is_mentor !== true)
+                                        .filter(f => !(f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true))
                                         .map(follower => renderUserCard(follower.user, true))}
                                 </div>
                             </div>
@@ -1191,31 +1208,31 @@ const TrustGraphPage: React.FC = () => {
 
                 <TabsContent value="following">
                     <div className="space-y-6">
-                        {/* Following Mentors */}
-                        {following.filter(f => f.user?.is_mentor === true).length > 0 && (
+                        {/* Following Mentors & Teachers */}
+                        {following.filter(f => f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true).length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                                     <GraduationCap className="h-5 w-5" />
-                                    Following Mentors ({following.filter(f => f.user?.is_mentor === true).length})
+                                    Following Mentors & Teachers ({following.filter(f => f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true).length})
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {following
-                                        .filter(f => f.user?.is_mentor === true)
+                                        .filter(f => f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true)
                                         .map(follow => renderUserCard(follow.user, true))}
                                 </div>
                             </div>
                         )}
                         
                         {/* Following Others */}
-                        {following.filter(f => f.user?.is_mentor !== true).length > 0 && (
+                        {following.filter(f => !(f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true)).length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                                     <Users className="h-5 w-5" />
-                                    Following Others ({following.filter(f => f.user?.is_mentor !== true).length})
+                                    Following Others ({following.filter(f => !(f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true)).length})
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {following
-                                        .filter(f => f.user?.is_mentor !== true)
+                                        .filter(f => !(f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true))
                                         .map(follow => renderUserCard(follow.user, true))}
                                 </div>
                             </div>
@@ -1261,7 +1278,7 @@ const TrustGraphPage: React.FC = () => {
                                         <Users className="h-6 w-6" />
                                         <div className="text-center">
                                             <div className="font-semibold">Connected Mentors</div>
-                                            <div className="text-xs opacity-75">{connections.filter(c => c.status === 'accepted' && c.connected_user?.is_mentor === true).length} mentors</div>
+                                            <div className="text-xs opacity-75">{connections.filter(c => c.status === 'accepted' && (c.connected_user?.is_mentor === true || c.connected_user?.role === 'teacher' || c.connected_user?.is_searchable_teacher === true)).length} mentors & teachers</div>
                                         </div>
                                     </Button>
                                     <Button 
@@ -1271,7 +1288,7 @@ const TrustGraphPage: React.FC = () => {
                                         <Eye className="h-6 w-6" />
                                         <div className="text-center">
                                             <div className="font-semibold">Following Mentors</div>
-                                            <div className="text-xs opacity-75">{following.filter(f => f.user?.is_mentor === true).length} mentors</div>
+                                            <div className="text-xs opacity-75">{following.filter(f => f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true).length} mentors & teachers</div>
                                         </div>
                                     </Button>
                                     <Button 
@@ -1655,7 +1672,7 @@ const TrustGraphPage: React.FC = () => {
                                 <div>
                                     <h3 className="font-semibold text-white">{selectedMentor.display_name || selectedMentor.username}</h3>
                                     <p className="text-sm text-slate-400">
-                                        {selectedMentor.is_mentor ? 'Mentor' : 'Peer'} • {selectedMentor.user_tier}
+                                        {selectedMentor.is_mentor ? 'Mentor' : (selectedMentor.role === 'teacher' || selectedMentor.is_searchable_teacher) ? 'Teacher' : 'Peer'} • {selectedMentor.user_tier}
                                     </p>
                                     {selectedMentor.bio && (
                                         <p className="text-sm text-slate-300 mt-1 line-clamp-2">{selectedMentor.bio}</p>
@@ -1705,8 +1722,8 @@ const TrustGraphPage: React.FC = () => {
                                 Session Tools
                             </h4>
                             <p className="text-sm text-slate-300">
-                                {selectedMentor?.is_mentor 
-                                    ? "Once approved, you'll use AscendiaLaunchpad for collaborative editing and real-time mentoring."
+                                {(selectedMentor?.is_mentor || selectedMentor?.role === 'teacher' || selectedMentor?.is_searchable_teacher)
+                                    ? "Once approved, you'll use AscendiaLaunchpad for collaborative editing and real-time tutoring/mentoring."
                                     : "Once approved, you'll use the Essay Editor for collaborative editing and peer review."
                                 }
                             </p>

@@ -218,6 +218,7 @@ const getMockQuoteData = (symbol: string): QuoteData => {
 // OHLC Candlestick data interface
 export interface OHLCData {
   timestamp: number;
+  date: string;
   open: number;
   high: number;
   low: number;
@@ -269,6 +270,7 @@ export const fetchOHLCData = async (
     // Convert to our OHLC format
     const ohlcData: OHLCData[] = candleData.t.map((timestamp, index) => ({
       timestamp: timestamp * 1000, // Convert to milliseconds
+      date: new Date(timestamp * 1000).toISOString().split('T')[0],
       open: candleData.o[index],
       high: candleData.h[index],
       low: candleData.l[index],
@@ -325,6 +327,7 @@ const generateMockOHLCData = (symbol: string, days: number = 100): OHLCData[] =>
     
     data.push({
       timestamp,
+      date: new Date(timestamp).toISOString().split('T')[0],
       open,
       high,
       low,

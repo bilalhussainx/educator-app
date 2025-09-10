@@ -5,6 +5,7 @@ import { BarChart3 } from 'lucide-react';
 interface MarketData {
   price: number;
   volume: number;
+  timestamp: number;
   lastUpdated: number;
   change: number;
   changePercent: number;
