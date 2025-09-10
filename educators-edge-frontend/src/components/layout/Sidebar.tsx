@@ -20,8 +20,7 @@ import {
     LogOut,
     Sparkles,
     Calendar,
-    Users,
-    Award
+    Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

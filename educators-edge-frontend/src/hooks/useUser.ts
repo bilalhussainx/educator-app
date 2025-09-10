@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import type { User } from '../types'; // Assuming your User type is defined here
+import type { User } from '../types/index';
 
 export const useUser = () => {
   const [user, setUser] = useState<User | null>(null);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSimulationPortfolio } from '../../hooks/useSimulationPortfolio';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -44,8 +44,7 @@ export const SimulationPortfolioWidget: React.FC<SimulationPortfolioWidgetProps>
     loading, 
     error, 
     createSession,
-    refreshPortfolio,
-    executeTrade
+    refreshPortfolio
   } = useSimulationPortfolio(historicalPeriod);
 
   const [refreshing, setRefreshing] = useState(false);

@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
 import {
     Search, Filter, Star, MapPin, Clock, Users, Sparkles,
     Target, TrendingUp, Zap, Heart, GraduationCap, BarChart3,
@@ -87,6 +80,7 @@ const TeacherSearchPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [browseResults, setBrowseResults] = useState<Teacher[]>([]);
   const [personalizedRecommendations, setPersonalizedRecommendations] = useState<any>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
 
   // TALENT CRUCIBLE: Enhanced filter states with Four Pillars
   const [filters, setFilters] = useState({
@@ -156,7 +150,7 @@ const TeacherSearchPage: React.FC = () => {
     try {
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== '' && value !== false && typeof value !== 'object') {
+        if (value && value !== '' && typeof value === 'string') {
           queryParams.append(key, value.toString());
         }
       });

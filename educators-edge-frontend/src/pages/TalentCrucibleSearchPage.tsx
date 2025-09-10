@@ -204,6 +204,7 @@ const TalentCrucibleSearchPage: React.FC = () => {
     
     // UI states
     const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+    const [selectedMentor, setSelectedMentor] = useState<TalentCrucibleMentor | null>(null);
 
     // Talent Crucible Discovery
     const handleTalentCrucibleSearch = async () => {

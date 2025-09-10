@@ -1,32 +1,21 @@
 // src/components/social/ConnectionsManager.tsx
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
     Users,
-    UserPlus,
-    UserCheck,
-    UserMinus,
     Search,
     MessageCircle,
     Star,
     Award,
     Zap,
-    Eye,
     Heart,
-    GraduationCap,
-    BarChart3,
     MapPin,
-    Filter,
-    MoreVertical,
-    Ban,
-    Flag,
-    Settings
+    MoreVertical
 } from 'lucide-react';
 import apiClient from '../../services/apiClient';
 import { toast } from 'sonner';
@@ -88,7 +77,7 @@ export const ConnectionsManager: React.FC<ConnectionsManagerProps> = ({
     const [filterTier, setFilterTier] = useState('');
     const [filterType, setFilterType] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
+    const [, setSelectedConnection] = useState<Connection | null>(null);
 
     useEffect(() => {
         fetchConnections();

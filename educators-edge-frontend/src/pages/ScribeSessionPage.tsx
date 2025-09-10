@@ -54,7 +54,6 @@ const CollaborativeEditor = ({
     documentId, 
     username, 
     color, 
-    aiSessionId,
     sessionId,
     initialContent,
     onContentChange,
@@ -190,7 +189,7 @@ const CollaborativeEditor = ({
                     case 'content-change':
                         if (message.userId !== username && editor) {
                             // Apply changes from other users
-                            editor.commands.setContent(message.content, false);
+                            editor.commands.setContent(message.content);
                         }
                         break;
                         
@@ -575,48 +574,6 @@ const ScribeSessionPage: React.FC = () => {
     const [draftHistory, setDraftHistory] = useState<DraftVersion[]>([]);
     const [, setCurrentVersionId] = useState<string | null>(null);
 
-    // Comprehensive Writing Categories System
-    const writingCategories = {
-        'Academic Essays': {
-            'Argumentative Essay': { wordRange: '1000-1500', audience: 'Academic readers', tone: 'analytical', structure: 'thesis-driven' },
-            'Research Paper': { wordRange: '2000-5000', audience: 'Scholarly community', tone: 'formal', structure: 'research-based' },
-            'Literary Analysis': { wordRange: '750-1250', audience: 'Literature scholars', tone: 'analytical', structure: 'close-reading' },
-            'Compare & Contrast': { wordRange: '800-1200', audience: 'Academic readers', tone: 'analytical', structure: 'comparative' },
-            'Persuasive Essay': { wordRange: '750-1000', audience: 'General academic', tone: 'persuasive', structure: 'argument-based' }
-        },
-        'College Application Essays': {
-            'Personal Statement': { wordRange: '500-650', audience: 'Admissions officers', tone: 'authentic', structure: 'narrative-reflective' },
-            'Why College Essay': { wordRange: '200-400', audience: 'Admissions committee', tone: 'enthusiastic', structure: 'research-based' },
-            'Why Major Essay': { wordRange: '200-350', audience: 'Academic departments', tone: 'passionate', structure: 'goal-oriented' },
-            'Supplemental Essays': { wordRange: '150-300', audience: 'Admissions staff', tone: 'specific', structure: 'targeted' },
-            'Scholarship Essay': { wordRange: '300-500', audience: 'Scholarship committee', tone: 'merit-focused', structure: 'achievement-based' }
-        },
-        'Creative Writing': {
-            'Short Story (Flash)': { wordRange: '100-1000', audience: 'General readers', tone: 'engaging', structure: 'narrative-arc' },
-            'Short Story (Standard)': { wordRange: '1500-5000', audience: 'Literary readers', tone: 'literary', structure: 'character-driven' },
-            'Narrative Essay': { wordRange: '750-1500', audience: 'General/literary', tone: 'narrative', structure: 'story-based' },
-            'Creative Nonfiction': { wordRange: '1000-3000', audience: 'Literary readers', tone: 'literary', structure: 'scene-based' },
-            'Magazine Story': { wordRange: '800-2500', audience: 'Magazine readers', tone: 'engaging', structure: 'hook-driven' }
-        },
-        'Memoir & Biography': {
-            'Personal Memoir': { wordRange: '1500-5000', audience: 'General readers', tone: 'personal', structure: 'chronological' },
-            'Autobiographical Essay': { wordRange: '1000-2500', audience: 'General readers', tone: 'reflective', structure: 'thematic' },
-            'Family History': { wordRange: '2000-4000', audience: 'Family/community', tone: 'documentary', structure: 'generational' },
-            'Life Reflection': { wordRange: '800-2000', audience: 'General readers', tone: 'contemplative', structure: 'reflective' }
-        },
-        'Professional Writing': {
-            'Business Proposal': { wordRange: '1000-2500', audience: 'Business stakeholders', tone: 'professional', structure: 'proposal-format' },
-            'Grant Application': { wordRange: '500-1500', audience: 'Funding organizations', tone: 'persuasive', structure: 'needs-based' },
-            'Technical Report': { wordRange: '1500-3000', audience: 'Technical experts', tone: 'technical', structure: 'data-driven' },
-            'White Paper': { wordRange: '2000-4000', audience: 'Industry professionals', tone: 'authoritative', structure: 'research-based' }
-        },
-        'Journalism & Media': {
-            'News Article': { wordRange: '300-800', audience: 'General public', tone: 'objective', structure: 'inverted-pyramid' },
-            'Feature Article': { wordRange: '1000-2500', audience: 'Target demographic', tone: 'engaging', structure: 'narrative-journalism' },
-            'Op-Ed Piece': { wordRange: '600-900', audience: 'Newspaper readers', tone: 'persuasive', structure: 'opinion-based' },
-            'Blog Post': { wordRange: '500-1500', audience: 'Online readers', tone: 'conversational', structure: 'web-optimized' }
-        }
-    };
 
     // Auto-Analysis Functions for Document Category Detection
     const analyzeDocumentCategory = (content: string) => {
@@ -662,7 +619,7 @@ const ScribeSessionPage: React.FC = () => {
             }
         };
         
-        let bestMatch = { category: null, confidence: 0, questions: [] };
+        let bestMatch = { category: null as string | null, confidence: 0, questions: [] as string[] };
         
         for (const [category, pattern] of Object.entries(patterns)) {
             let score = 0;
@@ -687,7 +644,7 @@ const ScribeSessionPage: React.FC = () => {
                 bestMatch = {
                     category: category,
                     confidence: confidence,
-                    questions: generateClarifyingQuestions(category, plainText)
+                    questions: generateClarifyingQuestions(category)
                 };
             }
         }
@@ -695,8 +652,8 @@ const ScribeSessionPage: React.FC = () => {
         return bestMatch.confidence > 0.6 ? bestMatch : null;
     };
     
-    const generateClarifyingQuestions = (category: string, content: string) => {
-        const questions = {
+    const generateClarifyingQuestions = (category: string) => {
+        const questions: Record<string, string[]> = {
             'Personal Statement': [
                 "Is this for college admissions or graduate school applications?",
                 "What specific aspects of your personal growth should we highlight?",
@@ -737,7 +694,7 @@ const ScribeSessionPage: React.FC = () => {
     };
     
     const getCategorySpecificAdvice = (category: string) => {
-        const advice = {
+        const advice: Record<string, string> = {
             'Personal Statement': `
 • Focus on a single, compelling narrative that reveals character growth
 • Use specific anecdotes and concrete details, not general statements
@@ -800,8 +757,8 @@ const ScribeSessionPage: React.FC = () => {
         
         // Basic pattern detection
         const analysis = {
-            strengths: [],
-            improvements: [],
+            strengths: [] as string[],
+            improvements: [] as string[],
             category: requirements.writingCategory || 'General'
         };
         
@@ -935,8 +892,8 @@ ${localAnalysis.improvements.map(i => `• ${i}`).join('\n')}
                 let htmlContent = `<h2>${document.name}</h2>`;
                 if (document.content) {
                     // Split content into paragraphs and wrap in HTML
-                    const paragraphs = document.content.split('\n').filter(p => p.trim());
-                    htmlContent += paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+                    const paragraphs = document.content.split('\n').filter((p: string) => p.trim());
+                    htmlContent += paragraphs.map((p: string) => `<p>${p.trim()}</p>`).join('');
                 } else {
                     htmlContent += '<p>Document content could not be extracted. You can edit it here manually.</p>';
                 }
@@ -3924,7 +3881,7 @@ What would you like me to focus on next?`;
                                         }
                                         
                                         const analysis = analyzeDocumentCategory(currentContent);
-                                        if (analysis) {
+                                        if (analysis && analysis.category) {
                                             setRequirements(prev => ({
                                                 ...prev,
                                                 writingCategory: analysis.category

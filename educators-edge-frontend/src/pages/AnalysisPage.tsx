@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FinancialLayout } from '../components/layout/FinancialLayout';
 import { TrendingUp, TrendingDown, ArrowLeft, DollarSign } from 'lucide-react';
 import { fetchRealQuoteData } from '../services/finnhubService';
-import { QuoteData } from '../types';
+import type { QuoteData } from '../types/index';
 import { TabbedChartContainer } from '../components/trade/TabbedChartContainer';
 import { SimulationAnalysisSection } from '../components/trade/SimulationAnalysisSection';
 

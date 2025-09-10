@@ -87,7 +87,6 @@ const CourseManagementPage: React.FC = () => {
     const navigate = useNavigate();
 
     const [course, setCourse] = useState<(Course & { is_published?: boolean }) | null>(null);
-    const [lessons, setLessons] = useState<Lesson[]>([]);
     const [courseLessons, setCourseLessons] = useState<CourseLesson[]>([]);
     const [libraryLessons, setLibraryLessons] = useState<IngestedLesson[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -106,7 +105,6 @@ const CourseManagementPage: React.FC = () => {
         try {
             const response = await apiClient.get(`/api/courses/${courseId}`);
             setCourse(response.data);
-            setLessons(response.data.lessons || []);
             setCourseLessons((response.data.lessons || []).sort((a: CourseLesson, b: CourseLesson) => a.order_index - b.order_index));
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred.');

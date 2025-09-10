@@ -18,8 +18,6 @@ export { TheStage } from './TheStage';
 export { TheCockpit } from './TheCockpit';
 export { MarketPulse } from './MarketPulse';
 
-// Integrated Trading Terminal
-export { ProfessionalTradingTerminal } from './ProfessionalTradingTerminal';
 
 // Legacy Components (for backward compatibility)
 export { PortfolioWidget } from './PortfolioWidget';
@@ -45,6 +43,4 @@ export { PortfolioWidget } from './PortfolioWidget';
  * 6. TradingOrderPanel - Order entry and management
  *    <TradingOrderPanel watchlistSymbols={symbols} selectedSymbol="AAPL" />
  * 
- * 7. ProfessionalTradingTerminal - Complete trading interface
- *    <ProfessionalTradingTerminal defaultSymbols={['AAPL', 'GOOGL']} />
  */

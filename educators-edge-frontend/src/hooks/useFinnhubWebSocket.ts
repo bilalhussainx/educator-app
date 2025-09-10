@@ -321,7 +321,7 @@ export const useFinnhubWebSocket = (
         }
       };
 
-      ws.onerror = (error) => {
+      ws.onerror = () => {
         console.warn('[Finnhub] WebSocket connection failed - API may be unavailable');
         setConnectionStatus('disconnected');
         
@@ -427,7 +427,7 @@ export const useFinnhubWebSocket = (
     
     // Only fetch REST API prices if WebSocket is successful
     const timeoutId = setTimeout(() => {
-      if (connectionStatus === 'Connected') {
+      if (connectionStatus === 'connected') {
         fetchInitialPrices();
       }
     }, 5000); // Wait 5 seconds for WebSocket to establish
@@ -445,7 +445,7 @@ export const useFinnhubWebSocket = (
 
   // Subscribe to initial symbols when connection is established
   useEffect(() => {
-    if (connectionStatus === 'Connected') {
+    if (connectionStatus === 'connected') {
       initialSymbols.forEach(symbol => {
         subscribe(symbol);
       });

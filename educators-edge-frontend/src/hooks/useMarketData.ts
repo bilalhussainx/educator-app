@@ -35,8 +35,8 @@ export const useMarketData = () => {
     marketData: transformedMarketData,
     connectionStatus,
     isConnected,
-    subscribe: (symbol: string) => {}, // No-op, subscription handled by SimulationContext
-    unsubscribe: (symbol: string) => {}, // No-op
+    subscribe: () => {}, // No-op, subscription handled by SimulationContext
+    unsubscribe: () => {}, // No-op
     getSymbolData: (symbol: string) => transformedMarketData.get(symbol) || null
   };
 };

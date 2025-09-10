@@ -157,7 +157,6 @@ const TradingTerminalPage: React.FC = () => {
               symbol={activeSymbol}
               marketData={marketData}
               connectionStatus={connectionStatus}
-              latestTrade={latestTrade}
               height={400}
             />
           </div>

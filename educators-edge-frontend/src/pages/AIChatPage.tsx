@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import apiClient from '../services/apiClient';
 import {
     Bot, Send, ArrowLeft, Zap, Clock, MessageSquare, 
-    CheckCircle, User, AlertCircle, Settings
+    CheckCircle, User, Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -54,7 +54,6 @@ const AIChatPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const [currentBot, setCurrentBot] = useState<AIBot | null>(null);
-    const [sessionActive, setSessionActive] = useState(false);
     const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
     const [showIDE, setShowIDE] = useState(false);
     const [showScribe, setShowScribe] = useState(false);

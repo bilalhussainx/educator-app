@@ -8,7 +8,7 @@ import TierBadge from "@/components/ui/TierBadge";
 import apiClient from '../../services/apiClient';
 import { 
     Search, Users, Star, MapPin, BookOpen, MessageSquare, 
-    FileEdit, ChevronRight, Sparkles, TrendingUp, Clock,
+    FileEdit, Sparkles,
     Eye, Video, ArrowRight
 } from 'lucide-react';
 

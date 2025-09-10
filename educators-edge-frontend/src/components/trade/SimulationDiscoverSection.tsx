@@ -17,7 +17,6 @@ import {
   BookOpen,
   ArrowRight,
   BarChart3,
-  DollarSign,
   Briefcase
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -67,7 +66,7 @@ export const SimulationDiscoverSection: React.FC = () => {
   const [educationalInsights, setEducationalInsights] = useState<EducationalInsight[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   const { marketData } = useMarketData();
   const { currentSession, createSession } = useSimulationPortfolio();
@@ -84,7 +83,7 @@ export const SimulationDiscoverSection: React.FC = () => {
       const symbols = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA', 'AMZN', 'META', 'NFLX'];
 
       symbols.forEach(symbol => {
-        const data = marketData[symbol];
+        const data = marketData.get(symbol);
         if (data) {
           movers.push({
             symbol,
@@ -418,7 +417,7 @@ export const SimulationDiscoverSection: React.FC = () => {
 
         {activeTab === 'movers' && (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {marketMovers.slice(0, 9).map((mover, index) => (
+            {marketMovers.slice(0, 9).map((mover) => (
               <Card 
                 key={mover.symbol} 
                 className="bg-slate-900/40 border-slate-700 text-white hover:bg-slate-900/60 transition-colors cursor-pointer"

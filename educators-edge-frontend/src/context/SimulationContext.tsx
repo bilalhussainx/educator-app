@@ -1,5 +1,5 @@
 // src/context/SimulationContext.tsx
-import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { type HistoricalPeriod } from '../constants/simulation';
 
 export interface MarketDataPoint {

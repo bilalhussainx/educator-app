@@ -4,7 +4,6 @@ import { fetchOHLCData } from '../../services/finnhubService';
 import { mockMarketDataService } from '../../services/mockMarketDataService';
 import { MarketData, LatestTrade, ConnectionStatus } from '../../hooks/useFinnhubWebSocket';
 import { OHLCData } from '../../types';
-import { ChartOverlay } from './ChartOverlay';
 
 export type ChartType = 'candlestick' | 'line' | 'area' | 'volume';
 
@@ -12,7 +11,6 @@ interface TabbedChartContainerProps {
   symbol: string;
   marketData: Map<string, MarketData>;
   connectionStatus: ConnectionStatus;
-  latestTrade: LatestTrade | null;
   height?: number;
 }
 
@@ -34,7 +32,6 @@ export const TabbedChartContainer: React.FC<TabbedChartContainerProps> = ({
   symbol,
   marketData,
   connectionStatus,
-  latestTrade,
   height = 400
 }) => {
   const [activeTab, setActiveTab] = useState<ChartType>('candlestick');
@@ -43,7 +40,7 @@ export const TabbedChartContainer: React.FC<TabbedChartContainerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isUsingFallbackData, setIsUsingFallbackData] = useState(false);
 
-  const currentMarketData = marketData[symbol];
+  const currentMarketData = marketData.get(symbol);
 
   // Fetch OHLC data when symbol changes
   useEffect(() => {
