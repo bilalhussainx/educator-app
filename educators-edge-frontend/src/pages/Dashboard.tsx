@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import apiClient from '../services/apiClient'; // The centralized API client
 import axios from 'axios'; // Import axios to check for specific error types
 import { PortfolioWidget } from '../components/trade/PortfolioWidget'; // <-- 1. IMPORT THE WIDGET
+import FourPillarsWidget from '../components/dashboard/FourPillarsWidget';
 
 // --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
@@ -189,12 +190,73 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         fetchData();
     }, [navigate, user]);
 
+    // [ADDITIVE CHANGE] - Add this new handler function for the Scribe Session button.
+    const handleStartScribeSession = async () => {
+        if (!user) return; // Guard clause
+
+        toast.info("Creating a new document session...");
+
+        try {
+            // Step 1: Tell our backend to create a new collaborative document.
+            // (We will need to create this simple endpoint next).
+            const response = await apiClient.post('/api/documents/create', {
+                title: `New Scribe Session - ${new Date().toLocaleString()}`,
+                ownerId: user.id,
+            });
+
+            const { documentId } = response.data;
+
+            if (!documentId) {
+                throw new Error("Did not receive a document ID from the server.");
+            }
+
+            // Step 2: Navigate the user to the new Scribe Session page with the new document ID.
+            toast.success("Session created. Redirecting...");
+            navigate(`/scribe/${documentId}`);
+
+        } catch (error) {
+            console.error("Failed to create Scribe session:", error);
+            toast.error("Could not create a new Scribe session. Please try again.");
+        }
+    };
+
     const renderTeacherDashboard = () => (
         <div className="space-y-8">
             <header>
                 <h1 className="text-4xl font-bold tracking-tighter text-white">Teacher Dashboard</h1>
                 <p className="text-lg text-slate-400 mt-2">Oversee your courses and student progress.</p>
             </header>
+            
+            {/* Four Pillars Widget */}
+            {/* <FourPillarsWidget userId={user.id} className="mb-8" /> */}
+            
+            {/* Trading Portfolio Widget - Same as Student Dashboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:col-span-3 gap-6">
+                    <HudStatCard icon={BarChart} value="$2.4k" label="Monthly Revenue" />
+                    <HudStatCard icon={Users} value={42} label="Active Students" />
+                    <HudStatCard icon={BookOpen} value={8} label="Courses Created" />
+                </div>
+                <div className="lg:col-span-1">
+                    <PortfolioWidget />
+                </div>
+            </div>
+            
+            <GlassCard>
+                <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+                    <CardTitle className="text-2xl text-white mb-2">Start a New Session</CardTitle>
+                    <CardDescription className="text-slate-400 mb-6 max-w-md">
+                        Launch a collaborative session to help students with their essays, applications, or any written documents in real-time.
+                    </CardDescription>
+                    <Button 
+                        onClick={handleStartScribeSession} 
+                        className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-lg py-6 px-8"
+                    >
+                        <PlusCircle className="mr-3 h-5 w-5" />
+                        Start Scribe Session
+                    </Button>
+                </CardContent>
+            </GlassCard>
             <StuckPointNotifications />
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold tracking-tight text-slate-200">My Courses</h2>
@@ -247,10 +309,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     <h1 className="text-4xl font-bold tracking-tighter text-white">Welcome back, {user?.username}</h1>
                     <p className="text-lg text-slate-400 mt-2">Let's continue your ascent. Your mission for today is clear.</p>
                 </header>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <HudStatCard icon={BarChart} value={128} label="Problems Solved" />
-                    <HudStatCard icon={Zap} value={2450} label="Weekly XP" />
-                    <HudStatCard icon={Calendar} value={"12 Days"} label="Active Streak" />
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:col-span-3 gap-6">
+                        <HudStatCard icon={BarChart} value={128} label="Problems Solved" />
+                        <HudStatCard icon={Zap} value={2450} label="Weekly XP" />
+                        <HudStatCard icon={Calendar} value={"12 Days"} label="Active Streak" />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <PortfolioWidget />
+                    </div>
                 </div>
 
                 {primaryCourse && (

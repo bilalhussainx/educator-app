@@ -13,6 +13,21 @@ export interface User {
     id: string;
     username: string;
     role: 'teacher' | 'student';
+    // ASCENDIA PLATFORM: Enhanced user profile
+    display_name?: string;
+    email?: string;
+    user_tier?: 'pathfinder' | 'explorer' | 'navigator';
+    ascendia_score?: number;
+    pillar_academic?: number;
+    pillar_community?: number;
+    pillar_mentorship?: number;
+    pillar_analytical?: number;
+    sparks_balance?: number;
+    is_mentor?: boolean;
+    is_counselor?: boolean;
+    is_essay_editor?: boolean;
+    verified_mentor?: boolean;
+    profile_setup_completed?: boolean;
 }
 
 // Represents a single file within a lesson or submission
@@ -45,6 +60,8 @@ export interface Lesson {
     teacher_id: string;
     course_id: string;
     created_at: string;
+    lesson_type: 'algorithmic' | 'frontend-project' | 'chapter';
+    order_index: number;
     files: LessonFile[];
 }
 
@@ -154,6 +171,115 @@ export interface Award {
 export type UserRole = 'teacher' | 'student';
 export type ViewingMode = 'teacher' | string; // string for student IDs
 
+// ASCENDIA PLATFORM: New types for enhanced features
+export type TierLevel = 'pathfinder' | 'explorer' | 'navigator';
+export type ServiceType = 'mentoring' | 'counseling' | 'essay_editing';
+export type PaymentMethod = 'sparks' | 'usd' | 'free';
+export type SessionStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+export type ConnectionStatus = 'pending' | 'accepted' | 'declined';
+
+// Ascendia user profile with Four Pillars
+export interface AscendiaProfile {
+    user_id: string;
+    display_name: string;
+    bio?: string;
+    teacher_bio?: string;
+    user_tier: TierLevel;
+    ascendia_score: number;
+    pillar_academic: number;
+    pillar_community: number;
+    pillar_mentorship: number;
+    pillar_analytical: number;
+    sparks_balance: number;
+    is_mentor: boolean;
+    is_counselor: boolean;
+    is_essay_editor: boolean;
+    verified_mentor: boolean;
+    hourly_rate_sparks?: number;
+    hourly_rate_usd?: number;
+    years_experience?: number;
+    education_level?: string;
+    specializations?: string[];
+    languages?: string[];
+    location?: string;
+    timezone?: string;
+    availability_status: 'available' | 'busy' | 'offline';
+    total_sessions: number;
+    average_rating: number;
+    total_reviews: number;
+    profile_setup_completed: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+// Session management
+export interface Session {
+    id: string;
+    student_id: string;
+    mentor_id: string;
+    session_type: 'individual' | 'group';
+    service_type: ServiceType;
+    status: SessionStatus;
+    payment_method: PaymentMethod;
+    payment_amount: number;
+    payment_status: 'pending' | 'completed' | 'failed';
+    scheduled_at: string;
+    duration_minutes: number;
+    description: string;
+    mentor_notes?: string;
+    student_notes?: string;
+    rating?: number;
+    review_text?: string;
+    created_at: string;
+    updated_at: string;
+    // Populated fields
+    student_name?: string;
+    mentor_name?: string;
+    mentor_tier?: TierLevel;
+}
+
+// Trust Graph connections
+export interface Connection {
+    id: string;
+    user1_id: string;
+    user2_id: string;
+    status: ConnectionStatus;
+    created_at: string;
+    // Populated user info
+    connected_user?: AscendiaProfile;
+}
+
+// Follower relationship
+export interface Follower {
+    id: string;
+    follower_id: string;
+    followed_id: string;
+    created_at: string;
+    // Populated user info
+    user?: AscendiaProfile;
+}
+
+// Four Pillars activity tracking
+export interface PillarActivity {
+    id: string;
+    user_id: string;
+    activity_type: string;
+    pillar: 'academic' | 'community' | 'mentorship' | 'analytical';
+    points_awarded: number;
+    description: string;
+    created_at: string;
+}
+
+// Tier benefits
+export interface TierBenefits {
+    tier_name: TierLevel;
+    max_direct_messages_per_day: number;
+    max_session_requests_per_day: number;
+    profile_boost_multiplier: number;
+    priority_support: boolean;
+    access_to_advanced_features: boolean;
+}
+
 export interface CodeFile {
     id: string;
     filename: string;
@@ -181,6 +307,60 @@ export interface TestResult {
     results: string;
     aiHint?: string; // AI-generated hint when tests fail
 }
+
+// Market data types for trading features
+export interface QuoteData {
+    symbol: string;
+    name: string;
+    price: number;
+    change: number;
+    changePercent: number;
+    high: number;
+    low: number;
+    open: number;
+    previousClose: number;
+    volume?: number;
+    fundamentals?: {
+        marketCap?: number;
+        peRatio?: number;
+        eps?: number;
+        dividend?: number;
+        beta?: number;
+        week52High?: number;
+        week52Low?: number;
+    };
+}
+
+// OHLC data for candlestick charts
+export interface OHLCData {
+    timestamp: number;
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+}
+
+// Market data types for WebSocket trading
+export interface MarketData {
+    symbol: string;
+    price: number;
+    change: number;
+    changePercent: number;
+    volume: number;
+    timestamp: number;
+}
+
+export interface MarketTick {
+    symbol: string;
+    price: number;
+    change: number;
+    changePercent: number;
+    volume: number;
+}
+
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
 // /*
 //  * =================================================================

@@ -18,7 +18,7 @@ import apiClient from '../services/apiClient';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ChevronLeft, CheckCircle, XCircle, Target, BookOpen } from 'lucide-react';
+import { ChevronLeft, CheckCircle, XCircle, Target, BookOpen, BookText, FileCode } from 'lucide-react';
 
 // --- CoreZenith Styled Components ---
 
@@ -57,7 +57,7 @@ AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
 // --- Type Definitions (100% Original) ---
 interface PublicCourse extends Course {
     teacher_name: string;
-    lessons: Pick<Lesson, 'id' | 'title'>[];
+    lessons: Pick<Lesson, 'id' | 'title' | 'lesson_type'>[];
 }
 
 const CourseLandingPage: React.FC = () => {
@@ -148,7 +148,10 @@ const CourseLandingPage: React.FC = () => {
                                 <ul className="space-y-3">
                                     {course.lessons.map(lesson => (
                                         <li key={lesson.id} className="flex items-center text-lg">
-                                            <CheckCircle className="h-5 w-5 text-cyan-400 mr-4 flex-shrink-0" />
+                                            {lesson.lesson_type === 'chapter' 
+                                                ? <BookText className="h-5 w-5 text-cyan-400 mr-4 flex-shrink-0" />
+                                                : <FileCode className="h-5 w-5 text-slate-400 mr-4 flex-shrink-0" />
+                                            }
                                             <span className="text-slate-200">{lesson.title}</span>
                                         </li>
                                     ))}

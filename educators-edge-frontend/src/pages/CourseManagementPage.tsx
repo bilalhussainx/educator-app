@@ -7,9 +7,10 @@
  * This design transforms the page into a sophisticated, action-oriented
  * command center, consistent with the immersive CoreZenith brand.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Course, Lesson } from '../types/index.ts';
+import { useDebounce } from '../hooks/useDebounce';
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";
@@ -18,8 +19,10 @@ import apiClient from '../services/apiClient';
 // CoreZenith UI Components & Icons
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, PlusCircle, BookOpen, AlertCircle, ChevronRight, Settings, Users, RadioTower } from 'lucide-react';
+import { ChevronLeft, PlusCircle, BookOpen, AlertCircle, ChevronRight, Settings, Users, RadioTower, Search, Plus, Sparkles, Trash2, Eye, BookCopy, BookText, FileCode, FilePlus2, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // --- CoreZenith UI Primitives (Styled for the theme) ---
@@ -59,6 +62,24 @@ const Switch = React.forwardRef<
 ));
 Switch.displayName = SwitchPrimitives.Root.displayName;
 
+// --- Interfaces for Library Integration ---
+interface IngestedLesson {
+    id: string;
+    title: string;
+    description: string;
+    lesson_type: 'algorithmic' | 'frontend-project';
+    chapter: string | null;
+    sub_chapter: string | null;
+}
+
+interface CourseLesson {
+    id: string;
+    title: string;
+    description: string;
+    order_index: number;
+    lesson_type: 'algorithmic' | 'frontend-project' | 'chapter';
+    created_at: string;
+}
 
 // --- Main Component ---
 const CourseManagementPage: React.FC = () => {
@@ -67,8 +88,15 @@ const CourseManagementPage: React.FC = () => {
 
     const [course, setCourse] = useState<(Course & { is_published?: boolean }) | null>(null);
     const [lessons, setLessons] = useState<Lesson[]>([]);
+    const [courseLessons, setCourseLessons] = useState<CourseLesson[]>([]);
+    const [libraryLessons, setLibraryLessons] = useState<IngestedLesson[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isSorting, setIsSorting] = useState(false);
+    const [isAddingMap, setIsAddingMap] = useState<Record<string, boolean>>({});
     const [error, setError] = useState<string | null>(null);
+    
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
     // NOTE: All data fetching and state logic is preserved
     const fetchCourseDetails = useCallback(async () => {
@@ -79,12 +107,26 @@ const CourseManagementPage: React.FC = () => {
             const response = await apiClient.get(`/api/courses/${courseId}`);
             setCourse(response.data);
             setLessons(response.data.lessons || []);
+            setCourseLessons((response.data.lessons || []).sort((a: CourseLesson, b: CourseLesson) => a.order_index - b.order_index));
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An unknown error occurred.');
         } finally {
             setIsLoading(false);
         }
     }, [courseId, navigate]);
+
+    // Fetch library lessons
+    useEffect(() => {
+        const fetchLibraryData = async () => {
+            try {
+                const libraryRes = await apiClient.get(`/api/library/search?language=javascript&searchTerm=${debouncedSearchTerm}`);
+                setLibraryLessons(libraryRes.data);
+            } catch (error) {
+                console.error("Failed to load lesson library:", error);
+            }
+        };
+        fetchLibraryData();
+    }, [debouncedSearchTerm]);
 
     useEffect(() => {
         fetchCourseDetails();
@@ -108,6 +150,58 @@ const CourseManagementPage: React.FC = () => {
             setCourse({ ...course, is_published: originalState });
         }
     };
+
+    // Library integration handlers
+    const handleAddLesson = async (lessonToAdd: IngestedLesson) => {
+        setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: true }));
+        try {
+            const response = await apiClient.post(`/api/lessons/add-to-course/${courseId}`, { ingestedLessonId: lessonToAdd.id });
+            console.log('Add lesson response:', response);
+            await fetchCourseDetails();
+        } catch (error: any) {
+            console.error('Add lesson error:', error);
+            setError(error.response?.data?.error || error.message || "Failed to add lesson.");
+        } finally {
+            setIsAddingMap(prev => ({ ...prev, [lessonToAdd.id]: false }));
+        }
+    };
+
+    const handleRemoveLesson = async (lessonIdToRemove: string) => {
+        try {
+            await apiClient.delete(`/api/lessons/${lessonIdToRemove}`);
+            await fetchCourseDetails();
+        } catch (error: any) {
+            setError(error.response?.data?.error || "Failed to remove item.");
+        }
+    };
+
+    const handleSortWithAI = async () => {
+        if (!courseId) return;
+        setIsSorting(true);
+        try {
+            await apiClient.post(`/api/courses/${courseId}/sort-with-ai`);
+            await fetchCourseDetails();
+        } catch (error: any) {
+            setError(error.response?.data?.error || 'AI sorting failed.');
+        } finally {
+            setIsSorting(false);
+        }
+    };
+
+    const handlePreviewLesson = (lessonId: string) => {
+        window.open(`/lesson/${lessonId}?courseId=${courseId}&preview=true`, '_blank');
+    };
+
+    const handleCreateNewLesson = () => {
+        navigate(`/lessons/new?courseId=${courseId}`);
+    };
+
+    const handleCreateNewChapter = () => {
+        navigate(`/chapters/new?courseId=${courseId}`);
+    };
+
+    // Filter library lessons to exclude already added ones
+    const courseLessonTitles = useMemo(() => new Set(courseLessons.map(l => l.title)), [courseLessons]);
     
     // Fallback for loading/error states to maintain theme
     if (isLoading || error || !course) {
@@ -151,45 +245,119 @@ const CourseManagementPage: React.FC = () => {
                         </TabsList>
                         
                         <TabsContent value="curriculum">
-                            <GlassCard>
-                                <CardHeader>
-                                    <div className="flex flex-wrap gap-4 justify-between items-center">
-                                        <div>
-                                            <CardTitle className="text-2xl text-white">Course Blueprint</CardTitle>
-                                            <CardDescription className="text-gray-400">Design the lessons and assignments for this course.</CardDescription>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                                {/* Lesson Library Card */}
+                                <GlassCard>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-2xl text-white">
+                                            <BookCopy className="text-cyan-400" /> Lesson Library
+                                        </CardTitle>
+                                        <CardDescription className="text-gray-400">
+                                            Search and add pre-built lessons to your course.
+                                        </CardDescription>
+                                        <div className="relative pt-2">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                            <Input 
+                                                placeholder="Search by title, keyword, or chapter..." 
+                                                className="pl-10 bg-slate-950/60 border-slate-700 text-white placeholder:text-slate-500" 
+                                                value={searchTerm} 
+                                                onChange={e => setSearchTerm(e.target.value)} 
+                                            />
                                         </div>
-                                        <Button onClick={() => navigate(`/lessons/new?courseId=${course.id}`)} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
-                                            <PlusCircle className="mr-2 h-4 w-4" /> Create New Lesson
-                                        </Button>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        {lessons.length > 0 ? lessons.map(lesson => (
-                                            <div key={lesson.id} className="w-full text-left p-4 bg-slate-950/40 border border-slate-700 rounded-lg flex flex-wrap justify-between items-center gap-4">
-                                                <div className="flex items-center gap-4">
-                                                    <BookOpen className="h-6 w-6 text-cyan-400/70" />
-                                                    <div>
-                                                        <h3 className="font-semibold text-lg text-gray-200">{lesson.title}</h3>
-                                                        <p className="text-sm text-gray-500">{lesson.description}</p>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow max-h-[60vh] overflow-y-auto pr-3">
+                                        <ul className="space-y-3">
+                                            {libraryLessons.filter(l => !courseLessonTitles.has(l.title)).map(lesson => (
+                                                <li key={lesson.id} className="p-3 border border-slate-700/60 bg-slate-800/30 rounded-lg flex justify-between items-center gap-3">
+                                                    <div className="flex-grow min-w-0">
+                                                        <h4 className="font-medium text-slate-200 truncate">{lesson.title}</h4>
+                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                            {lesson.chapter && <Badge variant="secondary" className="bg-slate-700 text-slate-300">{lesson.chapter}</Badge>}
+                                                            {lesson.sub_chapter && <Badge variant="outline" className="border-slate-600 text-slate-400">{lesson.sub_chapter}</Badge>}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <Button variant="outline" size="sm" onClick={() => navigate(`/submissions/${lesson.id}`)} className="border-cyan-400/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200">
-                                                    View Submissions <ChevronRight className="ml-2 h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        )) : (
-                                            <div className="text-center py-12 border-2 border-dashed border-slate-700 rounded-lg">
-                                                <h3 className="text-lg font-medium text-gray-300">This Course Blueprint is Empty.</h3>
-                                                <p className="text-gray-500 mb-4">Add a lesson to begin constructing your curriculum.</p>
-                                                <Button onClick={() => navigate(`/lessons/new?courseId=${course.id}`)} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
-                                                    <PlusCircle className="mr-2 h-4 w-4" /> Create First Lesson
-                                                </Button>
+                                                    <div className="flex flex-col gap-2 flex-shrink-0">
+                                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-slate-200" title="Preview Lesson" onClick={() => handlePreviewLesson(lesson.id)}>
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button size="icon" variant="outline" className="h-7 w-7 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200" title="Add Lesson to Course" onClick={() => handleAddLesson(lesson)} disabled={isAddingMap[lesson.id]}>
+                                                            {isAddingMap[lesson.id] ? <Loader2 className="h-4 w-4 animate-spin"/> : <Plus className="h-4 w-4" />}
+                                                        </Button>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        {libraryLessons.filter(l => !courseLessonTitles.has(l.title)).length === 0 && (
+                                            <div className="text-center py-8 text-slate-500">
+                                                No lessons found matching your search.
                                             </div>
                                         )}
-                                    </div>
-                                </CardContent>
-                            </GlassCard>
+                                    </CardContent>
+                                </GlassCard>
+
+                                {/* Course Blueprint Card */}
+                                <GlassCard>
+                                    <CardHeader>
+                                        <div className="flex justify-between items-center">
+                                            <CardTitle className="text-2xl text-white">Course Blueprint ({courseLessons.length} items)</CardTitle>
+                                            <div className="flex items-center gap-2">
+                                                <Button onClick={handleCreateNewChapter} variant="outline" size="sm" className="h-8 border-slate-600 text-slate-300 hover:bg-slate-800">
+                                                    <BookText className="mr-2 h-4 w-4" />Create Chapter
+                                                </Button>
+                                                <Button onClick={handleCreateNewLesson} variant="outline" size="sm" className="h-8 border-slate-600 text-slate-300 hover:bg-slate-800">
+                                                    <FilePlus2 className="mr-2 h-4 w-4" />Create Lesson
+                                                </Button>
+                                                <Button onClick={handleSortWithAI} disabled={isSorting || courseLessons.length < 2} className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold h-8">
+                                                    {isSorting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                                                    Organize with AI
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <CardDescription className="text-gray-400">Review and arrange the chapters and lessons in your course.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="flex-grow max-h-[60vh] overflow-y-auto pr-3">
+                                        <ul className="space-y-2">
+                                            {courseLessons.map(lesson => (
+                                                <li key={lesson.id} className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg">
+                                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="font-mono text-sm text-slate-500">{String(lesson.order_index + 1).padStart(2, '0')}</span>
+                                                            {lesson.lesson_type === 'chapter' 
+                                                                ? <span title="Chapter"><BookText className="h-4 w-4 text-cyan-400 flex-shrink-0" /></span>
+                                                                : <span title="Lesson"><FileCode className="h-4 w-4 text-slate-500 flex-shrink-0" /></span>
+                                                            }
+                                                            <span className="font-medium text-slate-200">{lesson.title}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-slate-200" title="Preview Item" onClick={() => handlePreviewLesson(lesson.id)}>
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button variant="outline" size="sm" onClick={() => navigate(`/submissions/${lesson.id}`)} className="border-cyan-400/50 text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200 text-xs">
+                                                                Submissions
+                                                            </Button>
+                                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-500 hover:bg-red-500/10 hover:text-red-400" title="Remove Item" onClick={() => handleRemoveLesson(lesson.id)}>
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    {lesson.lesson_type === 'chapter' && lesson.description && (
+                                                        <div className="ml-10 pl-3 border-l-2 border-cyan-400/30">
+                                                            <p className="text-sm text-slate-400 mb-1 line-clamp-2">{lesson.description}</p>
+                                                            <p className="text-xs text-slate-500">Created {new Date(lesson.created_at).toLocaleDateString()}</p>
+                                                        </div>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        {courseLessons.length === 0 && (
+                                            <div className="text-center py-16 border-2 border-dashed border-slate-700 rounded-xl">
+                                                <p className="text-slate-400">Your course blueprint is empty.</p>
+                                                <p className="text-sm text-slate-500 mt-1">Add items from the library or create new content to begin.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </GlassCard>
+                            </div>
                         </TabsContent>
 
                         <TabsContent value="sessions">

@@ -28,8 +28,10 @@ interface IngestedLesson {
 interface CourseLesson {
     id: string; // The unique ID from the `lessons` table
     title: string;
+    description: string; // Chapter content or lesson description
     order_index: number;
     lesson_type: 'algorithmic' | 'frontend-project' | 'chapter';
+    created_at: string; // Timestamp for cards
 }
 
 // --- REUSABLE & STYLED COMPONENTS (Unchanged from MVP) ---
@@ -217,20 +219,28 @@ const CourseEditorPage: React.FC = () => {
                         <CardContent className="flex-grow max-h-[60vh] overflow-y-auto pr-3">
                             <ul className="space-y-2">
                                 {courseLessons.map(lesson => (
-                                    <li key={lesson.id} className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-3">
-                                            <span className="font-mono text-sm text-slate-500">{String(lesson.order_index + 1).padStart(2, '0')}</span>
-                                            {/* [ADDITIVE] Conditional icon rendering provides clear visual distinction between content types. */}
-                                            {lesson.lesson_type === 'chapter' 
-                                                ? <span title="Chapter"><BookText className="h-4 w-4 text-cyan-400 flex-shrink-0" /></span>
-                                                : <span title="Lesson"><FileCode className="h-4 w-4 text-slate-500 flex-shrink-0" /></span>
-                                            }
-                                            <span className="font-medium text-slate-200">{lesson.title}</span>
+                                    <li key={lesson.id} className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg">
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-mono text-sm text-slate-500">{String(lesson.order_index + 1).padStart(2, '0')}</span>
+                                                {/* [ADDITIVE] Conditional icon rendering provides clear visual distinction between content types. */}
+                                                {lesson.lesson_type === 'chapter' 
+                                                    ? <span title="Chapter"><BookText className="h-4 w-4 text-cyan-400 flex-shrink-0" /></span>
+                                                    : <span title="Lesson"><FileCode className="h-4 w-4 text-slate-500 flex-shrink-0" /></span>
+                                                }
+                                                <span className="font-medium text-slate-200">{lesson.title}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Button size="icon" variant="ghost" className="h-7 w-7" title="Preview Item" onClick={() => handlePreviewLesson(lesson.id)}><Eye className="h-4 w-4" /></Button>
+                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-500 hover:bg-red-500/10 hover:text-red-400" title="Remove Item" onClick={() => handleRemoveLesson(lesson.id)}><Trash2 className="h-4 w-4" /></Button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Preview Item" onClick={() => handlePreviewLesson(lesson.id)}><Eye className="h-4 w-4" /></Button>
-                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-500 hover:bg-red-500/10 hover:text-red-400" title="Remove Item" onClick={() => handleRemoveLesson(lesson.id)}><Trash2 className="h-4 w-4" /></Button>
-                                        </div>
+                                        {lesson.lesson_type === 'chapter' && lesson.description && (
+                                            <div className="ml-10 pl-3 border-l-2 border-cyan-400/30">
+                                                <p className="text-sm text-slate-400 mb-1 line-clamp-2">{lesson.description}</p>
+                                                <p className="text-xs text-slate-500">Created {new Date(lesson.created_at).toLocaleDateString()}</p>
+                                            </div>
+                                        )}
                                     </li>
                                 ))}
                             </ul>

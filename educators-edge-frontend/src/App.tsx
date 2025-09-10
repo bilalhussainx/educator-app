@@ -26,7 +26,7 @@ import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import LiveTutorialPage from './pages/LiveTutorialPage';
 import CreateLessonPage from './pages/CreateLessonPage';
-// import AscentIDE from './pages/AscentIDE';
+import AscentIDE from './pages/AscentIDE';
 import SubmissionsPage from './pages/SubmissionsPage';
 import CreateCoursePage from './pages/CreateCoursePage';
 import CourseManagementPage from './pages/CourseManagementPage';
@@ -38,6 +38,23 @@ import mixpanel from 'mixpanel-browser';
 import LessonLoaderPage from './pages/LessonLoaderPage';
 import CreateChapterPage from './pages/CreateChapterPage';
 import VideoPlayerPage from './pages/VideoPlayerPage';
+import ScribeSessionPage from './pages/ScribeSessionPage';
+import TeacherSearchPage from './pages/TeacherSearchPage';
+import ProfileSetupPage from './pages/ProfileSetupPage';
+import ProfileViewPage from './pages/ProfileViewPage';
+import ProfileSearchPage from './pages/ProfileSearchPage';
+import TalentCruciblePage from './pages/TalentCruciblePage';
+import SessionManagementPage from './pages/SessionManagementPage';
+import TrustGraphPage from './pages/TrustGraphPage';
+import AIChatPage from './pages/AIChatPage';
+import TradingTerminalPage from './pages/TradingTerminalPage';
+import { ZenithTradeCommandCenter } from './pages/ZenithTradeCommandCenter';
+import DiscoverPage from './pages/DiscoverPage';
+import AnalysisPage from './pages/AnalysisPage';
+import PortfolioPage from './pages/PortfolioPage';
+import { FinancialRoute } from './components/route/FinancialRoute';
+import { LiveblocksProvider } from "@liveblocks/react";
+
 // --- Mixpanel Initialization ---
 const MIXPANEL_PROJECT_TOKEN = "ddb00402917fe523b477eafdf60f0580"; 
 if (MIXPANEL_PROJECT_TOKEN) {
@@ -121,6 +138,7 @@ export default function App() {
   }
 
   return (
+    <LiveblocksProvider authEndpoint="/api/liveblocks/auth">
       <Routes>
         {/* --- Public Routes (No Layout) --- */}
         <Route path="/login" element={<LoginPage setToken={setToken} setUser={setUser} />} />
@@ -144,8 +162,9 @@ export default function App() {
                 <Route path="/submissions/:lessonId" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><SubmissionsPage /></ProtectedRoute>} />
 
                 {/* Student-Accessible Routes */}
-                {/* <Route path="/lesson/:lessonId" element={<AscentIDE />} /> */}
                 <Route path="/lesson/:lessonId" element={<LessonLoaderPage />} />
+                <Route path="/ascent-ide/:lessonId" element={<AscentIDE />} />
+                <Route path="/urgent-session/:sessionId/code" element={<AscentIDE />} />
                 <Route path="/courses/discover" element={<DiscoverCoursesPage />} />
                 <Route path="/courses/:courseId/learn" element={<StudentCoursePage />} />
                 <Route path="/courses/:courseId/landing" element={<CourseLandingPage />} />
@@ -153,6 +172,28 @@ export default function App() {
                 <Route path="/watch/:recordingId" element={<VideoPlayerPage />} />
                 
                 <Route path="/chapters/new" element={<CreateChapterPage />} /> {/* <-- 2. ADD THE NEW ROUTE */}
+                <Route path="/scribe/:documentId" element={<ScribeSessionPage />} />
+                <Route path="/urgent-session/:sessionId/essay" element={<ScribeSessionPage />} />
+                
+                {/* Teacher/Profile Search Routes */}
+                <Route path="/teachers/search" element={<TeacherSearchPage />} />
+                <Route path="/profile/setup" element={<ProtectedRoute token={token} user={user}><ProfileSetupPage /></ProtectedRoute>} />
+                <Route path="/profile/:profileId" element={<ProfileViewPage />} />
+                <Route path="/profiles/search" element={<ProfileSearchPage />} />
+
+                {/* ASCENDIA PLATFORM: New Mentor & Social Features */}
+                <Route path="/talent-crucible" element={<ProtectedRoute token={token} user={user}><TalentCruciblePage /></ProtectedRoute>} />
+                <Route path="/sessions" element={<ProtectedRoute token={token} user={user}><SessionManagementPage /></ProtectedRoute>} />
+                <Route path="/trust-graph" element={<ProtectedRoute token={token} user={user}><TrustGraphPage /></ProtectedRoute>} />
+                <Route path="/ai-chat" element={<ProtectedRoute token={token} user={user}><AIChatPage /></ProtectedRoute>} />
+                <Route path="/trade" element={<ProtectedRoute token={token} user={user}><TradingTerminalPage /></ProtectedRoute>} />
+                
+                {/* Financial Hub Routes */}
+                <Route path="/trading-terminal" element={<ProtectedRoute token={token} user={user}><FinancialRoute><ZenithTradeCommandCenter /></FinancialRoute></ProtectedRoute>} />
+                <Route path="/discover" element={<ProtectedRoute token={token} user={user}><FinancialRoute><DiscoverPage /></FinancialRoute></ProtectedRoute>} />
+                <Route path="/analysis" element={<ProtectedRoute token={token} user={user}><FinancialRoute><AnalysisPage /></FinancialRoute></ProtectedRoute>} />
+                <Route path="/analysis/:symbol" element={<ProtectedRoute token={token} user={user}><FinancialRoute><AnalysisPage /></FinancialRoute></ProtectedRoute>} />
+                <Route path="/portfolio" element={<ProtectedRoute token={token} user={user}><FinancialRoute><PortfolioPage /></FinancialRoute></ProtectedRoute>} />
 
                 {/* Default route for any other authenticated path */}
 
@@ -162,6 +203,7 @@ export default function App() {
           </ProtectedRoute>
         }/>
       </Routes>
+      </LiveblocksProvider>
   );
 }
 // MVP

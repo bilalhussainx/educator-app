@@ -17,7 +17,11 @@ import {
     Home,
     Compass,
     RadioTower,
-    LogOut
+    LogOut,
+    Sparkles,
+    Calendar,
+    Users,
+    Award
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +53,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
     const navItems = [
         { path: '/dashboard', icon: Home, label: 'Dashboard' },
         { path: '/courses/discover', icon: Compass, label: 'Discover Courses' },
+        { path: '/talent-crucible', icon: Sparkles, label: 'Talent Crucible', premium: true },
+        { path: '/sessions', icon: Calendar, label: 'My Sessions' },
+        { path: '/trust-graph', icon: Users, label: 'Trust Graph' },
     ];
 
     return (
@@ -75,15 +82,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
                                         variant="ghost"
                                         onClick={() => navigate(item.path)}
                                         className={cn(
-                                            "h-10 w-10 p-0 rounded-lg hover:bg-slate-700",
-                                            location.pathname.startsWith(item.path) && "bg-cyan-500/10 text-cyan-300"
+                                            "h-10 w-10 p-0 rounded-lg hover:bg-slate-700 relative",
+                                            location.pathname.startsWith(item.path) && "bg-cyan-500/10 text-cyan-300",
+                                            item.premium && "bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20"
                                         )}
                                     >
-                                        <item.icon className="h-5 w-5" />
+                                        <item.icon className={cn(
+                                            "h-5 w-5",
+                                            item.premium && "text-purple-400"
+                                        )} />
+                                        {item.premium && (
+                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse" />
+                                        )}
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="right" className="bg-slate-800 border-slate-700 text-white">
-                                    <p>{item.label}</p>
+                                    <p>{item.label} {item.premium && '✨'}</p>
                                 </TooltipContent>
                             </Tooltip>
                         ))}

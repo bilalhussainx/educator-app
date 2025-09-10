@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { RadioTower, PlusCircle, BookOpen, Loader } from 'lucide-react';
+import { RadioTower, PlusCircle, BookOpen, Loader, FileEdit, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient from '../../services/apiClient';
 
@@ -22,9 +22,12 @@ interface LiveSessionModalProps {
     onClose: () => void;
 }
 
+type SessionType = 'tutorial' | 'essay_editing';
+
 export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen, onClose }) => {
     const [joinSessionId, setJoinSessionId] = useState('');
     const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+    const [sessionType, setSessionType] = useState<SessionType>('tutorial');
     const [courses, setCourses] = useState<Course[]>([]);
     const [loadingCourses, setLoadingCourses] = useState(false);
     const navigate = useNavigate();
@@ -57,20 +60,26 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
             return;
         }
 
-        console.log('[DEBUG] Creating session with selectedCourseId:', selectedCourseId);
+        console.log('[DEBUG] Creating session with selectedCourseId:', selectedCourseId, 'sessionType:', sessionType);
         console.log('[DEBUG] Selected course from courses array:', courses.find(c => c.id === selectedCourseId));
 
         const sessionId = crypto.randomUUID();
         onClose(); // Close the modal before navigating
         
-        // Navigate with course ID as query parameter if teacher selected one
-        if (selectedCourseId) {
-            const navigationUrl = `/session/${sessionId}?courseId=${selectedCourseId}`;
-            console.log('[DEBUG] Navigating to:', navigationUrl);
-            navigate(navigationUrl);
+        // Navigate based on session type
+        let navigationUrl = '';
+        if (sessionType === 'essay_editing') {
+            // Navigate to ScribeSessionPage for essay editing
+            navigationUrl = `/scribe-session/${sessionId}?courseId=${selectedCourseId}&mentor=teacher&type=live`;
         } else {
-            navigate(`/session/${sessionId}`);
+            // Navigate to LiveTutorialPage for coding tutorials (existing behavior)
+            navigationUrl = selectedCourseId 
+                ? `/session/${sessionId}?courseId=${selectedCourseId}`
+                : `/session/${sessionId}`;
         }
+        
+        console.log('[DEBUG] Navigating to:', navigationUrl);
+        navigate(navigationUrl);
     };
     
     const handleJoinSession = (e: React.FormEvent<HTMLFormElement>) => {
@@ -96,6 +105,41 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
                     {/* Teacher-specific action */}
                     {user?.role === 'teacher' && (
                         <>
+                            {/* Session Type Selection */}
+                            <div className="mb-6 space-y-3">
+                                <Label className="text-sm font-medium text-slate-300">
+                                    Session Type
+                                </Label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSessionType('tutorial')}
+                                        className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all ${
+                                            sessionType === 'tutorial'
+                                                ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
+                                                : 'border-slate-600 bg-slate-800/50 text-slate-300 hover:border-slate-500'
+                                        }`}
+                                    >
+                                        <Code className="h-6 w-6 mb-2" />
+                                        <span className="text-sm font-medium">Coding Tutorial</span>
+                                        <span className="text-xs text-slate-400 text-center mt-1">Live coding session with IDE</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSessionType('essay_editing')}
+                                        className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all ${
+                                            sessionType === 'essay_editing'
+                                                ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300'
+                                                : 'border-slate-600 bg-slate-800/50 text-slate-300 hover:border-slate-500'
+                                        }`}
+                                    >
+                                        <FileEdit className="h-6 w-6 mb-2" />
+                                        <span className="text-sm font-medium">Essay Editing</span>
+                                        <span className="text-xs text-slate-400 text-center mt-1">Collaborative writing session</span>
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Course Selection */}
                             <div className="mb-6 space-y-3">
                                 <Label htmlFor="course-select" className="text-sm font-medium text-slate-300">
@@ -143,7 +187,8 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
                                 disabled={!selectedCourseId || loadingCourses}
                                 className="w-full text-lg py-6 mb-6 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <PlusCircle className="mr-2 h-5 w-5" /> Create New Session
+                                <PlusCircle className="mr-2 h-5 w-5" /> 
+                                Create {sessionType === 'essay_editing' ? 'Essay Editing' : 'Tutorial'} Session
                             </Button>
                             <div className="relative mb-6">
                                 <div className="absolute inset-0 flex items-center">

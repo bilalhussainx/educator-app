@@ -1,14 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePortfolio } from '../../hooks/usePortfolio';
-// src/components/trade/PortfolioWidget.tsx
-
-// [FIX #1] The import path is corrected to use a standard, project-aliased path.
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-// [PREREQUISITE] This import will now work correctly after you run `npx shadcn-ui@latest add skeleton`.
-import { Skeleton } from '@/components/ui/skeleton'; 
-import { AlertCircle, ArrowRight } from 'lucide-react';
-import type { PortfolioAsset } from '@/types/trade'; // Import the type for explicit typing
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { AlertCircle, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
 
 // A professional currency formatter.
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -16,21 +11,20 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD',
 });
 
-// --- SUB-COMPONENTS for clean state handling ---
-
 const PortfolioLoadingSkeleton = () => (
     <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white">
         <CardHeader>
-            <Skeleton className="h-6 w-3/5 bg-slate-700" />
-            <Skeleton className="h-4 w-4/5 bg-slate-700 mt-1" />
+            <div className="h-6 w-3/5 bg-slate-700 rounded animate-pulse" />
+            <div className="h-4 w-4/5 bg-slate-700 mt-1 rounded animate-pulse" />
         </CardHeader>
         <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <Skeleton className="h-10 w-full bg-slate-700" />
-                <Skeleton className="h-10 w-full bg-slate-700" />
+            <div className="grid grid-cols-3 gap-4">
+                <div className="h-10 w-full bg-slate-700 rounded animate-pulse" />
+                <div className="h-10 w-full bg-slate-700 rounded animate-pulse" />
+                <div className="h-10 w-full bg-slate-700 rounded animate-pulse" />
             </div>
-            <Skeleton className="h-8 w-full bg-slate-700" />
-            <Skeleton className="h-8 w-full bg-slate-700" />
+            <div className="h-8 w-full bg-slate-700 rounded animate-pulse" />
+            <div className="h-8 w-full bg-slate-700 rounded animate-pulse" />
         </CardContent>
     </Card>
 );
@@ -47,67 +41,91 @@ const PortfolioErrorState = ({ error }: { error: string }) => (
 );
 
 
-// --- MAIN WIDGET COMPONENT ---
-
 export const PortfolioWidget: React.FC = () => {
-  const { portfolio, isLoading, error } = usePortfolio();
+  const { portfolioData, loading, error } = usePortfolio();
+  const navigate = useNavigate();
 
-  if (isLoading) return <PortfolioLoadingSkeleton />;
+  if (loading) return <PortfolioLoadingSkeleton />;
   if (error) return <PortfolioErrorState error={error} />;
-  if (!portfolio) return null;
+  if (!portfolioData) return null;
 
-  const MOCK_ASSET_PRICE = 150.75; 
+  const { wallet, portfolio } = portfolioData;
+  const totalValue = wallet.trading_cash_balance + (portfolio.totalValue || 0);
+  const isProfit = portfolio.unrealizedPnL >= 0;
 
-  const cashBalance = parseFloat(portfolio.cash_balance);
-
-  // [FIX #2] Explicit types are provided for the `reduce` function's accumulator and current value,
-  // resolving all 'implicitly has an any type' errors.
-  const assetsValue = portfolio.assets.reduce((total: number, asset: PortfolioAsset) => {
-    return total + (parseFloat(asset.quantity) * MOCK_ASSET_PRICE);
-  }, 0);
-
-  const totalValue = cashBalance + assetsValue;
+  const handleGoToTrading = () => {
+    navigate('/trading-terminal');
+  };
 
   return (
-    <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white">
+    <Card className="bg-gradient-to-br from-slate-900/40 to-slate-800/40 backdrop-blur-lg border border-slate-700/80 text-white">
       <CardHeader>
-        <CardTitle className="text-xl">Zenith Trade Portfolio</CardTitle>
-        <CardDescription>Your real-time paper trading performance.</CardDescription>
+        <CardTitle className="text-xl flex items-center gap-2">
+          Zenith Trade Portfolio
+          {isProfit ? (
+            <TrendingUp className="h-5 w-5 text-green-400" />
+          ) : (
+            <TrendingDown className="h-5 w-5 text-red-400" />
+          )}
+        </CardTitle>
+        <CardDescription>Your real-time trading performance simulation</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-6">
           <p className="text-sm text-slate-400">Total Portfolio Value</p>
-          <p className="text-4xl font-bold tracking-tighter text-white">{currencyFormatter.format(totalValue)}</p>
+          <p className="text-4xl font-bold tracking-tighter text-white">
+            {currencyFormatter.format(totalValue)}
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <p className={`text-sm font-medium ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
+              {isProfit ? '+' : ''}{currencyFormatter.format(portfolio.unrealizedPnL || 0)}
+            </p>
+            <p className={`text-xs ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
+              ({isProfit ? '+' : ''}{(portfolio.unrealizedPnLPercent || 0).toFixed(2)}%)
+            </p>
+          </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-                <p className="text-xs text-slate-500">Cash Balance</p>
-                <p className="text-lg font-medium">{currencyFormatter.format(cashBalance)}</p>
-            </div>
-             <div>
-                <p className="text-xs text-slate-500">Assets Value</p>
-                <p className="text-lg font-medium">{currencyFormatter.format(assetsValue)}</p>
-            </div>
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div>
+            <p className="text-xs text-slate-500">Cash Balance</p>
+            <p className="text-lg font-medium">{currencyFormatter.format(wallet.trading_cash_balance)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Assets Value</p>
+            <p className="text-lg font-medium">{currencyFormatter.format(portfolio.totalValue || 0)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">P-Score</p>
+            <p className="text-lg font-medium text-cyan-400">{portfolio.p_score.toFixed(1)}</p>
+          </div>
         </div>
 
         <div>
-            <h4 className="font-semibold mb-2">Your Holdings</h4>
-            <div className="space-y-2">
-                {portfolio.assets.length > 0 ? portfolio.assets.map((asset: PortfolioAsset) => ( // [FIX #3] Explicit type for asset in map
-                    <div key={asset.asset_symbol} className="flex justify-between items-center p-2 bg-slate-800/50 rounded-md">
-                        <span className="font-mono font-bold">{asset.asset_symbol}</span>
-                        <span className="text-slate-300">{parseFloat(asset.quantity).toFixed(2)} Shares</span>
-                    </div>
-                )) : (
-                    <p className="text-sm text-slate-500 text-center py-4">You do not own any assets.</p>
-                )}
-            </div>
+          <h4 className="font-semibold mb-2">Holdings ({portfolio.assets.length})</h4>
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {portfolio.assets.length > 0 ? portfolio.assets.map((asset) => (
+              <div key={asset.symbol} className="flex justify-between items-center p-2 bg-slate-800/50 rounded-md">
+                <div className="flex flex-col">
+                  <span className="font-mono font-bold text-sm">{asset.symbol}</span>
+                  <span className="text-xs text-slate-400">{asset.quantity} shares</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-slate-300">{currencyFormatter.format(asset.averageCostBasis)}</span>
+                </div>
+              </div>
+            )) : (
+              <p className="text-sm text-slate-500 text-center py-4">No positions yet. Start trading!</p>
+            )}
+          </div>
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
-            Go to Trading Terminal <ArrowRight className="ml-2 h-4 w-4" />
+        <Button 
+          onClick={handleGoToTrading}
+          className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold"
+        >
+          Go to Trading Terminal <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>
     </Card>

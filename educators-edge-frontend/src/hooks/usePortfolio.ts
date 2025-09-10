@@ -1,33 +1,126 @@
-// src/hooks/usePortfolio.ts
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import apiClient from '../services/apiClient';
-import type { Portfolio } from '../types/trade';
 
-// [THE FIX] The function is now correctly exported using the ES Module 'export' keyword,
-// which will be recognized by the 'import' statement in your PortfolioWidget component.
-export const usePortfolio = () => {
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+interface PortfolioAsset {
+  symbol: string;
+  quantity: number;
+  averageCostBasis: number;
+}
+
+interface Portfolio {
+  id: string;
+  p_score: number;
+  assets: PortfolioAsset[];
+  totalValue: number;
+  unrealizedPnL: number;
+  unrealizedPnLPercent: number;
+}
+
+interface Wallet {
+  spark_balance: number;
+  trading_cash_balance: number;
+}
+
+interface Trade {
+  id: string;
+  symbol: string;
+  type: 'BUY' | 'SELL';
+  quantity: number;
+  fillPrice: number;
+  executedAt: string;
+}
+
+interface PortfolioData {
+  wallet: Wallet;
+  portfolio: Portfolio;
+  recentTrades: Trade[];
+  marketPrices: Record<string, number>;
+}
+
+interface UsePortfolioReturn {
+  portfolioData: PortfolioData | null;
+  loading: boolean;
+  error: string | null;
+  refreshPortfolio: () => Promise<void>;
+  executeOrder: (order: {
+    assetSymbol: string;
+    orderType: 'BUY' | 'SELL';
+    quantity: number;
+    orderPrice?: number;
+  }) => Promise<{ success: boolean; message?: string }>;
+}
+
+export const usePortfolio = (): UsePortfolioReturn => {
+  const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchPortfolio = async () => {
-      setIsLoading(true);
+  const refreshPortfolio = useCallback(async () => {
+    try {
+      setLoading(true);
       setError(null);
-      try {
-        const response = await apiClient.get<Portfolio>('/api/trade/portfolio');
-        setPortfolio(response.data);
-      } catch (err) {
-        console.error("Failed to fetch portfolio:", err);
-        setError('Could not load your trading portfolio.');
-      } finally {
-        setIsLoading(false);
+      
+      console.log('[usePortfolio] Fetching portfolio data...');
+      const response = await apiClient.get('/api/trade/portfolio');
+      console.log('[usePortfolio] Portfolio response:', response.data);
+      
+      if (response.data.success) {
+        setPortfolioData(response.data.data);
+        console.log('[usePortfolio] Portfolio data set:', response.data.data);
+      } else {
+        console.error('[usePortfolio] Portfolio fetch failed:', response.data.message);
+        setError(response.data.message || 'Failed to fetch portfolio data');
       }
-    };
+    } catch (err: any) {
+      console.error('[usePortfolio] Portfolio fetch error:', err);
+      console.error('[usePortfolio] Error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message
+      });
+      setError(err.response?.data?.message || 'Failed to fetch portfolio data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    fetchPortfolio();
-  }, []); // The empty dependency array ensures this runs once on component mount
+  const executeOrder = useCallback(async (order: {
+    assetSymbol: string;
+    orderType: 'BUY' | 'SELL';
+    quantity: number;
+    orderPrice?: number;
+  }) => {
+    try {
+      const response = await apiClient.post('/api/trade/orders/execute', order);
+      
+      if (response.data.success) {
+        await refreshPortfolio();
+        return { success: true };
+      } else {
+        return { 
+          success: false, 
+          message: response.data.message || 'Order execution failed' 
+        };
+      }
+    } catch (err: any) {
+      console.error('Order execution error:', err);
+      return { 
+        success: false, 
+        message: err.response?.data?.message || 'Order execution failed' 
+      };
+    }
+  }, [refreshPortfolio]);
 
-  return { portfolio, isLoading, error };
+  useEffect(() => {
+    refreshPortfolio();
+  }, [refreshPortfolio]);
+
+  return {
+    portfolioData,
+    loading,
+    error,
+    refreshPortfolio,
+    executeOrder
+  };
 };

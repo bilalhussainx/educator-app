@@ -12,8 +12,10 @@ import { cn } from "@/lib/utils";
 interface CourseItem {
     id: string;
     title: string;
+    description: string;
     order_index: number;
     lesson_type: 'algorithmic' | 'frontend-project' | 'chapter';
+    created_at: string;
 }
 
 interface CourseData {
@@ -81,18 +83,26 @@ const CourseLearnPage: React.FC = () => {
                     <CardContent>
                         <ul className="space-y-3">
                             {courseData.lessons.map(item => (
-                                <li key={item.id} className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <span className="font-mono text-xl text-slate-500">{String(item.order_index + 1).padStart(2, '0')}</span>
-                                        {item.lesson_type === 'chapter' 
-                                            ? <span title="Chapter"><BookText className="h-6 w-6 text-cyan-400 flex-shrink-0" /></span>
-                                            : <span title="Lesson"><FileCode className="h-6 w-6 text-slate-400 flex-shrink-0" /></span>
-                                        }
-                                        <h3 className="font-medium text-lg text-slate-200">{item.title}</h3>
+                                <li key={item.id} className="p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
+                                    <div className="flex items-center justify-between gap-4 mb-2">
+                                        <div className="flex items-center gap-4">
+                                            <span className="font-mono text-xl text-slate-500">{String(item.order_index + 1).padStart(2, '0')}</span>
+                                            {item.lesson_type === 'chapter' 
+                                                ? <span title="Chapter"><BookText className="h-6 w-6 text-cyan-400 flex-shrink-0" /></span>
+                                                : <span title="Lesson"><FileCode className="h-6 w-6 text-slate-400 flex-shrink-0" /></span>
+                                            }
+                                            <h3 className="font-medium text-lg text-slate-200">{item.title}</h3>
+                                        </div>
+                                        <Button onClick={() => handleStartLesson(item.id)} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
+                                            <Play className="mr-2 h-4 w-4" /> Start
+                                        </Button>
                                     </div>
-                                    <Button onClick={() => handleStartLesson(item.id)} className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold">
-                                        <Play className="mr-2 h-4 w-4" /> Start
-                                    </Button>
+                                    {item.lesson_type === 'chapter' && item.description && (
+                                        <div className="ml-12 pl-4 border-l-2 border-cyan-400/30">
+                                            <p className="text-sm text-slate-400 mb-2 line-clamp-3">{item.description}</p>
+                                            <p className="text-xs text-slate-500">Added {new Date(item.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ul>
