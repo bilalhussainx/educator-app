@@ -28,6 +28,11 @@ const videoRoutes = require('./routes/videoRoutes');
 const liveblocksRoutes = require('./routes/liveblocksRoutes');
 const documentRoutes = require('./routes/documentRoutes'); // <-- IMPORT THE NEW ROUTE
 const simulationPortfolioRoutes = require('./routes/simulationPortfolioRoutes'); // <-- SIMULATION PORTFOLIO ROUTES
+const calendarRoutes = require('./routes/calendarRoutes'); // <-- CALENDAR ROUTES
+const calendlyRoutes = require('./routes/calendlyRoutes'); // <-- CALENDLY API ROUTES
+const messageRoutes = require('./routes/messageRoutes'); // <-- MESSAGE ROUTES
+const enhancedCourseRoutes = require('./routes/enhancedCourseRoutes'); // <-- ENHANCED COURSE ROUTES
+const aiCourseRoutes = require('./routes/aiCourseRoutes'); // <-- AI COURSE ROUTES
 
 //...
 const app = express();
@@ -109,12 +114,19 @@ app.use('/api/ascendia', ascendiaRoutes); // <-- REGISTER THE NEW ASCENDIA ROUTE
 app.use('/api/profiles', profileRoutes); // <-- REGISTER THE NEW PROFILE ROUTES
 app.use('/api/market', marketDataRoutes); // <-- REGISTER THE NEW MARKET DATA ROUTES
 app.use('/api/ai-bots', require('./routes/aiBotRoutes')); // <-- AI BOT ROUTES
+// app.use('/api/claude-courses', require('./routes/claudeCourseRoutes')); // <-- CLAUDE COURSE GENERATION ROUTES (DISABLED DUE TO DEPENDENCY ISSUES)
+app.use('/api/leetcode', require('./routes/leetcodeRoutes')); // <-- LEETCODE REPOSITORY INTEGRATION
 
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/liveblocks', liveblocksRoutes);
 app.use('/api/documents', documentRoutes); // <-- REGISTER THE NEW ROUTE
 app.use('/api/simulation', simulationPortfolioRoutes); // <-- REGISTER SIMULATION PORTFOLIO ROUTES
+app.use('/api/calendar', calendarRoutes); // <-- REGISTER CALENDAR ROUTES
+app.use('/api/calendly', calendlyRoutes); // <-- REGISTER CALENDLY API ROUTES
+app.use('/api/messages', messageRoutes); // <-- REGISTER MESSAGE ROUTES
+app.use('/api/enhanced-courses', enhancedCourseRoutes); // <-- REGISTER ENHANCED COURSE ROUTES
+app.use('/api/ai-courses', aiCourseRoutes); // <-- REGISTER AI COURSE ROUTES
 
 const server = http.createServer(app); // Create an HTTP server from your Express app
 

@@ -1,24 +1,76 @@
 // src/services/aiCourseGenerator.js
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Anthropic = require('@anthropic-ai/sdk');
 const db = require('../db');
 
-// Initialize the Gemini client.
-// Make sure to set your GOOGLE_API_KEY in your .env file.
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+// Initialize the Claude client.
+// Make sure to set your ANTHROPIC_API_KEY in your .env file.
+const anthropic = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 /**
- * A robust function to clean and parse JSON from an LLM response.
- * @param {string} rawText - The raw text response from the Gemini API.
+ * A robust function to clean and parse JSON from Claude response.
+ * @param {string} rawText - The raw text response from the Claude API.
  * @returns {object|Array} The parsed JSON object or array.
  */
 function sanitizeAndParseJson(rawText) {
+    if (!rawText || typeof rawText !== 'string') {
+        throw new Error("AI response is null, undefined, or not a string");
+    }
+
+    console.log("Raw AI response length:", rawText.length);
+    console.log("Raw AI response preview:", rawText.substring(0, 500) + '...');
+
+    // Enhanced JSON extraction with multiple patterns
+    const patterns = [
+        /```json\s*([\s\S]*?)\s*```/i,  // JSON code blocks
+        /```javascript\s*([\s\S]*?)\s*```/i,  // JavaScript code blocks containing JSON
+        /```\s*(\{[\s\S]*?\})\s*```/i,  // JSON in generic code blocks
+        /```\s*(\[[\s\S]*?\])\s*```/i,  // JSON arrays in generic code blocks
+        /(\{[\s\S]*\})/,                // JSON objects (greedy)
+        /(\[[\s\S]*\])/                 // JSON arrays (greedy)
+    ];
+
+    let extractedJson = null;
+    let patternUsed = null;
+    
+    for (let i = 0; i < patterns.length; i++) {
+        const pattern = patterns[i];
+        const match = rawText.match(pattern);
+        if (match && match[1]) {
+            extractedJson = match[1].trim();
+            patternUsed = i;
+            console.log(`JSON extracted using pattern ${i}:`, extractedJson.substring(0, 200) + '...');
+            break;
+        }
+    }
+
+    if (extractedJson) {
+        try {
+            return JSON.parse(extractedJson);
+        } catch (e) {
+            console.warn('Initial JSON parse failed, trying cleanup...');
+            // Clean common issues
+            let cleaned = extractedJson
+                .replace(/,(\s*[}\]])/g, '$1')  // Remove trailing commas
+                .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":'); // Quote unquoted keys
+            
+            try {
+                return JSON.parse(cleaned);
+            } catch (e2) {
+                console.error("JSON parsing failed after cleanup:", e2.message);
+                throw new Error(`AI response contained malformed JSON: ${e2.message}`);
+            }
+        }
+    }
+
+    // Fallback: try to find JSON more aggressively
     const jsonStart = rawText.indexOf('{');
     const jsonEnd = rawText.lastIndexOf('}');
     const arrayStart = rawText.indexOf('[');
     const arrayEnd = rawText.lastIndexOf(']');
+    
     let jsonText;
-
     if (arrayStart !== -1 && (arrayStart < jsonStart || jsonStart === -1)) {
         jsonText = rawText.substring(arrayStart, arrayEnd + 1);
     } else if (jsonStart !== -1) {
@@ -26,7 +78,12 @@ function sanitizeAndParseJson(rawText) {
     } else {
         throw new Error("No valid JSON object or array found in the AI response.");
     }
-    return JSON.parse(jsonText);
+    
+    try {
+        return JSON.parse(jsonText);
+    } catch (e) {
+        throw new Error(`Failed to parse JSON from AI response: ${e.message}`);
+    }
 }
 
 
@@ -41,34 +98,43 @@ async function selectLessons(topic, lessonCount, candidateLessons) {
     }));
     const language = candidateLessons[0]?.language || 'the specified language';
 
-    const prompt = `
-        You are a world-class curriculum architect for a course on ${language}.
-        From the list of available lessons below, select the best ${lessonCount} for a course on "${topic}".
-        
-        Principles:
-        1.  **Pedagogical Flow:** Lessons must be in a logical, progressive order.
-        2.  **Relevance:** Your selection must be 100% relevant. Reject unrelated lessons.
-        3.  **Quality Control:** If a lesson seems bad, do not include it.
+    const prompt = `You are a world-class curriculum architect for a course on ${language}.
+From the list of available lessons below, select the best ${lessonCount} for a course on "${topic}".
 
-        Here is the list of available lessons with their unique IDs and titles:
-        ${JSON.stringify(candidatePayload, null, 2)}
+Principles:
+1. **Pedagogical Flow:** Lessons must be in a logical, progressive order.
+2. **Relevance:** Your selection must be 100% relevant. Reject unrelated lessons.
+3. **Quality Control:** If a lesson seems bad, do not include it.
 
-        Respond ONLY with a single, raw JSON array of objects. Each object must contain the "id" and "title" for the lessons you have chosen, in the correct pedagogical order.
-        Example format: [{ "id": "uuid-goes-here", "title": "Lesson Title" }]
-    `;
+Here is the list of available lessons with their unique IDs and titles:
+${JSON.stringify(candidatePayload, null, 2)}
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
-    
+Respond ONLY with a single, raw JSON array of objects. Each object must contain the "id" and "title" for the lessons you have chosen, in the correct pedagogical order.
+Example format: [{ "id": "uuid-goes-here", "title": "Lesson Title" }]`;
+
     try {
+        const response = await anthropic.messages.create({
+            model: "claude-3-haiku-20240307",
+            max_tokens: 2048,
+            messages: [
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ]
+        });
+
+        const responseText = response.content[0].text;
         const chosenLessonsInfo = sanitizeAndParseJson(responseText);
-        if (!Array.isArray(chosenLessonsInfo)) throw new Error("AI response was not a JSON array.");
         
-        console.log(`  [AI Scout] Gemini has intelligently selected ${chosenLessonsInfo.length} lessons.`);
-        // Return the array of {id, title} objects
+        if (!Array.isArray(chosenLessonsInfo)) {
+            throw new Error("AI response was not a JSON array.");
+        }
+        
+        console.log(`  [AI Scout] Claude has intelligently selected ${chosenLessonsInfo.length} lessons.`);
         return chosenLessonsInfo;
     } catch (e) {
-        console.error("  [AI Scout] FAILED to parse Gemini's lesson selection response:", responseText);
+        console.error("  [AI Scout] FAILED to parse Claude's lesson selection response:", e.message);
         throw new Error("AI failed to select lessons in the correct format.");
     }
 }
@@ -79,39 +145,46 @@ async function generateCourseStructure(topic, lessons) {
     // --- UPGRADE: Send ID with the lesson data ---
     const lessonPayload = lessons.map(l => ({ id: l.id, title: l.title, description: l.description }));
 
-    const prompt = `
-        You are a master educator for the CoreZenith platform.
-        Based on the provided sequence of lessons (each with a unique ID), generate a complete course structure.
+    const prompt = `You are a master educator for the CoreZenith platform.
+Based on the provided sequence of lessons (each with a unique ID), generate a complete course structure.
 
-        The general course topic is: "${topic}".
+The general course topic is: "${topic}".
 
-        Here are the lessons you must build the course around, in order:
-        ${JSON.stringify(lessonPayload, null, 2)}
+Here are the lessons you must build the course around, in order:
+${JSON.stringify(lessonPayload, null, 2)}
 
-        Respond ONLY with a single, raw JSON object following this exact structure:
-        {
-          "course_title": "A creative, compelling, and professional title.",
-          "course_description": "A compelling, one-paragraph marketing summary.",
-          "lesson_sequence": [
-            {
-              "id": "The exact 'id' of the first lesson",
-              "lesson_title": "The exact 'title' of the first lesson",
-              "ai_generated_objective": "A concise learning objective starting with 'The student will be able to...'"
-            }
-          ]
-        }
-        Ensure the 'lesson_sequence' array contains an object for EVERY lesson provided.
-    `;
-    
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+Respond ONLY with a single, raw JSON object following this exact structure:
+{
+  "course_title": "A creative, compelling, and professional title.",
+  "course_description": "A compelling, one-paragraph marketing summary.",
+  "lesson_sequence": [
+    {
+      "id": "The exact 'id' of the first lesson",
+      "lesson_title": "The exact 'title' of the first lesson", 
+      "ai_generated_objective": "A concise learning objective starting with 'The student will be able to...'"
+    }
+  ]
+}
+Ensure the 'lesson_sequence' array contains an object for EVERY lesson provided.`;
 
     try {
+        const response = await anthropic.messages.create({
+            model: "claude-3-haiku-20240307",
+            max_tokens: 3000,
+            messages: [
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ]
+        });
+
+        const responseText = response.content[0].text;
         const courseStructure = sanitizeAndParseJson(responseText);
-        console.log(`  [AI Architect] Gemini has generated the course structure.`);
+        console.log(`  [AI Architect] Claude has generated the course structure.`);
         return courseStructure;
     } catch (e) {
-        console.error("  [AI Architect] FAILED to parse Gemini's course generation response:", responseText);
+        console.error("  [AI Architect] FAILED to parse Claude's course generation response:", e.message);
         throw new Error("AI failed to generate the course in the correct format.");
     }
 }

@@ -17,6 +17,7 @@ const getProfile = async (req, res) => {
                 up.hourly_rate_z_credits, up.hourly_rate_usd, up.years_experience,
                 up.education_level, up.languages, up.availability_status,
                 up.total_sessions, up.average_rating, up.total_reviews, up.verified_mentor,
+                up.calendly_url,
                 COALESCE(uw.z_credit_balance, 0) as spark_balance
             FROM users u
             LEFT JOIN user_profiles up ON u.id = up.user_id
@@ -73,7 +74,7 @@ const getProfile = async (req, res) => {
 
         // Get tier information from user_profiles (enhanced with tier system)
         const tierQuery = await db.query(`
-            SELECT ascendia_score, user_tier, tier_updated_at, is_searchable_teacher,
+            SELECT ascendia_score_total as ascendia_score, user_tier, tier_updated_at, is_searchable_teacher,
                    can_host_group_sessions, max_students_per_session, teacher_bio
             FROM user_profiles 
             WHERE user_id = $1
@@ -107,17 +108,39 @@ const updateProfile = async (req, res) => {
         display_name, bio, location, timezone, profile_image_url,
         is_mentor, is_counselor, is_essay_editor,
         hourly_rate_z_credits, hourly_rate_usd, years_experience,
-        education_level, languages, availability_status, is_searchable_teacher
+        education_level, languages, availability_status, is_searchable_teacher,
+        calendly_url
     } = req.body;
 
     try {
+        // Check if user is allowed to create/update profiles (teachers only)
+        const userCheck = await db.query('SELECT role FROM users WHERE id = $1', [userId]);
+        if (userCheck.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'User not found' 
+            });
+        }
+        
+        const userRole = userCheck.rows[0].role;
+        if (userRole === 'student') {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Profile creation is restricted to teachers and mentors only. Students cannot create public profiles.',
+                tip: 'If you are a teacher, please contact support to update your account role.'
+            });
+        }
+        
+        // For teachers, default is_searchable_teacher to true if not explicitly set
+        const searchableTeacher = userRole === 'teacher' ? (is_searchable_teacher !== false ? true : false) : is_searchable_teacher;
         const result = await db.query(`
             INSERT INTO user_profiles (
                 user_id, display_name, bio, location, timezone, profile_image_url,
                 is_mentor, is_counselor, is_essay_editor,
                 hourly_rate_z_credits, hourly_rate_usd, years_experience,
-                education_level, languages, availability_status, is_searchable_teacher, updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW())
+                education_level, languages, availability_status, is_searchable_teacher, 
+                calendly_url, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW())
             ON CONFLICT (user_id) DO UPDATE SET
                 display_name = EXCLUDED.display_name,
                 bio = EXCLUDED.bio,
@@ -134,13 +157,15 @@ const updateProfile = async (req, res) => {
                 languages = EXCLUDED.languages,
                 availability_status = EXCLUDED.availability_status,
                 is_searchable_teacher = EXCLUDED.is_searchable_teacher,
+                calendly_url = EXCLUDED.calendly_url,
                 updated_at = NOW()
             RETURNING *
         `, [
             userId, display_name, bio, location, timezone, profile_image_url,
             is_mentor, is_counselor, is_essay_editor,
             hourly_rate_z_credits, hourly_rate_usd, years_experience,
-            education_level, languages, availability_status, is_searchable_teacher
+            education_level, languages, availability_status, searchableTeacher,
+            calendly_url
         ]);
 
         res.json({ success: true, profile: result.rows[0] });
@@ -174,13 +199,13 @@ const searchProfiles = async (req, res) => {
     try {
         let query = `
             SELECT 
-                u.id, u.username,
+                u.id, u.username, u.role,
                 up.display_name, up.bio, up.location, up.profile_image_url,
                 up.is_mentor, up.is_counselor, up.is_essay_editor,
                 up.hourly_rate_z_credits, up.hourly_rate_usd, up.years_experience,
                 up.education_level, up.languages, up.availability_status,
                 up.total_sessions, up.average_rating, up.total_reviews, up.verified_mentor,
-                up.z_index, up.user_tier, up.is_searchable_teacher, 
+                up.z_index, up.user_tier, up.is_searchable_teacher, up.calendly_url,
                 up.can_host_group_sessions, up.max_students_per_session, up.teacher_bio,
                 COALESCE(uw.z_credit_balance, 0) as spark_balance,
                 ab.id as ai_bot_id, ab.personality_type, ab.specialization_focus as ai_specialization,
@@ -197,17 +222,17 @@ const searchProfiles = async (req, res) => {
 
         // Service type filter
         if (service_type && service_type !== 'all') {
-            paramCount++;
             if (service_type === 'mentor') {
                 query += ` AND up.is_mentor = true`;
             } else if (service_type === 'counselor') {
                 query += ` AND up.is_counselor = true`;
             } else if (service_type === 'essay_editor') {
                 query += ` AND up.is_essay_editor = true`;
+            } else if (service_type === 'teacher') {
+                query += ` AND up.is_searchable_teacher = true`;
             }
-        } else {
-            query += ` AND (up.is_mentor = true OR up.is_counselor = true OR up.is_essay_editor = true)`;
         }
+        // For 'all' or no service type specified, include all searchable users (mentors, counselors, editors, teachers, AI bots)
 
         // Specialization filter
         if (specialization) {

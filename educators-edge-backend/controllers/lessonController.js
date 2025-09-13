@@ -1098,7 +1098,17 @@ exports.getAllLessons = async (req, res) => {
 exports.getLessonById = async (req, res) => {
     try {
         const { id } = req.params;
-        const lessonResult = await db.query('SELECT * FROM lessons WHERE id = $1', [id]);
+        const lessonResult = await db.query(`
+            SELECT l.*, 
+                CASE 
+                    WHEN l.course_id IS NOT NULL THEN c.title
+                    WHEN l.enhanced_course_id IS NOT NULL THEN ec.title
+                END as course_title
+            FROM lessons l
+            LEFT JOIN courses c ON l.course_id = c.id
+            LEFT JOIN enhanced_courses ec ON l.enhanced_course_id = ec.id
+            WHERE l.id = $1
+        `, [id]);
         if (lessonResult.rows.length === 0) {
             return res.status(404).json({ error: 'Lesson not found.' });
         }

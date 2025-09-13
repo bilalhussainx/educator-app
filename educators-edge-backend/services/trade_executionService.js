@@ -60,14 +60,16 @@ class TradeExecutionService {
         var currentCash = parseFloat(walletResult.rows[0].trading_cash_balance);
       }
 
-      // 3. Get user's current holdings for this symbol
+      // 3. Get user's portfolio and current holdings for this symbol
+      const portfolio = await tradePortfolioService.getOrCreateUserPortfolio(userId);
+      
       const holdingsQuery = `
         SELECT quantity
         FROM portfolio_assets 
-        WHERE user_id = $1 AND symbol = $2
+        WHERE portfolio_id = $1 AND asset_symbol = $2
       `;
       
-      const holdingsResult = await client.query(holdingsQuery, [userId, symbol]);
+      const holdingsResult = await client.query(holdingsQuery, [portfolio.id, symbol]);
       const currentHoldings = holdingsResult.rows.length > 0 ? parseInt(holdingsResult.rows[0].quantity) : 0;
 
       // 4. Perform validation based on trade type
@@ -114,27 +116,26 @@ class TradeExecutionService {
       if (newHoldings > 0) {
         // Update or insert the asset
         await client.query(`
-          INSERT INTO portfolio_assets (user_id, symbol, quantity, average_price, last_updated)
-          VALUES ($1, $2, $3, $4, NOW())
-          ON CONFLICT (user_id, symbol) 
+          INSERT INTO portfolio_assets (portfolio_id, asset_symbol, quantity, average_cost_basis)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (portfolio_id, asset_symbol) 
           DO UPDATE SET 
             quantity = $3,
-            average_price = (portfolio_assets.average_price * portfolio_assets.quantity + $4 * $3) / ($3 + portfolio_assets.quantity),
-            last_updated = NOW()
-        `, [userId, symbol, newHoldings, marketPrice]);
+            average_cost_basis = (portfolio_assets.average_cost_basis * portfolio_assets.quantity + $4 * $3) / ($3 + portfolio_assets.quantity)
+        `, [portfolio.id, symbol, newHoldings, marketPrice]);
       } else if (newHoldings === 0) {
         // Remove the asset if quantity becomes zero
         await client.query(`
           DELETE FROM portfolio_assets 
-          WHERE user_id = $1 AND symbol = $2
-        `, [userId, symbol]);
+          WHERE portfolio_id = $1 AND asset_symbol = $2
+        `, [portfolio.id, symbol]);
       }
 
       // 7. Create trade record
       await client.query(`
-        INSERT INTO trades (user_id, symbol, quantity, price, trade_type, execution_date, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW())
-      `, [userId, symbol, quantity, marketPrice, tradeType, simulationDate]);
+        INSERT INTO trades (portfolio_id, asset_symbol, quantity, fill_price, trade_type, executed_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `, [portfolio.id, symbol, quantity, marketPrice, tradeType, simulationDate]);
 
       await client.query('COMMIT');
 

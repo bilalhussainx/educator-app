@@ -5,7 +5,7 @@ const { RtcTokenBuilder, RtcRole } = require('agora-token');
 /**
  * Generates a temporary, secure Agora token for an authenticated user to join a specific channel.
  */
-exports.generateAgoraToken = (req, res) => {
+exports.generateAgoraToken = async (req, res) => {
     try {
         // 1. Get the channel name from the URL parameter. This is your unique session ID.
         const channelName = req.params.sessionId;
@@ -45,12 +45,40 @@ exports.generateAgoraToken = (req, res) => {
             privilegeExpiredTs
         );
 
-        // 8. Send the token and other necessary info back to the frontend.
-        // The Agora frontend SDK needs all three of these pieces to connect successfully.
+        // 8. Get session details from database
+        const db = require('../db');
+        let sessionDetails = null;
+        
+        try {
+            const sessionQuery = await db.query(`
+                SELECT sr.*, 
+                       requester.username as student_username,
+                       requester_profile.display_name as student_display_name,
+                       mentor.username as mentor_username,
+                       mentor_profile.display_name as mentor_display_name
+                FROM session_requests sr
+                LEFT JOIN users requester ON sr.requester_id = requester.id
+                LEFT JOIN user_profiles requester_profile ON requester.id = requester_profile.user_id
+                LEFT JOIN users mentor ON sr.mentor_id = mentor.id
+                LEFT JOIN user_profiles mentor_profile ON mentor.id = mentor_profile.user_id
+                WHERE sr.id = $1
+            `, [channelName]);
+            
+            if (sessionQuery.rows.length > 0) {
+                sessionDetails = sessionQuery.rows[0];
+            }
+        } catch (dbError) {
+            console.error('Error fetching session details:', dbError);
+        }
+
+        // 9. Send the token and session info back to the frontend.
         res.json({ 
+            success: true,
             token: token,
             uid: uid,
-            appId: appId 
+            appId: appId,
+            channelName: channelName,
+            session: sessionDetails
         });
 
     } catch (error) {
