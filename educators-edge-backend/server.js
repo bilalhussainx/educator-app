@@ -33,6 +33,7 @@ const calendlyRoutes = require('./routes/calendlyRoutes'); // <-- CALENDLY API R
 const messageRoutes = require('./routes/messageRoutes'); // <-- MESSAGE ROUTES
 const enhancedCourseRoutes = require('./routes/enhancedCourseRoutes'); // <-- ENHANCED COURSE ROUTES
 const aiCourseRoutes = require('./routes/aiCourseRoutes'); // <-- AI COURSE ROUTES
+const submissionsRoutes = require('./routes/submissionsRoutes'); // <-- SUBMISSIONS & ECOSYSTEM TRACKING ROUTES
 
 //...
 const app = express();
@@ -127,6 +128,7 @@ app.use('/api/calendly', calendlyRoutes); // <-- REGISTER CALENDLY API ROUTES
 app.use('/api/messages', messageRoutes); // <-- REGISTER MESSAGE ROUTES
 app.use('/api/enhanced-courses', enhancedCourseRoutes); // <-- REGISTER ENHANCED COURSE ROUTES
 app.use('/api/ai-courses', aiCourseRoutes); // <-- REGISTER AI COURSE ROUTES
+app.use('/api/submissions', submissionsRoutes); // <-- REGISTER SUBMISSIONS & ECOSYSTEM TRACKING ROUTES
 
 const server = http.createServer(app); // Create an HTTP server from your Express app
 

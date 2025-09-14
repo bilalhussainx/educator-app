@@ -46,6 +46,8 @@
     "quickjs-emscripten": "^0.31.0",
     "streamifier": "^0.1.1",
     "stripe": "^18.5.0",
+    "uuid": "^13.0.0",
+    "vm2": "^3.9.19",
     "ws": "^8.18.3"
   },
   "devDependencies": {

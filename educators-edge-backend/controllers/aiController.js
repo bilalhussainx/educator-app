@@ -3,36 +3,94 @@
 // -----------------------------------------------------------------
 const db = require('../db');
 
+// Ensure fetch is available (for older Node.js versions)
+if (typeof fetch === 'undefined') {
+    global.fetch = require('node-fetch');
+}
+
 // This controller will handle all interactions with the Gemini API.
 exports.getHint = async (req, res) => {
-    const { selectedCode, lessonId } = req.body;
+    console.log('[HINT] Request received:', { lessonId: req.body.lessonId, codeLength: req.body.selectedCode?.length, hasPromptModifier: !!req.body.promptModifier });
+
+    const { selectedCode, lessonId, promptModifier } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
+        console.log('[HINT] ERROR: No API key configured');
         return res.status(500).json({ error: 'AI service is not configured.' });
     }
     if (!selectedCode || !lessonId) {
+        console.log('[HINT] ERROR: Missing required fields:', { selectedCode: !!selectedCode, lessonId: !!lessonId });
         return res.status(400).json({ error: 'Selected code and lesson ID are required.' });
     }
 
     try {
-        // First, fetch the lesson details to provide context to the AI.
-        const lessonResult = await db.query('SELECT title, description FROM lessons WHERE id = $1', [lessonId]);
-        if (lessonResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Lesson not found.' });
+        // Parse the lesson ID to handle enhanced courses
+        console.log('[HINT] Parsing lesson ID:', lessonId);
+        let lesson = { title: 'Unknown', description: 'No description available' };
+
+        // Check if this is an enhanced course lesson (format: courseId-moduleIndex-lessonIndex)
+        const lessonIdParts = lessonId.split('-');
+        if (lessonIdParts.length >= 3) {
+            // This is likely an enhanced course lesson
+            const moduleIndex = lessonIdParts[lessonIdParts.length - 2];
+            const lessonIndex = lessonIdParts[lessonIdParts.length - 1];
+            const courseId = lessonIdParts.slice(0, -2).join('-'); // Rejoin in case courseId has dashes
+
+            console.log('[HINT] Detected enhanced course:', { courseId, moduleIndex, lessonIndex });
+
+            // Fetch enhanced course lesson details
+            const enhancedCourseQuery = `
+                SELECT title, description, metadata
+                FROM enhanced_courses
+                WHERE id = $1 AND is_published = true
+            `;
+            const enhancedResult = await db.query(enhancedCourseQuery, [courseId]);
+
+            if (enhancedResult.rows.length > 0) {
+                const course = enhancedResult.rows[0];
+                const modules = course.metadata?.modules || [];
+
+                if (moduleIndex < modules.length) {
+                    const currentModule = modules[parseInt(moduleIndex)];
+                    const lessons = currentModule.lessons?.lessons || [];
+
+                    if (lessonIndex < lessons.length) {
+                        const currentLesson = lessons[parseInt(lessonIndex)];
+                        lesson = {
+                            title: currentLesson.title || `Lesson ${parseInt(lessonIndex) + 1}`,
+                            description: currentLesson.description || currentLesson.problem_statement || 'No description available'
+                        };
+                        console.log('[HINT] Enhanced course lesson found:', { title: lesson.title?.substring(0, 50) });
+                    }
+                }
+            }
+        } else {
+            // Fallback to regular lessons table
+            console.log('[HINT] Falling back to regular lessons table');
+            const lessonResult = await db.query('SELECT title, description FROM lessons WHERE id = $1', [lessonId]);
+
+            if (lessonResult.rows.length > 0) {
+                lesson = lessonResult.rows[0];
+                console.log('[HINT] Regular lesson found:', { title: lesson.title?.substring(0, 50) });
+            }
         }
-        const lesson = lessonResult.rows[0];
 
         // --- Construct the Prompt for Gemini ---
         // This is a crucial step. A well-structured prompt gets better results.
+        let baseInstruction = "You are an expert programming teaching assistant. A student is working on a lesson and has asked for a hint. Your goal is to provide a helpful, Socratic hint that guides the student toward the answer without giving it away directly.";
+
+        if (promptModifier) {
+            baseInstruction = `You are an expert programming teaching assistant. ${promptModifier}`;
+        }
+
         const prompt = `
-            You are an expert programming teaching assistant. A student is working on a lesson and has asked for a hint.
-            Your goal is to provide a helpful, Socratic hint that guides the student toward the answer without giving it away directly.
+            ${baseInstruction}
 
             Lesson Title: "${lesson.title}"
             Lesson Description: "${lesson.description}"
 
-            Here is the piece of code the student has selected for a hint:
+            Here is the student's current code:
             ---
             ${selectedCode}
             ---
@@ -41,8 +99,9 @@ exports.getHint = async (req, res) => {
         `;
 
         // --- Make the API Call to Gemini ---
+        console.log('[HINT] Making Gemini API call...');
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-        
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
@@ -55,22 +114,27 @@ exports.getHint = async (req, res) => {
             })
         });
 
+        console.log('[HINT] Gemini API response status:', response.status);
+
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Gemini API Error:", errorData);
-            throw new Error('Failed to get a hint from the AI service.');
+            const errorText = await response.text();
+            console.error('[HINT] Gemini API Error:', response.status, errorText);
+            throw new Error(`Failed to get a hint from the AI service: ${response.status} ${errorText}`);
         }
 
         const data = await response.json();
-        
+        console.log('[HINT] Gemini API response received, candidates:', data.candidates?.length || 0);
+
         // Extract the text from the Gemini response.
         const hint = data.candidates[0].content.parts[0].text;
+        console.log('[HINT] Successfully extracted hint, length:', hint?.length);
 
         res.json({ hint });
 
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error('[HINT] Error occurred:', err.message);
+        console.error('[HINT] Full error:', err);
+        res.status(500).json({ error: 'Server Error: ' + err.message });
     }
 };
 /**

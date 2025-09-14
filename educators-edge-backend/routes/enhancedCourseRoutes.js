@@ -14,6 +14,8 @@ router.get('/discover', verifyToken, newEnhancedCourseController.getDiscoverable
 router.get('/public/:courseId', verifyToken, newEnhancedCourseController.getEnhancedCourseDetails);
 router.post('/:courseId/enroll', verifyToken, newEnhancedCourseController.enrollInEnhancedCourse);
 router.get('/:courseId/lessons', verifyToken, newEnhancedCourseController.getEnhancedCourseLessons);
+router.post('/:courseId/run-tests', verifyToken, newEnhancedCourseController.runEnhancedCourseTests);
+router.post('/:courseId/submit', verifyToken, newEnhancedCourseController.submitEnhancedCourseSolution);
 router.get('/:courseId/solution', verifyToken, newEnhancedCourseController.getEnhancedCourseLessonSolution);
 router.get('/:courseId/enrollment-status', verifyToken, enhancedCourseController.checkEnhancedCourseEnrollment);
 

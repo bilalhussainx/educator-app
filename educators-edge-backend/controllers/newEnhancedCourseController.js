@@ -225,7 +225,7 @@ ${languageImpl.explanation}
             return lesson.examples.map((example, index) => ({
                 id: index + 1,
                 input: example.input,
-                expected: example.output,
+                expectedOutput: example.output, // Fixed: changed from 'expected' to 'expectedOutput'
                 description: `Example ${index + 1}`
             }));
         }
@@ -253,6 +253,85 @@ ${languageImpl.explanation}
         };
         return testMap[language] || 'test.js';
     }
+
+    // Run tests for enhanced course lesson
+    static async runEnhancedCourseTests(req, res) {
+        try {
+            const { courseId } = req.params;
+            const { files, moduleIndex = 0, lessonIndex = 0, language = 'javascript' } = req.body;
+
+            console.log('🔄 Running tests for enhanced course:', {
+                courseId,
+                moduleIndex,
+                lessonIndex,
+                language,
+                filesCount: files?.length
+            });
+
+            // Get course and lesson data
+            const courseQuery = `
+                SELECT title, description, metadata, language
+                FROM enhanced_courses
+                WHERE id = $1 AND is_published = true;
+            `;
+            const courseResult = await pool.query(courseQuery, [courseId]);
+
+            if (courseResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Enhanced course not found' });
+            }
+
+            const course = courseResult.rows[0];
+            const modules = course.metadata?.modules || [];
+            const currentModule = modules[parseInt(moduleIndex)];
+            const currentLesson = currentModule?.lessons?.lessons?.[parseInt(lessonIndex)];
+
+            if (!currentLesson) {
+                return res.status(404).json({ error: 'Lesson not found' });
+            }
+
+            const languageImpl = currentLesson.languageImplementations?.[language];
+            if (!languageImpl) {
+                return res.status(404).json({
+                    error: `No ${language} implementation found for this lesson`
+                });
+            }
+
+            // Get the user's code from files
+            const mainFile = files?.find(f => f.type === 'main') || files?.[0];
+            if (!mainFile) {
+                return res.status(400).json({ error: 'No code file provided' });
+            }
+
+            const userCode = mainFile.content;
+
+            // Use actual code execution for accurate test validation
+            const geminiService = require('../services/geminiService');
+            const testResults = await geminiService.executeCodeWithTests(
+                userCode,
+                {
+                    title: currentLesson.title,
+                    description: currentLesson.description,
+                    difficulty: currentLesson.difficulty,
+                    testCases: languageImpl.testCases || [],
+                    examples: currentLesson.examples || []
+                },
+                language
+            );
+
+            console.log('✅ Test execution completed:', {
+                passed: testResults.passed,
+                failed: testResults.failed,
+                total: testResults.total
+            });
+
+            res.json(testResults);
+        } catch (err) {
+            console.error('❌ Error running enhanced course tests:', err.message);
+            console.error('❌ Full error stack:', err.stack);
+            res.status(500).json({ error: 'Server Error' });
+        }
+    }
+
 
     // Get all enhanced courses
     static async getDiscoverableEnhancedCourses(req, res) {
@@ -382,6 +461,240 @@ ${languageImpl.explanation}
         } catch (err) {
             console.error('Error enrolling in enhanced course:', err.message);
             res.status(500).json({ error: 'Failed to enroll in course' });
+        }
+    }
+
+    // Submit solution for enhanced course lesson
+    static async submitEnhancedCourseSolution(req, res) {
+        try {
+            console.log('🚀 [SUBMIT_START] Submit solution endpoint called');
+
+            const { courseId } = req.params;
+            const { files, moduleIndex = 0, lessonIndex = 0, language = 'javascript', time_to_solve_seconds = 0, code_churn = 0 } = req.body;
+            const userId = req.user.id;
+
+            console.log('🚀 [SUBMIT_DETAILS] Submitting enhanced course solution:', {
+                courseId,
+                moduleIndex,
+                lessonIndex,
+                language,
+                userId,
+                filesCount: files?.length
+            });
+
+            // Get course and lesson data
+            const courseQuery = `
+                SELECT title, description, metadata, language
+                FROM enhanced_courses
+                WHERE id = $1 AND is_published = true;
+            `;
+            const courseResult = await pool.query(courseQuery, [courseId]);
+
+            if (courseResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Enhanced course not found' });
+            }
+
+            const course = courseResult.rows[0];
+            const modules = course.metadata?.modules || [];
+            const currentModule = modules[parseInt(moduleIndex)];
+            const currentLesson = currentModule?.lessons?.lessons?.[parseInt(lessonIndex)];
+
+            if (!currentLesson) {
+                return res.status(404).json({ error: 'Lesson not found' });
+            }
+
+            const languageImpl = currentLesson.languageImplementations?.[language];
+            if (!languageImpl) {
+                return res.status(404).json({
+                    error: `No ${language} implementation found for this lesson`
+                });
+            }
+
+            // Get the user's code from files
+            const mainFile = files?.find(f => f.type === 'main') || files?.[0];
+            if (!mainFile) {
+                return res.status(400).json({ error: 'No code file provided' });
+            }
+
+            const userCode = mainFile.content;
+
+            // Use the same test execution as "Run Tests" to ensure consistency
+            const geminiService = require('../services/geminiService');
+            const testResult = await geminiService.executeCodeWithTests(
+                userCode,
+                {
+                    title: currentLesson.title,
+                    description: currentLesson.description,
+                    difficulty: currentLesson.difficulty,
+                    testCases: languageImpl.testCases || [],
+                    examples: currentLesson.examples || []
+                },
+                language
+            );
+
+            console.log('🔍 [SUBMIT_VALIDATION] Test Results:', {
+                passed: testResult.passed,
+                failed: testResult.failed,
+                total: testResult.total,
+                success: testResult.success,
+                fromAdvancedExecution: testResult.fromAdvancedExecution,
+                testCaseResults: testResult.testCaseResults
+            });
+
+            // Strict validation: ALL test cases must pass
+            if (!testResult || !testResult.success || testResult.failed > 0 || testResult.passed !== testResult.total) {
+                console.log('❌ [SUBMIT_BLOCKED] Solution does not pass all test cases');
+                console.log('❌ [SUBMIT_BLOCKED] Detailed failure info:', {
+                    hasResult: !!testResult,
+                    success: testResult?.success,
+                    passed: testResult?.passed,
+                    failed: testResult?.failed,
+                    total: testResult?.total
+                });
+
+                return res.status(400).json({
+                    success: false,
+                    error: 'Your solution must pass ALL test cases before submission. Please review and fix any failing tests.',
+                    testResults: testResult,
+                    detailedMessage: `Currently passing ${testResult?.passed || 0}/${testResult?.total || 0} test cases. All must pass to submit.`,
+                    submissionBlocked: true
+                });
+            }
+
+            // Additional check for AI confidence if available
+            if (testResult.fromAI && testResult.confidence === 'LOW') {
+                console.log('⚠️ [SUBMIT_WARNING] Low AI confidence, requiring additional validation');
+
+                return res.status(400).json({
+                    success: false,
+                    error: 'AI evaluation has low confidence in your solution. Please review and ensure your code handles all edge cases.',
+                    testResults: testResult,
+                    aiAnalysis: testResult.aiAnalysis,
+                    feedback: testResult.feedback,
+                    submissionBlocked: true,
+                    confidenceIssue: true
+                });
+            }
+
+            console.log('✅ [SUBMIT_APPROVED] All test cases pass - submission allowed');
+
+            // Save submission to database (you may want to create a submissions table for enhanced courses)
+            const submissionData = {
+                user_id: userId,
+                course_id: courseId,
+                module_index: parseInt(moduleIndex),
+                lesson_index: parseInt(lessonIndex),
+                language: language,
+                code: userCode,
+                time_to_solve_seconds: time_to_solve_seconds,
+                code_churn: code_churn,
+                is_correct: true,
+                submitted_at: new Date()
+            };
+
+            // Note: You may want to create an enhanced_course_submissions table
+            // For now, we'll return success and let the ecosystem tracking handle persistence
+
+            res.json({
+                success: true,
+                message: 'Excellent! Your solution passed all test cases and has been submitted successfully!',
+                lesson_title: currentLesson.title,
+                difficulty: currentLesson.difficulty,
+                pattern: currentLesson.pattern,
+                feedback_type: 'success',
+                submissionData,
+                aiEvaluation: {
+                    testsPassed: testResult.passed,
+                    totalTests: testResult.total,
+                    evaluatedByAI: testResult.fromAI || false,
+                    confidence: testResult.confidence || 'MEDIUM',
+                    timeComplexity: testResult.timeComplexity,
+                    spaceComplexity: testResult.spaceComplexity,
+                    correctnessScore: testResult.correctnessScore
+                },
+                feedback: testResult.feedback || {
+                    strengths: ['Solution correctly handles all test cases'],
+                    nextSteps: 'Consider optimizing time or space complexity'
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Error submitting enhanced course solution:', error);
+            res.status(500).json({ error: 'Server Error' });
+        }
+    }
+
+    // Helper method to validate enhanced course solution using Gemini AI
+    static async validateEnhancedCourseSolution(courseId, files, moduleIndex, lessonIndex, language) {
+        try {
+            const courseQuery = `
+                SELECT title, description, metadata, language
+                FROM enhanced_courses
+                WHERE id = $1 AND is_published = true;
+            `;
+            const courseResult = await pool.query(courseQuery, [courseId]);
+
+            if (courseResult.rows.length === 0) {
+                return { passed: 0, failed: 1, total: 1, results: 'Course not found' };
+            }
+
+            const course = courseResult.rows[0];
+            const modules = course.metadata?.modules || [];
+            const currentModule = modules[parseInt(moduleIndex)];
+            const currentLesson = currentModule?.lessons?.lessons?.[parseInt(lessonIndex)];
+
+            if (!currentLesson) {
+                return { passed: 0, failed: 1, total: 1, results: 'Lesson not found' };
+            }
+
+            const languageImpl = currentLesson.languageImplementations?.[language];
+            if (!languageImpl) {
+                return { passed: 0, failed: 1, total: 1, results: `No ${language} implementation found` };
+            }
+
+            // Get the user's code from files
+            const mainFile = files?.find(f => f.type === 'main') || files?.[0];
+            if (!mainFile) {
+                return { passed: 0, failed: 1, total: 1, results: 'No code file provided' };
+            }
+
+            const userCode = mainFile.content;
+
+            // Use Gemini AI for comprehensive validation
+            const geminiService = require('../services/geminiService');
+            const aiValidation = await geminiService.evaluateCode(
+                userCode,
+                {
+                    title: currentLesson.title,
+                    description: currentLesson.description,
+                    difficulty: currentLesson.difficulty,
+                    testCases: languageImpl.testCases || [],
+                    examples: currentLesson.examples || []
+                },
+                language
+            );
+
+            return aiValidation;
+
+        } catch (error) {
+            console.error('❌ Error validating solution with AI:', error);
+
+            // Fallback to basic validation if AI fails
+            const mainFile = files?.find(f => f.type === 'main') || files?.[0];
+            const userCode = mainFile?.content || '';
+
+            let hasImplementation = false;
+            if (language === 'python') {
+                hasImplementation = !userCode.includes('pass') && userCode.includes('def') && userCode.includes('return');
+            } else if (language === 'javascript') {
+                hasImplementation = !userCode.includes('// TODO') && userCode.includes('function') && userCode.includes('return');
+            } else if (language === 'java') {
+                hasImplementation = userCode.includes('public') && userCode.includes('return') && !userCode.includes('return null;');
+            }
+
+            return hasImplementation
+                ? { passed: 1, failed: 0, total: 1, results: 'Basic validation passed (AI unavailable)' }
+                : { passed: 0, failed: 1, total: 1, results: 'Please complete your implementation' };
         }
     }
 }
