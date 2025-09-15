@@ -81,7 +81,7 @@ class WebSocketTerminalHandler {
                 console.log(`✅ Terminal WS: Authenticated user ${user.username} (${user.role})`);
             } catch (err) {
                 console.error('❌ Terminal WS: Token verification failed:', err.message);
-                console.error('❌ Terminal WS: Token starts with:', token.substring(0, 20));
+                console.error('❌ Terminal WS: Token starts with:', (token || '').substring(0, 20));
                 ws.close(4001, 'Invalid authentication token');
                 return;
             }
@@ -488,23 +488,132 @@ class WebSocketTerminalHandler {
     }
     
     async handleExecuteCode(ws, payload, user) {
-        const { code, language, fileName } = payload;
-        const displayFileName = fileName || 'terminal.py';
+        console.log('🔍 [WebSocketTerminalHandler] handleExecuteCode called');
+        console.log('🔍 [WebSocketTerminalHandler] Payload inspection:');
+        console.log('  - Payload type:', typeof payload);
+        console.log('  - Payload keys:', payload ? Object.keys(payload) : 'payload is null/undefined');
+        console.log('  - Raw payload:', JSON.stringify(payload, null, 2));
+
+        const { code, language, fileName, testCases } = payload || {};
+
+        // Set appropriate filename extension based on language
+        let displayFileName = fileName;
+        if (!displayFileName) {
+            switch (language?.toLowerCase()) {
+                case 'javascript':
+                    displayFileName = 'terminal.js';
+                    break;
+                case 'python':
+                    displayFileName = 'terminal.py';
+                    break;
+                case 'java':
+                    displayFileName = 'Main.java';
+                    break;
+                default:
+                    displayFileName = 'terminal.txt';
+            }
+        }
+
+        console.log('🔍 [WebSocketTerminalHandler] Extracted values:');
+        console.log('  - Code type:', typeof code);
+        console.log('  - Code length:', code ? code.length : 'undefined');
+        console.log('  - Language type:', typeof language);
+        console.log('  - Language value:', language);
+        console.log('  - FileName:', displayFileName);
+        console.log('  - TestCases type:', typeof testCases);
+        console.log('  - TestCases value:', JSON.stringify(testCases));
+        console.log('  - TestCases length:', testCases ? testCases.length : 'undefined');
+        console.log('  - TestCases is array:', Array.isArray(testCases));
+        console.log('  - Will use Judge0?', testCases && Array.isArray(testCases) && testCases.length > 0);
+
         console.log(`🚀 Code execution request from ${user.username}: ${language} (${displayFileName})`);
-        
+        console.log(`🧪 Test cases provided: ${testCases ? testCases.length : 0}`);
+
         try {
-            // Import the execution service
-            const { executeCode } = require('./executionService');
-            
-            console.log(`⚡ Executing ${language} code: ${code.substring(0, 50)}...`);
-            
-            // Execute the code
-            const result = await executeCode(code, language);
+            let result;
+            console.log('🔍 [WebSocketTerminalHandler] Starting execution logic');
+
+            // If test cases are provided and not empty, use the Judge0 service for validation
+            if (testCases && Array.isArray(testCases) && testCases.length > 0) {
+                console.log(`📋 Using Judge0 service for test case validation`);
+                console.log(`📋 Test cases:`, JSON.stringify(testCases, null, 2));
+                try {
+                    const Judge0Service = require('../services/judge0Service');
+                    const judge0Service = new Judge0Service();
+                    console.log('📋 Judge0 service loaded, submitting execution...');
+                    result = await judge0Service.submitExecution(language, code, testCases, {});
+                    console.log('📋 Judge0 execution completed:', result);
+
+                    // Check if Judge0 failed (even if it didn't throw an error)
+                    if (!result.success || result.error) {
+                        console.log('🔄 [WebSocketTerminalHandler] Judge0 execution failed, triggering fallback');
+                        throw new Error(`Judge0 failed: ${result.error || result.details || 'Unknown error'}`);
+                    }
+                } catch (judge0Error) {
+                    console.error('❌ [WebSocketTerminalHandler] Judge0 execution error:', judge0Error);
+                    console.log('🔄 [WebSocketTerminalHandler] Attempting fallback test execution using basic service');
+
+                    // Fallback: Use basic execution service with manual test validation
+                    try {
+                        const { executeCode } = require('./executionService');
+
+                        // Create test harness code that calls the function with test cases
+                        const testHarnessCode = this.generateTestHarness(code, testCases, language);
+                        console.log('🧪 Generated test harness code:', testHarnessCode.substring(0, 200) + '...');
+
+                        const basicResult = await executeCode(testHarnessCode, language);
+                        console.log('🧪 Basic execution result:', basicResult);
+
+                        // Parse the output to determine test results
+                        const testResults = this.parseTestResults(basicResult.output, testCases);
+                        console.log('🧪 Parsed test results:', testResults);
+
+                        result = {
+                            success: testResults.success,
+                            output: basicResult.output,
+                            totalTests: testCases.length,
+                            passedTests: testResults.passed,
+                            failedTests: testResults.failed,
+                            testResults: testResults.details,
+                            summary: testResults.summary
+                        };
+
+                        console.log('✅ Fallback test execution completed:', result);
+                    } catch (fallbackError) {
+                        console.error('❌ [WebSocketTerminalHandler] Fallback execution error:', fallbackError);
+                        throw judge0Error; // Throw original Judge0 error if fallback also fails
+                    }
+                }
+            } else {
+                console.log(`⚡ Using basic execution service`);
+                try {
+                    // Import the execution service
+                    const { executeCode } = require('./executionService');
+                    console.log('⚡ Basic execution service loaded, executing code...');
+                    result = await executeCode(code, language);
+                    console.log('⚡ Basic execution completed:', result);
+                } catch (basicExecError) {
+                    console.error('❌ [WebSocketTerminalHandler] Basic execution error:', basicExecError);
+                    throw basicExecError;
+                }
+            }
+
+            console.log('🔍 [WebSocketTerminalHandler] Execution result received:');
+            console.log('  - Result type:', typeof result);
+            console.log('  - Result keys:', result ? Object.keys(result) : 'result is null/undefined');
+            console.log('  - Result content:', JSON.stringify(result, null, 2));
             
             console.log(`✅ Code execution completed for ${user.username}`);
             
             // Send terminal output for display in terminal interface with improved formatting
-            const formattedOutput = this.formatTerminalOutput(language, displayFileName, result.output, 'success');
+            console.log('🔍 [WebSocketTerminalHandler] Preparing to format output');
+            console.log('  - result.output type:', typeof result.output);
+            console.log('  - result.output value:', result.output);
+
+            const outputToFormat = result.output || result.stderr || 'No output received from execution';
+            console.log('🔍 [WebSocketTerminalHandler] Using output for formatting:', outputToFormat);
+
+            const formattedOutput = this.formatTerminalOutput(language, displayFileName, outputToFormat, 'success');
             const terminalOutputMessage = {
                 type: 'TERMINAL_OUTPUT',
                 payload: {
@@ -512,7 +621,7 @@ class WebSocketTerminalHandler {
                     timestamp: Date.now()
                 }
             };
-            console.log(`📤 Sending TERMINAL_OUTPUT to ${user.username}:`, terminalOutputMessage.payload.output.substring(0, 100));
+            console.log(`📤 Sending TERMINAL_OUTPUT to ${user.username}:`, (terminalOutputMessage.payload.output || '').substring(0, 100));
             console.log(`🔍 WebSocket state: ${ws.readyState} (OPEN=${ws.OPEN})`);
             
             if (ws.readyState === ws.OPEN) {
@@ -520,7 +629,7 @@ class WebSocketTerminalHandler {
                     const messageStr = JSON.stringify(terminalOutputMessage);
                     ws.send(messageStr);
                     console.log(`✅ TERMINAL_OUTPUT sent successfully (${messageStr.length} bytes)`);
-                    console.log(`📋 Message content:`, messageStr.substring(0, 200));
+                    console.log(`📋 Message content:`, (messageStr || '').substring(0, 200));
                 } catch (sendError) {
                     console.error(`❌ Error sending TERMINAL_OUTPUT:`, sendError);
                 }
@@ -529,20 +638,31 @@ class WebSocketTerminalHandler {
             }
             
             // Also send structured execution result (matching frontend expectation)
+            console.log('🔍 [WebSocketTerminalHandler] Building CODE_EXECUTION_RESULT message');
+            console.log('  - result.output:', JSON.stringify(result.output));
+            console.log('  - result.success:', result.success);
+            console.log('  - result.stderr:', JSON.stringify(result.stderr));
+
             const codeResultMessage = {
                 type: 'CODE_EXECUTION_RESULT',
                 payload: {
                     result: {
-                        output: result.output,
-                        success: result.success
+                        output: result.output || result.stderr || '',
+                        success: result.success,
+                        executionTime: result.executionTime || 0,
+                        testCaseResults: result.testResults || [],
+                        passed: result.passedTests || 0,
+                        failed: result.failedTests || 0,
+                        language: language
                     },
-                    success: true,
+                    success: result.success,
                     language,
                     fileName: displayFileName,
                     timestamp: Date.now()
                 }
             };
-            console.log(`📤 Sending CODE_EXECUTION_RESULT to ${user.username}:`, result.output.substring(0, 50));
+            console.log('🔍 [WebSocketTerminalHandler] Final CODE_EXECUTION_RESULT message:', JSON.stringify(codeResultMessage, null, 2));
+            console.log(`📤 Sending CODE_EXECUTION_RESULT to ${user.username}:`, (result.output || 'no output').substring(0, 50));
             
             if (ws.readyState === ws.OPEN) {
                 ws.send(JSON.stringify(codeResultMessage));
@@ -579,6 +699,24 @@ class WebSocketTerminalHandler {
     }
     
     formatTerminalOutput(language, fileName, output, type = 'success') {
+        console.log('🔍 [formatTerminalOutput] Input validation:');
+        console.log('  - Language:', language);
+        console.log('  - FileName:', fileName);
+        console.log('  - Output type:', typeof output);
+        console.log('  - Output value:', output);
+        console.log('  - Type:', type);
+
+        // Validate and sanitize inputs
+        if (!output) {
+            console.warn('⚠️ [formatTerminalOutput] Output is null/undefined, using fallback');
+            output = type === 'error' ? 'Unknown error occurred' : 'No output provided';
+        }
+
+        if (typeof output !== 'string') {
+            console.warn('⚠️ [formatTerminalOutput] Output is not a string, converting');
+            output = String(output);
+        }
+
         const timestamp = new Date().toLocaleTimeString();
         const languageIcon = {
             'python': '🐍',
@@ -587,26 +725,35 @@ class WebSocketTerminalHandler {
             'cpp': '⚡',
             'c': '⚡'
         }[language] || '📝';
-        
+
         let formattedOutput = '';
-        
+
         // Header with timestamp and language
         formattedOutput += `\r\n╭─ ${languageIcon} ${language.toUpperCase()} EXECUTION [${timestamp}]\r\n`;
         formattedOutput += `├─ File: ${fileName}\r\n`;
         formattedOutput += `├─ Command: ${this.getExecutionCommand(language, fileName)}\r\n`;
         formattedOutput += `├─ Output:\r\n`;
-        
+
         if (type === 'error') {
             formattedOutput += `│ ❌ Error: ${output}\r\n`;
         } else {
-            // Format output lines with proper indentation
-            const outputLines = output.split('\n').filter(line => line.trim() !== '');
-            if (outputLines.length === 0) {
-                formattedOutput += `│ (No output)\r\n`;
-            } else {
-                outputLines.forEach(line => {
-                    formattedOutput += `│ ${line}\r\n`;
-                });
+            try {
+                // Format output lines with proper indentation
+                console.log('🔍 [formatTerminalOutput] Attempting to split output');
+                const outputLines = output.split('\n').filter(line => line.trim() !== '');
+                console.log('🔍 [formatTerminalOutput] Split successful, lines count:', outputLines.length);
+
+                if (outputLines.length === 0) {
+                    formattedOutput += `│ (No output)\r\n`;
+                } else {
+                    outputLines.forEach(line => {
+                        formattedOutput += `│ ${line}\r\n`;
+                    });
+                }
+            } catch (splitError) {
+                console.error('❌ [formatTerminalOutput] Error splitting output:', splitError);
+                formattedOutput += `│ ❌ Error formatting output: ${splitError.message}\r\n`;
+                formattedOutput += `│ Raw output: ${output}\r\n`;
             }
         }
         
@@ -657,6 +804,232 @@ class WebSocketTerminalHandler {
         }
         
         this.terminalSessions.clear();
+    }
+
+    generateTestHarness(userCode, testCases, language) {
+        switch (language.toLowerCase()) {
+            case 'javascript':
+                return this.generateJavaScriptTestHarness(userCode, testCases);
+            case 'python':
+                return this.generatePythonTestHarness(userCode, testCases);
+            case 'java':
+                return this.generateJavaTestHarness(userCode, testCases);
+            default:
+                throw new Error(`Test harness generation not implemented for ${language}`);
+        }
+    }
+
+    generateJavaScriptTestHarness(userCode, testCases) {
+
+        let testHarness = `${userCode}\n\n// Test harness\n`;
+
+        testCases.forEach((testCase, index) => {
+            // Parse the input string to extract target and nums
+            const inputStr = testCase.input;
+            const expectedOutput = testCase.expectedOutput;
+
+            try {
+                // Extract target and nums from string like "target = 7, nums = [2,3,1,2,4,3]"
+                const targetMatch = inputStr.match(/target\s*=\s*(\d+)/);
+                const numsMatch = inputStr.match(/nums\s*=\s*\[([^\]]+)\]/);
+
+                if (targetMatch && numsMatch) {
+                    const target = parseInt(targetMatch[1]);
+                    const nums = numsMatch[1].split(',').map(n => parseInt(n.trim()));
+
+                    testHarness += `
+// Test case ${index + 1}: ${testCase.description || `Test ${index + 1}`}
+try {
+    const input${index} = { target: ${target}, nums: [${nums.join(', ')}] };
+    const result${index} = minimumSizeSubarraySum(input${index});
+    const expected${index} = ${expectedOutput};
+    const passed${index} = result${index} === expected${index};
+    console.log("TEST_${index + 1}:", passed${index} ? "PASS" : "FAIL");
+    console.log("  Input:", JSON.stringify(input${index}));
+    console.log("  Expected:", expected${index});
+    console.log("  Got:", result${index});
+} catch (error${index}) {
+    console.log("TEST_${index + 1}:", "ERROR");
+    console.log("  Error:", error${index}.message);
+}
+`;
+                } else {
+                    throw new Error(`Could not parse test case input: ${inputStr}`);
+                }
+            } catch (parseError) {
+                console.warn(`⚠️ Could not parse test case ${index + 1}:`, parseError.message);
+                testHarness += `
+// Test case ${index + 1}: Parse error
+console.log("TEST_${index + 1}:", "PARSE_ERROR");
+console.log("  Error: Could not parse input '${inputStr}'");
+`;
+            }
+        });
+
+        return testHarness;
+    }
+
+    generatePythonTestHarness(userCode, testCases) {
+        let testHarness = `${userCode}\n\n# Test harness\nimport json\n\n`;
+
+        testCases.forEach((testCase, index) => {
+            const inputStr = testCase.input;
+            const expectedOutput = testCase.expectedOutput;
+
+            try {
+                // Extract target and nums from string like "target = 7, nums = [2,3,1,2,4,3]"
+                const targetMatch = inputStr.match(/target\s*=\s*(\d+)/);
+                const numsMatch = inputStr.match(/nums\s*=\s*\[([^\]]+)\]/);
+
+                if (targetMatch && numsMatch) {
+                    const target = parseInt(targetMatch[1]);
+                    const nums = numsMatch[1].split(',').map(n => parseInt(n.trim()));
+
+                    testHarness += `
+# Test case ${index + 1}: ${testCase.description || `Test ${index + 1}`}
+try:
+    input_${index} = {"target": ${target}, "nums": [${nums.join(', ')}]}
+    solution = Solution()
+    result_${index} = solution.minimumSizeSubarraySum(input_${index})
+    expected_${index} = ${expectedOutput}
+    passed_${index} = result_${index} == expected_${index}
+    print(f"TEST_${index + 1}: {'PASS' if result_${index} == expected_${index} else 'FAIL'}")
+    print(f"  Input: {json.dumps(input_${index})}")
+    print(f"  Expected: {expected_${index}}")
+    print(f"  Got: {result_${index}}")
+except Exception as error_${index}:
+    print(f"TEST_${index + 1}: ERROR")
+    print(f"  Error: {str(error_${index})}")
+`;
+                } else {
+                    throw new Error(`Could not parse test case input: ${inputStr}`);
+                }
+            } catch (parseError) {
+                console.warn(`⚠️ Could not parse test case ${index + 1}:`, parseError.message);
+                testHarness += `
+# Test case ${index + 1}: Parse error
+print("TEST_${index + 1}: PARSE_ERROR")
+print("  Error: Could not parse input '${inputStr}'")
+`;
+            }
+        });
+
+        return testHarness;
+    }
+
+    generateJavaTestHarness(userCode, testCases) {
+        // Define Input class first, then user code, then Main class
+        let testHarness = `// Helper class for input structure
+class Input {
+    int target;
+    int[] nums;
+
+    public Input(int target, int[] nums) {
+        this.target = target;
+        this.nums = nums;
+    }
+}
+
+${userCode}
+
+public class Main {
+    public static void main(String[] args) {
+`;
+
+        testCases.forEach((testCase, index) => {
+            const inputStr = testCase.input;
+            const expectedOutput = testCase.expectedOutput;
+
+            try {
+                // Extract target and nums from string like "target = 7, nums = [2,3,1,2,4,3]"
+                const targetMatch = inputStr.match(/target\s*=\s*(\d+)/);
+                const numsMatch = inputStr.match(/nums\s*=\s*\[([^\]]+)\]/);
+
+                if (targetMatch && numsMatch) {
+                    const target = parseInt(targetMatch[1]);
+                    const nums = numsMatch[1].split(',').map(n => parseInt(n.trim()));
+
+                    testHarness += `
+        // Test case ${index + 1}: ${testCase.description || `Test ${index + 1}`}
+        try {
+            int[] nums${index} = {${nums.join(', ')}};
+            Input input${index} = new Input(${target}, nums${index});
+            Solution solution = new Solution();
+            int result${index} = solution.minimumSizeSubarraySum(input${index});
+            int expected${index} = ${expectedOutput};
+            boolean passed${index} = result${index} == expected${index};
+            System.out.println("TEST_${index + 1}: " + (passed${index} ? "PASS" : "FAIL"));
+            System.out.println("  Input: {target: " + ${target} + ", nums: " + java.util.Arrays.toString(nums${index}) + "}");
+            System.out.println("  Expected: " + expected${index});
+            System.out.println("  Got: " + result${index});
+        } catch (Exception error${index}) {
+            System.out.println("TEST_${index + 1}: ERROR");
+            System.out.println("  Error: " + error${index}.getMessage());
+        }
+`;
+                } else {
+                    throw new Error(`Could not parse test case input: ${inputStr}`);
+                }
+            } catch (parseError) {
+                console.warn(`⚠️ Could not parse test case ${index + 1}:`, parseError.message);
+                testHarness += `
+        // Test case ${index + 1}: Parse error
+        System.out.println("TEST_${index + 1}: PARSE_ERROR");
+        System.out.println("  Error: Could not parse input '${inputStr}'");
+`;
+            }
+        });
+
+        testHarness += `
+    }
+}`;
+
+        return testHarness;
+    }
+
+    parseTestResults(output, testCases) {
+        console.log('🔍 Parsing test results from output:', output);
+
+        if (!output) {
+            return {
+                success: false,
+                passed: 0,
+                failed: testCases.length,
+                details: testCases.map((_, i) => ({ test: i + 1, status: 'NO_OUTPUT' })),
+                summary: 'No output received from test execution'
+            };
+        }
+
+        const lines = output.split('\n');
+        let passed = 0;
+        let failed = 0;
+        const details = [];
+
+        testCases.forEach((_, index) => {
+            const testNum = index + 1;
+            const testLine = lines.find(line => line.includes(`TEST_${testNum}:`));
+
+            if (testLine) {
+                if (testLine.includes('PASS')) {
+                    passed++;
+                    details.push({ test: testNum, status: 'PASS' });
+                } else if (testLine.includes('FAIL')) {
+                    failed++;
+                    details.push({ test: testNum, status: 'FAIL' });
+                } else if (testLine.includes('ERROR') || testLine.includes('PARSE_ERROR')) {
+                    failed++;
+                    details.push({ test: testNum, status: 'ERROR' });
+                }
+            } else {
+                failed++;
+                details.push({ test: testNum, status: 'MISSING' });
+            }
+        });
+
+        const success = failed === 0 && passed > 0;
+        const summary = `${passed} passed, ${failed} failed out of ${testCases.length} tests`;
+
+        return { success, passed, failed, details, summary };
     }
 }
 

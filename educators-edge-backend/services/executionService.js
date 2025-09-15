@@ -6,6 +6,39 @@ const crypto = require('crypto');
 
 const executeCode = (code, language) => {
     return new Promise((resolve) => {
+        console.log('🔍 [ExecutionService] Starting code execution');
+        console.log('🔍 [ExecutionService] Input validation:');
+        console.log('  - Code type:', typeof code);
+        console.log('  - Code length:', code ? code.length : 'undefined');
+        console.log('  - Language type:', typeof language);
+        console.log('  - Language value:', language);
+        console.log('  - Code preview:', code ? code.substring(0, 100) + '...' : 'NO CODE PROVIDED');
+
+        // Enhanced input validation
+        if (!code) {
+            console.error('❌ [ExecutionService] No code provided');
+            return resolve({
+                success: false,
+                output: 'Error: No code provided for execution'
+            });
+        }
+
+        if (typeof code !== 'string') {
+            console.error('❌ [ExecutionService] Code is not a string:', typeof code);
+            return resolve({
+                success: false,
+                output: `Error: Code must be a string, received ${typeof code}`
+            });
+        }
+
+        if (!language) {
+            console.error('❌ [ExecutionService] No language specified');
+            return resolve({
+                success: false,
+                output: 'Error: No programming language specified'
+            });
+        }
+
         const tempDir = path.join(__dirname, 'temp_code');
         if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
@@ -22,37 +55,110 @@ const executeCode = (code, language) => {
                 break;
             case 'python':
                 filePath = path.join(tempDir, `${uniqueId}.py`);
-                command = `python3 ${filePath}`;
+                // Try different Python commands for Windows compatibility
+                command = process.platform === 'win32' ? `python ${filePath}` : `python3 ${filePath}`;
                 break;
             case 'java':
                 // Java is special: it needs a specific class name and a two-step compile/run process.
                 const className = "Main"; // Java entrypoint must be a class named Main
                 filePath = path.join(tempDir, `${className}.java`);
                 const compiledPath = path.join(tempDir, `${className}.class`);
+
+                // Check if Java is available first using synchronous check
+                let javacPath = 'javac';
+                let javaPath = 'java';
+
+                try {
+                    const { execSync } = require('child_process');
+                    execSync('javac -version', { stdio: 'ignore' });
+                } catch (javaError) {
+                    // Try common Windows installation paths
+                    const commonPaths = [
+                        'C:\\Program Files\\Microsoft\\jdk-17.0.16.8-hotspot\\bin\\javac.exe',
+                        'C:\\Program Files\\Java\\jdk-17\\bin\\javac.exe',
+                        'C:\\Program Files\\Java\\jdk-11\\bin\\javac.exe',
+                        'C:\\Program Files\\Eclipse Adoptium\\jdk-17\\bin\\javac.exe'
+                    ];
+
+                    let foundJava = false;
+                    for (const javaExePath of commonPaths) {
+                        try {
+                            if (fs.existsSync(javaExePath)) {
+                                javacPath = `"${javaExePath}"`;
+                                javaPath = `"${javaExePath.replace('javac.exe', 'java.exe')}"`;
+                                foundJava = true;
+                                console.log(`✅ Found Java at: ${javaExePath}`);
+                                break;
+                            }
+                        } catch (e) {
+                            // Continue to next path
+                        }
+                    }
+
+                    if (!foundJava) {
+                        return resolve({
+                            success: false,
+                            output: `❌ Java JDK not found in PATH or common installation locations\n\nTried locations:\n${commonPaths.join('\n')}\n\nTo fix this:\n1. Add Java to your PATH environment variable\n2. Or install Java with: winget install Microsoft.OpenJDK.17\n3. Restart your terminal after installation`
+                        });
+                    }
+                }
+
                 // The command is a chain: compile first, then run.
-                command = `javac ${filePath} && java -cp ${tempDir} ${className}`;
+                command = `${javacPath} ${filePath} && ${javaPath} -cp ${tempDir} ${className}`;
                 break;
             default:
                 // Immediately resolve with an error for unsupported languages.
                 return resolve({ success: false, output: `Error: Unsupported language "${language}"` });
         }
         
-        fs.writeFileSync(filePath, code);
+        try {
+            console.log('📝 [ExecutionService] Writing code to file:', filePath);
+            fs.writeFileSync(filePath, code);
+            console.log('✅ [ExecutionService] File written successfully');
+        } catch (writeError) {
+            console.error('❌ [ExecutionService] Error writing file:', writeError);
+            return resolve({
+                success: false,
+                output: `Error writing code file: ${writeError.message}`
+            });
+        }
 
-        exec(command, { timeout: 10000 }, (error, stdout, stderr) => { // Added a 10-second timeout
+        console.log('🚀 [ExecutionService] Executing command:', command);
+        exec(command, { timeout: 10000 }, (error, stdout, stderr) => {
+            console.log('📊 [ExecutionService] Execution completed');
+            console.log('  - Error object:', error ? error.message : 'none');
+            console.log('  - Stdout length:', stdout ? stdout.length : 0);
+            console.log('  - Stderr length:', stderr ? stderr.length : 0);
+            console.log('  - Stdout content:', stdout ? stdout.substring(0, 200) : 'empty');
+            console.log('  - Stderr content:', stderr ? stderr.substring(0, 200) : 'empty');
+
             // Clean up all temporary files created
             const filesToDelete = [filePath, path.join(tempDir, 'Main.class')];
             filesToDelete.forEach(file => {
-                if (fs.existsSync(file)) fs.unlinkSync(file);
+                try {
+                    if (fs.existsSync(file)) {
+                        fs.unlinkSync(file);
+                        console.log('🗑️ [ExecutionService] Cleaned up file:', file);
+                    }
+                } catch (cleanupError) {
+                    console.warn('⚠️ [ExecutionService] Cleanup warning:', cleanupError.message);
+                }
             });
 
             if (error) {
+                console.error('❌ [ExecutionService] Execution error:', error.message);
+                console.error('❌ [ExecutionService] Error code:', error.code);
+                console.error('❌ [ExecutionService] Signal:', error.signal);
                 // This catches execution errors (like compile errors or infinite loops)
-                resolve({ success: false, output: stderr || error.message });
+                const errorOutput = stderr || error.message;
+                console.log('📤 [ExecutionService] Returning error result:', errorOutput);
+                resolve({ success: false, output: errorOutput });
             } else {
                 // If there's no hard error, the execution is considered a "success" from the runner's perspective.
                 // The test results are in stdout or stderr.
-                resolve({ success: true, output: stdout || stderr });
+                const successOutput = stdout || stderr;
+                console.log('📤 [ExecutionService] Returning success result:', successOutput);
+                resolve({ success: true, output: successOutput });
             }
         });
     });
