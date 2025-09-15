@@ -21,6 +21,8 @@ router.delete('/session/:sessionId', terminalController.terminateSession);
 router.post('/execute', terminalController.executeCode);
 router.post('/input', terminalController.sendInput);
 router.post('/quick-execute', terminalController.quickExecute);
+router.post('/leetcode-tests', terminalController.executeLeetCodeTests);
+router.post('/execute-code-direct', terminalController.executeCodeDirect);
 
 // Health check
 router.get('/health', terminalController.healthCheck);

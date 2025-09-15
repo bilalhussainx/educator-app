@@ -304,19 +304,97 @@ ${languageImpl.explanation}
 
             const userCode = mainFile.content;
 
-            // Use actual code execution for accurate test validation
-            const geminiService = require('../services/geminiService');
-            const testResults = await geminiService.executeCodeWithTests(
+            // Use Fast execution service for immediate testing (no Docker overhead)
+            const fastExecutionService = require('../services/fastExecutionService');
+            const testCaseProcessor = require('../services/testCaseProcessor');
+
+            // Prepare raw test cases in the expected format
+            const testCases = languageImpl.testCases || [];
+            const examples = currentLesson.examples || [];
+
+            // Convert examples to test cases if no explicit test cases exist
+            const rawTestCases = testCases.length > 0 ? testCases :
+                examples.map((example, index) => ({
+                    input: example.input,
+                    output: example.output,
+                    description: `Example ${index + 1}`
+                }));
+
+            console.log('🧹 [PREPROCESSING] Raw test cases before cleaning:', {
+                language,
+                rawTestCaseCount: rawTestCases.length,
+                sampleInput: rawTestCases[0]?.input,
+                sampleOutput: rawTestCases[0]?.output
+            });
+
+            // Clean and process test cases for error-free execution
+            const problemType = testCaseProcessor.inferProblemType(rawTestCases);
+            console.log('🔍 [DEBUG] About to call processTestCases with:', {
+                rawTestCasesType: typeof rawTestCases,
+                rawTestCasesIsArray: Array.isArray(rawTestCases),
+                problemType,
+                language
+            });
+
+            let cleanedTestCases = testCaseProcessor.processTestCases(rawTestCases, problemType, language);
+
+            console.log('🔍 [DEBUG] processTestCases returned:', {
+                type: typeof cleanedTestCases,
+                isArray: Array.isArray(cleanedTestCases),
+                length: cleanedTestCases?.length,
+                value: cleanedTestCases
+            });
+
+            // Ensure cleanedTestCases is always an array
+            if (!Array.isArray(cleanedTestCases)) {
+                console.error('❌ Test case processor returned non-array:', typeof cleanedTestCases, cleanedTestCases);
+                cleanedTestCases = [];
+            }
+
+            // Fallback: If processor returns empty, use raw test cases
+            if (cleanedTestCases.length === 0 && rawTestCases.length > 0) {
+                console.warn('⚠️ Test case processor returned empty results, using raw test cases as fallback');
+                cleanedTestCases = rawTestCases;
+            }
+
+            console.log('⚡ [FAST_EXEC] Executing code via Fast Execution Service:', {
+                language,
+                problemType,
+                rawTestCaseCount: rawTestCases.length,
+                cleanedTestCaseCount: cleanedTestCases.length,
+                codeLength: userCode.length,
+                usingFallback: cleanedTestCases === rawTestCases
+            });
+
+            const testResults = await fastExecutionService.executeCodeWithTests(
                 userCode,
-                {
-                    title: currentLesson.title,
-                    description: currentLesson.description,
-                    difficulty: currentLesson.difficulty,
-                    testCases: languageImpl.testCases || [],
-                    examples: currentLesson.examples || []
-                },
+                cleanedTestCases,
                 language
             );
+
+            // Enhance results with AI analysis for failures (optional)
+            if (testResults.failed > 0) {
+                try {
+                    const geminiService = require('../services/geminiService');
+                    const aiAnalysis = await geminiService.getAIAnalysisForResults(
+                        userCode,
+                        {
+                            title: currentLesson.title,
+                            description: currentLesson.description,
+                            difficulty: currentLesson.difficulty,
+                            testCases: cleanedTestCases
+                        },
+                        testResults.testCaseResults,
+                        language
+                    );
+
+                    testResults.aiAnalysis = aiAnalysis.analysis;
+                    testResults.feedback = aiAnalysis.feedback;
+                } catch (aiError) {
+                    console.warn('🤖 AI analysis failed:', aiError.message);
+                    // Continue without AI analysis if it fails
+                }
+            }
 
             console.log('✅ Test execution completed:', {
                 passed: testResults.passed,
@@ -329,6 +407,149 @@ ${languageImpl.explanation}
             console.error('❌ Error running enhanced course tests:', err.message);
             console.error('❌ Full error stack:', err.stack);
             res.status(500).json({ error: 'Server Error' });
+        }
+    }
+
+    // Submit solution for enhanced course lesson
+    static async submitEnhancedCourseSolution(req, res) {
+        try {
+            const { courseId } = req.params;
+            const { files, moduleIndex = 0, lessonIndex = 0, language = 'javascript' } = req.body;
+            const userId = req.user?.id;
+
+            console.log('🚀 [SUBMIT] Enhanced course solution submission:', {
+                courseId,
+                moduleIndex,
+                lessonIndex,
+                language,
+                userId,
+                filesCount: files?.length
+            });
+
+            // First, run tests to validate the solution
+            const fastExecutionService = require('../services/fastExecutionService');
+            const testCaseProcessor = require('../services/testCaseProcessor');
+
+            // Get course and lesson data
+            const courseQuery = `
+                SELECT title, description, metadata, language
+                FROM enhanced_courses
+                WHERE id = $1 AND is_published = true;
+            `;
+            const courseResult = await pool.query(courseQuery, [courseId]);
+
+            if (courseResult.rows.length === 0) {
+                return res.status(404).json({ error: 'Enhanced course not found' });
+            }
+
+            const course = courseResult.rows[0];
+            const modules = course.metadata?.modules || [];
+            const currentModule = modules[parseInt(moduleIndex)];
+            const currentLesson = currentModule?.lessons?.lessons?.[parseInt(lessonIndex)];
+
+            if (!currentLesson) {
+                return res.status(404).json({ error: 'Lesson not found' });
+            }
+
+            const languageImpl = currentLesson.languageImplementations?.[language];
+            if (!languageImpl) {
+                return res.status(404).json({
+                    error: `No ${language} implementation found for this lesson`
+                });
+            }
+
+            // Get the user's code from files
+            const mainFile = files?.find(f => f.type === 'main') || files?.[0];
+            if (!mainFile) {
+                return res.status(400).json({ error: 'No code file provided' });
+            }
+
+            const userCode = mainFile.content;
+
+            // Prepare raw test cases
+            const testCases = languageImpl.testCases || [];
+            const examples = currentLesson.examples || [];
+            const rawTestCases = testCases.length > 0 ? testCases :
+                examples.map((example, index) => ({
+                    input: example.input,
+                    output: example.output,
+                    description: `Example ${index + 1}`
+                }));
+
+            // Clean and process test cases for error-free execution
+            const problemType = testCaseProcessor.inferProblemType(rawTestCases);
+            let cleanedTestCases = testCaseProcessor.processTestCases(rawTestCases, problemType, language);
+
+            // Ensure cleanedTestCases is always an array
+            if (!Array.isArray(cleanedTestCases)) {
+                console.error('❌ Test case processor returned non-array:', typeof cleanedTestCases, cleanedTestCases);
+                cleanedTestCases = [];
+            }
+
+            // Fallback: If processor returns empty, use raw test cases
+            if (cleanedTestCases.length === 0 && rawTestCases.length > 0) {
+                console.warn('⚠️ Test case processor returned empty results, using raw test cases as fallback');
+                cleanedTestCases = rawTestCases;
+            }
+
+            console.log('🧪 [SUBMIT_TEST] Running validation tests:', {
+                problemType,
+                rawTestCaseCount: rawTestCases.length,
+                cleanedTestCaseCount: cleanedTestCases.length,
+                usingFallback: cleanedTestCases === rawTestCases
+            });
+
+            // Execute code with cleaned test cases
+            const testResults = await fastExecutionService.executeCodeWithTests(
+                userCode,
+                cleanedTestCases,
+                language
+            );
+
+            console.log('🎯 [SUBMIT_TEST] Test results:', {
+                passed: testResults.passed,
+                failed: testResults.failed,
+                total: testResults.total,
+                success: testResults.success
+            });
+
+            // Check if all tests passed
+            if (testResults.failed > 0 || !testResults.success) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'All test cases must pass before submission',
+                    testResults,
+                    error: 'TESTS_FAILED'
+                });
+            }
+
+            // All tests passed - proceed with submission
+            console.log('✅ [SUBMIT_APPROVED] All test cases pass - submission allowed');
+
+            // TODO: Save submission to enhanced_course_submissions table
+            // For now, return success response
+
+            res.json({
+                success: true,
+                message: 'Solution submitted successfully! 🎉',
+                testResults,
+                rewards: {
+                    sparks: Math.floor(Math.random() * 50) + 25, // 25-75 sparks
+                    pScore: Math.floor(Math.random() * 100) + 50, // 50-150 P-score
+                    experience: Math.floor(Math.random() * 25) + 10 // 10-35 XP
+                },
+                submissionId: `enhanced_${courseId}_${moduleIndex}_${lessonIndex}_${Date.now()}`
+            });
+
+        } catch (err) {
+            console.error('❌ [SUBMIT_ERROR] Enhanced course submission failed:', err.message);
+            console.error('❌ Full error stack:', err.stack);
+
+            res.status(500).json({
+                success: false,
+                error: 'Submission failed due to server error',
+                details: err.message
+            });
         }
     }
 

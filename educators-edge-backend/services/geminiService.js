@@ -1859,27 +1859,23 @@ Provide JSON response:
      */
     async executeCodeWithTests(userCode, problem, language = 'javascript') {
         try {
-            console.log('🔍 [ADVANCED_EXECUTION] Starting execution:', {
+            console.log('🔍 [DOCKER_EXECUTION] Starting execution:', {
                 language,
                 codeLength: userCode?.length || 0,
                 problemTitle: problem.title
             });
 
-            // Use the advanced execution service
-            const AdvancedExecutionService = require('./advancedExecutionService');
-            const executionService = new AdvancedExecutionService();
-
             // Extract test cases
             const testCases = this.extractTestCases(problem);
 
-            console.log('🔍 [ADVANCED_EXECUTION] Test cases extracted:', testCases.length);
-            console.log('🔍 [ADVANCED_EXECUTION] Test cases data:', testCases);
-            console.log('🔍 [ADVANCED_EXECUTION] User code preview:', userCode.substring(0, 200) + '...');
+            console.log('🔍 [DOCKER_EXECUTION] Test cases extracted:', testCases.length);
+            console.log('🔍 [DOCKER_EXECUTION] Test cases data:', testCases);
+            console.log('🔍 [DOCKER_EXECUTION] User code preview:', userCode.substring(0, 200) + '...');
 
-            // Execute code
-            const executionResult = await executionService.executeCode(userCode, testCases, language);
+            // Use Docker-based execution for reliable multi-language support
+            const executionResult = await this.executeCodeWithDocker(userCode, testCases, language);
 
-            console.log('🔍 [ADVANCED_EXECUTION] Raw execution result:', executionResult);
+            console.log('🔍 [DOCKER_EXECUTION] Raw execution result:', executionResult);
 
             // Get AI analysis for failed tests
             const aiAnalysis = await this.getAIAnalysisForResults(
@@ -1913,9 +1909,288 @@ Provide JSON response:
             };
 
         } catch (error) {
-            console.error('❌ [ADVANCED_EXECUTION] Execution error:', error);
+            console.error('❌ [DOCKER_EXECUTION] Execution error:', error);
             return this.generateExecutionErrorResult(error, problem, language);
         }
+    }
+
+    /**
+     * Execute code using Docker container service
+     * @param {string} userCode - The user's submitted code
+     * @param {Array} testCases - Array of test cases with input/expectedOutput
+     * @param {string} language - Programming language (javascript, python, java)
+     * @returns {Promise<object>} - Execution results
+     */
+    async executeCodeWithDocker(userCode, testCases, language) {
+        try {
+            // Use the existing terminal controller's quickExecute method (singleton instance)
+            const terminalController = require('../controllers/terminalController');
+
+            // Prepare test execution code based on language
+            const testExecutionCode = this.generateTestExecutionCode(userCode, testCases, language);
+
+            console.log('🐳 [DOCKER] Executing code via Docker:', {
+                language,
+                codeLength: testExecutionCode.length,
+                testCount: testCases.length
+            });
+
+            // Create a mock request/response for the terminal controller
+            const mockReq = {
+                body: {
+                    code: testExecutionCode,
+                    language
+                },
+                user: { id: 'system' }
+            };
+
+            const mockRes = {
+                json: (data) => data,
+                status: (code) => ({ json: (data) => ({ ...data, statusCode: code }) })
+            };
+
+            // Execute via terminal controller
+            const result = await terminalController.quickExecute(mockReq, mockRes);
+
+            if (!result.success) {
+                throw new Error(result.result?.error || 'Docker execution failed');
+            }
+
+            // Parse test results from Docker output
+            const testResults = this.parseDockerTestResults(result.result.output, testCases);
+
+            const passed = testResults.filter(t => t.passed).length;
+            const failed = testResults.filter(t => !t.passed).length;
+
+            return {
+                passed,
+                failed,
+                total: testResults.length,
+                success: failed === 0,
+                testCaseResults: testResults,
+                fromAdvancedExecution: true
+            };
+
+        } catch (error) {
+            console.error('❌ [DOCKER] Execution failed:', error);
+
+            // Fallback to original advanced execution service for reliability
+            const AdvancedExecutionService = require('./advancedExecutionService');
+            const executionService = new AdvancedExecutionService();
+
+            console.log('🔄 [FALLBACK] Using AdvancedExecutionService as fallback');
+            return await executionService.executeCode(userCode, testCases, language);
+        }
+    }
+
+    /**
+     * Generate test execution code for Docker containers
+     */
+    generateTestExecutionCode(userCode, testCases, language) {
+        switch (language.toLowerCase()) {
+            case 'python':
+                return this.generatePythonTestCode(userCode, testCases);
+            case 'javascript':
+                return this.generateJavaScriptTestCode(userCode, testCases);
+            case 'java':
+                return this.generateJavaTestCode(userCode, testCases);
+            default:
+                throw new Error(`Unsupported language: ${language}`);
+        }
+    }
+
+    /**
+     * Generate Python test execution code
+     */
+    generatePythonTestCode(userCode, testCases) {
+        const testCode = testCases.map((testCase, index) => {
+            const input = testCase.input.replace(/'/g, '"'); // Convert quotes
+            const expected = JSON.stringify(testCase.expectedOutput);
+
+            return `
+try:
+    # Test case ${index + 1}
+    ${this.parseInputForPython(testCase.input)}
+    result = minSubArrayLen(target, nums) if 'minSubArrayLen' in locals() else None
+    expected = ${expected}
+
+    if result == expected:
+        print(f"TEST_RESULT:{index + 1}:PASS:{result}")
+    else:
+        print(f"TEST_RESULT:{index + 1}:FAIL:{result}:EXPECTED:{expected}")
+
+except Exception as e:
+    print(f"TEST_RESULT:{index + 1}:ERROR:{str(e)}")
+`;
+        }).join('\n');
+
+        return `${userCode}\n\n${testCode}`;
+    }
+
+    /**
+     * Generate JavaScript test execution code
+     */
+    generateJavaScriptTestCode(userCode, testCases) {
+        const testCode = testCases.map((testCase, index) => {
+            const input = this.parseInputForJavaScript(testCase.input);
+            const expected = JSON.stringify(testCase.expectedOutput);
+
+            return `
+try {
+    // Test case ${index + 1}
+    ${input}
+    const result = typeof minSubArrayLen !== 'undefined' ? minSubArrayLen(target, nums) : undefined;
+    const expected = ${expected};
+
+    if (result == expected) {
+        console.log(\`TEST_RESULT:${index + 1}:PASS:\${result}\`);
+    } else {
+        console.log(\`TEST_RESULT:${index + 1}:FAIL:\${result}:EXPECTED:\${expected}\`);
+    }
+
+} catch (e) {
+    console.log(\`TEST_RESULT:${index + 1}:ERROR:\${e.message}\`);
+}
+`;
+        }).join('\n');
+
+        return `${userCode}\n\n${testCode}`;
+    }
+
+    /**
+     * Generate Java test execution code
+     */
+    generateJavaTestCode(userCode, testCases) {
+        // Basic Java test code generation (can be expanded as needed)
+        const testCode = testCases.map((testCase, index) => {
+            const expected = JSON.stringify(testCase.expectedOutput);
+
+            return `
+        // Test case ${index + 1}
+        try {
+            ${this.parseInputForJava(testCase.input)}
+            int result = minSubArrayLen(target, nums);
+            int expected = ${expected};
+
+            if (result == expected) {
+                System.out.println("TEST_RESULT:${index + 1}:PASS:" + result);
+            } else {
+                System.out.println("TEST_RESULT:${index + 1}:FAIL:" + result + ":EXPECTED:" + expected);
+            }
+
+        } catch (Exception e) {
+            System.out.println("TEST_RESULT:${index + 1}:ERROR:" + e.getMessage());
+        }
+`;
+        }).join('\n');
+
+        return `
+public class Solution {
+    ${userCode}
+
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        ${testCode}
+    }
+}`;
+    }
+
+    /**
+     * Parse input for Java execution
+     */
+    parseInputForJava(input) {
+        // Handle common patterns - basic implementation
+        if (input.includes('=')) {
+            return input.replace(/=/g, ' = ').replace(/,\s*/g, ';\n            int ') + ';';
+        }
+        return `// Unable to parse input: ${input}`;
+    }
+
+    /**
+     * Parse input for Python execution
+     */
+    parseInputForPython(input) {
+        // Handle common patterns like "target = 7, nums = [2,3,1,2,4,3]"
+        if (input.includes('=')) {
+            return input; // Already in assignment format
+        }
+
+        // Handle function call format
+        const match = input.match(/(\w+)\(([^)]+)\)/);
+        if (match) {
+            const args = match[2].split(',').map(arg => arg.trim());
+            return args.map((arg, i) => {
+                const varName = i === 0 ? 'target' : 'nums';
+                return `${varName} = ${arg}`;
+            }).join('\n');
+        }
+
+        return `# Unable to parse input: ${input}`;
+    }
+
+    /**
+     * Parse input for JavaScript execution
+     */
+    parseInputForJavaScript(input) {
+        // Handle common patterns like "target = 7, nums = [2,3,1,2,4,3]"
+        if (input.includes('=')) {
+            return `const ${input};`; // Add const declaration
+        }
+
+        // Handle function call format
+        const match = input.match(/(\w+)\(([^)]+)\)/);
+        if (match) {
+            const args = match[2].split(',').map(arg => arg.trim());
+            return args.map((arg, i) => {
+                const varName = i === 0 ? 'target' : 'nums';
+                return `const ${varName} = ${arg};`;
+            }).join('\n');
+        }
+
+        return `// Unable to parse input: ${input}`;
+    }
+
+    /**
+     * Parse Docker test results from output
+     */
+    parseDockerTestResults(output, testCases) {
+        const results = [];
+        const lines = output.split('\n');
+
+        for (let i = 0; i < testCases.length; i++) {
+            const testNum = i + 1;
+            const resultLine = lines.find(line => line.startsWith(`TEST_RESULT:${testNum}:`));
+
+            if (resultLine) {
+                const parts = resultLine.split(':');
+                const status = parts[2];
+                const actualOutput = parts[3];
+                const expectedOutput = parts[5];
+
+                results.push({
+                    testCase: testNum,
+                    input: testCases[i].input,
+                    expectedOutput: testCases[i].expectedOutput,
+                    actualOutput: status === 'ERROR' ? 'ERROR' : actualOutput,
+                    passed: status === 'PASS',
+                    explanation: status === 'PASS' ? 'Test passed' :
+                               status === 'ERROR' ? `Runtime error: ${actualOutput}` :
+                               `Expected ${expectedOutput} but got ${actualOutput}`
+                });
+            } else {
+                // No result found - assume failure
+                results.push({
+                    testCase: testNum,
+                    input: testCases[i].input,
+                    expectedOutput: testCases[i].expectedOutput,
+                    actualOutput: 'ERROR',
+                    passed: false,
+                    explanation: 'Test execution failed - no output received'
+                });
+            }
+        }
+
+        return results;
     }
 
     /**
