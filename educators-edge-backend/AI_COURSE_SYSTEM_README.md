@@ -1,3 +1,7 @@
+[Image #1][Image #2]The dashboard looks unprofessional and is not sleek enough. I want you to be in the 0.1% of UI/UX developer 
+  and product developer and web-css developer. Your job is to bring the different elements on the dashboard together in a cohesive 
+  workflow user interface
+
 # 🚀 AI Course Generation System
 
 A comprehensive AI-powered system that creates premium coding courses from multiple sources including FreeCodeCamp, LeetCode, and AI-generated content. Features real-time AI supervision and adaptive learning.

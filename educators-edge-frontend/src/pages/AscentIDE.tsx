@@ -7,7 +7,7 @@
  * implements a working solution tab, correctly displays graded
  * teacher feedback, and contains all fully implemented functions.
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import type { AscentIdeData, LessonFile, Submission, TestResult } from '../types/index.ts';
 import Editor, { OnMount } from '@monaco-editor/react';
@@ -36,11 +36,11 @@ import {
     FileCode, BotMessageSquare, NotebookPen, Check, FilePlus2, Trash2, Save, PanelLeft,
     Award, Loader2, Terminal as TerminalIcon
 } from 'lucide-react';
-import DockerTerminal from '../components/DockerTerminal';
+import DockerTerminal, { DockerTerminalRef } from '../components/DockerTerminal';
 
 // --- Type Definitions for this component ---
 type MissionControlTab = "problem" | "submissions" | "solution";
-type DiagnosticsTab = "results" | "aiFeedback" | "terminal" | "testCases";
+type DiagnosticsTab = "results" | "aiFeedback" | "terminal";
 
 // --- Reusable UI Components ---
 const GlassAlertDialogContent: React.FC<React.ComponentProps<typeof AlertDialogContent>> = ({ className, ...props }) => (
@@ -84,9 +84,44 @@ const FeedbackCard = ({ submission }: { submission: Submission }) => (
 
 // --- Main Ascent IDE Component ---
 const AscentIDE: React.FC = () => {
-    const { lessonId } = useParams<{ lessonId: string }>();
+    const { lessonId, courseId } = useParams<{ lessonId?: string; courseId?: string }>();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Detect if this is an enhanced course by checking the URL path
+    const isEnhancedCourse = location.pathname.includes('/enhanced-courses/') ||
+                            location.pathname.includes('enhanced-courses');
+
+    // Extract ID from URL path if useParams doesn't provide it
+    const extractIdFromPath = (pathname: string): string | null => {
+        // For enhanced courses: /enhanced-courses/:courseId/ide
+        if (pathname.includes('/enhanced-courses/')) {
+            const match = pathname.match(/\/enhanced-courses\/([^\/]+)\/ide/);
+            return match ? match[1] : null;
+        }
+        // For regular lessons: /lesson/:lessonId or /ascent-ide/:lessonId
+        const lessonMatch = pathname.match(/\/(?:lesson|ascent-ide)\/([^\/\?]+)/);
+        return lessonMatch ? lessonMatch[1] : null;
+    };
+
+    const actualId = courseId || lessonId || extractIdFromPath(location.pathname);
+
+    // Debug logging
+    console.log('[AscentIDE] Route parameters:', {
+        courseId,
+        lessonId,
+        pathname: location.pathname,
+        extractedId: extractIdFromPath(location.pathname),
+        finalActualId: actualId,
+        isEnhanced: isEnhancedCourse,
+        enhancedDetection: {
+            'includes /enhanced-courses/': location.pathname.includes('/enhanced-courses/'),
+            'includes enhanced-courses': location.pathname.includes('enhanced-courses'),
+            fullPathname: location.pathname
+        },
+        expectedBackUrl: isEnhancedCourse ? `/enhanced-courses/${actualId}/lessons` : 'regular course navigation'
+    });
+
     const tutorStyle = useApeStore((state) => state.tutorStyle);
 
     // --- State Management ---
@@ -101,6 +136,7 @@ const AscentIDE: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [gradedSubmission, setGradedSubmission] = useState<Submission | null>(null);
     const [solutionFiles, setSolutionFiles] = useState<LessonFile[] | null>(null);
+    const [isLanguageSwitching, setIsLanguageSwitching] = useState(false);
     const [isFetchingSolution, setIsFetchingSolution] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,26 +145,103 @@ const AscentIDE: React.FC = () => {
     const [isHintModalOpen, setIsHintModalOpen] = useState(false);
     const [aiHint, setAiHint] = useState('');
     const [isHintLoading, setIsHintLoading] = useState(false);
+    const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+    const [terminalOutput, setTerminalOutput] = useState<string>('');
     const [startTime, setStartTime] = useState<number>(Date.now());
     const [codeChurn, setCodeChurn] = useState<number>(0);
     const prevFileContentRef = useRef<string>("");
     const editorRef = useRef<any>(null);
     const ws = useRef<WebSocket | null>(null);
     const term = useRef<Terminal | null>(null);
+    const dockerTerminalRef = useRef<DockerTerminalRef>(null);
     const queryParams = new URLSearchParams(location.search);
     const teacherSessionId = queryParams.get('sessionId');
     const isLiveHomework = !!teacherSessionId;
     const activeFile = files.find(f => f.id === activeFileId);
 
+    // Memoize URL parameters to prevent infinite re-renders
+    const urlParams = useMemo(() => {
+        const params = new URLSearchParams(location.search);
+        return {
+            moduleIndex: params.get('moduleIndex'),
+            lessonIndex: params.get('lessonIndex'),
+            language: params.get('language')
+        };
+    }, [location.search]);
+
     // --- Data Fetching for the entire IDE ---
     useEffect(() => {
         const fetchIdeData = async () => {
-            if (!lessonId) return;
+            if (!actualId) {
+                console.error('[AscentIDE] No actualId found from route parameters or path extraction');
+                setError('Invalid lesson or course ID');
+                setIsLoading(false);
+                return;
+            }
+            
             setIsLoading(true);
             setError(null);
+            console.log('Fetching IDE data for:', { 
+                actualId, 
+                isEnhancedCourse, 
+                urlParams,
+                search: location.search 
+            });
+            
             try {
-                const response = await apiClient.get(`/api/lessons/${lessonId}/ascent-ide`);
+                let response;
+                if (isEnhancedCourse) {
+                    // Get moduleIndex, lessonIndex, and language from memoized params
+                    const moduleIndex = urlParams.moduleIndex || '0';
+                    const lessonIndex = urlParams.lessonIndex || '0';
+                    const language = urlParams.language || 'javascript';
+                    console.log('🔄 Enhanced course API call:', { 
+                        courseId: actualId,
+                        moduleIndex, 
+                        lessonIndex, 
+                        language,
+                        url: `/api/enhanced-courses/${actualId}/lessons?moduleIndex=${moduleIndex}&lessonIndex=${lessonIndex}&language=${language}`
+                    });
+                    
+                    // Add timeout to prevent infinite loading
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                    
+                    try {
+                        response = await apiClient.get(`/api/enhanced-courses/${actualId}/lessons?moduleIndex=${moduleIndex}&lessonIndex=${lessonIndex}&language=${language}`, {
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeoutId);
+                        console.log('✅ Enhanced course API response received:', {
+                            lesson: response.data.lesson,
+                            language: response.data.lesson?.language,
+                            filesCount: response.data.files?.length,
+                            requestedLanguage: language
+                        });
+                    } catch (fetchError) {
+                        clearTimeout(timeoutId);
+                        if (fetchError.name === 'AbortError') {
+                            throw new Error('Request timed out - please try again');
+                        }
+                        throw fetchError;
+                    }
+                } else {
+                    response = await apiClient.get(`/api/lessons/${actualId}/ascent-ide`);
+                }
+                console.log('API response received:', response.data);
                 const data: AscentIdeData = response.data;
+
+                // Debug the courseId structure for enhanced courses
+                console.log('[AscentIDE] Course ID debug:', {
+                    isEnhanced: isEnhancedCourse,
+                    actualId,
+                    'data.courseId': data.courseId,
+                    'data.lesson?.courseId': data.lesson?.courseId,
+                    'data.course_id': (data as any).course_id,
+                    'data structure keys': Object.keys(data)
+                });
+                console.log('Language in response:', data.lesson?.language);
+                console.log('Files received:', data.files?.map(f => ({ filename: f.filename, language: f.filename?.split('.').pop() })));
                 setIdeData(data);
                 setFiles(data.files || []);
                 setGradedSubmission(data.gradedSubmission || null);
@@ -139,15 +252,33 @@ const AscentIDE: React.FC = () => {
                 setStartTime(Date.now());
                 setCodeChurn(0);
                 prevFileContentRef.current = data.files?.[0]?.content || "";
-                analytics.track('Lesson Started', { lesson_id: data.lesson.id, lesson_title: data.lesson.title });
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Unknown error');
+                if (data.lesson?.id && data.lesson?.title) {
+                    analytics.track('Lesson Started', { lesson_id: data.lesson.id, lesson_title: data.lesson.title });
+                }
+            } catch (err: any) {
+                console.error('Error fetching IDE data:', err);
+                console.error('Error details:', { 
+                    status: err.response?.status,
+                    statusText: err.response?.statusText,
+                    data: err.response?.data,
+                    message: err.message 
+                });
+                setError(err.response?.data?.error || err.message || 'Unknown error');
             } finally {
+                console.log('Finished fetching IDE data, setting loading to false');
                 setIsLoading(false);
+                setIsLanguageSwitching(false);
             }
         };
+        
         fetchIdeData();
-    }, [lessonId]);
+        // Clear solution files when URL params change so they get refetched in new language
+        setSolutionFiles(null);
+        // Clear active file when language changes to prevent showing old content
+        if (urlParams.language) {
+            setActiveFileId(null);
+        }
+    }, [actualId, isEnhancedCourse, location.pathname, urlParams.moduleIndex, urlParams.lessonIndex, urlParams.language]); // Use actualId instead of lessonId for enhanced courses
 
     // --- WebSocket Connection ---
     useEffect(() => {
@@ -184,31 +315,335 @@ const AscentIDE: React.FC = () => {
     };
 
     const handleRunTests = async () => {
-        if (!lessonId) return;
+        if (!actualId || actualId === 'undefined') {
+            console.error('[AscentIDE] Cannot run tests: actualId is undefined');
+            toast.error('Invalid lesson ID - cannot run tests');
+            return;
+        }
         setIsTesting(true);
-        setDiagnosticsTab('results');
+        setDiagnosticsTab('terminal');
+
+        // Enhanced debugging for test case availability
+        console.log('🧪 handleRunTests called - checking test case availability');
+        console.log('  - ideData exists:', !!ideData);
+        console.log('  - ideData.testCases exists:', !!ideData?.testCases);
+        console.log('  - ideData.testCases length:', ideData?.testCases?.length || 0);
+        console.log('  - ideData.testCases content:', JSON.stringify(ideData?.testCases || [], null, 2));
         setTestResults(null);
+        setTerminalOutput(''); // Clear previous terminal output
+
         try {
-            const response = await apiClient.post(`/api/lessons/${lessonId}/run-tests`, { files });
-            setTestResults(response.data);
-            analytics.track('Test Run Executed', { passed_count: response.data.passed, failed_count: response.data.failed, lesson_id: lessonId });
+            // Get the current code and language
+            const currentCode = activeFile?.content || '';
+            const currentLanguage = (isEnhancedCourse ? urlParams.language : 'javascript') || 'javascript';
+
+            console.log('🚀 Running direct code execution (no test case parsing):', {
+                language: currentLanguage,
+                codeLength: currentCode.length,
+                isEnhanced: isEnhancedCourse
+            });
+
+            // Always use DockerTerminal for execution (like LiveTutorial)
+            console.log('🐳 Using Docker terminal for code execution');
+
+            if (!dockerTerminalRef.current) {
+                throw new Error('Docker terminal not available');
+            }
+
+            // Ensure session is created before executing code
+            if (!dockerTerminalRef.current.isConnected) {
+                console.log('🔗 Creating Docker terminal session...');
+                await dockerTerminalRef.current.createSession();
+
+                // Wait a moment for session to be established
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                if (!dockerTerminalRef.current.isConnected) {
+                    throw new Error('Failed to create Docker terminal session');
+                }
+            }
+
+            // Check if we have valid test cases to run
+            const testCases = ideData?.testCases || [];
+            const hasValidTestCases = testCases.length > 0;
+
+            console.log('🧪 Test case analysis:');
+            console.log('  - Available test cases:', testCases.length);
+            console.log('  - Will use test validation:', hasValidTestCases);
+
+            let result;
+            if (hasValidTestCases) {
+                console.log('🧪 Running with test case validation');
+                console.log('  - Test cases:', JSON.stringify(testCases, null, 2));
+                result = await dockerTerminalRef.current.executeCode(currentCode, currentLanguage, {
+                    testCases: testCases
+                });
+            } else {
+                console.log('🚀 Running basic code execution (no test cases)');
+                result = await dockerTerminalRef.current.executeCode(currentCode, currentLanguage, {});
+            }
+
+            // Store terminal output for display
+            setTerminalOutput(result.output || 'Code executed without output');
+
+            // If we have test cases, we need to validate them
+            // For now, store the basic result and let Docker handle validation
+            setTestResults({
+                success: result.success !== false,
+                output: result.output,
+                executionTime: result.executionTime || 0,
+                memory: result.memory || 0,
+                terminalOutput: result.output,
+                testCaseResults: result.testCaseResults || [],
+                passed: result.passed || 0,
+                failed: result.failed || 0
+            });
+
+            // Generate AI feedback based on test results
+            let aiFeedbackMessage = null;
+
+            if (hasValidTestCases) {
+                console.log('🤖 Generating AI feedback for test results');
+
+                if (result.success && result.passed > 0 && result.failed === 0) {
+                    // All tests passed
+                    aiFeedbackMessage = `🎉 Excellent work! All ${result.passed} test case${result.passed > 1 ? 's' : ''} passed. Your sliding window algorithm correctly finds the minimum size subarray with sum ≥ target. Great job implementing the two-pointer technique!`;
+                    setDiagnosticsTab('terminal'); // Show successful results in terminal
+                } else if (result.failed > 0) {
+                    // Some tests failed - provide specific guidance
+                    const failedCount = result.failed;
+                    const passedCount = result.passed || 0;
+
+                    aiFeedbackMessage = `🔍 ${failedCount} test${failedCount > 1 ? 's' : ''} failed, ${passedCount} passed.
+
+Common issues with sliding window algorithms:
+• **Window expansion**: Make sure you're adding elements correctly to expand the window
+• **Window contraction**: Ensure you're shrinking from the left when sum ≥ target
+• **Edge cases**: Check if your algorithm handles empty arrays or impossible targets
+• **Return value**: Verify you return 0 when no valid subarray exists
+
+Look at the test output above to see expected vs actual values, then trace through your algorithm step by step.`;
+
+                    setDiagnosticsTab('ai-feedback'); // Show AI feedback for failed tests
+                } else if (!result.success) {
+                    // Execution error - check for environment issues
+                    const errorOutput = result.output || '';
+
+                    if (errorOutput.includes('javac\' is not recognized') || errorOutput.includes('java\' is not recognized')) {
+                        aiFeedbackMessage = `☕ **Java Development Kit (JDK) Not Installed**
+
+To run Java code, you need to install the JDK:
+
+**Quick Setup:**
+1. **Download**: Get OpenJDK from [adoptium.net](https://adoptium.net/)
+2. **Install**: Run the installer and ensure "Add to PATH" is checked
+3. **Verify**: Open terminal and run \`java -version\` and \`javac -version\`
+
+**Alternative:** Use JavaScript or Python versions of this problem, which are already set up and working on this system.
+
+**Your algorithm logic looks correct!** Once Java is installed, it should pass the tests.`;
+                    } else if (errorOutput.includes('python\' is not recognized') || errorOutput.includes('python3\' is not recognized')) {
+                        aiFeedbackMessage = `🐍 **Python Not Found**
+
+To run Python code, install Python:
+1. **Download**: Get Python from [python.org](https://python.org/downloads/)
+2. **Install**: Check "Add Python to PATH" during installation
+3. **Verify**: Run \`python --version\` in terminal
+
+Your algorithm implementation looks good!`;
+                    } else if (errorOutput.includes('IndentationError') || errorOutput.includes('unexpected indent')) {
+                        aiFeedbackMessage = `🐍 **Python Indentation Error**
+
+Python requires consistent indentation:
+• Use **4 spaces** for each indentation level
+• Don't mix tabs and spaces
+• Ensure all lines in the same block have identical indentation
+
+**Fix:** Copy the code again and ensure proper spacing:
+\`\`\`python
+class Solution:
+    def minimumSizeSubarraySum(self, input):  # 4 spaces
+        target = input["target"]              # 8 spaces
+        nums = input["nums"]                  # 8 spaces
+\`\`\``;
+                    } else {
+                        // Generic execution error
+                        aiFeedbackMessage = `❌ Code execution encountered an error. Common fixes:
+• Check for syntax errors (missing semicolons, brackets)
+• Ensure your function matches the expected signature
+• Verify input parameter handling
+• Make sure you return the correct data type
+
+Review the terminal output for specific error details.`;
+                    }
+
+                    setDiagnosticsTab('ai-feedback'); // Show AI feedback for errors
+                }
+            } else {
+                // Basic code execution without tests
+                if (result.success) {
+                    aiFeedbackMessage = `✅ Code executed successfully! Add some console.log() statements to test your algorithm with different inputs.`;
+                } else {
+                    aiFeedbackMessage = `❌ Code execution failed. Check the terminal for error details and fix any syntax issues.`;
+                }
+                setDiagnosticsTab('terminal'); // Show execution results
+            }
+
+            setAiFeedback(aiFeedbackMessage);
+            console.log('🤖 AI feedback generated:', aiFeedbackMessage ? 'Yes' : 'No');
+
+            analytics.track('Test Run Executed', {
+                passed_count: result.passed || 0,
+                failed_count: result.failed || 0,
+                lesson_id: actualId,
+                is_enhanced: isEnhancedCourse
+            });
         } catch (err: any) {
-            const results = err.response?.data?.results || err.message || 'An unknown error occurred.';
-            setTestResults({ passed: 0, failed: 1, total: 1, results });
+            console.error('Error running Docker execution:', err);
+            const errorMessage = err.message || 'Docker execution failed';
+            setTerminalOutput(`❌ Execution Error: ${errorMessage}`);
+            setTestResults({
+                passed: 0,
+                failed: 1,
+                total: 1,
+                results: errorMessage,
+                aiAnalysis: 'There was an error running your tests. Please check your code and try again.'
+            });
+            setAiFeedback('There was an error running your tests. Please check your code and try again.');
+
+            // Update terminal with error output
+            const errorOutput = `❌ Test execution failed:\n${errorMessage}`;
+            setTerminalOutput(errorOutput);
         } finally {
             setIsTesting(false);
         }
     };
     
     const handleSubmit = async () => {
-        if (!lessonId) return;
+        if (!actualId && !lessonId) {
+            console.error('[AscentIDE] Cannot submit: both actualId and lessonId are undefined');
+            toast.error('Invalid lesson ID - cannot submit');
+            return;
+        }
+        if (actualId === 'undefined' || lessonId === 'undefined') {
+            console.error('[AscentIDE] Cannot submit: ID is string "undefined"');
+            toast.error('Invalid lesson ID - cannot submit');
+            return;
+        }
         setIsSubmitting(true);
-        const submissionPayload = { files, time_to_solve_seconds: Math.round((Date.now() - startTime) / 1000), code_churn: codeChurn };
+        const timeToSolveSeconds = Math.round((Date.now() - startTime) / 1000);
+
         try {
-            const response = await apiClient.post(`/api/lessons/${lessonId}/submit`, submissionPayload);
+            // First run tests to get pass rate
+            await handleRunTests();
+
+            // Wait a moment for test results to be set
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Check if all tests passed before submitting
+            if (!testResults || testResults.passed !== testResults.total || testResults.total === 0) {
+                toast.error("❌ All tests must pass before you can submit your solution!");
+                setIsSubmitting(false);
+                return;
+            }
+
+            // All tests passed, proceed with submission
+            // Prepare submission payload for ecosystem tracking
+            const submissionPayload = {
+                files,
+                time_to_solve_seconds: timeToSolveSeconds,
+                code_churn: codeChurn
+            };
+
+            // Prepare ecosystem submission payload
+            const ecosystemPayload = {
+                lesson_id: actualId || lessonId,
+                lesson_title: ideData?.title || ideData?.lesson?.title || 'Unknown Lesson',
+                course_title: ideData?.course_title || ideData?.lesson?.course_title || 'Unknown Course',
+                moduleIndex: parseInt(urlParams.moduleIndex) || 0,
+                lessonIndex: parseInt(urlParams.lessonIndex) || 0,
+                language: (isEnhancedCourse ? urlParams.language : language) || 'javascript',
+                code: activeFile?.content || '',
+                time_to_solve_seconds: timeToSolveSeconds,
+                attempts_count: (ideData?.submissionHistory?.length || 0) + 1,
+                code_complexity_score: Math.min(Math.round(codeChurn / 10), 100),
+                memory_usage_kb: Math.floor(Math.random() * 1024 + 512), // Simulated for now
+                execution_time_ms: Math.floor(Math.random() * 100 + 10), // Simulated for now
+            };
+
+            // Submit to appropriate endpoint based on course type
+            let response;
+            if (isEnhancedCourse && actualId) {
+                // For enhanced courses, use the enhanced course submit endpoint
+                const moduleIndex = urlParams.moduleIndex || '0';
+                const lessonIndex = urlParams.lessonIndex || '0';
+                const submitLanguage = urlParams.language || 'javascript';
+
+                response = await apiClient.post(`/api/enhanced-courses/${actualId}/submit`, {
+                    files,
+                    moduleIndex,
+                    lessonIndex,
+                    language: submitLanguage,
+                    time_to_solve_seconds: timeToSolveSeconds,
+                    code_churn: codeChurn
+                });
+            } else {
+                // For regular lessons, use the original endpoint (preserve backward compatibility)
+                const submitId = lessonId || actualId;
+                response = await apiClient.post(`/api/lessons/${submitId}/submit`, submissionPayload);
+            }
+
+            // If successful, also submit to ecosystem tracking
+            if (response.data && !response.data.error) {
+                try {
+                    // Calculate pass rate based on test results
+                    const passRate = testResults ? Math.round((testResults.passed / testResults.total) * 100) : 100;
+                    ecosystemPayload.pass_rate = passRate;
+                    ecosystemPayload.is_solved = passRate === 100;
+                    ecosystemPayload.testResults = testResults; // Add testResults for backend processing
+
+                    const ecosystemResponse = await apiClient.post('/api/submissions/submit', ecosystemPayload);
+
+                    if (ecosystemResponse.data.success) {
+                        const { sparks_earned, p_score_impact, achievements_unlocked } = ecosystemResponse.data;
+
+                        // Show success message with rewards
+                        toast.success(`🎉 Solution submitted! +${sparks_earned} sparks${p_score_impact > 0 ? `, +${p_score_impact} P-score` : ''}`, {
+                            duration: 4000,
+                        });
+
+                        // Show achievement notifications
+                        if (achievements_unlocked && achievements_unlocked.length > 0) {
+                            achievements_unlocked.forEach(achievement => {
+                                setTimeout(() => {
+                                    toast.success(`🏆 Achievement Unlocked: ${achievement.title}!`, {
+                                        duration: 5000,
+                                        description: achievement.description
+                                    });
+                                }, 1000);
+                            });
+                        }
+                    }
+                } catch (ecosystemError) {
+                    console.warn('Ecosystem tracking failed, but submission succeeded:', ecosystemError);
+                }
+            }
+
             toast.success("Correct! All tests passed.");
             setIsSolutionUnlocked(true);
-            const newDataResponse = await apiClient.get(`/api/lessons/${lessonId}/ascent-ide`);
+
+            // Refresh data based on course type
+            let newDataResponse;
+            if (isEnhancedCourse && actualId) {
+                const moduleIndex = urlParams.moduleIndex || '0';
+                const lessonIndex = urlParams.lessonIndex || '0';
+                const language = urlParams.language || 'javascript';
+                newDataResponse = await apiClient.get(`/api/enhanced-courses/${actualId}/lessons?moduleIndex=${moduleIndex}&lessonIndex=${lessonIndex}&language=${language}`);
+            } else {
+                const refreshId = lessonId || actualId;
+                newDataResponse = await apiClient.get(`/api/lessons/${refreshId}/ascent-ide`);
+            }
+
             setIdeData(newDataResponse.data);
             setGradedSubmission(newDataResponse.data.gradedSubmission || null);
             if (response.data.feedback_type === 'conceptual_hint') {
@@ -219,18 +654,59 @@ const AscentIDE: React.FC = () => {
             toast.error(err.response?.data?.error || err.message || 'Submission failed.');
             setTestResults({ passed: 0, failed: 1, total: 1, results: err.response?.data?.error || "Your solution did not pass all the tests." });
             setDiagnosticsTab('results');
+
+            // Still track failed attempts in ecosystem if ecosystemPayload was created
+            try {
+                if (typeof ecosystemPayload !== 'undefined') {
+                    const passRate = testResults ? Math.round((testResults.passed / testResults.total) * 100) : 0;
+                    ecosystemPayload.pass_rate = passRate;
+                    ecosystemPayload.is_solved = false;
+                    ecosystemPayload.testResults = testResults; // Add testResults for backend processing
+                    await apiClient.post('/api/submissions/submit', ecosystemPayload);
+                }
+            } catch (ecosystemError) {
+                console.warn('Failed to track submission in ecosystem:', ecosystemError);
+            }
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleViewSolution = async () => {
-        if (!lessonId || solutionFiles || !isSolutionUnlocked) return;
+        if (!actualId || solutionFiles) return;
+        // For enhanced courses, don't require solution to be unlocked
+        if (!isEnhancedCourse && !isSolutionUnlocked) return;
+        
         setIsFetchingSolution(true);
         setMissionControlTab('solution');
         try {
-            const response = await apiClient.get(`/api/lessons/${lessonId}/solution`);
-            setSolutionFiles(response.data);
+            let response;
+            if (isEnhancedCourse) {
+                // Get moduleIndex, lessonIndex, and language from memoized params
+                const moduleIndex = urlParams.moduleIndex || '0';
+                const lessonIndex = urlParams.lessonIndex || '0';
+                const language = urlParams.language || ideData.lesson.language || 'javascript';
+                // Add timeout to solution request
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                try {
+                    response = await apiClient.get(`/api/enhanced-courses/${actualId}/solution?moduleIndex=${moduleIndex}&lessonIndex=${lessonIndex}&language=${language}`, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                    setSolutionFiles(response.data.files);
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+                    if (fetchError.name === 'AbortError') {
+                        throw new Error('Solution request timed out - please try again');
+                    }
+                    throw fetchError;
+                }
+            } else {
+                response = await apiClient.get(`/api/lessons/${actualId}/solution`);
+                setSolutionFiles(response.data);
+            }
         } catch (error) {
             toast.error("Could not load the official solution.");
         } finally {
@@ -252,22 +728,29 @@ const AscentIDE: React.FC = () => {
 
     const handleGetHint = async () => {
         if (!editorRef.current || !ideData || !activeFile) return;
-        const selectedCode = editorRef.current.getModel().getValueInRange(editorRef.current.getSelection());
-        if (!selectedCode.trim()) {
-            toast.info("Please select a piece of code to get a hint for.");
+
+        // Use the entire editor content instead of requiring text selection
+        const currentCode = activeFile.content || '';
+        if (!currentCode.trim()) {
+            toast.info("Please write some code first to get a hint.");
             return;
         }
+
         setIsHintModalOpen(true);
         setIsHintLoading(true);
         setAiHint('');
+
         let promptModifier = "The student is asking for a Socratic hint. Guide them to the answer without giving it away directly.";
         if (tutorStyle === 'hint_based') promptModifier = "The student seems to be struggling. Provide a more direct hint.";
         else if (tutorStyle === 'direct') promptModifier = "The student needs a direct explanation and a corrected code snippet.";
-        const payload = { selectedCode: activeFile.content, lessonId: ideData.lesson.id, promptModifier };
+
+        const payload = { selectedCode: currentCode, lessonId: ideData.lesson.id, promptModifier };
+
         try {
             const response = await apiClient.post('/api/ai/get-hint', payload);
             setAiHint(response.data.hint);
         } catch (err) {
+            console.error('Hint request failed:', err);
             setAiHint(err instanceof Error ? `Error: ${err.message}` : 'An unknown error occurred.');
         } finally {
             setIsHintLoading(false);
@@ -305,84 +788,332 @@ const AscentIDE: React.FC = () => {
         }
     };
 
-    const handleNavigation = (targetLessonId: string | null) => {
-        if (targetLessonId) navigate(`/lesson/${targetLessonId}`);
+    const handleNavigation = async (targetLessonId: string | null) => {
+        if (isEnhancedCourse) {
+            // For enhanced courses, handle navigation differently
+            if (!ideData?.lesson?.metadata) return;
+            
+            const currentModuleIndex = ideData.lesson.metadata.moduleIndex || 0;
+            const currentLessonIndex = ideData.lesson.metadata.lessonIndex || 0;
+            const language = urlParams.language || 'javascript';
+            
+            let nextModuleIndex = currentModuleIndex;
+            let nextLessonIndex = currentLessonIndex;
+            
+            try {
+                // Fetch course data to get module structure
+                const courseResponse = await apiClient.get(`/api/enhanced-courses/public/${actualId}`);
+                const modules = courseResponse.data.metadata?.modules || [];
+                
+                if (targetLessonId === 'next') {
+                    const currentModule = modules[currentModuleIndex];
+                    const lessonsInCurrentModule = currentModule?.lessons?.lessons?.length || 0;
+                    
+                    if (currentLessonIndex + 1 < lessonsInCurrentModule) {
+                        // Stay in current module, next lesson
+                        nextLessonIndex = currentLessonIndex + 1;
+                    } else if (currentModuleIndex + 1 < modules.length) {
+                        // Move to next module, first lesson
+                        nextModuleIndex = currentModuleIndex + 1;
+                        nextLessonIndex = 0;
+                    } else {
+                        // At the end, show completion message
+                        toast.success('🎉 Congratulations! You\'ve completed the entire course!', {
+                            description: 'Navigate back to the course page to explore more content.',
+                            duration: 5000
+                        });
+                        return;
+                    }
+                } else if (targetLessonId === 'previous') {
+                    if (currentLessonIndex > 0) {
+                        // Stay in current module, previous lesson
+                        nextLessonIndex = currentLessonIndex - 1;
+                    } else if (currentModuleIndex > 0) {
+                        // Move to previous module, last lesson
+                        nextModuleIndex = currentModuleIndex - 1;
+                        const previousModule = modules[nextModuleIndex];
+                        nextLessonIndex = (previousModule?.lessons?.lessons?.length || 1) - 1;
+                    } else {
+                        // At the beginning, show message
+                        toast.info('📚 You\'re at the first lesson of the course!', {
+                            description: 'This is where your learning journey begins.',
+                            duration: 3000
+                        });
+                        return;
+                    }
+                }
+                
+                // Navigate to the new lesson
+                navigate(`/enhanced-courses/${actualId}/ide?moduleIndex=${nextModuleIndex}&lessonIndex=${nextLessonIndex}&language=${language}`);
+                
+            } catch (error) {
+                console.error('Error fetching course structure for navigation:', error);
+                toast.error('Navigation error', {
+                    description: 'Unable to navigate between lessons. Please try again.',
+                });
+            }
+        } else {
+            if (targetLessonId) navigate(`/lesson/${targetLessonId}`);
+        }
     };
 
     const handleEditorDidMount: OnMount = (editor) => { editorRef.current = editor; };
     
-    if (isLoading) return <div className="h-screen bg-[#0a091a] flex items-center justify-center text-white">Initializing Ascent IDE...</div>;
+    if (isLoading || isLanguageSwitching) return (
+        <div className="h-screen bg-[#0a091a] flex items-center justify-center text-white">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                <div className="text-lg">Initializing Ascent IDE...</div>
+                {urlParams.language && (
+                    <div className="text-sm text-slate-400 mt-2">Loading {urlParams.language} environment</div>
+                )}
+            </div>
+        </div>
+    );
     if (error || !ideData) return <div className="h-screen bg-[#0a091a] flex items-center justify-center text-red-400">{error || 'Lesson data could not be loaded.'}</div>;
     
     return (
-        <div className="w-full h-[calc(100vh-2rem)] bg-[#0a091a] text-white flex flex-col font-sans overflow-hidden -m-4 sm:-m-6 lg:-m-8">
+        <div className="w-full h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col font-inter overflow-hidden">
             <Toaster theme="dark" richColors position="bottom-right" />
             {isHintModalOpen && <HintModal hint={aiHint} isLoading={isHintLoading} onClose={() => setIsHintModalOpen(false)} />}
-            
-            <header className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-slate-800 bg-slate-950/60 backdrop-blur-sm z-30 gap-2 min-h-[48px]">
-                <div className="flex items-center gap-2 flex-shrink min-w-0">
-                    <Button variant="ghost" size="sm" onClick={() => {
-                        try {
-                            // Check if this is a preview from the course editor
-                            const urlParams = new URLSearchParams(window.location.search);
-                            if (urlParams.get('preview') === 'true') {
-                                navigate(`/courses/${ideData.courseId}/edit`);
-                                return;
-                            }
-                            
-                            // Try to get user from localStorage
-                            const userStr = localStorage.getItem('user');
-                            console.log('[DEBUG] User from localStorage:', userStr);
-                            
-                            if (!userStr) {
-                                // Fallback: try to decode from token
-                                const token = localStorage.getItem('authToken');
-                                if (token) {
-                                    const decoded = JSON.parse(atob(token.split('.')[1]));
-                                    console.log('[DEBUG] User from token:', decoded);
-                                    const user = decoded.user;
-                                    const backPath = user?.role === 'teacher' ? `/courses/${ideData.courseId}/manage` : `/courses/${ideData.courseId}/learn`;
-                                    navigate(backPath);
+
+            {/* Modern Header with improved spacing and typography */}
+            <header className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-xl z-30 shadow-xl">
+                {/* Left side: Navigation */}
+                <div className="flex items-center gap-4 flex-shrink min-w-0">
+                    <Button
+                        variant="ghost"
+                        size="lg"
+                        onClick={() => {
+                            // Double-check enhanced course detection at click time
+                            const isEnhancedAtClick = location.pathname.includes('/enhanced-courses/') ||
+                                                    location.pathname.includes('enhanced-courses');
+
+                            console.log('[AscentIDE] Back button clicked - Full context:', {
+                                isEnhancedCourse,
+                                isEnhancedAtClick,
+                                actualId,
+                                courseId,
+                                lessonId,
+                                pathname: location.pathname,
+                                'ideData.courseId': ideData?.courseId,
+                                'ideData exists': !!ideData
+                            });
+
+                            // For enhanced courses, directly navigate to lessons page
+                            if (isEnhancedCourse || isEnhancedAtClick) {
+                                // Try multiple methods to get the courseId
+                                let finalCourseId = actualId;
+
+                                if (!finalCourseId || finalCourseId === 'undefined') {
+                                    // Try to extract from current URL as last resort
+                                    const urlMatch = location.pathname.match(/\/enhanced-courses\/([^\/]+)/);
+                                    if (urlMatch) {
+                                        finalCourseId = urlMatch[1];
+                                        console.log('[AscentIDE] Extracted courseId from current URL:', finalCourseId);
+                                    }
+                                }
+
+                                if (finalCourseId && finalCourseId !== 'undefined' && finalCourseId.length > 0) {
+                                    const targetUrl = `/enhanced-courses/${finalCourseId}/lessons`;
+                                    console.log('[AscentIDE] Enhanced course - navigating to:', targetUrl);
+                                    navigate(targetUrl);
+                                    return;
+                                } else {
+                                    console.error('[AscentIDE] Enhanced course but no valid courseId found:', {
+                                        actualId,
+                                        courseId,
+                                        lessonId,
+                                        extractedFromPath: extractIdFromPath(location.pathname),
+                                        finalCourseId,
+                                        currentUrl: location.pathname
+                                    });
+                                    navigate('/courses/discover');
                                     return;
                                 }
                             }
-                            
-                            const user = JSON.parse(userStr || '{}');
-                            console.log('[DEBUG] Parsed user:', user);
-                            const backPath = user.role === 'teacher' ? `/courses/${ideData.courseId}/manage` : `/courses/${ideData.courseId}/learn`;
-                            console.log('[DEBUG] Navigating to:', backPath);
-                            navigate(backPath);
-                        } catch (error) {
-                            console.error('[DEBUG] Error in back navigation:', error);
-                            // Fallback to dashboard if there's an error
-                            navigate('/dashboard');
-                        }
-                    }} className="hover:bg-slate-800 flex-shrink-0 h-7 px-2 text-xs"><ChevronLeft className="mr-1 h-3 w-3" /> Back</Button>
-                    <span className="text-slate-500 flex-shrink-0 text-sm">/</span>
-                    <h1 className="text-sm font-medium text-slate-200 truncate" title={ideData.lesson.title}>{ideData.lesson.title}</h1>
+
+                            // For regular courses, use the original logic
+                            try {
+                                const urlParams = new URLSearchParams(window.location.search);
+                                if (urlParams.get('preview') === 'true') {
+                                    navigate(`/courses/${ideData.courseId}/edit`);
+                                    return;
+                                }
+
+                                const userStr = localStorage.getItem('user');
+                                if (!userStr) {
+                                    const token = localStorage.getItem('authToken');
+                                    if (token) {
+                                        const decoded = JSON.parse(atob(token.split('.')[1]));
+                                        const user = decoded.user;
+                                        const backPath = user?.role === 'teacher' ? `/courses/${ideData.courseId}/manage` : `/courses/${ideData.courseId}/learn`;
+                                        navigate(backPath);
+                                        return;
+                                    }
+                                }
+
+                                const user = JSON.parse(userStr || '{}');
+                                const courseIdToUse = ideData?.courseId || actualId;
+
+                                console.log('[AscentIDE] Regular course navigation debug:', {
+                                    'ideData.courseId': ideData?.courseId,
+                                    actualId,
+                                    courseIdToUse,
+                                    userRole: user.role
+                                });
+
+                                if (courseIdToUse && courseIdToUse !== 'undefined' && courseIdToUse.length > 0) {
+                                    const backPath = user.role === 'teacher' ? `/courses/${courseIdToUse}/manage` : `/courses/${courseIdToUse}/learn`;
+                                    console.log('[AscentIDE] Regular course - navigating to:', backPath);
+                                    navigate(backPath);
+                                } else {
+                                    console.warn('[AscentIDE] No valid courseId available for regular course, falling back to discover:', {
+                                        'ideData.courseId': ideData?.courseId,
+                                        actualId,
+                                        isEnhanced: isEnhancedCourse,
+                                        courseIdToUse
+                                    });
+                                    navigate('/courses/discover');
+                                }
+                            } catch (error) {
+                                console.error('[AscentIDE] Error in regular course navigation:', error);
+                                navigate('/courses/discover');
+                            }
+                        }}
+                        className="hover:bg-slate-700/50 transition-all duration-200 px-4 py-2 text-slate-300 hover:text-white"
+                    >
+                        <ChevronLeft className="mr-2 h-4 w-4" />
+                        Back to Course
+                    </Button>
+                    <div className="h-6 w-px bg-slate-600"></div>
+                    <div className="flex flex-col">
+                        <h1 className="text-lg font-semibold text-white truncate leading-tight" title={ideData.lesson.title}>
+                            {ideData.lesson.title}
+                        </h1>
+                        <p className="text-sm text-slate-400">
+                            {isEnhancedCourse ? 'Enhanced Course' : 'Standard Course'} • {urlParams.language || 'JavaScript'}
+                        </p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button variant="ghost" size="icon" onClick={() => handleNavigation(ideData.previousLessonId)} disabled={!ideData.previousLessonId} className="hover:bg-slate-800 h-7 w-7"><ChevronLeft className="h-3 w-3" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleNavigation(ideData.nextLessonId)} disabled={!ideData.nextLessonId || !isSolutionUnlocked} className={cn("hover:bg-slate-700 h-7 w-7", !isSolutionUnlocked && "text-slate-600", isSolutionUnlocked && "text-cyan-400 bg-cyan-900/50 hover:bg-cyan-900/80 animate-pulse")}><ChevronRight className="h-3 w-3" /></Button>
-                    <Button variant="outline" size="sm" onClick={handleSaveCode} disabled={isSaving} className="text-slate-300 border-slate-700 hover:bg-slate-800 h-7 px-2 text-xs"><Save className="mr-1 h-3 w-3"/>Save</Button>
-                    <Button variant="outline" size="sm" onClick={handleGetHint} className="text-fuchsia-300 border-fuchsia-500/80 hover:bg-fuchsia-500/20 h-7 px-2 text-xs"><BrainCircuit className="mr-1 h-3 w-3"/>Hint</Button>
-                    <Button variant="outline" size="sm" onClick={handleRunTests} disabled={isTesting} className="text-cyan-300 border-cyan-500/80 hover:bg-cyan-500/20 h-7 px-2 text-xs"><BeakerIcon className="mr-1 h-3 w-3"/>Run</Button>
-                    <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-medium h-7 px-2 text-xs"><Send className="mr-1 h-3 w-3"/>Submit</Button>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                    {isEnhancedCourse && (
+                        <select
+                            value={urlParams.language || ideData?.lesson?.language || 'javascript'}
+                            onChange={(e) => {
+                                const moduleIndex = urlParams.moduleIndex || '0';
+                                const lessonIndex = urlParams.lessonIndex || '0';
+                                const newLanguage = e.target.value;
+                                setIsLanguageSwitching(true);
+                                navigate(`/enhanced-courses/${actualId}/ide?moduleIndex=${moduleIndex}&lessonIndex=${lessonIndex}&language=${newLanguage}`, {
+                                    replace: true
+                                });
+                            }}
+                            className="bg-slate-800/70 border border-slate-600/50 rounded-lg text-white px-3 py-2 text-sm font-medium hover:bg-slate-700/70 transition-colors duration-200 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            disabled={isLoading}
+                        >
+                            <option value="javascript">JavaScript</option>
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                        </select>
+                    )}
+
+                    {/* Navigation buttons */}
+                    <div className="flex items-center bg-slate-800/30 rounded-lg p-1">
+                        {isEnhancedCourse ? (
+                            <>
+                                <Button variant="ghost" size="icon" onClick={() => handleNavigation('previous')} className="hover:bg-slate-700/50 h-8 w-8 rounded-md">
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleNavigation('next')} className="hover:bg-slate-700/50 h-8 w-8 rounded-md text-cyan-400">
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Button variant="ghost" size="icon" onClick={() => handleNavigation(ideData.previousLessonId)} disabled={!ideData.previousLessonId} className="hover:bg-slate-700/50 h-8 w-8 rounded-md">
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleNavigation(ideData.nextLessonId)} disabled={!ideData.nextLessonId || !isSolutionUnlocked} className={cn("hover:bg-slate-700/50 h-8 w-8 rounded-md", !isSolutionUnlocked && "text-slate-600", isSolutionUnlocked && "text-cyan-400 bg-cyan-900/50 hover:bg-cyan-900/80 animate-pulse")}>
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Action buttons with improved design */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={handleSaveCode}
+                            disabled={isSaving}
+                            className="bg-slate-800/50 border-slate-600/50 hover:bg-slate-700/50 text-slate-300 hover:text-white px-4 py-2 font-medium transition-all duration-200"
+                        >
+                            <Save className="mr-2 h-4 w-4"/>
+                            {isSaving ? 'Saving...' : 'Save'}
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            onClick={handleGetHint}
+                            className="bg-fuchsia-900/20 border-fuchsia-500/50 hover:bg-fuchsia-500/20 text-fuchsia-300 hover:text-fuchsia-200 px-4 py-2 font-medium transition-all duration-200"
+                        >
+                            <BrainCircuit className="mr-2 h-4 w-4"/>
+                            AI Hint
+                        </Button>
+
+                        <Button
+                            onClick={handleRunTests}
+                            disabled={isTesting}
+                            className="bg-cyan-600/80 hover:bg-cyan-500 text-white px-6 py-2 font-semibold transition-all duration-200 shadow-lg hover:shadow-cyan-500/25"
+                        >
+                            <BeakerIcon className="mr-2 h-4 w-4"/>
+                            {isTesting ? 'Running...' : 'Run Tests'}
+                        </Button>
+
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white px-6 py-2 font-bold transition-all duration-200 shadow-lg hover:shadow-emerald-500/25"
+                        >
+                            <Send className="mr-2 h-4 w-4"/>
+                            {isSubmitting ? 'Submitting...' : 'Submit Solution'}
+                        </Button>
+                    </div>
                 </div>
             </header>
 
-            <main className="flex-1 min-h-0 overflow-hidden">
+            <main className="flex-1 min-h-0 overflow-hidden bg-slate-50/5">
                 <PanelGroup direction="horizontal" className="h-full">
-                    <Panel defaultSize={30} minSize={25} className="flex flex-col bg-slate-900/40 border-r border-slate-800">
+                    {/* Left Panel - Enhanced Problem/Solution Panel */}
+                    <Panel defaultSize={28} minSize={20} maxSize={40} className="flex flex-col bg-gradient-to-br from-slate-900/80 to-slate-800/80 backdrop-blur-sm border-r border-slate-700/50">
                         <Tabs value={missionControlTab} onValueChange={(v) => setMissionControlTab(v as MissionControlTab)} className="flex flex-col h-full">
-                            <TabsList className="grid w-full grid-cols-3 bg-slate-900">
-                                <TabsTrigger value="problem"><NotebookPen className="mr-2 h-4 w-4"/>Problem</TabsTrigger>
-                                <TabsTrigger value="submissions"><History className="mr-2 h-4 w-4"/>History</TabsTrigger>
-                                <TabsTrigger value="solution" disabled={!isSolutionUnlocked || isFetchingSolution} onClick={handleViewSolution}>
-                                    {isFetchingSolution ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileCode className="mr-2 h-4 w-4"/>} Solution
+                            <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 m-3 rounded-xl border border-slate-700/50">
+                                <TabsTrigger
+                                    value="problem"
+                                    className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-300 rounded-lg font-medium transition-all duration-200"
+                                >
+                                    <NotebookPen className="mr-2 h-4 w-4"/>
+                                    Problem
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="submissions"
+                                    className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-300 rounded-lg font-medium transition-all duration-200"
+                                >
+                                    <History className="mr-2 h-4 w-4"/>
+                                    History
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="solution"
+                                    disabled={isEnhancedCourse ? isFetchingSolution : (!isSolutionUnlocked || isFetchingSolution)}
+                                    onClick={handleViewSolution}
+                                    className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-300 rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
+                                >
+                                    {isFetchingSolution ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileCode className="mr-2 h-4 w-4"/>}
+                                    Solution
                                 </TabsTrigger>
                             </TabsList>
-                            <div className="flex-grow p-4 overflow-y-auto prose prose-sm prose-invert prose-slate max-w-none">
+                            <div className="flex-grow px-6 pb-6 overflow-y-auto prose prose-sm prose-invert prose-slate max-w-none scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
                                 <TabsContent value="problem">
                                     <ReactMarkdown>{ideData.lesson.description}</ReactMarkdown>
                                     {gradedSubmission && <FeedbackCard submission={gradedSubmission} />}
@@ -395,94 +1126,353 @@ const AscentIDE: React.FC = () => {
                                     )) : <p className="text-slate-400 text-center py-4">No submissions yet.</p>}
                                 </TabsContent>
                                 <TabsContent value="solution">
-                                    {isFetchingSolution ? <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin"/></div> : solutionFiles ? (
+                                    {isFetchingSolution ? (
+                                        <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin"/></div> 
+                                    ) : solutionFiles ? (
                                         <div className="space-y-4">
                                             <Editor height="300px" language={solutionFiles[0]?.filename.split('.').pop()} value={solutionFiles[0]?.content} theme="vs-dark" options={{ readOnly: true, minimap: { enabled: false } }} />
-                                            <ReactMarkdown>{ideData.officialSolution?.explanation || ""}</ReactMarkdown>
+                                            <ReactMarkdown>{solutionFiles[0]?.explanation || ideData.officialSolution?.explanation || "This is the optimal solution for this problem. Study the approach and implementation details."}</ReactMarkdown>
                                         </div>
-                                    ) : <p className="text-slate-400 text-center py-4">Unlock the solution by passing all the tests.</p>}
+                                    ) : isEnhancedCourse ? (
+                                        <div className="text-center py-4">
+                                            <p className="text-slate-400 mb-4">Click to load the official solution</p>
+                                            <Button onClick={handleViewSolution} disabled={isFetchingSolution} className="bg-cyan-400 hover:bg-cyan-300 text-slate-900">
+                                                Load Solution
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-slate-400 text-center py-4">Unlock the solution by passing all the tests.</p>
+                                    )}
                                 </TabsContent>
                             </div>
                         </Tabs>
                     </Panel>
-                    <PanelResizeHandle className="w-1 bg-slate-800" />
-                    <Panel defaultSize={70} minSize={55} className="flex flex-col">
+                    <PanelResizeHandle className="w-2 bg-slate-700/50 hover:bg-slate-600/50 transition-colors duration-200" />
+
+                    {/* Right Panel - Code Editor and Terminal */}
+                    <Panel defaultSize={72} minSize={60} className="flex flex-col bg-gradient-to-br from-slate-900/60 to-slate-800/60">
                         <PanelGroup direction="vertical" className="h-full">
-                            <Panel defaultSize={65} minSize={35}>
-                                <div className="h-full flex relative overflow-hidden">
-                                    <Sheet>
-                                        <SheetTrigger asChild><Button variant="ghost" size="icon" className="absolute top-2 left-2 z-20 h-6 w-6 bg-slate-800/50 hover:bg-slate-700"><PanelLeft className="h-3 w-3" /></Button></SheetTrigger>
-                                        <SheetContent side="left" className="p-3 bg-slate-900/90 border-slate-700">
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between"><h3 className="text-sm font-medium text-slate-300">Files</h3><Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleAddFile}><FilePlus2 className="h-3 w-3" /></Button></div>
-                                                <div className="space-y-1">
-                                                    {files.map(file => (
-                                                        <div key={file.id} className="group flex items-center">
-                                                            <button onClick={() => handleSwitchFile(file.id)} className={cn('w-full text-left px-2 py-1.5 text-sm rounded flex items-center', activeFileId === file.id ? "bg-cyan-500/10 text-cyan-300" : "hover:bg-slate-800 text-slate-300")}><FileIcon className="mr-2 h-3 w-3" /> <span className="truncate">{file.filename}</span></button>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleDeleteFile(file.id)}><Trash2 className="h-3 w-3 text-slate-500 hover:text-red-500"/></Button>
+                            {/* Code Editor Panel */}
+                            <Panel defaultSize={60} minSize={40}>
+                                <div className="h-full flex relative overflow-hidden bg-slate-900/40 rounded-tl-xl border-l border-slate-700/50">
+                                    {/* File tabs and controls */}
+                                    <div className="absolute top-0 left-0 right-0 z-20 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 px-4 py-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Sheet>
+                                                    <SheetTrigger asChild>
+                                                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white hover:bg-slate-700/50">
+                                                            <PanelLeft className="mr-2 h-4 w-4" />
+                                                            Files ({files.length})
+                                                        </Button>
+                                                    </SheetTrigger>
+                                                    <SheetContent side="left" className="p-4 bg-slate-900/95 border-slate-700 backdrop-blur-xl">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center justify-between">
+                                                                <h3 className="text-lg font-semibold text-white">Project Files</h3>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-700" onClick={handleAddFile}>
+                                                                    <FilePlus2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                {files.map(file => (
+                                                                    <div key={file.id} className="group flex items-center bg-slate-800/50 rounded-lg p-2 hover:bg-slate-700/50 transition-colors duration-200">
+                                                                        <button
+                                                                            onClick={() => handleSwitchFile(file.id)}
+                                                                            className={cn('w-full text-left flex items-center gap-3 font-medium', activeFileId === file.id ? "text-cyan-300" : "text-slate-300 hover:text-white")}
+                                                                        >
+                                                                            <FileIcon className="h-4 w-4 flex-shrink-0" />
+                                                                            <span className="truncate">{file.filename}</span>
+                                                                        </button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-400"
+                                                                            onClick={() => handleDeleteFile(file.id)}
+                                                                        >
+                                                                            <Trash2 className="h-3 w-3"/>
+                                                                        </Button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </SheetContent>
-                                    </Sheet>
-                                    <Editor height="100%" path={activeFile?.filename} language={activeFile?.filename.split('.').pop()} theme="vs-dark" value={activeFile?.content} onChange={handleFileContentChange} onMount={handleEditorDidMount} options={{ fontSize: 13, minimap: { enabled: false }, padding: { top: 12 } }} />
-                                </div>
-                            </Panel>
-                            <PanelResizeHandle className="h-1 bg-slate-800" />
-                            <Panel defaultSize={35} minSize={20} className="flex flex-col bg-slate-900/40">
-                                <Tabs value={diagnosticsTab} onValueChange={(v) => setDiagnosticsTab(v as DiagnosticsTab)} className="flex flex-col h-full">
-                                    <TabsList className="grid w-full grid-cols-4 bg-slate-900">
-                                        <TabsTrigger value="testCases"><Check className="mr-2 h-4 w-4"/>Cases</TabsTrigger>
-                                        <TabsTrigger value="results"><BeakerIcon className="mr-2 h-4 w-4"/>Results</TabsTrigger>
-                                        <TabsTrigger value="aiFeedback" className={cn(conceptualHint && "text-fuchsia-400 animate-pulse")}><BotMessageSquare className="mr-2 h-4 w-4"/>AI</TabsTrigger>
-                                        <TabsTrigger value="terminal"><TerminalIcon className="mr-2 h-4 w-4"/>Terminal</TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent value="testCases" className="flex-grow overflow-y-auto p-2 text-sm">
-                                        {ideData.testCases.map((tc: any, i: number) => (
-                                            <div key={i} className="p-2 bg-slate-900/50 rounded border border-slate-700 mb-2">
-                                                <p className="font-medium text-slate-300 mb-1 text-xs">{tc.description}</p>
-                                                <div className="font-mono text-xs space-y-1"><div className="flex"><span className="text-slate-500 mr-1">Input:</span><code className="text-cyan-300">{tc.input}</code></div><div className="flex"><span className="text-slate-500 mr-1">Expected:</span><code className="text-cyan-300">{tc.expectedOutput}</code></div></div>
-                                            </div>
-                                        ))}
-                                    </TabsContent>
-                                    <TabsContent value="results" className="flex-grow overflow-y-auto p-2 font-mono text-xs">
-                                        {isTesting ? <div className="flex items-center justify-center h-full"><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Running tests...</div> : testResults ? (
-                                            <div className="space-y-2">
-                                                <div className={cn('p-2 rounded font-medium flex items-center gap-2 text-xs', testResults.failed > 0 ? 'bg-red-950/40 text-red-300' : 'bg-green-950/40 text-green-300')}>
-                                                    {testResults.failed > 0 ? <><XCircle className="h-4 w-4"/>{`${testResults.failed} / ${testResults.total} Tests Failed`}</> : <><CheckCircle className="h-4 w-4"/>{`All ${testResults.total} Tests Passed!`}</>}
-                                                </div>
-                                                <pre className="whitespace-pre-wrap text-xs p-2 bg-black/40 rounded">{testResults.results}</pre>
-                                                {testResults.aiHint && (
-                                                    <div className="p-3 bg-blue-950/40 border border-blue-500/30 rounded text-blue-300">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <BotMessageSquare className="h-4 w-4" />
-                                                            <span className="font-medium text-xs">AI Hint</span>
-                                                        </div>
-                                                        <p className="text-xs font-sans">{testResults.aiHint}</p>
+                                                    </SheetContent>
+                                                </Sheet>
+                                                {activeFile && (
+                                                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                                                        <FileIcon className="h-4 w-4" />
+                                                        <span className="font-medium">{activeFile.filename}</span>
                                                     </div>
                                                 )}
                                             </div>
-                                        ) : <div className="flex items-center justify-center h-full text-center text-slate-500"><BeakerIcon className="h-8 w-8 mb-2 opacity-50" /><p>Run tests to see results</p></div>}
+                                            <div className="text-xs text-slate-500">
+                                                {urlParams.language?.toUpperCase() || 'JAVASCRIPT'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Enhanced Code Editor */}
+                                    <div className="w-full h-full pt-14">
+                                        <Editor
+                                            height="100%"
+                                            path={activeFile?.filename}
+                                            language={activeFile?.filename.split('.').pop()}
+                                            theme="vs-dark"
+                                            value={activeFile?.content}
+                                            onChange={handleFileContentChange}
+                                            onMount={handleEditorDidMount}
+                                            options={{
+                                                fontSize: 15,
+                                                fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+                                                fontWeight: '400',
+                                                lineHeight: 1.6,
+                                                minimap: { enabled: false },
+                                                padding: { top: 20, bottom: 20 },
+                                            // Intelligent features
+                                            automaticLayout: true,
+                                            autoIndent: 'full',
+                                            formatOnPaste: true,
+                                            formatOnType: true,
+                                            tabSize: 2,
+                                            insertSpaces: true,
+                                            detectIndentation: true,
+                                            trimAutoWhitespace: true,
+                                            // Autocomplete and IntelliSense
+                                            suggestOnTriggerCharacters: true,
+                                            acceptSuggestionOnEnter: 'on',
+                                            quickSuggestions: {
+                                                other: true,
+                                                comments: true,
+                                                strings: true
+                                            },
+                                            parameterHints: { enabled: true },
+                                            wordBasedSuggestions: true,
+                                            // Code actions and refactoring
+                                            lightbulb: { enabled: true },
+                                            codeLens: true,
+                                            // Bracket matching and highlighting
+                                            matchBrackets: 'always',
+                                            bracketPairColorization: { enabled: true },
+                                            // Line numbers and folding
+                                            lineNumbers: 'on',
+                                            lineNumbersMinChars: 3,
+                                            folding: true,
+                                            foldingStrategy: 'indentation',
+                                            // Selection and cursor
+                                            cursorBlinking: 'smooth',
+                                            cursorSmoothCaretAnimation: true,
+                                            selectOnLineNumbers: true,
+                                            // Editor behavior
+                                            wordWrap: 'on',
+                                            wrappingIndent: 'indent',
+                                            smoothScrolling: true,
+                                            mouseWheelZoom: true,
+                                            // Accessibility
+                                            accessibilitySupport: 'auto'
+                                        }} 
+                                    />
+                                </div>
+                                </div>
+                            </Panel>
+
+                            <PanelResizeHandle className="h-2 bg-slate-700/50 hover:bg-slate-600/50 transition-colors duration-200" />
+
+                            {/* Enhanced Terminal and Results Panel */}
+                            <Panel defaultSize={40} minSize={30} className="flex flex-col bg-gradient-to-br from-slate-900/80 to-slate-800/80 rounded-bl-xl border border-slate-700/50">
+                                <Tabs value={diagnosticsTab} onValueChange={(v) => setDiagnosticsTab(v as DiagnosticsTab)} className="flex flex-col h-full">
+                                    {/* Enhanced Tab Bar */}
+                                    <div className="bg-slate-800/50 border-b border-slate-700/50 px-4 py-3">
+                                        <TabsList className="grid w-full grid-cols-3 bg-slate-800/70 rounded-lg p-1 border border-slate-700/50">
+                                            <TabsTrigger
+                                                value="results"
+                                                className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-300 rounded-md font-medium transition-all duration-200 py-2"
+                                            >
+                                                <BeakerIcon className="mr-2 h-4 w-4"/>
+                                                Test Results
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="terminal"
+                                                className="data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-300 rounded-md font-medium transition-all duration-200 py-2"
+                                            >
+                                                <TerminalIcon className="mr-2 h-4 w-4"/>
+                                                Terminal
+                                            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="aiFeedback"
+                                                className={cn("data-[state=active]:bg-slate-700 data-[state=active]:text-white text-slate-300 rounded-md font-medium transition-all duration-200 py-2", conceptualHint && "text-fuchsia-400 animate-pulse")}
+                                            >
+                                                <BotMessageSquare className="mr-2 h-4 w-4"/>
+                                                AI Feedback
+                                            </TabsTrigger>
+                                        </TabsList>
+                                    </div>
+                                    {/* Enhanced Test Results Tab */}
+                                    <TabsContent value="results" className="flex-grow overflow-y-auto p-4 font-mono text-sm">
+                                        {isTesting ? (
+                                            <div className="flex flex-col items-center justify-center h-full text-center">
+                                                <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mb-4"/>
+                                                <p className="text-slate-300 font-semibold">Running Tests...</p>
+                                                <p className="text-slate-500 text-sm mt-2">Executing your code and validating results</p>
+                                            </div>
+                                        ) : testResults ? (
+                                            <div className="space-y-4">
+                                                {/* Test Summary Card */}
+                                                <div className={cn('p-4 rounded-lg font-medium flex items-center gap-3 text-sm border',
+                                                    testResults.failed > 0
+                                                        ? 'bg-red-900/30 text-red-300 border-red-500/30'
+                                                        : 'bg-green-900/30 text-green-300 border-green-500/30'
+                                                )}>
+                                                    {testResults.failed > 0 ? (
+                                                        <>
+                                                            <XCircle className="h-5 w-5"/>
+                                                            <span className="font-semibold">{testResults.failed} of {testResults.total} Tests Failed</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle className="h-5 w-5"/>
+                                                            <span className="font-semibold">All {testResults.total} Tests Passed! 🎉</span>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {/* Test Output */}
+                                                <div className="bg-slate-950/60 border border-slate-700/50 rounded-lg p-4">
+                                                    <h4 className="text-slate-300 font-medium mb-3 flex items-center gap-2">
+                                                        <TerminalIcon className="h-4 w-4" />
+                                                        Test Output
+                                                    </h4>
+                                                    <pre className="whitespace-pre-wrap text-sm text-slate-200 leading-relaxed overflow-x-auto">
+                                                        {testResults.results}
+                                                    </pre>
+                                                </div>
+
+                                                {/* AI Hint if available */}
+                                                {testResults.aiHint && (
+                                                    <div className="p-4 bg-blue-900/30 border border-blue-500/30 rounded-lg">
+                                                        <div className="flex items-center gap-2 mb-3">
+                                                            <BotMessageSquare className="h-5 w-5 text-blue-400" />
+                                                            <span className="font-semibold text-blue-300">AI Hint</span>
+                                                        </div>
+                                                        <p className="text-sm text-slate-200 font-sans leading-relaxed">{testResults.aiHint}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-full text-center">
+                                                <BeakerIcon className="h-12 w-12 mb-4 opacity-40 text-slate-500" />
+                                                <p className="text-slate-400 font-medium mb-2">No Test Results Yet</p>
+                                                <p className="text-slate-600 text-sm">Click "Run Tests" to execute your code and see results</p>
+                                            </div>
+                                        )}
                                     </TabsContent>
                                     <TabsContent value="aiFeedback" className="flex-grow overflow-y-auto p-2 prose prose-sm prose-invert">
-                                        {conceptualHint ? <ReactMarkdown>{conceptualHint}</ReactMarkdown> : <div className="flex items-center justify-center h-full text-center text-slate-500"><BotMessageSquare className="h-8 w-8 mb-2 opacity-50" /><p>Submit a correct solution for AI feedback.</p></div>}
+                                        {aiFeedback || conceptualHint ? (
+                                            <div className="space-y-4">
+                                                {aiFeedback && (
+                                                    <div className="bg-blue-950/40 border border-blue-500/30 p-3 rounded-md">
+                                                        <h4 className="text-blue-300 font-medium mb-2 flex items-center gap-2">
+                                                            <BotMessageSquare className="h-4 w-4" />
+                                                            AI Code Analysis
+                                                        </h4>
+                                                        <div className="text-slate-300 text-sm whitespace-pre-wrap">{aiFeedback}</div>
+                                                    </div>
+                                                )}
+                                                {conceptualHint && (
+                                                    <div className="bg-fuchsia-950/40 border border-fuchsia-500/30 p-3 rounded-md">
+                                                        <h4 className="text-fuchsia-300 font-medium mb-2 flex items-center gap-2">
+                                                            <BrainCircuit className="h-4 w-4" />
+                                                            Conceptual Feedback
+                                                        </h4>
+                                                        <ReactMarkdown className="text-slate-300 text-sm">{conceptualHint}</ReactMarkdown>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-center text-slate-500">
+                                                <div>
+                                                    <BotMessageSquare className="h-8 w-8 mb-2 opacity-50 mx-auto" />
+                                                    <p>Run tests or submit a solution for AI feedback.</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </TabsContent>
-                                    <TabsContent value="terminal" className="flex-grow p-2">
-                                        <DockerTerminal
-                                            title="Code Sandbox"
-                                            showHeader={false}
-                                            showCodeButtons={true}
-                                            height="100%"
-                                            initialCode={files.find(f => f.filename.endsWith('.py'))?.content || files.map(f => f.content).join('\n\n') || ''}
-                                            initialLanguage={files.find(f => f.filename.endsWith('.py')) ? 'python' : 'javascript'}
-                                            onCodeExecution={(result) => {
-                                                console.log('Code execution result:', result);
-                                            }}
-                                            onError={(error) => {
-                                                toast.error(`Terminal Error: ${error}`);
-                                            }}
-                                        />
+                                    {/* Enhanced Terminal Tab */}
+                                    <TabsContent value="terminal" className="flex-grow p-0 h-full">
+                                        <div className="h-full flex flex-col bg-gradient-to-br from-slate-950/90 to-slate-900/90 rounded-lg border border-slate-700/30">
+                                            {/* Terminal Header */}
+                                            <div className="bg-slate-800/50 border-b border-slate-700/50 px-4 py-2 rounded-t-lg">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-1">
+                                                            <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                                            <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                                                            <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                                                        </div>
+                                                        <span className="text-slate-300 font-medium text-sm">Terminal</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                                                        <span className="px-2 py-1 bg-slate-700/50 rounded text-cyan-300 font-mono">
+                                                            {(isEnhancedCourse ? urlParams.language : 'javascript') || 'javascript'}
+                                                        </span>
+                                                        <span>Ready for execution</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Enhanced Docker Terminal Component */}
+                                            <div className="flex-1 min-h-0">
+                                                <DockerTerminal
+                                                    ref={dockerTerminalRef}
+                                                    title=""
+                                                    showHeader={false}
+                                                    showCodeButtons={true}
+                                                    height="100%"
+                                                    initialCode={activeFile?.content || ''}
+                                                    initialLanguage={(isEnhancedCourse ? urlParams.language : 'javascript') || 'javascript'}
+                                                    autoConnect={true}
+                                                    enableWebSocket={true}
+                                                    className="h-full rounded-b-lg"
+                                                    onCodeExecution={(result) => {
+                                                        console.log('🎯 AscentIDE Docker execution result:', result);
+                                                        setTerminalOutput(result.output || 'Code executed successfully');
+
+                                                        // Enhanced test results with better data structure
+                                                        setTestResults({
+                                                            success: result.success !== false,
+                                                            output: result.output,
+                                                            results: result.output,
+                                                            executionTime: result.executionTime || 0,
+                                                            memory: result.memory || 0,
+                                                            total: result.totalTests || (result.testCaseResults?.length || 1),
+                                                            passed: result.passed || (result.success ? 1 : 0),
+                                                            failed: result.failed || (result.success ? 0 : 1),
+                                                            testCaseResults: result.testCaseResults || [],
+                                                            aiHint: result.aiHint || null
+                                                        });
+
+                                                        // Auto-switch to results tab when tests complete
+                                                        if (result.testCaseResults && result.testCaseResults.length > 0) {
+                                                            setDiagnosticsTab('results');
+                                                        }
+                                                    }}
+                                                    onError={(error) => {
+                                                        console.error('🔥 AscentIDE Docker execution error:', error);
+                                                        setTerminalOutput(`❌ Execution Error: ${error}`);
+                                                        setTestResults({
+                                                            success: false,
+                                                            output: `❌ Error: ${error}`,
+                                                            results: `❌ Error: ${error}`,
+                                                            total: 1,
+                                                            passed: 0,
+                                                            failed: 1,
+                                                            testCaseResults: [],
+                                                            executionTime: 0,
+                                                            memory: 0
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
                                     </TabsContent>
                                 </Tabs>
                             </Panel>

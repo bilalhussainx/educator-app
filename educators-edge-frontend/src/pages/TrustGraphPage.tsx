@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import UrgentSessionRequest from '../components/UrgentSessionRequest';
+import CalendlyBooking from '../components/CalendlyBooking';
 import {
     Users,
     User,
@@ -30,6 +31,7 @@ import {
     BarChart3,
     MapPin,
     Clock,
+    Calendar,
     Filter,
     Bell,
     Activity,
@@ -41,7 +43,11 @@ import {
     Sparkles,
     ChevronRight,
     Settings,
-    Globe
+    Globe,
+    Video,
+    FileText,
+    Code,
+    DollarSign
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { toast } from 'sonner';
@@ -142,6 +148,17 @@ const TIER_STYLES: Record<string, { color: string; bgColor: string; borderColor:
     ascendant: { color: 'text-purple-400', bgColor: 'bg-purple-500/10', borderColor: 'border-purple-500/30' }
 };
 
+// Simple JWT decode function
+const simpleJwtDecode = (token: string) => {
+    try {
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        return decoded;
+    } catch (error) {
+        console.error('Error decoding token:', error);
+        return null;
+    }
+};
+
 const TrustGraphPage: React.FC = () => {
     const navigate = useNavigate();
     const [connections, setConnections] = useState<Connection[]>([]);
@@ -154,6 +171,12 @@ const TrustGraphPage: React.FC = () => {
     const [networkInsights, setNetworkInsights] = useState<NetworkInsight[]>([]);
     const [suggestedConnections, setSuggestedConnections] = useState([]);
     const [discoverProfiles, setDiscoverProfiles] = useState<any[]>([]);
+    const [profilesLoaded, setProfilesLoaded] = useState(false);
+
+    // Get current user from token
+    const token = localStorage.getItem('authToken');
+    const decodedToken = token ? simpleJwtDecode(token) : null;
+    const currentUserId = decodedToken?.user?.id || null;
     const [discoverFilters, setDiscoverFilters] = useState({
         tier: '',
         role: '',
@@ -171,6 +194,8 @@ const TrustGraphPage: React.FC = () => {
     const [sessionDescription, setSessionDescription] = useState('');
     const [sessionType, setSessionType] = useState('mentoring');
     const [sessionRequests, setSessionRequests] = useState([]);
+    const [selectedDateTime, setSelectedDateTime] = useState<string | null>(null);
+    const [showCalendar, setShowCalendar] = useState(false);
 
     useEffect(() => {
         fetchNetworkData();
@@ -181,6 +206,8 @@ const TrustGraphPage: React.FC = () => {
     const fetchDiscoverProfiles = async (filters: Record<string, any> = {}) => {
         try {
             setIsDiscovering(true);
+            setProfilesLoaded(false);
+            setDiscoverProfiles([]); // Clear existing profiles to prevent stale renders
             
             const queryParams = new URLSearchParams();
             
@@ -202,7 +229,30 @@ const TrustGraphPage: React.FC = () => {
             const response = await apiClient.get(`/api/profiles/search/profiles?${queryParams.toString()}`);
             
             if (response.data.profiles) {
-                setDiscoverProfiles(response.data.profiles);
+                // Deduplicate profiles by user ID, keeping the one with AI bot properties if available
+                const uniqueProfiles: any[] = [];
+                const seenIds = new Set();
+                
+                // First pass: collect all profiles with AI bot properties
+                response.data.profiles.forEach((profile: any) => {
+                    if (profile.ai_bot_id && !seenIds.has(profile.id)) {
+                        uniqueProfiles.push(profile);
+                        seenIds.add(profile.id);
+                    }
+                });
+                
+                // Second pass: add non-AI bot profiles that aren't already included
+                response.data.profiles.forEach((profile: any) => {
+                    if (!profile.ai_bot_id && !seenIds.has(profile.id)) {
+                        uniqueProfiles.push(profile);
+                        seenIds.add(profile.id);
+                    }
+                });
+                // Only set profiles if we have valid data
+                if (uniqueProfiles.length > 0) {
+                    setDiscoverProfiles(uniqueProfiles);
+                    setProfilesLoaded(true);
+                }
             }
         } catch (error: any) {
             console.error('Discover profiles fetch error:', error);
@@ -372,17 +422,29 @@ const TrustGraphPage: React.FC = () => {
     };
 
     const handleSessionRequest = (user: any) => {
-        setSelectedMentor(user);
-        setSessionDescription('');
-        // Determine session type based on user role/type
-        if (user.is_mentor) {
-            setSessionType('mentoring');
-        } else if (user.role === 'teacher' || user.is_searchable_teacher) {
-            setSessionType('tutoring');
+        // Check if this is an AI bot
+        const isAIBot = Boolean(user.is_ai_bot || user.ai_bot_id);
+        
+        if (isAIBot) {
+            // For AI bots, trigger the urgent session modal
+            setSelectedAIBot(user);
+            setShowUrgentRequestModal(true);
         } else {
-            setSessionType('collaboration');
+            // For regular users, show the session request modal
+            setSelectedMentor(user);
+            setSessionDescription('');
+            setSelectedDateTime(null);
+            setShowCalendar(false);
+            // Determine session type based on user role/type
+            if (user.is_mentor) {
+                setSessionType('mentoring');
+            } else if (user.role === 'teacher' || user.is_searchable_teacher) {
+                setSessionType('tutoring');
+            } else {
+                setSessionType('collaboration');
+            }
+            setShowSessionRequestModal(true);
         }
-        setShowSessionRequestModal(true);
     };
 
     const submitSessionRequest = async () => {
@@ -392,18 +454,34 @@ const TrustGraphPage: React.FC = () => {
         }
 
         try {
-            const response = await apiClient.post('/api/sessions/request', {
+            const requestData: any = {
                 mentorId: selectedMentor.id,
                 sessionType: sessionType,
                 description: sessionDescription.trim(),
                 preferredTool: selectedMentor.is_mentor ? 'ascendialaunchpad' : 'essayeditor'
-            });
+            };
+
+            // Add calendar data if time slot was selected
+            if (selectedDateTime) {
+                requestData.preferred_datetime = selectedDateTime;
+                requestData.duration_minutes = 60; // Default duration
+                requestData.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            }
+
+            const response = await apiClient.post('/api/sessions/request', requestData);
 
             if (response.data.success) {
-                toast.success('Session request sent successfully! You will be notified when the mentor responds.');
+                const message = selectedDateTime 
+                    ? 'Session request sent with your preferred time! The teacher will review and confirm.'
+                    : 'Session request sent successfully! Click "My Sessions" to track your requests.';
+                toast.success(message);
                 setShowSessionRequestModal(false);
                 setSelectedMentor(null);
                 setSessionDescription('');
+                setSelectedDateTime(null);
+                setShowCalendar(false);
+                // Refresh session requests to update the badge
+                fetchSessionRequests();
             } else {
                 throw new Error(response.data.message || 'Failed to send session request');
             }
@@ -453,136 +531,90 @@ const TrustGraphPage: React.FC = () => {
 
     const renderUserCard = (user: any, showActions: boolean = true, connectionStatus?: string) => {
         const tierStyle = TIER_STYLES[user.user_tier || 'pathfinder'] || TIER_STYLES['pathfinder'];
-        const isAIBot = user.is_ai_bot || user.ai_bot_id;
+        const isAIBot = Boolean(user.is_ai_bot || user.ai_bot_id);
+        
         
         // User data now includes role and is_searchable_teacher fields
         
         return (
-            <Card key={user.id} className={cn(
-                "bg-slate-900/40 backdrop-blur-lg border text-white transition-all duration-200 hover:scale-[1.02]",
+            <Card key={`${user.id}-${connectionStatus || 'default'}-${isAIBot ? 'bot' : 'user'}`} className={cn(
+                "bg-slate-900/40 backdrop-blur-lg border text-white transition-all duration-200 hover:scale-[1.02] relative z-10 hover:z-20",
                 isAIBot ? 'border-cyan-500/50 ring-1 ring-cyan-500/20' : tierStyle.borderColor
             )}>
                 <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                            <Avatar className={cn(
-                                "h-12 w-12 border",
-                                isAIBot ? 'border-cyan-500 ring-2 ring-cyan-500/30' : 'border-slate-600'
+                    <div className="flex items-center gap-3">
+                        <Avatar className={cn(
+                            "h-12 w-12 border",
+                            isAIBot ? 'border-cyan-500 ring-2 ring-cyan-500/30' : 'border-slate-600'
+                        )}>
+                            <AvatarImage src={`/api/avatars/${user.id}`} />
+                            <AvatarFallback className={cn(
+                                "text-white font-bold",
+                                isAIBot ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-slate-700'
                             )}>
-                                <AvatarImage src={`/api/avatars/${user.id}`} />
-                                <AvatarFallback className={cn(
-                                    "text-white font-bold",
-                                    isAIBot ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-slate-700'
-                                )}>
-                                    {isAIBot ? (
-                                        <Bot className="h-6 w-6 text-white" />
-                                    ) : (
-                                        user.display_name?.charAt(0) || user.username?.charAt(0) || '?'
-                                    )}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <CardTitle className="text-lg text-white font-semibold flex items-center gap-2">
-                                    {user.display_name || user.username || 'Unknown User'}
-                                    {isAIBot && (
-                                        <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-2 py-1 text-xs font-medium">
-                                            <Bot className="h-3 w-3 mr-1" />
-                                            AI Mentor
-                                        </Badge>
-                                    )}
-                                    {user.verified_mentor && (
-                                        <Award className="h-4 w-4 text-blue-400" />
-                                    )}
-                                    {(user.role === 'teacher' || user.is_searchable_teacher) && (
-                                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30 px-2 py-1 text-xs font-medium">
-                                            <GraduationCap className="h-3 w-3 mr-1" />
-                                            Teacher
-                                        </Badge>
-                                    )}
-                                </CardTitle>
-                                <div className="flex items-center gap-2 mt-1">
-                                    {!isAIBot && (
-                                        <>
-                                            <Badge className={cn("px-2 py-1 text-xs font-medium", tierStyle.bgColor, tierStyle.color)}>
-                                                {(user.user_tier || 'pathfinder').charAt(0).toUpperCase() + (user.user_tier || 'pathfinder').slice(1)}
-                                            </Badge>
-                                            <div className="flex items-center gap-1 text-sm text-slate-300 font-medium">
-                                                <Zap className="h-3 w-3 text-yellow-400" />
-                                                {user.ascendia_score || 0}
-                                            </div>
-                                        </>
-                                    )}
-                                    {isAIBot && user.personality_type && (
-                                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-2 py-1 text-xs font-medium">
-                                            {user.personality_type}
-                                        </Badge>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {showActions && (
-                            <div className="flex flex-col gap-2">
                                 {isAIBot ? (
-                                    <>
-                                        <Button 
-                                            size="sm"
-                                            onClick={() => handleAIBotChat(user)}
-                                            className="bg-cyan-500 hover:bg-cyan-600 text-white font-medium shadow-lg hover:shadow-cyan-500/25 transition-all duration-200"
-                                        >
-                                            <MessageSquare className="h-3 w-3 mr-1" />
-                                            Chat Now
-                                        </Button>
-                                        <Button 
-                                            size="sm"
-                                            onClick={() => handleUrgentRequest(user)}
-                                            className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 font-medium shadow-lg hover:shadow-red-500/25 transition-all duration-200"
-                                        >
-                                            <Zap className="h-3 w-3 mr-1" />
-                                            Urgent Help
-                                        </Button>
-                                    </>
+                                    <Bot className="h-6 w-6 text-white" />
                                 ) : (
+                                    user.display_name?.charAt(0) || user.username?.charAt(0) || '?'
+                                )}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                            <CardTitle className="text-lg text-white font-semibold flex items-center gap-2 flex-wrap">
+                                <span className="truncate">{user.display_name || user.username || 'Unknown User'}</span>
+                                {isAIBot && (
+                                    <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 px-2 py-1 text-xs font-medium">
+                                        <Bot className="h-3 w-3 mr-1" />
+                                        AI Mentor
+                                    </Badge>
+                                )}
+                                {user.verified_mentor && (
+                                    <Award className="h-4 w-4 text-blue-400" />
+                                )}
+                                {(user.role === 'teacher' || user.is_searchable_teacher) && (
+                                    <Badge className="bg-green-500/20 text-green-300 border-green-500/30 px-2 py-1 text-xs font-medium">
+                                        <GraduationCap className="h-3 w-3 mr-1" />
+                                        Teacher
+                                    </Badge>
+                                )}
+                            </CardTitle>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                {!isAIBot && (
                                     <>
-                                        {connectionStatus === 'pending' ? (
-                                            <Badge className="bg-yellow-500/10 text-yellow-400 font-medium border border-yellow-500/30">Pending</Badge>
-                                        ) : connectionStatus === 'connected' ? (
-                                            <Badge className="bg-green-500/10 text-green-400 font-medium border border-green-500/30">Connected</Badge>
-                                        ) : (
-                                            <Button 
-                                                size="sm"
-                                                onClick={() => handleConnectionRequest(user.id, 'send')}
-                                                className="bg-blue-600 hover:bg-blue-500 font-medium shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
-                                            >
-                                                <UserPlus className="h-3 w-3 mr-1" />
-                                                Connect
-                                            </Button>
+                                        <Badge className={cn("px-2 py-1 text-xs font-medium", tierStyle.bgColor, tierStyle.color)}>
+                                            {(user.user_tier || 'pathfinder').charAt(0).toUpperCase() + (user.user_tier || 'pathfinder').slice(1)}
+                                        </Badge>
+                                        <div className="flex items-center gap-1 text-sm text-slate-300 font-medium">
+                                            <Zap className="h-3 w-3 text-yellow-400" />
+                                            <span className="font-bold text-yellow-300">{user.ascendia_score || 0}</span>
+                                            <span className="text-xs text-slate-400">P-Score</span>
+                                        </div>
+                                        {(user.role === 'teacher' || user.is_mentor) && user.total_sessions > 0 && (
+                                            <div className="flex items-center gap-1 text-xs text-slate-400">
+                                                <Users className="h-3 w-3" />
+                                                {user.total_sessions} sessions
+                                            </div>
                                         )}
-                                        
-                                        {(user.is_mentor || user.role === 'teacher' || user.is_searchable_teacher) ? (
-                                            <Button 
-                                                size="sm"
-                                                onClick={() => navigate(`/sessions?${user.is_mentor ? 'mentor' : 'teacher'}=${user.id}`)}
-                                                className="bg-purple-600 hover:bg-purple-500 font-medium shadow-lg hover:shadow-purple-500/25 transition-all duration-200"
-                                            >
-                                                <MessageSquare className="h-3 w-3 mr-1" />
-                                                Book Session
-                                            </Button>
-                                        ) : (
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline"
-                                                onClick={() => handleFollow(user.id, false)}
-                                                className="border-slate-600 hover:bg-slate-700 font-medium hover:border-slate-500 transition-all duration-200"
-                                            >
-                                                <UserCheck className="h-3 w-3 mr-1" />
-                                                Follow
-                                            </Button>
+                                        {(user.role === 'teacher' || user.is_mentor) && user.average_rating && user.average_rating > 0 && (
+                                            <div className="flex items-center gap-1 text-xs text-slate-400">
+                                                <Star className="h-3 w-3 text-yellow-400" />
+                                                {Number(user.average_rating).toFixed(1)}
+                                            </div>
                                         )}
                                     </>
                                 )}
+                                {isAIBot && user.personality_type && (
+                                    <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 px-2 py-1 text-xs font-medium">
+                                        {user.personality_type}
+                                    </Badge>
+                                )}
+                                {isAIBot && user.ai_specialization && (
+                                    <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 px-2 py-1 text-xs font-medium">
+                                        {user.ai_specialization}
+                                    </Badge>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </CardHeader>
 
@@ -592,24 +624,42 @@ const TrustGraphPage: React.FC = () => {
                         <p className="text-sm text-slate-300 line-clamp-2 leading-relaxed">{user.bio}</p>
                     )}
 
-                    {/* Four Pillars (if available) */}
-                    {user.pillar_academic !== undefined && (
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-1">
-                                <GraduationCap className="h-3 w-3 text-blue-400" />
-                                <span>Academic: {user.pillar_academic}</span>
+                    {/* Teacher/Mentor P-Score Breakdown */}
+                    {(user.role === 'teacher' || user.is_mentor) && user.pillar_academic !== undefined && user.pillar_academic !== null && (
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                                <Zap className="h-4 w-4 text-yellow-400" />
+                                <span className="text-sm font-medium text-yellow-300">P-Score Breakdown</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                                <Users className="h-3 w-3 text-green-400" />
-                                <span>Community: {user.pillar_community}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <Heart className="h-3 w-3 text-pink-400" />
-                                <span>Mentorship: {user.pillar_mentorship}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <BarChart3 className="h-3 w-3 text-purple-400" />
-                                <span>Analytical: {user.pillar_analytical}</span>
+                            <div className="grid grid-cols-2 gap-2 text-xs bg-slate-800/50 rounded-lg p-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1">
+                                        <GraduationCap className="h-3 w-3 text-blue-400" />
+                                        <span>Academic</span>
+                                    </div>
+                                    <span className="font-medium text-blue-300">{user.pillar_academic || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1">
+                                        <Users className="h-3 w-3 text-green-400" />
+                                        <span>Community</span>
+                                    </div>
+                                    <span className="font-medium text-green-300">{user.pillar_community || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1">
+                                        <Heart className="h-3 w-3 text-pink-400" />
+                                        <span>Mentorship</span>
+                                    </div>
+                                    <span className="font-medium text-pink-300">{user.pillar_mentorship || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1">
+                                        <BarChart3 className="h-3 w-3 text-purple-400" />
+                                        <span>Analytical</span>
+                                    </div>
+                                    <span className="font-medium text-purple-300">{user.pillar_analytical || 0}</span>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -627,9 +677,9 @@ const TrustGraphPage: React.FC = () => {
                                 ))
                             ) : (
                                 // Regular user specializations
-                                user.specializations.slice(0, 3).map((spec: string, idx: number) => (
+                                user.specializations.slice(0, 3).map((spec: any, idx: number) => (
                                     <Badge key={idx} variant="secondary" className="text-xs bg-slate-700 text-slate-300">
-                                        {spec}
+                                        {typeof spec === 'string' ? spec : spec.name || spec.category || 'Specialization'}
                                     </Badge>
                                 ))
                             )}
@@ -658,26 +708,60 @@ const TrustGraphPage: React.FC = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 pt-2">
-                        <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => navigate(`/profile/${user.id}`)}
-                            className="flex-1 border-slate-600 hover:bg-slate-700 font-medium hover:border-slate-500 transition-all duration-200"
-                        >
-                            <Eye className="h-3 w-3 mr-1" />
-                            Profile
-                        </Button>
-                        <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => (user.is_mentor || user.role === 'teacher' || user.is_searchable_teacher) ? handleSessionRequest(user) : navigate(`/messages/compose?to=${user.id}`)}
-                            className="flex-1 border-slate-600 hover:bg-slate-700 font-medium hover:border-slate-500 transition-all duration-200"
-                        >
-                            <MessageCircle className="h-3 w-3 mr-1" />
-                            {(user.is_mentor || user.role === 'teacher' || user.is_searchable_teacher) ? 'Request Session' : 'Message'}
-                        </Button>
-                    </div>
+                    {showActions && (
+                        <div className="pt-3 border-t border-slate-700/50">
+                            {isAIBot ? (
+                                /* AI Bot Buttons */
+                                <div className="grid grid-cols-2 gap-3">
+                                    <Button 
+                                        size="sm"
+                                        onClick={() => handleAIBotChat(user)}
+                                        className="bg-cyan-500 hover:bg-cyan-600 text-white font-medium shadow-lg hover:shadow-cyan-500/25 transition-all duration-200 relative z-30"
+                                    >
+                                        <MessageSquare className="h-3 w-3 mr-1" />
+                                        Chat Now
+                                    </Button>
+                                    <Button 
+                                        size="sm"
+                                        onClick={() => handleUrgentRequest(user)}
+                                        className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-medium shadow-lg hover:shadow-red-500/25 transition-all duration-200 relative z-30"
+                                    >
+                                        <Zap className="h-3 w-3 mr-1" />
+                                        Urgent Help
+                                    </Button>
+                                </div>
+                            ) : (
+                                /* Regular User Buttons */
+                                <div className="flex gap-2">
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => navigate(`/profile/${user.id}`)}
+                                        className="flex-1 border-slate-500 text-white bg-slate-800/50 hover:bg-slate-700 hover:border-slate-400 font-medium transition-all duration-200"
+                                    >
+                                        <Eye className="h-3 w-3 mr-1" />
+                                        Profile
+                                    </Button>
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => {
+                                            if (connectionStatus === 'connected' || user.is_mentor || user.role === 'teacher' || user.is_searchable_teacher) {
+                                                handleSessionRequest(user);
+                                            } else {
+                                                toast.info('Connect with this user first to start messaging or session requests.');
+                                            }
+                                        }}
+                                        className="flex-1 border-slate-500 text-white bg-slate-800/50 hover:bg-slate-700 hover:border-slate-400 font-medium transition-all duration-200"
+                                    >
+                                        <MessageCircle className="h-3 w-3 mr-1" />
+                                        {connectionStatus === 'connected' ? 'Request Session' : 
+                                         (user.is_mentor || user.role === 'teacher' || user.is_searchable_teacher) ? 'Request Session' : 'Message'}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         );
@@ -766,65 +850,83 @@ const TrustGraphPage: React.FC = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full">
-                            <Network className="h-8 w-8 text-blue-400" />
-                        </div>
-                        Trust Graph
-                    </h1>
-                    <p className="text-slate-400">Build your professional learning network</p>
-                </div>
-                
-                {/* Header Actions */}
-                <div className="flex items-center gap-3">
-                    {/* Setup Profile Button */}
-                    <Button 
-                        onClick={() => navigate('/profile/setup')}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-medium"
-                    >
-                        <User className="h-4 w-4 mr-2" />
-                        Setup Profile
-                    </Button>
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
+            </div>
 
-                    {/* Search */}
-                    <div className="flex gap-2">
-                        <Input
-                            placeholder="Search users..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                            className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400 w-64"
-                        />
-                        <Button 
-                            onClick={handleSearch}
-                            className="bg-blue-600 hover:bg-blue-500"
-                        >
-                            <Search className="h-4 w-4" />
-                        </Button>
+            <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 space-y-12">
+                {/* Modern Header */}
+                <div className="text-center space-y-8">
+                    <div className="relative mb-6">
+                        <h1 className="text-7xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent leading-tight">
+                            Trust Graph
+                        </h1>
+                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-lg blur-xl opacity-30"></div>
                     </div>
+                    <p className="text-xl text-slate-300 max-w-4xl mx-auto leading-relaxed font-light">
+                        Build meaningful professional relationships through our trust-based networking system
+                    </p>
 
-                    {/* Notifications */}
-                    <div className="relative">
+                    {/* Action Bar */}
+                    <div className="flex items-center justify-center gap-6 pt-8 flex-wrap">
                         <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setShowNotifications(!showNotifications)}
-                            className="border-slate-600 hover:bg-slate-700 relative"
+                            onClick={() => navigate('/sessions')}
+                            className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-base"
                         >
-                            <Bell className="h-4 w-4" />
-                            {sessionRequests.filter((req: any) => req.status === 'pending').length > 0 && (
-                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
-                                    {sessionRequests.filter((req: any) => req.status === 'pending').length}
-                                </span>
+                            <Calendar className="h-5 w-5 mr-3" />
+                            My Sessions
+                            {sessionRequests.filter(req => req.status === 'pending').length > 0 && (
+                                <Badge className="ml-3 bg-red-500 text-white text-xs font-bold px-2 py-1">
+                                    {sessionRequests.filter(req => req.status === 'pending').length}
+                                </Badge>
                             )}
                         </Button>
-                        
-                        {showNotifications && (
-                            <Card className="absolute right-0 top-12 w-80 bg-slate-900 border-slate-700 z-50">
+
+                        <Button
+                            onClick={() => navigate('/profile/setup')}
+                            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-base"
+                        >
+                            <User className="h-5 w-5 mr-3" />
+                            Setup Profile
+                        </Button>
+
+                        {/* Search */}
+                        <div className="flex gap-3">
+                            <Input
+                                placeholder="Search professionals..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                className="bg-slate-900/60 backdrop-blur-lg border border-slate-700/60 text-white placeholder:text-slate-400 w-80 rounded-2xl py-4 px-6 text-base focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all duration-300"
+                            />
+                            <Button
+                                onClick={handleSearch}
+                                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-2xl px-6 py-4 shadow-lg hover:shadow-xl transition-all duration-300"
+                            >
+                                <Search className="h-5 w-5" />
+                            </Button>
+                        </div>
+
+                        {/* Notifications */}
+                        <div className="relative">
+                            <Button
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                className="bg-slate-900/60 backdrop-blur-lg border border-slate-700/60 hover:bg-slate-800/80 text-white rounded-2xl relative px-6 py-4 shadow-lg hover:shadow-xl transition-all duration-300"
+                            >
+                                <Bell className="h-5 w-5" />
+                                {sessionRequests.filter((req: any) => req.status === 'pending').length > 0 && (
+                                    <span className="absolute -top-2 -right-2 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+                                        {sessionRequests.filter((req: any) => req.status === 'pending').length}
+                                    </span>
+                                )}
+                            </Button>
+
+                            {showNotifications && (
+                                <Card className="absolute right-0 top-12 w-80 bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 z-50 rounded-xl">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm text-white">Notifications</CardTitle>
                                 </CardHeader>
@@ -859,7 +961,7 @@ const TrustGraphPage: React.FC = () => {
                                                                 size="sm"
                                                                 variant="outline"
                                                                 onClick={() => respondToSessionRequest(request.id, 'decline')}
-                                                                className="border-slate-600 hover:bg-slate-700 text-xs py-1 px-2"
+                                                                className="border-slate-500 text-white bg-slate-800/50 hover:bg-slate-700 hover:border-slate-400 text-xs py-1 px-2"
                                                             >
                                                                 Decline
                                                             </Button>
@@ -871,7 +973,7 @@ const TrustGraphPage: React.FC = () => {
                                                         variant="ghost" 
                                                         size="sm" 
                                                         className="text-xs"
-                                                        onClick={() => setShowSessionRequests(true)}
+                                                        onClick={() => setShowSessionRequestModal(true)}
                                                     >
                                                         View All Session Requests
                                                     </Button>
@@ -886,227 +988,241 @@ const TrustGraphPage: React.FC = () => {
                                     </div>
                                 </CardContent>
                             </Card>
-                        )}
+                            )}
+                        </div>
                     </div>
-
-                    {/* Settings */}
-                    <Button variant="outline" size="icon" className="border-slate-600 hover:bg-slate-700">
-                        <Settings className="h-4 w-4" />
-                    </Button>
                 </div>
-            </div>
 
-            {/* Network Stats */}
-            {renderNetworkStats()}
+            {/* Network Stats - Removed for cleaner design */}
+            {/* {renderNetworkStats()} */}
 
-            {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="bg-slate-800 border-slate-700 flex-wrap">
-                    <TabsTrigger value="network" className="flex items-center gap-2">
-                        <Activity className="h-4 w-4" />
+                {/* Tabs */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-10">
+                    <TabsList className="bg-slate-900/60 backdrop-blur-lg border border-slate-700/60 flex-wrap rounded-2xl p-2 shadow-lg min-h-[60px] gap-2">
+                    <TabsTrigger value="network" className="flex items-center gap-3 px-6 py-3 rounded-xl font-medium text-base transition-all duration-300 data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-300 data-[state=active]:shadow-lg">
+                        <Activity className="h-5 w-5" />
                         My Network
                     </TabsTrigger>
-                    <TabsTrigger value="connections" className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
+                    <TabsTrigger value="connections" className="flex items-center gap-3 px-6 py-3 rounded-xl font-medium text-base transition-all duration-300 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-300 data-[state=active]:shadow-lg">
+                        <Users className="h-5 w-5" />
                         Connections ({connections.filter(c => c.status === 'accepted').length})
                     </TabsTrigger>
-                    <TabsTrigger value="followers" className="flex items-center gap-2">
-                        <UserCheck className="h-4 w-4" />
+                    <TabsTrigger value="followers" className="flex items-center gap-3 px-6 py-3 rounded-xl font-medium text-base transition-all duration-300 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300 data-[state=active]:shadow-lg">
+                        <UserCheck className="h-5 w-5" />
                         Followers ({followers.length})
                     </TabsTrigger>
-                    <TabsTrigger value="following" className="flex items-center gap-2">
-                        <Eye className="h-4 w-4" />
+                    <TabsTrigger value="following" className="flex items-center gap-3 px-6 py-3 rounded-xl font-medium text-base transition-all duration-300 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300 data-[state=active]:shadow-lg">
+                        <Eye className="h-5 w-5" />
                         Following ({following.length})
                     </TabsTrigger>
-                    <TabsTrigger value="discover" className="flex items-center gap-2">
-                        <Globe className="h-4 w-4" />
+                    <TabsTrigger value="discover" className="flex items-center gap-3 px-6 py-3 rounded-xl font-medium text-base transition-all duration-300 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-300 data-[state=active]:shadow-lg">
+                        <Globe className="h-5 w-5" />
                         Discover
                     </TabsTrigger>
-                    <TabsTrigger value="analytics" className="flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4" />
+                    <TabsTrigger value="analytics" className="flex items-center gap-3 px-6 py-3 rounded-xl font-medium text-base transition-all duration-300 data-[state=active]:bg-indigo-500/20 data-[state=active]:text-indigo-300 data-[state=active]:shadow-lg">
+                        <BarChart3 className="h-5 w-5" />
                         Analytics
                     </TabsTrigger>
-                    <TabsTrigger value="search" className="flex items-center gap-2">
-                        <Search className="h-4 w-4" />
+                    <TabsTrigger value="search" className="flex items-center gap-3 px-6 py-3 rounded-xl font-medium text-base transition-all duration-300 data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300 data-[state=active]:shadow-lg">
+                        <Search className="h-5 w-5" />
                         Search Results
                     </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="network">
-                    <div className="space-y-6">
-                        {/* Pending Connection Requests */}
-                        {connections.filter(c => c.status === 'pending').length > 0 && (
-                            <div>
-                                <h3 className="text-lg font-semibold text-cyan-300 mb-4">Pending Requests</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {connections
-                                        .filter(c => c.status === 'pending')
-                                        .map(connection => (
-                                            <Card key={connection.id} className="bg-yellow-900/20 border border-yellow-500/30 text-white">
-                                                <CardContent className="p-4">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <Avatar className="h-8 w-8">
-                                                                <AvatarFallback className="bg-slate-700 text-white text-sm">
-                                                                    {connection.connected_user.display_name?.charAt(0) || '?'}
-                                                                </AvatarFallback>
-                                                            </Avatar>
-                                                            <span className="font-medium">{connection.connected_user.display_name}</span>
-                                                        </div>
-                                                        <Badge className="bg-yellow-500/20 text-yellow-400">Pending</Badge>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button 
-                                                            size="sm"
-                                                            onClick={() => handleConnectionRequest(connection.id, 'accept')}
-                                                            className="flex-1 bg-green-600 hover:bg-green-500"
-                                                        >
-                                                            Accept
-                                                        </Button>
-                                                        <Button 
-                                                            size="sm" 
-                                                            variant="outline"
-                                                            onClick={() => handleConnectionRequest(connection.id, 'decline')}
-                                                            className="flex-1 border-slate-600 hover:bg-slate-700"
-                                                        >
-                                                            Decline
-                                                        </Button>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                </div>
-                            </div>
-                        )}
+                    <div className="space-y-8">
 
-                        {/* Network Insights */}
-                        {networkInsights.length > 0 && (
-                            <div>
-                                <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
-                                    <Sparkles className="h-5 w-5" />
-                                    Network Insights
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {networkInsights.slice(0, 4).map((insight) => (
-                                        <Card key={insight.id} className={cn(
-                                            "bg-gradient-to-r border text-white transition-all hover:scale-[1.02]",
-                                            insight.priority === 'high' ? 'from-red-900/20 to-pink-900/20 border-red-500/30' :
-                                            insight.priority === 'medium' ? 'from-yellow-900/20 to-orange-900/20 border-yellow-500/30' :
-                                            'from-blue-900/20 to-cyan-900/20 border-blue-500/30'
-                                        )}>
-                                            <CardContent className="p-4">
-                                                <div className="flex items-start gap-3">
-                                                    <div className={cn(
-                                                        "p-2 rounded-full",
-                                                        insight.priority === 'high' ? 'bg-red-500/20' :
-                                                        insight.priority === 'medium' ? 'bg-yellow-500/20' :
-                                                        'bg-blue-500/20'
-                                                    )}>
-                                                        <Target className={cn(
-                                                            "h-4 w-4",
-                                                            insight.priority === 'high' ? 'text-red-400' :
-                                                            insight.priority === 'medium' ? 'text-yellow-400' :
-                                                            'text-blue-400'
-                                                        )} />
+                        {/* Discovery Filters */}
+                        <Card className="bg-slate-900/60 backdrop-blur-lg border border-slate-700/60 shadow-xl rounded-2xl">
+                            <CardHeader>
+                                <CardTitle className="text-white flex items-center gap-2">
+                                    <Filter className="h-5 w-5" />
+                                    Discovery Filters
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Tier</label>
+                                        <select 
+                                            value={discoverFilters.tier}
+                                            onChange={(e) => setDiscoverFilters(prev => ({...prev, tier: e.target.value}))}
+                                            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white"
+                                        >
+                                            <option value="">All Tiers</option>
+                                            <option value="navigator">Navigator</option>
+                                            <option value="explorer">Explorer</option>
+                                            <option value="pathfinder">Pathfinder</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Service Type</label>
+                                        <select 
+                                            value={discoverFilters.role}
+                                            onChange={(e) => setDiscoverFilters(prev => ({...prev, role: e.target.value}))}
+                                            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white"
+                                        >
+                                            <option value="">All Services</option>
+                                            <option value="mentor">Mentors</option>
+                                            <option value="counselor">Counselors</option>
+                                            <option value="essay_editor">Essay Editors</option>
+                                            <option value="teacher">Teachers</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">Location</label>
+                                        <Input 
+                                            placeholder="City, Country" 
+                                            value={discoverFilters.location}
+                                            onChange={(e) => setDiscoverFilters(prev => ({...prev, location: e.target.value}))}
+                                            className="bg-slate-800 border-slate-600 text-white" 
+                                        />
+                                    </div>
+                                    <div className="flex items-end gap-2">
+                                        <Button 
+                                            onClick={handleDiscoverFilter}
+                                            disabled={isDiscovering}
+                                            className="flex-1 bg-blue-600 hover:bg-blue-500"
+                                        >
+                                            {isDiscovering ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                                    Searching...
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <Search className="h-4 w-4 mr-2" />
+                                                    Discover
+                                                </>
+                                            )}
+                                        </Button>
+                                        <Button 
+                                            onClick={handleEndActiveSessions}
+                                            disabled={isCleaningUpSessions}
+                                            variant="outline"
+                                            className="bg-red-500/10 border-red-500/50 text-red-400 hover:bg-red-500/20 hover:border-red-500 hover:text-red-300"
+                                        >
+                                            {isCleaningUpSessions ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-400"></div>
+                                                    Cleaning...
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <UserMinus className="h-4 w-4 mr-2" />
+                                                    End Active Sessions
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Discovered Profiles */}
+                        <div>
+                            <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                                <Users className="h-5 w-5" />
+                                Discover New Mentors & Educators
+                                <Badge variant="secondary" className="ml-2">
+                                    {discoverProfiles.filter(profile => profile.id !== currentUserId).length} found
+                                </Badge>
+                            </h3>
+                            
+                            {isDiscovering ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                                        <Card key={i} className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
+                                            <CardContent className="p-6">
+                                                <div className="animate-pulse space-y-4">
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="rounded-full bg-slate-700 h-12 w-12"></div>
+                                                        <div className="space-y-2">
+                                                            <div className="h-4 bg-slate-700 rounded w-24"></div>
+                                                            <div className="h-3 bg-slate-700 rounded w-16"></div>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <h4 className="font-medium text-white mb-1">{insight.title}</h4>
-                                                        <p className="text-sm text-slate-300 mb-3">{insight.description}</p>
-                                                        <Button 
-                                                            size="sm" 
-                                                            variant="outline"
-                                                            className="text-xs border-slate-600 hover:bg-slate-700"
-                                                        >
-                                                            {insight.actionText}
-                                                            <ChevronRight className="h-3 w-3 ml-1" />
-                                                        </Button>
+                                                    <div className="space-y-2">
+                                                        <div className="h-3 bg-slate-700 rounded"></div>
+                                                        <div className="h-3 bg-slate-700 rounded w-5/6"></div>
                                                     </div>
                                                 </div>
                                             </CardContent>
                                         </Card>
                                     ))}
                                 </div>
-                            </div>
-                        )}
+                            ) : profilesLoaded && discoverProfiles.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
+                                    {discoverProfiles
+                                        .filter(profile => profile.id !== currentUserId) // Filter out current user's profile
+                                        .map(profile => renderUserCard(profile, true, 'discover'))}
+                                </div>
+                            ) : (
+                                <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
+                                    <CardContent className="p-12 text-center">
+                                        <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                                        <h3 className="text-lg font-medium text-slate-300 mb-2">No profiles found</h3>
+                                        <p className="text-slate-400 mb-4">
+                                            Try adjusting your filters or check back later for new mentors and educators.
+                                        </p>
+                                        <Button 
+                                            onClick={() => fetchDiscoverProfiles()}
+                                            className="bg-cyan-500 hover:bg-cyan-600"
+                                        >
+                                            <Users className="h-4 w-4 mr-2" />
+                                            Show All Available
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
 
-                        {/* Suggested Connections */}
-                        {suggestedConnections.length > 0 && (
+                        {/* Featured Communities */}
+                        {discoverProfiles.length > 0 && (
                             <div>
                                 <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
-                                    <Users className="h-5 w-5" />
-                                    People You May Know
+                                    <Globe className="h-5 w-5" />
+                                    Popular Specializations
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {suggestedConnections.slice(0, 6).map((user: any) => renderUserCard(user, true, 'suggested'))}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {['Web Development', 'Data Science', 'College Prep'].map((community) => (
+                                        <Card key={community} className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80 text-white">
+                                            <CardContent className="p-6">
+                                                <div className="flex items-center gap-3 mb-4">
+                                                    <div className="p-3 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full">
+                                                        <GraduationCap className="h-6 w-6 text-blue-400" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold text-white">{community}</h4>
+                                                        <p className="text-sm text-slate-400">
+                                                            {discoverProfiles.filter((p: any) => 
+                                                                p.specializations?.some((s: any) => 
+                                                                    s.name.toLowerCase().includes(community.split(' ')[0].toLowerCase())
+                                                                )
+                                                            ).length || Math.floor(Math.random() * 20) + 5} mentors available
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-slate-300 mb-4">
+                                                    Connect with {community.toLowerCase()} experts and accelerate your learning.
+                                                </p>
+                                                <Button 
+                                                    size="sm" 
+                                                    onClick={() => {
+                                                        setDiscoverFilters(prev => ({...prev, role: 'mentor'}));
+                                                        fetchDiscoverProfiles({role: 'mentor'});
+                                                    }}
+                                                    className="bg-green-600 hover:bg-green-500 w-full"
+                                                >
+                                                    <Search className="h-3 w-3 mr-1" />
+                                                    Explore {community}
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
                                 </div>
                             </div>
                         )}
-
-                        {/* Recent Activity Feed */}
-                        <div>
-                            <h3 className="text-lg font-semibold text-cyan-300 mb-4 flex items-center gap-2">
-                                <Activity className="h-5 w-5" />
-                                Recent Network Activity
-                            </h3>
-                            <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
-                                <CardContent className="p-0">
-                                    {recentActivity.length === 0 ? (
-                                        <div className="p-8 text-center text-slate-400">
-                                            <Clock className="h-8 w-8 mx-auto mb-2" />
-                                            <p>No recent activity in your network</p>
-                                            <p className="text-sm mt-1">Connect with more people to see their updates</p>
-                                        </div>
-                                    ) : (
-                                        <div className="divide-y divide-slate-700">
-                                            {recentActivity.slice(0, 10).map((activity) => (
-                                                <div key={activity.id} className="p-4 hover:bg-slate-800/50 transition-colors">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className={cn(
-                                                            "p-2 rounded-full",
-                                                            activity.type === 'connection' ? 'bg-blue-500/20' :
-                                                            activity.type === 'follow' ? 'bg-green-500/20' :
-                                                            activity.type === 'session' ? 'bg-purple-500/20' :
-                                                            activity.type === 'achievement' ? 'bg-yellow-500/20' :
-                                                            'bg-cyan-500/20'
-                                                        )}>
-                                                            {activity.type === 'connection' && <UserPlus className="h-4 w-4 text-blue-400" />}
-                                                            {activity.type === 'follow' && <UserCheck className="h-4 w-4 text-green-400" />}
-                                                            {activity.type === 'session' && <MessageCircle className="h-4 w-4 text-purple-400" />}
-                                                            {activity.type === 'achievement' && <Award className="h-4 w-4 text-yellow-400" />}
-                                                            {activity.type === 'mention' && <MessageSquare className="h-4 w-4 text-cyan-400" />}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <p className="text-sm text-white">
-                                                                <span className="font-medium">{activity.user.display_name}</span>
-                                                                <span className="text-slate-300 ml-1">{activity.description}</span>
-                                                            </p>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <Badge className="text-xs" variant="secondary">
-                                                                    {activity.user.user_tier}
-                                                                </Badge>
-                                                                <span className="text-xs text-slate-400">
-                                                                    {new Date(activity.created_at).toLocaleDateString()}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
-                                                            <Eye className="h-3 w-3" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {recentActivity.length > 10 && (
-                                                <div className="p-4 text-center">
-                                                    <Button variant="outline" size="sm" className="border-slate-600 hover:bg-slate-700">
-                                                        View All Activity
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
                     </div>
                 </TabsContent>
 
@@ -1260,54 +1376,10 @@ const TrustGraphPage: React.FC = () => {
                 </TabsContent>
 
                 <TabsContent value="discover">
-                    <div className="space-y-6">
-                        {/* Quick Mentor Access */}
-                        <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30">
-                            <CardHeader>
-                                <CardTitle className="text-white flex items-center gap-2">
-                                    <GraduationCap className="h-5 w-5 text-blue-400" />
-                                    Quick Mentor Access
-                                </CardTitle>
-                                <p className="text-slate-300 text-sm">View profiles of mentors you're connected with or following</p>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <Button 
-                                        onClick={() => setActiveTab('connections')}
-                                        className="bg-green-600 hover:bg-green-500 font-medium p-4 h-auto flex flex-col gap-2"
-                                    >
-                                        <Users className="h-6 w-6" />
-                                        <div className="text-center">
-                                            <div className="font-semibold">Connected Mentors</div>
-                                            <div className="text-xs opacity-75">{connections.filter(c => c.status === 'accepted' && (c.connected_user?.is_mentor === true || c.connected_user?.role === 'teacher' || c.connected_user?.is_searchable_teacher === true)).length} mentors & teachers</div>
-                                        </div>
-                                    </Button>
-                                    <Button 
-                                        onClick={() => setActiveTab('following')}
-                                        className="bg-blue-600 hover:bg-blue-500 font-medium p-4 h-auto flex flex-col gap-2"
-                                    >
-                                        <Eye className="h-6 w-6" />
-                                        <div className="text-center">
-                                            <div className="font-semibold">Following Mentors</div>
-                                            <div className="text-xs opacity-75">{following.filter(f => f.user?.is_mentor === true || f.user?.role === 'teacher' || f.user?.is_searchable_teacher === true).length} mentors & teachers</div>
-                                        </div>
-                                    </Button>
-                                    <Button 
-                                        onClick={() => navigate('/sessions')}
-                                        className="bg-purple-600 hover:bg-purple-500 font-medium p-4 h-auto flex flex-col gap-2"
-                                    >
-                                        <MessageSquare className="h-6 w-6" />
-                                        <div className="text-center">
-                                            <div className="font-semibold">Book Session</div>
-                                            <div className="text-xs opacity-75">Find & book mentors</div>
-                                        </div>
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <div className="space-y-8">
 
                         {/* Discovery Filters */}
-                        <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
+                        <Card className="bg-slate-900/60 backdrop-blur-lg border border-slate-700/60 shadow-xl rounded-2xl">
                             <CardHeader>
                                 <CardTitle className="text-white flex items-center gap-2">
                                     <Filter className="h-5 w-5" />
@@ -1340,6 +1412,7 @@ const TrustGraphPage: React.FC = () => {
                                             <option value="mentor">Mentors</option>
                                             <option value="counselor">Counselors</option>
                                             <option value="essay_editor">Essay Editors</option>
+                                            <option value="teacher">Teachers</option>
                                         </select>
                                     </div>
                                     <div>
@@ -1398,7 +1471,7 @@ const TrustGraphPage: React.FC = () => {
                                 <Users className="h-5 w-5" />
                                 Discover New Mentors & Educators
                                 <Badge variant="secondary" className="ml-2">
-                                    {discoverProfiles.length} found
+                                    {discoverProfiles.filter(profile => profile.id !== currentUserId).length} found
                                 </Badge>
                             </h3>
                             
@@ -1424,9 +1497,11 @@ const TrustGraphPage: React.FC = () => {
                                         </Card>
                                     ))}
                                 </div>
-                            ) : discoverProfiles.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {discoverProfiles.map(profile => renderUserCard(profile, true, 'discover'))}
+                            ) : profilesLoaded && discoverProfiles.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
+                                    {discoverProfiles
+                                        .filter(profile => profile.id !== currentUserId) // Filter out current user's profile
+                                        .map(profile => renderUserCard(profile, true, 'discover'))}
                                 </div>
                             ) : (
                                 <Card className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
@@ -1644,7 +1719,9 @@ const TrustGraphPage: React.FC = () => {
                         </Card>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {searchResults.map(user => renderUserCard(user))}
+                            {searchResults
+                                .filter(user => user.id !== currentUserId) // Filter out current user from search results
+                                .map(user => renderUserCard(user))}
                         </div>
                     )}
                 </TabsContent>
@@ -1652,7 +1729,7 @@ const TrustGraphPage: React.FC = () => {
 
             {/* Session Request Modal */}
             <Dialog open={showSessionRequestModal} onOpenChange={setShowSessionRequestModal}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 text-white shadow-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-xl text-white flex items-center gap-2">
                             <MessageSquare className="h-5 w-5 text-blue-400" />
@@ -1684,18 +1761,66 @@ const TrustGraphPage: React.FC = () => {
 
                         {/* Session Type */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Session Type</label>
-                            <select 
+                            <label className="block text-sm font-medium text-white mb-2">Session Type</label>
+                            <select
                                 value={sessionType}
                                 onChange={(e) => setSessionType(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full bg-slate-800/90 border border-slate-500 rounded-lg px-3 py-2 text-white font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-400 hover:border-slate-400"
                             >
                                 <option value="mentoring">Mentoring Session</option>
-                                <option value="tutoring">Tutoring Session</option>
-                                <option value="essay_editing">Essay Editing</option>
-                                <option value="collaboration">Collaboration</option>
+                                <option value="tutoring">Tutoring / Code Session</option>
+                                <option value="essay_editing">Essay Writing & Editing</option>
+                                <option value="video_call">Video Call Only</option>
+                                <option value="collaboration">Peer Collaboration</option>
                                 <option value="counseling">Academic Counseling</option>
                             </select>
+                        </div>
+
+                        {/* Session Tool Selection */}
+                        <div className="p-4 bg-slate-800/50 border border-slate-600 rounded-lg space-y-3">
+                            <label className="block text-sm font-medium text-white">Session Platform</label>
+                            <p className="text-xs text-slate-400 mb-3">Choose how you want to collaborate during the session</p>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setSessionType('essay_editing')}
+                                    className={`p-4 border-2 rounded-lg transition-all ${
+                                        sessionType === 'essay_editing'
+                                            ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                                            : 'border-slate-600 bg-slate-800/50 text-slate-300 hover:border-slate-500'
+                                    }`}
+                                >
+                                    <FileText className="h-6 w-6 mx-auto mb-2" />
+                                    <div className="text-sm font-medium">Essay Editor</div>
+                                    <div className="text-xs opacity-80 mt-1">Live writing & editing</div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSessionType('tutoring')}
+                                    className={`p-4 border-2 rounded-lg transition-all ${
+                                        sessionType === 'tutoring'
+                                            ? 'border-purple-500 bg-purple-500/20 text-purple-300'
+                                            : 'border-slate-600 bg-slate-800/50 text-slate-300 hover:border-slate-500'
+                                    }`}
+                                >
+                                    <Code className="h-6 w-6 mx-auto mb-2" />
+                                    <div className="text-sm font-medium">Code Editor</div>
+                                    <div className="text-xs opacity-80 mt-1">Live coding IDE</div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSessionType('video_call')}
+                                    className={`p-4 border-2 rounded-lg transition-all ${
+                                        sessionType === 'video_call'
+                                            ? 'border-green-500 bg-green-500/20 text-green-300'
+                                            : 'border-slate-600 bg-slate-800/50 text-slate-300 hover:border-slate-500'
+                                    }`}
+                                >
+                                    <Video className="h-6 w-6 mx-auto mb-2" />
+                                    <div className="text-sm font-medium">Video Call</div>
+                                    <div className="text-xs opacity-80 mt-1">Face-to-face chat</div>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Session Description */}
@@ -1707,35 +1832,104 @@ const TrustGraphPage: React.FC = () => {
                                 value={sessionDescription}
                                 onChange={(e) => setSessionDescription(e.target.value)}
                                 placeholder="Describe what you'd like help with, your goals for the session, and any specific topics you want to cover..."
-                                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                className="w-full bg-slate-800/90 border border-slate-500 rounded-lg px-3 py-2 text-white font-medium placeholder:text-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-400 hover:border-slate-400 resize-none"
                                 rows={5}
                                 maxLength={500}
                             />
-                            <div className="text-right text-xs text-slate-400 mt-1">
+                            <div className="text-right text-xs text-slate-300 font-medium mt-1">
                                 {sessionDescription.length}/500 characters
                             </div>
                         </div>
 
-                        {/* Tools Info */}
-                        <div className="p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-                            <h4 className="text-sm font-medium text-blue-300 mb-2 flex items-center gap-2">
-                                <Sparkles className="h-4 w-4" />
-                                Session Tools
-                            </h4>
-                            <p className="text-sm text-slate-300">
-                                {(selectedMentor?.is_mentor || selectedMentor?.role === 'teacher' || selectedMentor?.is_searchable_teacher)
-                                    ? "Once approved, you'll use AscendiaLaunchpad for collaborative editing and real-time tutoring/mentoring."
-                                    : "Once approved, you'll use the Essay Editor for collaborative editing and peer review."
-                                }
-                            </p>
+                        {/* Calendar Integration */}
+                        <div>
+                            <div className="flex items-center justify-between mb-3">
+                                <label className="block text-sm font-medium text-slate-300">
+                                    Schedule (Optional)
+                                </label>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowCalendar(!showCalendar)}
+                                    className="text-xs border-slate-500 text-white bg-slate-800/50 hover:bg-slate-700 hover:border-slate-400"
+                                >
+                                    {showCalendar ? 'Hide Calendar' : 'Pick Time'}
+                                </Button>
+                            </div>
+                            
+                            {selectedDateTime && (
+                                <div className="mb-3 p-3 bg-green-900/20 border border-green-500/30 rounded-lg">
+                                    <div className="flex items-center gap-2 text-sm text-green-300">
+                                        <Calendar className="h-4 w-4" />
+                                        <span>
+                                            Preferred time: {new Date(selectedDateTime).toLocaleString()}
+                                        </span>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setSelectedDateTime(null)}
+                                            className="ml-auto h-6 w-6 p-0 text-green-300 hover:text-green-100"
+                                        >
+                                            ×
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {showCalendar && selectedMentor && (
+                                <div className="border border-slate-600 rounded-lg overflow-auto bg-slate-800/50 max-h-[600px]">
+                                    <CalendlyBooking
+                                        mentorId={selectedMentor.id}
+                                        mentorName={selectedMentor.display_name || selectedMentor.username}
+                                        mentorCalendlyUrl={selectedMentor.calendly_url}
+                                        sessionType={sessionType}
+                                        description={sessionDescription}
+                                        mode="inline"
+                                        onBookingComplete={(eventData) => {
+                                            setShowCalendar(false);
+                                            setSelectedDateTime(eventData.scheduled_time);
+                                            toast.success('🎉 Session booked successfully! The mentor will be notified.');
+                                            
+                                            // Auto-dismiss the modal after successful booking
+                                            setTimeout(() => {
+                                                setShowSessionRequestModal(false);
+                                                setSelectedMentor(null);
+                                                fetchNetworkData(); // Refresh data
+                                            }, 2000);
+                                        }}
+                                        className="bg-transparent border-0"
+                                    />
+                                </div>
+                            )}
                         </div>
+
+                        {/* Session Pricing Info */}
+                        {selectedMentor && (selectedMentor.hourly_rate_usd || selectedMentor.is_mentor) && (
+                            <div className="p-4 bg-amber-900/20 border border-amber-500/30 rounded-lg">
+                                <h4 className="text-sm font-medium text-amber-300 mb-2 flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4" />
+                                    Session Rate
+                                </h4>
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm text-slate-300">
+                                        {selectedMentor.hourly_rate_usd
+                                            ? `$${selectedMentor.hourly_rate_usd}/hour`
+                                            : 'Rate will be discussed with the teacher'}
+                                    </p>
+                                    <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
+                                        Paid Session
+                                    </Badge>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 pt-4">
                             <Button 
                                 onClick={() => setShowSessionRequestModal(false)}
                                 variant="outline"
-                                className="flex-1 border-slate-600 hover:bg-slate-700"
+                                className="flex-1 border-slate-500 text-white bg-slate-800/50 hover:bg-slate-700 hover:border-slate-400"
                             >
                                 Cancel
                             </Button>
@@ -1778,6 +1972,7 @@ const TrustGraphPage: React.FC = () => {
                     />
                 </DialogContent>
             </Dialog>
+            </div>
         </div>
     );
 };

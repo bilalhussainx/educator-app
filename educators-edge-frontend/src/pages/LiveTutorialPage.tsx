@@ -20,6 +20,8 @@ import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRT
 import { HomeworkView } from '../components/classroom/HomeworkView';
 import { WhiteboardPanel, Line } from '../components/classroom/WhiteboardPanel';
 import { ChatPanel } from '../components/classroom/ChatPanel';
+// Note: LiveEssayEditor has been replaced with ModernEssayEditor in DualModeLiveSession
+// import { LiveEssayEditor } from '../components/classroom/LiveEssayEditor';
 import DockerTerminal from '../components/DockerTerminal';
 
 // Import shadcn components and icons
@@ -27,9 +29,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PhoneOff, ChevronRight, FilePlus, Play, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp, Circle, Square, Monitor, MonitorOff } from 'lucide-react';
+import { PhoneOff, ChevronRight, FilePlus, Play, File as FileIcon, Hand, Star, Lock, Brush, Trash2, MessageCircle, Video, VideoOff, Mic, MicOff, Users, User, ChevronDown, ChevronUp, Circle, Square, Monitor, MonitorOff, Menu } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast, Toaster } from 'sonner';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Import types and configs
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
@@ -340,20 +350,82 @@ const LiveTutorialPage: React.FC = () => {
     const navigate = useNavigate();
     const token = localStorage.getItem('authToken');
     
-    // Extract courseId from URL parameters
+    // Extract parameters from URL
     const urlParams = new URLSearchParams(window.location.search);
     const courseId = urlParams.get('courseId');
-    
-    // Debug logging for courseId
+    const sessionMode = urlParams.get('mode') || 'coding'; // 'coding' or 'essay'
+    const hasDocument = urlParams.get('hasDocument') === 'true';
+
+    // Debug logging for URL parameters
     useEffect(() => {
         console.log('[DEBUG] LiveTutorialPage courseId from URL:', courseId);
+        console.log('[DEBUG] Session mode:', sessionMode);
+        console.log('[DEBUG] Has document:', hasDocument);
         console.log('[DEBUG] Full URL search params:', window.location.search);
-    }, [courseId]);
+    }, [courseId, sessionMode, hasDocument]);
 
     // --- State Management ---
     const decodedToken = token ? simpleJwtDecode(token) : null;
     const currentUserId = decodedToken?.user?.id || null;
     const [role, setRole] = useState<UserRole>(decodedToken?.user?.role || 'unknown');
+
+    // Auto-set session mode to 'code' when teacher accesses this page
+    useEffect(() => {
+        const autoSetCodeMode = async () => {
+            if (!sessionId || !decodedToken) return;
+
+            const userRole = decodedToken?.user?.role || decodedToken?.role;
+
+            console.log('[LiveTutorialPage] Auto mode detection:', {
+                sessionId,
+                userRole,
+                isTeacher: userRole === 'teacher'
+            });
+
+            // Only auto-set for teachers
+            if (userRole !== 'teacher') {
+                console.log('[LiveTutorialPage] Not a teacher, skipping auto mode set');
+                return;
+            }
+
+            try {
+                console.log('[LiveTutorialPage] Checking if session mode needs to be set...');
+
+                // Check current session state
+                const sessionRes = await apiClient.get(`/api/sessions?status=all`);
+                const sessions = sessionRes.data.sessions || [];
+                const currentSession = sessions.find((s: any) => s.id.toString() === sessionId?.toString());
+
+                console.log('[LiveTutorialPage] Current session:', currentSession);
+
+                if (currentSession && !currentSession.session_mode) {
+                    console.log('[LiveTutorialPage] ⚠️  Session mode not set! Auto-setting to code...');
+
+                    const response = await apiClient.post(`/api/sessions/${sessionId}/start`, {
+                        mode: 'code'
+                    });
+
+                    if (response.data.success) {
+                        console.log('[LiveTutorialPage] ✅ Session mode set to code automatically');
+                        toast.success('Code session mode activated!');
+                    } else {
+                        console.error('[LiveTutorialPage] ❌ Failed to set session mode:', response.data);
+                    }
+                } else if (currentSession?.session_mode) {
+                    console.log('[LiveTutorialPage] ✅ Session mode already set:', currentSession.session_mode);
+                } else {
+                    console.log('[LiveTutorialPage] Session not found, may not be created yet');
+                }
+            } catch (error: any) {
+                console.error('[LiveTutorialPage] Error auto-setting code mode:', error);
+                // Don't show error toast - this is a background operation
+            }
+        };
+
+        // Run after a short delay to ensure session is created
+        const timeoutId = setTimeout(autoSetCodeMode, 1000);
+        return () => clearTimeout(timeoutId);
+    }, [sessionId, decodedToken]);
     
     // --- AGORA STATE ---
     const agoraClient = useRef<IAgoraRTCClient | null>(null);
@@ -397,6 +469,15 @@ const LiveTutorialPage: React.FC = () => {
     const [handsRaised, setHandsRaised] = useState<Set<string>>(new Set());
     const [spotlightedStudentId, setSpotlightedStudentId] = useState<string | null>(null);
     const [spotlightWorkspace, setSpotlightWorkspace] = useState<StudentHomeworkState | null>(null);
+
+    // --- ESSAY MODE STATE ---
+    const [essayContent, setEssayContent] = useState<string>('');
+    const [uploadedDocument, setUploadedDocument] = useState<{
+        name: string;
+        url: string;
+        instructions?: string;
+    } | null>(null);
+    const [essayCollaborators, setEssayCollaborators] = useState<any[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const [isWhiteboardVisible, setIsWhiteboardVisible] = useState(false);
     const [whiteboardLines, setWhiteboardLines] = useState<Line[]>([]);
@@ -615,9 +696,18 @@ const LiveTutorialPage: React.FC = () => {
                     }
                     break;
                 case 'TEACHER_CODE_DID_UPDATE':
+                    console.log('[STUDENT] TEACHER_CODE_DID_UPDATE received');
+                    console.log('[STUDENT] roleRef.current:', roleRef.current);
+                    console.log('[STUDENT] spotlightedStudentId:', spotlightedStudentId);
+                    console.log('[STUDENT] Files count:', message.payload.files?.length);
+                    console.log('[STUDENT] Active file:', message.payload.activeFileName);
+
                     if (roleRef.current === 'student' && !spotlightedStudentId) {
+                        console.log('[STUDENT] ✅ Updating files and active file');
                         setFiles(message.payload.files);
                         setActiveFileName(message.payload.activeFileName);
+                    } else {
+                        console.log('[STUDENT] ⚠️ Not updating - condition failed');
                     }
                     break;
                 case 'TERMINAL_OUT':
@@ -722,6 +812,20 @@ const LiveTutorialPage: React.FC = () => {
                     toast.error('Recording Error', {
                         description: message.payload.message
                     });
+                    break;
+
+                case 'END_SESSION':
+                    console.log('[WEBSOCKET] END_SESSION received:', message.payload);
+                    if (role === 'student') {
+                        toast.info('Teacher has ended the session');
+                        // Redirect student to trust graph
+                        setTimeout(() => {
+                            navigate('/trust-graph');
+                        }, 1500);
+                    } else if (role === 'teacher') {
+                        // Teacher already navigated in endSession function
+                        console.log('[WEBSOCKET] Teacher received END_SESSION confirmation');
+                    }
                     break;
             }
         };
@@ -1060,73 +1164,114 @@ const LiveTutorialPage: React.FC = () => {
         <div className="w-full h-screen flex flex-col bg-slate-950 text-white font-sans overflow-hidden">
             <Toaster theme="dark" richColors position="top-right" />
             
-            {/* Streamlined Header */}
-            <header className="flex-shrink-0 flex justify-between items-center px-6 py-3 bg-slate-900/80 backdrop-blur-sm border-b border-slate-700">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-lg font-bold text-slate-100">CoreZenith Live Session</h1>
-                    <div className="flex items-center gap-3">
-                        <Badge className={cn('font-medium', role === 'teacher' ? 'bg-cyan-600' : 'bg-purple-600')}>
-                            {role.toUpperCase()}
+            {/* Compact Mobile-Responsive Header */}
+            <header className="flex-shrink-0 h-16 flex justify-between items-center px-3 sm:px-4 lg:px-6 bg-slate-900/80 backdrop-blur-sm border-b border-slate-700">
+                <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 min-w-0 flex-1">
+                    <h1 className="text-sm sm:text-base lg:text-lg font-bold text-slate-100 truncate">CoreZenith Live</h1>
+                    <div className="flex items-center gap-2">
+                        <Badge className={cn('text-xs font-medium', role === 'teacher' ? 'bg-cyan-600' : 'bg-purple-600')}>
+                            {role === 'teacher' ? '👨‍🏫' : '👨‍🎓'}
                         </Badge>
-                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                        <div className="hidden sm:flex items-center gap-2 text-xs lg:text-sm text-slate-400">
                             <div className={cn('h-2 w-2 rounded-full', isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-500')}></div>
-                            {isConnected ? 'Connected' : 'Offline'}
+                            <span className="hidden md:inline">{isConnected ? 'Connected' : 'Offline'}</span>
                         </div>
                         {isRecording && (
-                            <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/30 animate-pulse">
-                                <Circle className="mr-1 h-3 w-3 fill-current" />
-                                Recording
+                            <Badge variant="outline" className="hidden sm:inline-flex text-xs bg-red-500/10 text-red-400 border-red-500/30 animate-pulse">
+                                <Circle className="mr-1 h-2 w-2 fill-current" />
+                                <span className="hidden lg:inline">Recording</span>
                             </Badge>
                         )}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    {/* Status Indicators */}
+                <div className="flex items-center gap-2">
+                    {/* Status Indicators - Hidden on mobile */}
                     {spotlightedStudentId && (
-                        <Badge className="bg-yellow-600/20 text-yellow-300 border-yellow-600/30">
-                            <Star className="mr-1 h-3 w-3" />
-                            Spotlight: {students.find(s => s.id === spotlightedStudentId)?.username}
+                        <Badge className="hidden md:inline-flex text-xs bg-yellow-600/20 text-yellow-300 border-yellow-600/30">
+                            <Star className="mr-1 h-2 w-2" />
+                            <span className="hidden lg:inline">Spotlight: {students.find(s => s.id === spotlightedStudentId)?.username}</span>
                         </Badge>
                     )}
                     {isTeacherControllingThisStudent && (
-                        <Badge className="bg-red-600/20 text-red-300 border-red-600/30">
-                            <Lock className="mr-1 h-3 w-3" />
-                            Controlling: {students.find(s => s.id === viewingMode)?.username}
+                        <Badge className="hidden md:inline-flex text-xs bg-red-600/20 text-red-300 border-red-600/30">
+                            <Lock className="mr-1 h-2 w-2" />
+                            <span className="hidden lg:inline">Controlling: {students.find(s => s.id === viewingMode)?.username}</span>
                         </Badge>
                     )}
 
-                    {/* Student Actions */}
+                    {/* Desktop: Student Actions */}
                     {role === 'student' && (
                         <>
-                            <Button size="sm" onClick={handleRaiseHand} className="bg-purple-600 hover:bg-purple-500">
-                                <Hand className="mr-2 h-4 w-4" />Raise Hand
+                            <Button size="sm" onClick={handleRaiseHand} className="hidden sm:flex bg-purple-600 hover:bg-purple-500">
+                                <Hand className="mr-2 h-4 w-4" /><span className="hidden lg:inline">Raise Hand</span>
                             </Button>
-                            <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} variant="outline">
-                                <MessageCircle className="mr-2 h-4 w-4" />Chat
+                            <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} variant="outline" className="hidden sm:flex">
+                                <MessageCircle className="mr-2 h-4 w-4" /><span className="hidden lg:inline">Chat</span>
                             </Button>
                         </>
                     )}
 
-                    {/* Teacher Actions */}
+                    {/* Desktop: Teacher Actions */}
                     {role === 'teacher' && (
                         <>
-                            <Button size="sm" onClick={handleToggleFreeze} variant={isFrozen ? "destructive" : "outline"}>
-                                <Lock className="mr-2 h-4 w-4" />{isFrozen ? "Unfreeze" : "Freeze"}
+                            <Button size="sm" onClick={handleToggleFreeze} variant={isFrozen ? "destructive" : "outline"} className="hidden md:flex">
+                                <Lock className="mr-2 h-4 w-4" /><span className="hidden lg:inline">{isFrozen ? "Unfreeze" : "Freeze"}</span>
                             </Button>
-                            <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} variant="outline">
-                                <Brush className="mr-2 h-4 w-4" />Whiteboard
+                            <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} variant="outline" className="hidden md:flex">
+                                <Brush className="mr-2 h-4 w-4" /><span className="hidden lg:inline">Whiteboard</span>
                             </Button>
                             {isWhiteboardVisible && (
-                                <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} variant="destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />Clear
+                                <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} variant="destructive" className="hidden md:flex">
+                                    <Trash2 className="mr-2 h-4 w-4" /><span className="hidden lg:inline">Clear</span>
                                 </Button>
                             )}
                         </>
                     )}
 
+                    {/* Mobile: Actions Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="md:hidden">
+                                <Menu className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-700">
+                            {role === 'student' && (
+                                <>
+                                    <DropdownMenuItem onClick={handleRaiseHand} className="text-white">
+                                        <Hand className="mr-2 h-4 w-4" />
+                                        Raise Hand
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setIsStudentChatOpen(prev => !prev)} className="text-white">
+                                        <MessageCircle className="mr-2 h-4 w-4" />
+                                        Chat
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+                            {role === 'teacher' && (
+                                <>
+                                    <DropdownMenuItem onClick={handleToggleFreeze} className="text-white">
+                                        <Lock className="mr-2 h-4 w-4" />
+                                        {isFrozen ? "Unfreeze" : "Freeze"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} className="text-white">
+                                        <Brush className="mr-2 h-4 w-4" />
+                                        Whiteboard
+                                    </DropdownMenuItem>
+                                    {isWhiteboardVisible && (
+                                        <DropdownMenuItem onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} className="text-red-400">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Clear Whiteboard
+                                        </DropdownMenuItem>
+                                    )}
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                     {/* Media Controls */}
-                    <div className="flex items-center gap-1 border-l border-slate-600 pl-3">
+                    <div className="flex items-center gap-1 border-l border-slate-600 pl-2 sm:pl-3">
                         <Button size="sm" onClick={toggleMute} variant={isMuted ? "destructive" : "outline"}>
                             {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                         </Button>
@@ -1180,9 +1325,44 @@ const LiveTutorialPage: React.FC = () => {
                         )}
                     </div>
 
-                    <Button onClick={() => navigate('/dashboard')} variant="destructive">
-                        <PhoneOff className="mr-2 h-4 w-4" />End Session
-                    </Button>
+                    {role === 'teacher' && (
+                        <Button
+                            onClick={async () => {
+                                try {
+                                    console.log('[LiveTutorialPage] Ending session:', sessionId);
+
+                                    if (sessionId) {
+                                        const response = await apiClient.post(`/api/sessions/${sessionId}/end`, {
+                                            deleteSession: true  // Delete the session completely
+                                        });
+
+                                        if (response.data.success) {
+                                            console.log('[LiveTutorialPage] ✅ Session ended and deleted');
+                                            toast.success('Session ended and removed successfully');
+
+                                            // Navigate back to sessions page
+                                            setTimeout(() => {
+                                                navigate('/sessions');
+                                            }, 1000);
+                                        } else {
+                                            throw new Error(response.data.error || 'Failed to end session');
+                                        }
+                                    } else {
+                                        // No session ID, just navigate back
+                                        navigate('/sessions');
+                                    }
+                                } catch (error: any) {
+                                    console.error('[LiveTutorialPage] ❌ Failed to end session:', error);
+                                    toast.error(error.response?.data?.error || error.message || 'Failed to end session');
+                                }
+                            }}
+                            variant="destructive"
+                            size="sm"
+                        >
+                            <PhoneOff className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">End</span>
+                        </Button>
+                    )}
                 </div>
             </header>
 

@@ -1,0 +1,3042 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Collaboration from '@tiptap/extension-collaboration';
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import Highlight from '@tiptap/extension-highlight';
+import Typography from '@tiptap/extension-typography';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import FontFamily from '@tiptap/extension-font-family';
+import Link from '@tiptap/extension-link';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
+import Image from '@tiptap/extension-image';
+import BulletList from '@tiptap/extension-bullet-list';
+import OrderedList from '@tiptap/extension-ordered-list';
+import ListItem from '@tiptap/extension-list-item';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import { Extension } from '@tiptap/core';
+import { Plugin, PluginKey } from 'prosemirror-state';
+import { Decoration, DecorationSet } from 'prosemirror-view';
+import { ReplaceStep } from 'prosemirror-transform';
+import { cn } from '@/lib/utils';
+
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { Progress } from '@/components/ui/progress';
+import {
+    Users, FileText, Download, Save, Eye, MessageCircle, Hand, BookOpen, Send,
+    Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight,
+    List, ListOrdered, Quote, Undo, Redo, Type, Palette, Zap, Robot,
+    MessageSquare, ThumbsUp, ThumbsDown, Edit3, Sparkles, Brain, Target,
+    Clock, CheckCircle, AlertCircle, Lightbulb, Star, Wand2, Plus, X,
+    Link as LinkIcon, Table as TableIcon, ImageIcon, Strikethrough,
+    PaintBucket, HighlighterIcon, Maximize, Minimize, Heading1, Heading2,
+    Heading3, Code, ChevronDown, Settings, Filter, SortAsc, MousePointer,
+    Subscript as SubscriptIcon, Superscript as SuperscriptIcon, Hash,
+    BarChart3, Timer, TrendingUp, Volume2, Play, Pause, Search,
+    History, BookMarked, RefreshCw, Share2, Monitor, Smartphone
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+// Professional color palette for highlighting and comments
+const HIGHLIGHT_COLORS = {
+    yellow: { bg: '#FEF3C7', text: '#92400E', name: 'Yellow' },
+    green: { bg: '#D1FAE5', text: '#065F46', name: 'Green' },
+    blue: { bg: '#DBEAFE', text: '#1E40AF', name: 'Blue' },
+    purple: { bg: '#E9D5FF', text: '#7C2D12', name: 'Purple' },
+    pink: { bg: '#FCE7F3', text: '#BE185D', name: 'Pink' },
+    red: { bg: '#FEE2E2', text: '#DC2626', name: 'Red' },
+    orange: { bg: '#FED7AA', text: '#EA580C', name: 'Orange' },
+    gray: { bg: '#F3F4F6', text: '#374151', name: 'Gray' }
+};
+
+const COMMENT_TYPES = {
+    suggestion: { color: '#3B82F6', icon: Lightbulb, name: 'Suggestion' },
+    grammar: { color: '#EF4444', icon: Edit3, name: 'Grammar' },
+    style: { color: '#8B5CF6', icon: Sparkles, name: 'Style' },
+    content: { color: '#10B981', icon: BookMarked, name: 'Content' },
+    question: { color: '#F59E0B', icon: MessageCircle, name: 'Question' },
+    praise: { color: '#06B6D4', icon: Star, name: 'Praise' }
+};
+
+interface Comment {
+    id: string;
+    type: keyof typeof COMMENT_TYPES;
+    text: string;
+    comment: string;
+    author: string;
+    timestamp: Date;
+    resolved: boolean;
+    position: { from: number; to: number };
+    replies?: Comment[];
+    priority: 'low' | 'medium' | 'high';
+}
+
+interface AIFeedback {
+    id: string;
+    type: 'grammar' | 'style' | 'clarity' | 'structure' | 'vocabulary' | 'tone' | 'flow';
+    severity: 'low' | 'medium' | 'high';
+    message: string;
+    suggestion: string;
+    position: { from: number; to: number };
+    confidence: number;
+    category: string;
+    applied: boolean;
+}
+
+interface WritingMetrics {
+    wordCount: number;
+    sentenceCount: number;
+    paragraphCount: number;
+    characterCount: number;
+    averageWordsPerSentence: number;
+    averageSentencesPerParagraph: number;
+    readabilityScore: number;
+    readingLevel: string;
+    estimatedReadingTime: number;
+    keywordDensity: Record<string, number>;
+    sentimentScore: number;
+}
+
+// Custom extension for tracking changes visually
+const TrackChangesExtension = Extension.create({
+    name: 'trackChanges',
+
+    addProseMirrorPlugins() {
+        return [
+            new Plugin({
+                key: new PluginKey('trackChanges'),
+                state: {
+                    init() {
+                        return DecorationSet.empty;
+                    },
+                    apply(tr, decorationSet) {
+                        // Track insertions and deletions
+                        decorationSet = decorationSet.map(tr.mapping, tr.doc);
+
+                        // Add decorations for new changes
+                        if (tr.docChanged) {
+                            const insertions: Decoration[] = [];
+                            const deletions: Decoration[] = [];
+
+                            tr.steps.forEach((step, index) => {
+                                if (step instanceof ReplaceStep) {
+                                    const from = tr.mapping.maps[index].map(step.from, -1);
+                                    const to = tr.mapping.maps[index].map(step.to, 1);
+
+                                    // Track insertions
+                                    if (step.slice.content.size > 0) {
+                                        insertions.push(
+                                            Decoration.inline(from, to, {
+                                                class: 'tracked-insertion',
+                                                style: 'background-color: #e8f5e8; border-bottom: 2px solid #28a745;'
+                                            })
+                                        );
+                                    }
+
+                                    // Track deletions (when text is replaced)
+                                    if (step.from !== step.to && step.slice.content.size === 0) {
+                                        deletions.push(
+                                            Decoration.widget(from, () => {
+                                                const span = document.createElement('span');
+                                                span.className = 'tracked-deletion';
+                                                span.style.cssText = 'background-color: #ffeaea; text-decoration: line-through; color: #dc3545;';
+                                                span.textContent = '█'; // Placeholder for deleted content
+                                                return span;
+                                            })
+                                        );
+                                    }
+                                }
+                            });
+
+                            decorationSet = decorationSet.add(tr.doc, [...insertions, ...deletions]);
+                        }
+
+                        return decorationSet;
+                    }
+                },
+                props: {
+                    decorations(state) {
+                        return this.getState(state);
+                    }
+                }
+            })
+        ];
+    }
+});
+
+// Custom extension for inline suggestions
+const SuggestionsExtension = Extension.create({
+    name: 'suggestions',
+
+    addStorage() {
+        return {
+            suggestions: []
+        };
+    },
+
+    addCommands() {
+        return {
+            addSuggestion: (suggestion) => ({ commands }) => {
+                this.storage.suggestions.push(suggestion);
+                return commands.updateAttributes('doc', {});
+            },
+
+            applySuggestion: (suggestionId) => ({ tr, dispatch }) => {
+                const suggestion = this.storage.suggestions.find(s => s.id === suggestionId);
+                if (suggestion && dispatch) {
+                    tr.replaceWith(suggestion.from, suggestion.to, suggestion.content);
+                    this.storage.suggestions = this.storage.suggestions.filter(s => s.id !== suggestionId);
+                    dispatch(tr);
+                    return true;
+                }
+                return false;
+            }
+        };
+    },
+
+    addProseMirrorPlugins() {
+        return [
+            new Plugin({
+                key: new PluginKey('suggestions'),
+                state: {
+                    init() {
+                        return DecorationSet.empty;
+                    },
+                    apply(tr, decorationSet) {
+                        decorationSet = decorationSet.map(tr.mapping, tr.doc);
+
+                        // Add suggestion decorations
+                        const suggestions = this.spec.storage.suggestions || [];
+                        const decorations = suggestions.map(suggestion =>
+                            Decoration.inline(suggestion.from, suggestion.to, {
+                                class: `suggestion-${suggestion.type}`,
+                                style: `
+                                    background-color: ${suggestion.type === 'insertion' ? '#fff3cd' : '#f8d7da'};
+                                    border: 1px solid ${suggestion.type === 'insertion' ? '#ffc107' : '#dc3545'};
+                                    border-radius: 3px;
+                                    padding: 1px 2px;
+                                `
+                            })
+                        );
+
+                        return decorationSet.add(tr.doc, decorations);
+                    }
+                },
+                props: {
+                    decorations(state) {
+                        return this.getState(state);
+                    }
+                }
+            })
+        ];
+    }
+});
+
+interface CollaborationUser {
+    id: string;
+    name: string;
+    color: string;
+    isOnline: boolean;
+    isTeacher?: boolean;
+    cursor?: { x: number; y: number };
+    selection?: { from: number; to: number };
+    lastActivity?: Date;
+    isTyping?: boolean;
+}
+
+interface LiveEssayEditorProps {
+    sessionId: string;
+    userId: string;
+    username: string;
+    userRole: 'teacher' | 'student';
+    initialContent?: string;
+    uploadedDocument?: {
+        name: string;
+        url: string;
+        content?: string;
+        instructions?: string;
+    };
+    onContentChange?: (content: string) => void;
+    onCollaboratorsChange?: (collaborators: CollaborationUser[]) => void;
+    sendWsMessage?: (type: string, payload: any) => void;
+    students?: Array<{ id: string; username: string; }>;
+    handsRaised?: Set<string>;
+    onRaiseHand?: () => void;
+    onSave?: (content: string) => void;
+}
+
+export const LiveEssayEditor: React.FC<LiveEssayEditorProps> = ({
+    sessionId,
+    userId,
+    username,
+    userRole,
+    initialContent,
+    uploadedDocument,
+    onContentChange,
+    onCollaboratorsChange,
+    sendWsMessage,
+    students = [],
+    handsRaised = new Set(),
+    onRaiseHand,
+    onSave
+}) => {
+    // State management
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'focus'>('edit');
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [aiFeedback, setAiFeedback] = useState<AIFeedback[]>([]);
+    const [selectedText, setSelectedText] = useState('');
+    const [selectedPosition, setSelectedPosition] = useState<{ from: number; to: number } | null>(null);
+    const [showCommentDialog, setShowCommentDialog] = useState(false);
+    const [commentType, setCommentType] = useState<keyof typeof COMMENT_TYPES>('suggestion');
+    const [commentText, setCommentText] = useState('');
+    const [aiAssistantEnabled, setAiAssistantEnabled] = useState(true);
+    const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+    const [metrics, setMetrics] = useState<WritingMetrics>({
+        wordCount: 0,
+        sentenceCount: 0,
+        paragraphCount: 0,
+        characterCount: 0,
+        averageWordsPerSentence: 0,
+        averageSentencesPerParagraph: 0,
+        readabilityScore: 0,
+        readingLevel: 'Elementary',
+        estimatedReadingTime: 0,
+        keywordDensity: {},
+        sentimentScore: 0
+    });
+    const [collaborators, setCollaborators] = useState<CollaborationUser[]>([]);
+    const [isTyping, setIsTyping] = useState(false);
+    const [documentViewerOpen, setDocumentViewerOpen] = useState(false);
+    const [fontFamily, setFontFamily] = useState('Georgia');
+    const [fontSize, setFontSize] = useState(16);
+    const [lineHeight, setLineHeight] = useState(1.6);
+    const [darkMode, setDarkMode] = useState(false);
+    const [showVersionHistory, setShowVersionHistory] = useState(false);
+    const [versionHistory, setVersionHistory] = useState<Array<{ id: string; content: string; timestamp: Date; author: string; changes: string; }>>([]);
+    const [suggestions, setSuggestions] = useState<Array<{
+        id: string;
+        type: 'insertion' | 'deletion' | 'replacement';
+        originalText: string;
+        suggestedText: string;
+        author: string;
+        timestamp: Date;
+        position: { from: number; to: number };
+        status: 'pending' | 'accepted' | 'rejected';
+        reason?: string;
+    }>>([]);
+    const [revisionMode, setRevisionMode] = useState<'track' | 'review' | 'final'>('track');
+    const [showAiChatbot, setShowAiChatbot] = useState(false);
+    const [aiChatMessages, setAiChatMessages] = useState<Array<{
+        id: string;
+        type: 'user' | 'ai';
+        message: string;
+        timestamp: Date;
+    }>>([]);
+    const [aiChatInput, setAiChatInput] = useState('');
+
+    const editorRef = useRef<HTMLDivElement>(null);
+    const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
+    const lastContentRef = useRef<string>('');
+
+    const userColor = useMemo(() => `#${Math.floor(Math.random()*16777215).toString(16)}`, [userId]);
+
+    // Enhanced content with uploaded essay
+    const getInitialContent = () => {
+        if (uploadedDocument?.content) {
+            return uploadedDocument.content;
+        }
+
+        if (initialContent) {
+            return initialContent;
+        }
+
+        return `
+            <div class="essay-container" style="max-width: 900px; margin: 0 auto; padding: 2rem;">
+                <header class="essay-header" style="text-align: center; margin-bottom: 3rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 2rem;">
+                    <h1 style="color: #1f2937; font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">📝 Professional Essay Collaboration</h1>
+                    <div style="color: #6b7280; font-size: 1rem; line-height: 1.6;">
+                        <p><strong>Session:</strong> ${sessionId}</p>
+                        <p><strong>Author:</strong> ${username}</p>
+                        <p><strong>Created:</strong> ${new Date().toLocaleDateString()}</p>
+                    </div>
+                </header>
+
+                <section style="margin-bottom: 2rem;">
+                    <h2 style="color: #374151; font-size: 1.75rem; font-weight: 600; margin-bottom: 1rem; border-left: 4px solid #3b82f6; padding-left: 1rem;">Introduction</h2>
+                    <p style="color: #4b5563; line-height: 1.8; margin-bottom: 1rem;">Begin your essay with a compelling introduction that hooks the reader and clearly states your thesis. This professional editor provides advanced formatting, real-time collaboration, AI assistance, and comprehensive feedback tools to help you craft exceptional written work.</p>
+                </section>
+
+                <section style="margin-bottom: 2rem;">
+                    <h2 style="color: #374151; font-size: 1.75rem; font-weight: 600; margin-bottom: 1rem; border-left: 4px solid #10b981; padding-left: 1rem;">Body Paragraphs</h2>
+                    <p style="color: #4b5563; line-height: 1.8; margin-bottom: 1rem;">Develop your main arguments here with supporting evidence, analysis, and clear topic sentences. Each paragraph should advance your thesis and flow logically from one to the next.</p>
+
+                    <h3 style="color: #4b5563; font-size: 1.25rem; font-weight: 500; margin: 1.5rem 0 0.75rem;">Paragraph 1: Main Argument</h3>
+                    <p style="color: #4b5563; line-height: 1.8; margin-bottom: 1rem;">Present your first main point with evidence and analysis.</p>
+
+                    <h3 style="color: #4b5563; font-size: 1.25rem; font-weight: 500; margin: 1.5rem 0 0.75rem;">Paragraph 2: Supporting Evidence</h3>
+                    <p style="color: #4b5563; line-height: 1.8; margin-bottom: 1rem;">Provide additional support and counter-argument consideration.</p>
+                </section>
+
+                <section style="margin-bottom: 2rem;">
+                    <h2 style="color: #374151; font-size: 1.75rem; font-weight: 600; margin-bottom: 1rem; border-left: 4px solid #f59e0b; padding-left: 1rem;">Conclusion</h2>
+                    <p style="color: #4b5563; line-height: 1.8; margin-bottom: 1rem;">Summarize your key points, restate your thesis in new words, and provide final thoughts or call to action that leaves a lasting impression on your reader.</p>
+                </section>
+
+                <footer style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 0.875rem;">
+                    <p>✨ Use the advanced formatting tools above to enhance your writing</p>
+                    <p>💬 Collaborate in real-time with your teacher and peers</p>
+                    <p>🤖 Get AI-powered feedback and suggestions as you write</p>
+                </footer>
+            </div>
+        `;
+    };
+
+    // Initialize the editor with professional extensions including track changes
+    const editor = useEditor({
+        extensions: [
+            StarterKit.configure({
+                history: false,
+            }),
+            TrackChangesExtension,
+            SuggestionsExtension,
+            Highlight.configure({
+                multicolor: true,
+                HTMLAttributes: {
+                    class: 'highlight-professional',
+                },
+            }),
+            Typography,
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+            }),
+            Underline,
+            Subscript,
+            Superscript,
+            TextStyle,
+            Color.configure({
+                types: ['textStyle'],
+            }),
+            FontFamily.configure({
+                types: ['textStyle'],
+            }),
+            Link.configure({
+                openOnClick: false,
+                HTMLAttributes: {
+                    class: 'text-blue-600 underline hover:text-blue-800 cursor-pointer transition-colors',
+                },
+            }),
+            Table.configure({
+                resizable: true,
+                HTMLAttributes: {
+                    class: 'border-collapse border border-gray-300 my-4',
+                },
+            }),
+            TableRow,
+            TableHeader.configure({
+                HTMLAttributes: {
+                    class: 'bg-gray-50 font-semibold',
+                },
+            }),
+            TableCell.configure({
+                HTMLAttributes: {
+                    class: 'border border-gray-300 px-4 py-2',
+                },
+            }),
+            Image.configure({
+                inline: true,
+                allowBase64: true,
+                HTMLAttributes: {
+                    class: 'max-w-full h-auto rounded-lg shadow-md my-4',
+                },
+            }),
+            BulletList.configure({
+                HTMLAttributes: {
+                    class: 'list-disc ml-6 my-4',
+                },
+            }),
+            OrderedList.configure({
+                HTMLAttributes: {
+                    class: 'list-decimal ml-6 my-4',
+                },
+            }),
+            ListItem,
+            TaskList,
+            TaskItem.configure({
+                nested: true,
+                HTMLAttributes: {
+                    class: 'flex items-start gap-2',
+                },
+            }),
+        ],
+        content: getInitialContent(),
+        editorProps: {
+            attributes: {
+                class: cn(
+                    'microsoft-word-editor max-w-none focus:outline-none min-h-[800px] transition-all duration-200',
+                    darkMode
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-white text-black',
+                    // Microsoft Word-like styling
+                    'px-20 py-16', // Wide margins like Word
+                    'shadow-lg border border-gray-200', // Paper effect
+                    'mx-auto max-w-4xl', // Letter-size width
+                    // Typography that matches Word
+                    'text-base leading-relaxed',
+                    'prose prose-lg',
+                    'prose-headings:font-semibold prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg',
+                    'prose-p:mb-4 prose-li:my-1',
+                    // Selection and cursor styling
+                    'selection:bg-blue-200 caret-blue-600'
+                ),
+                style: `
+                    font-family: "${fontFamily}", "Times New Roman", serif;
+                    font-size: ${fontSize}px;
+                    line-height: ${lineHeight};
+                    min-height: 11in;
+                    width: 8.5in;
+                    margin: 0 auto;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                `
+            },
+        },
+        onUpdate: ({ editor }) => {
+            const content = editor.getHTML();
+            const plainText = editor.getText();
+
+            // Only process if content actually changed
+            if (content !== lastContentRef.current) {
+                lastContentRef.current = content;
+                onContentChange?.(content);
+                updateWritingMetrics(plainText, content);
+
+                // Auto-save functionality
+                if (autoSaveEnabled) {
+                    clearTimeout(autoSaveTimeoutRef.current);
+                    autoSaveTimeoutRef.current = setTimeout(() => {
+                        onSave?.(content);
+                        toast.success('Document auto-saved', { duration: 1000 });
+                    }, 2000);
+                }
+
+                // Send content changes through WebSocket
+                sendWsMessage?.('ESSAY_CONTENT_UPDATE', {
+                    content,
+                    userId,
+                    username,
+                    timestamp: Date.now(),
+                    metrics: metrics
+                });
+
+                // Trigger AI analysis for longer content
+                if (aiAssistantEnabled && plainText.length > 100 && plainText.length % 50 === 0) {
+                    generateAIFeedback(plainText);
+                }
+            }
+        },
+        onSelectionUpdate: ({ editor }) => {
+            const { from, to } = editor.state.selection;
+
+            // Send cursor position for collaboration
+            sendWsMessage?.('ESSAY_CURSOR_UPDATE', {
+                position: from,
+                userId,
+                username,
+                color: userColor,
+                timestamp: Date.now()
+            });
+
+            // Handle text selection for comments
+            if (from !== to) {
+                const text = editor.state.doc.textBetween(from, to);
+                if (text.trim().length > 0) {
+                    setSelectedText(text);
+                    setSelectedPosition({ from, to });
+                }
+            } else {
+                setSelectedText('');
+                setSelectedPosition(null);
+            }
+        },
+    });
+
+    // Enhanced writing metrics calculation
+    const updateWritingMetrics = useCallback((plainText: string, htmlContent: string) => {
+        const words = plainText.trim() ? plainText.trim().split(/\s+/).filter(word => word.length > 0) : [];
+        const sentences = plainText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const paragraphs = htmlContent.split(/<\/p>|<\/h[1-6]>/).filter(p => p.trim().length > 0);
+
+        // Calculate readability (Flesch Reading Ease)
+        const avgWordsPerSentence = sentences.length > 0 ? words.length / sentences.length : 0;
+        const avgSyllablesPerWord = words.reduce((total, word) => total + countSyllables(word), 0) / (words.length || 1);
+        const readabilityScore = Math.max(0, Math.min(100,
+            206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord)
+        ));
+
+        // Determine reading level
+        let readingLevel = 'Elementary';
+        if (readabilityScore >= 90) readingLevel = 'Very Easy';
+        else if (readabilityScore >= 80) readingLevel = 'Easy';
+        else if (readabilityScore >= 70) readingLevel = 'Fairly Easy';
+        else if (readabilityScore >= 60) readingLevel = 'Standard';
+        else if (readabilityScore >= 50) readingLevel = 'Fairly Difficult';
+        else if (readabilityScore >= 30) readingLevel = 'Difficult';
+        else readingLevel = 'Very Difficult';
+
+        // Calculate keyword density
+        const keywordDensity: Record<string, number> = {};
+        const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should']);
+
+        words.forEach(word => {
+            const cleanWord = word.toLowerCase().replace(/[^\w]/g, '');
+            if (cleanWord.length > 3 && !commonWords.has(cleanWord)) {
+                keywordDensity[cleanWord] = (keywordDensity[cleanWord] || 0) + 1;
+            }
+        });
+
+        // Sort keywords by frequency and take top 10
+        const topKeywords = Object.entries(keywordDensity)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10)
+            .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {});
+
+        setMetrics({
+            wordCount: words.length,
+            sentenceCount: sentences.length,
+            paragraphCount: paragraphs.length,
+            characterCount: plainText.length,
+            averageWordsPerSentence: Math.round(avgWordsPerSentence * 10) / 10,
+            averageSentencesPerParagraph: paragraphs.length > 0 ? Math.round((sentences.length / paragraphs.length) * 10) / 10 : 0,
+            readabilityScore: Math.round(readabilityScore),
+            readingLevel,
+            estimatedReadingTime: Math.ceil(words.length / 200), // 200 WPM average
+            keywordDensity: topKeywords,
+            sentimentScore: 0 // Would integrate with sentiment analysis API
+        });
+    }, []);
+
+    // Count syllables in a word (enhanced algorithm)
+    const countSyllables = (word: string): number => {
+        word = word.toLowerCase();
+        if (word.length <= 3) return 1;
+
+        word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+        word = word.replace(/^y/, '');
+
+        const matches = word.match(/[aeiouy]{1,2}/g);
+        return matches ? Math.max(matches.length, 1) : 1;
+    };
+
+    // Enhanced AI feedback generation with real-time analysis
+    const generateAIFeedback = useCallback(async (text: string) => {
+        if (!aiAssistantEnabled || text.length < 50) return;
+
+        // More sophisticated AI analysis simulation
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+        const paragraphs = text.split('\n\n').filter(p => p.trim().length > 0);
+
+        const analysisResults = [];
+
+        // Grammar analysis
+        if (text.includes(' is being ') || text.includes(' was being ')) {
+            analysisResults.push({
+                type: 'grammar' as const,
+                message: 'Passive voice detected - consider active voice for stronger impact',
+                suggestion: 'Replace "is being" with active voice constructions',
+                severity: 'medium' as const,
+                confidence: 0.87,
+                position: { from: text.indexOf(' is being '), to: text.indexOf(' is being ') + 15 }
+            });
+        }
+
+        // Style analysis
+        const longSentences = sentences.filter(s => s.split(' ').length > 25);
+        if (longSentences.length > 0) {
+            analysisResults.push({
+                type: 'style' as const,
+                message: 'Some sentences are quite long and may be difficult to follow',
+                suggestion: 'Consider breaking long sentences into shorter, clearer ones',
+                severity: 'medium' as const,
+                confidence: 0.82,
+                position: { from: 0, to: 50 }
+            });
+        }
+
+        // Vocabulary analysis
+        const wordFreq: Record<string, number> = {};
+        words.forEach(word => {
+            const clean = word.toLowerCase().replace(/[^\w]/g, '');
+            if (clean.length > 3) {
+                wordFreq[clean] = (wordFreq[clean] || 0) + 1;
+            }
+        });
+        const repeatedWords = Object.entries(wordFreq).filter(([, count]) => count > 3);
+        if (repeatedWords.length > 0) {
+            analysisResults.push({
+                type: 'vocabulary' as const,
+                message: `Word "${repeatedWords[0][0]}" is used ${repeatedWords[0][1]} times`,
+                suggestion: 'Consider using synonyms to add variety and maintain reader interest',
+                severity: 'low' as const,
+                confidence: 0.75,
+                position: { from: text.indexOf(repeatedWords[0][0]), to: text.indexOf(repeatedWords[0][0]) + repeatedWords[0][0].length }
+            });
+        }
+
+        // Structure analysis
+        if (paragraphs.length > 1) {
+            const shortParagraphs = paragraphs.filter(p => p.split(' ').length < 3);
+            if (shortParagraphs.length > 0) {
+                analysisResults.push({
+                    type: 'structure' as const,
+                    message: 'Some paragraphs are very short',
+                    suggestion: 'Consider expanding brief paragraphs or combining them for better flow',
+                    severity: 'low' as const,
+                    confidence: 0.73,
+                    position: { from: 0, to: 30 }
+                });
+            }
+        }
+
+        // Tone analysis
+        const formalWords = ['furthermore', 'however', 'consequently', 'therefore', 'nevertheless'];
+        const informalWords = ['really', 'pretty', 'quite', 'kind of', 'sort of'];
+        const formalCount = formalWords.filter(word => text.toLowerCase().includes(word)).length;
+        const informalCount = informalWords.filter(word => text.toLowerCase().includes(word)).length;
+
+        if (informalCount > formalCount && text.length > 200) {
+            analysisResults.push({
+                type: 'tone' as const,
+                message: 'The tone appears informal for academic writing',
+                suggestion: 'Consider using more formal language for academic contexts',
+                severity: 'medium' as const,
+                confidence: 0.68,
+                position: { from: 0, to: 25 }
+            });
+        }
+
+        // Flow analysis
+        const transitionWords = ['first', 'second', 'however', 'moreover', 'in addition', 'furthermore', 'consequently', 'therefore', 'in conclusion'];
+        const hasTransitions = transitionWords.some(word => text.toLowerCase().includes(word));
+        if (!hasTransitions && sentences.length > 5) {
+            analysisResults.push({
+                type: 'flow' as const,
+                message: 'Consider adding transition words to improve flow',
+                suggestion: 'Use words like "however", "moreover", "therefore" to connect ideas',
+                severity: 'medium' as const,
+                confidence: 0.79,
+                position: { from: 0, to: 20 }
+            });
+        }
+
+        // Clarity analysis
+        const complexWords = words.filter(word => word.length > 12);
+        if (complexWords.length > words.length * 0.1) {
+            analysisResults.push({
+                type: 'clarity' as const,
+                message: 'High concentration of complex words detected',
+                suggestion: 'Consider simplifying some complex terms for better readability',
+                severity: 'medium' as const,
+                confidence: 0.71,
+                position: { from: 0, to: 40 }
+            });
+        }
+
+        // Convert to AIFeedback format
+        const newFeedback: AIFeedback[] = analysisResults.slice(0, 4).map((item, index) => ({
+            id: `ai-${Date.now()}-${index}`,
+            type: item.type,
+            message: item.message,
+            suggestion: item.suggestion,
+            severity: item.severity,
+            confidence: item.confidence,
+            position: item.position,
+            category: item.type,
+            applied: false
+        }));
+
+        if (newFeedback.length > 0) {
+            setAiFeedback(prev => [...prev.slice(-10), ...newFeedback]); // Keep last 10 pieces of feedback
+
+            // Send AI feedback through WebSocket for teacher visibility
+            sendWsMessage?.('ESSAY_AI_FEEDBACK', {
+                feedback: newFeedback,
+                userId,
+                timestamp: Date.now()
+            });
+
+            toast.success(`AI analysis complete: ${newFeedback.length} suggestion${newFeedback.length > 1 ? 's' : ''} found`, {
+                duration: 3000,
+                description: `Quality score: ${Math.round(((1 - newFeedback.length / 10) * 100))}% • Reading level: ${metrics.readingLevel}`
+            });
+        } else {
+            toast.success('AI analysis complete: Your writing looks great!', {
+                duration: 2000,
+                description: `Quality score: 95% • Reading level: ${metrics.readingLevel}`
+            });
+        }
+    }, [aiAssistantEnabled, metrics.readingLevel, userId, sendWsMessage]);
+
+    // Add professional comment
+    const addComment = useCallback(() => {
+        if (!selectedText || !commentText.trim() || !selectedPosition) return;
+
+        const newComment: Comment = {
+            id: `comment-${Date.now()}`,
+            type: commentType,
+            text: selectedText,
+            comment: commentText.trim(),
+            author: username,
+            timestamp: new Date(),
+            resolved: false,
+            position: selectedPosition,
+            replies: [],
+            priority: commentText.toLowerCase().includes('important') || commentText.toLowerCase().includes('urgent') ? 'high' : 'medium'
+        };
+
+        setComments(prev => [...prev, newComment]);
+        setCommentText('');
+        setShowCommentDialog(false);
+        setSelectedText('');
+        setSelectedPosition(null);
+
+        // Highlight the commented text
+        if (editor) {
+            const highlightColor = COMMENT_TYPES[commentType].color + '20'; // Add transparency
+            editor.chain().focus().setHighlight({ color: highlightColor }).run();
+        }
+
+        // Send comment through WebSocket
+        sendWsMessage?.('ESSAY_COMMENT_ADDED', {
+            ...newComment,
+            timestamp: newComment.timestamp.toISOString()
+        });
+
+        toast.success(`${COMMENT_TYPES[commentType].name} comment added`, { duration: 2000 });
+    }, [selectedText, commentText, commentType, username, selectedPosition, editor, sendWsMessage]);
+
+    // Suggestion and revision tracking functions
+    const addSuggestion = useCallback((type: 'insertion' | 'deletion' | 'replacement', originalText: string, suggestedText: string) => {
+        if (!selectedPosition) return;
+
+        const newSuggestion = {
+            id: `suggestion-${Date.now()}`,
+            type,
+            originalText,
+            suggestedText,
+            author: username,
+            timestamp: new Date(),
+            position: selectedPosition,
+            status: 'pending' as const,
+        };
+
+        setSuggestions(prev => [...prev, newSuggestion]);
+
+        // Send suggestion through WebSocket
+        sendWsMessage?.('ESSAY_SUGGESTION_ADDED', {
+            ...newSuggestion,
+            timestamp: newSuggestion.timestamp.toISOString()
+        });
+
+        toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} suggestion added`);
+    }, [selectedPosition, username, sendWsMessage]);
+
+    const acceptSuggestion = useCallback((suggestionId: string) => {
+        const suggestion = suggestions.find(s => s.id === suggestionId);
+        if (!suggestion || !editor) return;
+
+        // Apply the suggestion to the editor
+        const { from, to } = suggestion.position;
+        editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, suggestion.suggestedText).run();
+
+        // Update suggestion status
+        setSuggestions(prev => prev.map(s =>
+            s.id === suggestionId ? { ...s, status: 'accepted' as const } : s
+        ));
+
+        // Add to version history
+        setVersionHistory(prev => [...prev, {
+            id: `version-${Date.now()}`,
+            content: editor.getHTML(),
+            timestamp: new Date(),
+            author: username,
+            changes: `Accepted ${suggestion.type}: "${suggestion.originalText}" → "${suggestion.suggestedText}"`
+        }]);
+
+        sendWsMessage?.('ESSAY_SUGGESTION_ACCEPTED', { suggestionId, userId });
+        toast.success('Suggestion accepted and applied');
+    }, [suggestions, editor, username, sendWsMessage, userId]);
+
+    const rejectSuggestion = useCallback((suggestionId: string, reason?: string) => {
+        setSuggestions(prev => prev.map(s =>
+            s.id === suggestionId ? { ...s, status: 'rejected' as const, reason } : s
+        ));
+
+        sendWsMessage?.('ESSAY_SUGGESTION_REJECTED', { suggestionId, reason, userId });
+        toast.info('Suggestion rejected');
+    }, [sendWsMessage, userId]);
+
+    const trackChanges = useCallback((oldContent: string, newContent: string) => {
+        if (revisionMode !== 'track') return;
+
+        // Simple change detection
+        const oldWords = oldContent.split(/\s+/);
+        const newWords = newContent.split(/\s+/);
+
+        let changes = '';
+        if (newWords.length > oldWords.length) {
+            changes = `Added ${newWords.length - oldWords.length} words`;
+        } else if (newWords.length < oldWords.length) {
+            changes = `Removed ${oldWords.length - newWords.length} words`;
+        } else {
+            changes = 'Content modified';
+        }
+
+        // Add to version history if significant change
+        if (Math.abs(newWords.length - oldWords.length) > 5 || newContent !== oldContent) {
+            setVersionHistory(prev => [...prev.slice(-20), { // Keep last 20 versions
+                id: `version-${Date.now()}`,
+                content: newContent,
+                timestamp: new Date(),
+                author: username,
+                changes
+            }]);
+        }
+    }, [revisionMode, username]);
+
+    // AI Chatbot functions
+    const sendAiChatMessage = useCallback(async (message: string) => {
+        if (!message.trim()) return;
+
+        const userMessage = {
+            id: `user-${Date.now()}`,
+            type: 'user' as const,
+            message: message.trim(),
+            timestamp: new Date()
+        };
+
+        setAiChatMessages(prev => [...prev, userMessage]);
+        setAiChatInput('');
+
+        // Simulate AI response with essay analysis
+        const essayContent = editor?.getText() || '';
+
+        setTimeout(() => {
+            let aiResponse = '';
+
+            if (message.toLowerCase().includes('analyze') || message.toLowerCase().includes('review')) {
+                const wordCount = essayContent.split(/\s+/).length;
+                const sentences = essayContent.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+                aiResponse = `I've analyzed your essay! Here's what I found:
+
+📊 **Essay Statistics:**
+- Word count: ${wordCount} words
+- Sentences: ${sentences}
+- Reading level: ${metrics.readingLevel}
+
+💡 **Quick Suggestions:**
+${wordCount < 100 ? '- Consider expanding your ideas with more details' : ''}
+${sentences < 5 ? '- Add more sentences to develop your arguments' : ''}
+- Your writing shows good ${metrics.readabilityScore > 70 ? 'clarity' : 'complexity - consider simplifying some sentences'}
+
+Would you like me to focus on any specific aspect of your writing?`;
+            } else if (message.toLowerCase().includes('improve') || message.toLowerCase().includes('better')) {
+                aiResponse = `Here are some ways to improve your essay:
+
+✏️ **Writing Tips:**
+- Use transition words to connect your ideas
+- Vary your sentence length for better flow
+- Include specific examples to support your points
+- Check for repeated words and use synonyms
+
+🎯 **Structure Tips:**
+- Start with a clear thesis statement
+- Each paragraph should have one main idea
+- End with a strong conclusion that reinforces your thesis
+
+Would you like me to help with any specific paragraph?`;
+            } else if (message.toLowerCase().includes('grammar') || message.toLowerCase().includes('correct')) {
+                aiResponse = `I'm checking your grammar and style! Here's what I notice:
+
+✅ **Grammar Check:**
+- Your sentence structure looks good overall
+- Watch out for run-on sentences
+- Consider using active voice more often
+
+📝 **Style Suggestions:**
+- Some sentences could be more concise
+- Vary your paragraph lengths
+- Use stronger, more specific verbs
+
+I can help you revise specific sentences if you'd like!`;
+            } else {
+                aiResponse = `Hello! I'm your AI writing assistant. I can help you with:
+
+📖 **Essay Analysis** - Say "analyze my essay"
+✏️ **Writing Tips** - Ask "how can I improve this?"
+🔍 **Grammar Check** - Say "check my grammar"
+💡 **Ideas** - Ask for suggestions on any topic
+
+I'm here to help you write better! What would you like to work on?`;
+            }
+
+            const aiMessage = {
+                id: `ai-${Date.now()}`,
+                type: 'ai' as const,
+                message: aiResponse,
+                timestamp: new Date()
+            };
+
+            setAiChatMessages(prev => [...prev, aiMessage]);
+        }, 1000);
+    }, [editor, metrics]);
+
+    const quickAiActions = [
+        { label: 'Analyze Essay', action: () => sendAiChatMessage('analyze my essay') },
+        { label: 'Grammar Check', action: () => sendAiChatMessage('check my grammar') },
+        { label: 'Writing Tips', action: () => sendAiChatMessage('how can I improve this?') },
+        { label: 'Structure Help', action: () => sendAiChatMessage('help me structure this better') }
+    ];
+
+    // Microsoft Word-like toolbar component
+    const ProfessionalToolbar = () => {
+        if (!editor) return null;
+
+        return (
+            <div className="microsoft-word-toolbar sticky top-0 z-50 bg-white border-b border-gray-300 shadow-sm">
+                {/* File Menu Bar */}
+                <div className="flex items-center justify-between px-4 py-1 bg-gray-50 border-b border-gray-200">
+                    <div className="flex items-center gap-6 text-sm">
+                        <span className="font-medium text-blue-600">📄 Document</span>
+                        <span className="text-gray-600">File</span>
+                        <span className="text-gray-600">Home</span>
+                        <span className="text-gray-600">Insert</span>
+                        <span className="text-gray-600">Review</span>
+                        <span className="text-gray-600">View</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAiChatbot(!showAiChatbot)}
+                            className={cn(
+                                "text-xs",
+                                showAiChatbot ? "bg-blue-100 text-blue-700" : "text-gray-600"
+                            )}
+                        >
+                            <Robot className="w-4 h-4 mr-1" />
+                            AI Assistant
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsFullscreen(!isFullscreen)}
+                            className="text-xs text-gray-600"
+                        >
+                            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Main Ribbon */}
+                <div className="flex items-center gap-1 px-4 py-2 bg-white">
+                    {/* Font Group */}
+                    <div className="flex items-center gap-2 border-r border-gray-200 pr-4 mr-4">
+                        <div className="flex flex-col">
+                            <select
+                                value={fontFamily}
+                                onChange={(e) => setFontFamily(e.target.value)}
+                                className="text-sm border border-gray-300 rounded px-2 py-1 w-32"
+                            >
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Calibri">Calibri</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Verdana">Verdana</option>
+                            </select>
+                            <div className="flex items-center gap-1 mt-1">
+                                <select
+                                    value={fontSize}
+                                    onChange={(e) => setFontSize(Number(e.target.value))}
+                                    className="text-sm border border-gray-300 rounded px-2 py-1 w-16"
+                                >
+                                    <option value={8}>8</option>
+                                    <option value={9}>9</option>
+                                    <option value={10}>10</option>
+                                    <option value={11}>11</option>
+                                    <option value={12}>12</option>
+                                    <option value={14}>14</option>
+                                    <option value={16}>16</option>
+                                    <option value={18}>18</option>
+                                    <option value={20}>20</option>
+                                    <option value={22}>22</option>
+                                    <option value={24}>24</option>
+                                    <option value={26}>26</option>
+                                    <option value={28}>28</option>
+                                </select>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                    <ChevronUp className="w-3 h-3" />
+                                </Button>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                    <ChevronDown className="w-3 h-3" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Formatting Group */}
+                    <div className="flex items-center gap-1 border-r border-gray-200 pr-4 mr-4">
+                        <Button
+                            variant={editor.isActive('bold') ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleBold().run()}
+                            className={cn(
+                                "h-8 w-8 p-0 font-bold",
+                                editor.isActive('bold') ? "bg-blue-100 text-blue-700 shadow-sm" : "hover:bg-gray-100"
+                            )}
+                            title="Bold (Ctrl+B)"
+                        >
+                            B
+                        </Button>
+                        <Button
+                            variant={editor.isActive('italic') ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleItalic().run()}
+                            className={cn(
+                                "h-8 w-8 p-0 italic",
+                                editor.isActive('italic') ? "bg-blue-100 text-blue-700 shadow-sm" : "hover:bg-gray-100"
+                            )}
+                            title="Italic (Ctrl+I)"
+                        >
+                            I
+                        </Button>
+                        <Button
+                            variant={editor.isActive('underline') ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleUnderline().run()}
+                            className={cn(
+                                "h-8 w-8 p-0 underline",
+                                editor.isActive('underline') ? "bg-blue-100 text-blue-700 shadow-sm" : "hover:bg-gray-100"
+                            )}
+                            title="Underline (Ctrl+U)"
+                        >
+                            U
+                        </Button>
+
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Text Color">
+                                    <span className="text-lg">A</span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64">
+                                <div className="space-y-3">
+                                    <Label className="text-sm font-medium">Text Color</Label>
+                                    <div className="grid grid-cols-8 gap-1">
+                                        {[
+                                            '#000000', '#FFFFFF', '#FF0000', '#00FF00',
+                                            '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
+                                            '#800000', '#008000', '#000080', '#808000',
+                                            '#800080', '#008080', '#C0C0C0', '#808080'
+                                        ].map((color) => (
+                                            <button
+                                                key={color}
+                                                className="w-6 h-6 border border-gray-300 hover:scale-110 transition-transform"
+                                                style={{ backgroundColor: color }}
+                                                onClick={() => editor.chain().focus().setColor(color).run()}
+                                                title={color}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 p-1" title="Highlight">
+                                    <PaintBucket className="w-4 h-4" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64">
+                                <div className="space-y-3">
+                                    <Label className="text-sm font-medium">Highlight Color</Label>
+                                    <div className="grid grid-cols-6 gap-2">
+                                        {Object.entries(HIGHLIGHT_COLORS).map(([key, { bg, name }]) => (
+                                            <button
+                                                key={key}
+                                                className="w-8 h-8 rounded border border-gray-300 hover:scale-110 transition-transform"
+                                                style={{ backgroundColor: bg }}
+                                                onClick={() => editor.chain().focus().toggleHighlight({ color: bg }).run()}
+                                                title={name}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    {/* Alignment Group */}
+                    <div className="flex items-center gap-1 border-r border-gray-200 pr-4 mr-4">
+                        <Button
+                            variant={editor.isActive({ textAlign: 'left' }) ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                            className="h-8 w-8 p-0"
+                            title="Align Left"
+                        >
+                            <AlignLeft className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant={editor.isActive({ textAlign: 'center' }) ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                            className="h-8 w-8 p-0"
+                            title="Center"
+                        >
+                            <AlignCenter className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant={editor.isActive({ textAlign: 'right' }) ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                            className="h-8 w-8 p-0"
+                            title="Align Right"
+                        >
+                            <AlignRight className="w-4 h-4" />
+                        </Button>
+                    </div>
+
+                    {/* Lists Group */}
+                    <div className="flex items-center gap-1 border-r border-gray-200 pr-4 mr-4">
+                        <Button
+                            variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleBulletList().run()}
+                            className="h-8 w-8 p-0"
+                            title="Bullet List"
+                        >
+                            <List className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                            className="h-8 w-8 p-0"
+                            title="Numbered List"
+                        >
+                            <ListOrdered className="w-4 h-4" />
+                        </Button>
+                    </div>
+
+                    {/* Insert Group */}
+                    <div className="flex items-center gap-1 border-r border-gray-200 pr-4 mr-4">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                            className="h-8 w-8 p-0"
+                            title="Insert Table"
+                        >
+                            <TableIcon className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                                const url = window.prompt('Enter image URL:');
+                                if (url) {
+                                    editor.chain().focus().setImage({ src: url }).run();
+                                }
+                            }}
+                            className="h-8 w-8 p-0"
+                            title="Insert Image"
+                        >
+                            <ImageIcon className="w-4 h-4" />
+                        </Button>
+                    </div>
+
+                    {/* Review Group */}
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant={revisionMode === 'track' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setRevisionMode(revisionMode === 'track' ? 'final' : 'track')}
+                            className={cn(
+                                "h-8 px-2 text-xs",
+                                revisionMode === 'track' ? "bg-orange-100 text-orange-700" : "text-gray-600"
+                            )}
+                            title="Track Changes"
+                        >
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Track Changes
+                        </Button>
+
+                        {selectedText && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowCommentDialog(true)}
+                                className="h-8 px-2 text-xs bg-blue-50 border-blue-200 text-blue-700"
+                                title="Add Comment"
+                            >
+                                <MessageSquare className="w-3 h-3 mr-1" />
+                                Comment
+                            </Button>
+                        )}
+
+                        {suggestions.filter(s => s.status === 'pending').length > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                                {suggestions.filter(s => s.status === 'pending').length} pending
+                            </Badge>
+                        )}
+                    </div>
+                </div>
+
+                {/* Status Bar */}
+                <div className="flex items-center justify-between px-4 py-1 bg-gray-50 border-t border-gray-200 text-xs text-gray-600">
+                    <div className="flex items-center gap-4">
+                        <span>Page 1 of 1</span>
+                        <span>{metrics.wordCount} words</span>
+                        <span>{metrics.characterCount} characters</span>
+                        <span>Reading time: {metrics.estimatedReadingTime}m</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {collaborators.length > 0 && (
+                            <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                <span>{collaborators.length + 1} editing</span>
+                            </div>
+                        )}
+                        {autoSaveEnabled && (
+                            <span className="text-green-600">✓ Saved</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Continue with the rest of the component implementation...
+    return (
+        <div className={cn(
+            "flex flex-col h-full transition-colors duration-200 bg-gray-100",
+            darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900",
+            isFullscreen && "fixed inset-0 z-50"
+        )}>
+            <ProfessionalToolbar />
+
+            <div className="flex-1 flex overflow-hidden bg-gray-100">
+                {/* Main Editor Area with Word-like paper background */}
+                <div className="flex-1 flex flex-col overflow-auto p-8">
+                    <div className="relative mx-auto" style={{ width: '8.5in' }}>
+                        {/* Collaboration cursors would be rendered here */}
+                        <div ref={editorRef} className="h-full bg-white shadow-lg" style={{ minHeight: '11in' }}>
+                            {editor && (
+                                <>
+                                    <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+                                        <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().toggleBold().run()}
+                                                className="h-8"
+                                            >
+                                                <Bold className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().toggleItalic().run()}
+                                                className="h-8"
+                                            >
+                                                <Italic className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setShowCommentDialog(true)}
+                                                className="h-8"
+                                            >
+                                                <MessageSquare className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </BubbleMenu>
+
+                                    <FloatingMenu editor={editor} tippyOptions={{ duration: 100 }}>
+                                        <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-2 flex gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                                                className="h-8"
+                                            >
+                                                <Heading1 className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                                                className="h-8"
+                                            >
+                                                <List className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </FloatingMenu>
+                                </>
+                            )}
+
+                            <EditorContent
+                                editor={editor}
+                                className="h-full"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* AI Chatbot Panel */}
+                {showAiChatbot && (
+                    <div className="w-80 border-l border-gray-300 bg-white flex flex-col">
+                        <div className="p-4 border-b border-gray-200 bg-blue-50">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Robot className="w-5 h-5 text-blue-600" />
+                                    <span className="font-semibold text-blue-900">AI Writing Assistant</span>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowAiChatbot(false)}
+                                    className="h-6 w-6 p-0"
+                                >
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Quick Actions */}
+                        <div className="p-3 border-b border-gray-200">
+                            <div className="text-xs font-medium text-gray-600 mb-2">Quick Actions</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {quickAiActions.map((action, index) => (
+                                    <Button
+                                        key={index}
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={action.action}
+                                        className="text-xs h-8"
+                                    >
+                                        {action.label}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Chat Messages */}
+                        <ScrollArea className="flex-1 p-3">
+                            <div className="space-y-3">
+                                {aiChatMessages.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <Robot className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                        <div className="text-sm">Hello! I'm your AI assistant.</div>
+                                        <div className="text-xs">Ask me anything about your essay!</div>
+                                    </div>
+                                ) : (
+                                    aiChatMessages.map((message) => (
+                                        <div key={message.id} className={cn(
+                                            "p-3 rounded-lg max-w-[90%]",
+                                            message.type === 'user'
+                                                ? "bg-blue-500 text-white ml-auto"
+                                                : "bg-gray-100 text-gray-900"
+                                        )}>
+                                            <div className="text-sm whitespace-pre-wrap">{message.message}</div>
+                                            <div className={cn(
+                                                "text-xs mt-1 opacity-70",
+                                                message.type === 'user' ? "text-blue-100" : "text-gray-500"
+                                            )}>
+                                                {message.timestamp.toLocaleTimeString()}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </ScrollArea>
+
+                        {/* Chat Input */}
+                        <div className="p-3 border-t border-gray-200">
+                            <div className="flex gap-2">
+                                <Input
+                                    value={aiChatInput}
+                                    onChange={(e) => setAiChatInput(e.target.value)}
+                                    placeholder="Ask me about your essay..."
+                                    className="flex-1 text-sm"
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter') {
+                                            sendAiChatMessage(aiChatInput);
+                                        }
+                                    }}
+                                />
+                                <Button
+                                    size="sm"
+                                    onClick={() => sendAiChatMessage(aiChatInput)}
+                                    disabled={!aiChatInput.trim()}
+                                >
+                                    <Send className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Professional Sidebar */}
+                <div className={cn(
+                    "w-80 border-l transition-colors duration-200",
+                    darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"
+                )}>
+                    <Tabs defaultValue="analytics" className="h-full flex flex-col">
+                        <TabsList className="grid w-full grid-cols-5 rounded-none border-b">
+                            <TabsTrigger value="analytics" className="text-xs">
+                                <BarChart3 className="w-3 h-3 mr-1" />
+                                Stats
+                            </TabsTrigger>
+                            <TabsTrigger value="comments" className="text-xs">
+                                <MessageSquare className="w-3 h-3 mr-1" />
+                                Comments
+                            </TabsTrigger>
+                            <TabsTrigger value="suggestions" className="text-xs relative">
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                                Revisions
+                                {suggestions.filter(s => s.status === 'pending').length > 0 && (
+                                    <Badge variant="destructive" className="absolute -top-1 -right-1 w-4 h-4 text-xs p-0 flex items-center justify-center">
+                                        {suggestions.filter(s => s.status === 'pending').length}
+                                    </Badge>
+                                )}
+                            </TabsTrigger>
+                            <TabsTrigger value="ai" className="text-xs">
+                                <Robot className="w-3 h-3 mr-1" />
+                                AI
+                            </TabsTrigger>
+                            <TabsTrigger value="collaboration" className="text-xs">
+                                <Users className="w-3 h-3 mr-1" />
+                                Live
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <div className="flex-1 overflow-hidden">
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 hover:bg-blue-50 hover:text-blue-700">
+                                        <Download className="w-4 h-4 mr-1" />
+                                        Export
+                                        <ChevronDown className="w-3 h-3 ml-1" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                    <DropdownMenuItem onClick={() => {
+                                        const content = editor.getHTML();
+                                        const blob = new Blob([content], { type: 'text/html' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `essay-${sessionId}-${new Date().toISOString().split('T')[0]}.html`;
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                        toast.success('Exported as HTML');
+                                    }}>
+                                        <FileIcon className="w-4 h-4 mr-2" />
+                                        Export as HTML
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => {
+                                        const content = editor.getText();
+                                        const blob = new Blob([content], { type: 'text/plain' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `essay-${sessionId}-${new Date().toISOString().split('T')[0]}.txt`;
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                        toast.success('Exported as Text');
+                                    }}>
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        Export as Text
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => {
+                                        window.print();
+                                    }}>
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Print/PDF
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsFullscreen(!isFullscreen)}
+                                className="h-8 hover:bg-purple-50 hover:text-purple-700"
+                            >
+                                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowVersionHistory(!showVersionHistory)}
+                                className="h-8 hover:bg-orange-50 hover:text-orange-700"
+                            >
+                                <History className="w-4 h-4 mr-1" />
+                                History
+                            </Button>
+                        </div>
+
+                        {/* Undo/Redo */}
+                        <div className="flex items-center gap-1 border-r border-gray-300 pr-3">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => editor.chain().focus().undo().run()}
+                                disabled={!editor.can().undo()}
+                                className="h-8"
+                            >
+                                <Undo className="w-4 h-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => editor.chain().focus().redo().run()}
+                                disabled={!editor.can().redo()}
+                                className="h-8"
+                            >
+                                <Redo className="w-4 h-4" />
+                            </Button>
+                        </div>
+
+                        {/* Text Formatting */}
+                        <div className="flex items-center gap-1 border-r border-gray-300 pr-3">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 hover:bg-indigo-50 hover:text-indigo-700">
+                                        <Type className="w-4 h-4 mr-1" />
+                                        Style
+                                        <ChevronDown className="w-3 h-3 ml-1" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-56">
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().setParagraph().run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Type className="w-4 h-4" />
+                                        <div>
+                                            <div className="font-medium">Normal Text</div>
+                                            <div className="text-xs text-gray-500">Regular paragraph</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Heading1 className="w-4 h-4" />
+                                        <div>
+                                            <div className="font-bold text-lg">Heading 1</div>
+                                            <div className="text-xs text-gray-500">Main title</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Heading2 className="w-4 h-4" />
+                                        <div>
+                                            <div className="font-semibold text-base">Heading 2</div>
+                                            <div className="text-xs text-gray-500">Section title</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Heading3 className="w-4 h-4" />
+                                        <div>
+                                            <div className="font-medium">Heading 3</div>
+                                            <div className="text-xs text-gray-500">Subsection</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Quote className="w-4 h-4" />
+                                        <div>
+                                            <div className="italic">Quote</div>
+                                            <div className="text-xs text-gray-500">Block quotation</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().toggleCode().run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Code className="w-4 h-4" />
+                                        <div>
+                                            <div className="font-mono text-sm">Code</div>
+                                            <div className="text-xs text-gray-500">Inline code</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <div className="flex items-center gap-0.5">
+                                <Button
+                                    variant={editor.isActive('bold') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleBold().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('bold')
+                                            ? "bg-blue-100 text-blue-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Bold (Ctrl+B)"
+                                >
+                                    <Bold className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={editor.isActive('italic') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('italic')
+                                            ? "bg-blue-100 text-blue-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Italic (Ctrl+I)"
+                                >
+                                    <Italic className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={editor.isActive('underline') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleUnderline().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('underline')
+                                            ? "bg-blue-100 text-blue-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Underline (Ctrl+U)"
+                                >
+                                    <UnderlineIcon className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={editor.isActive('strike') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('strike')
+                                            ? "bg-blue-100 text-blue-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Strikethrough"
+                                >
+                                    <Strikethrough className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={editor.isActive('subscript') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleSubscript().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('subscript')
+                                            ? "bg-blue-100 text-blue-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Subscript"
+                                >
+                                    <SubscriptIcon className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={editor.isActive('superscript') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleSuperscript().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('superscript')
+                                            ? "bg-blue-100 text-blue-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Superscript"
+                                >
+                                    <SuperscriptIcon className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 hover:bg-pink-50 hover:text-pink-700" title="Text Color">
+                                        <Palette className="w-4 h-4" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64">
+                                    <div className="space-y-3">
+                                        <Label className="text-sm font-medium">Text Color</Label>
+                                        <div className="grid grid-cols-8 gap-2">
+                                            {[
+                                                '#000000', '#374151', '#6B7280', '#9CA3AF',
+                                                '#EF4444', '#F97316', '#F59E0B', '#EAB308',
+                                                '#84CC16', '#22C55E', '#10B981', '#06B6D4',
+                                                '#0EA5E9', '#3B82F6', '#6366F1', '#8B5CF6',
+                                                '#A855F7', '#D946EF', '#EC4899', '#F43F5E'
+                                            ].map((color) => (
+                                                <button
+                                                    key={color}
+                                                    className="w-6 h-6 rounded border-2 border-gray-300 hover:scale-110 transition-transform"
+                                                    style={{ backgroundColor: color }}
+                                                    onClick={() => editor.chain().focus().setColor(color).run()}
+                                                    title={color}
+                                                />
+                                            ))}
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => editor.chain().focus().unsetColor().run()}
+                                            className="w-full"
+                                        >
+                                            Remove Color
+                                        </Button>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        {/* Alignment */}
+                        <div className="flex items-center gap-1 border-r border-gray-300 pr-3">
+                            <Button
+                                variant={editor.isActive({ textAlign: 'left' }) ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                                className="h-8"
+                            >
+                                <AlignLeft className="w-4 h-4" />
+                            </Button>
+                            <Button
+                                variant={editor.isActive({ textAlign: 'center' }) ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                                className="h-8"
+                            >
+                                <AlignCenter className="w-4 h-4" />
+                            </Button>
+                            <Button
+                                variant={editor.isActive({ textAlign: 'right' }) ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                                className="h-8"
+                            >
+                                <AlignRight className="w-4 h-4" />
+                            </Button>
+                        </div>
+
+                        {/* Lists and Advanced Tools */}
+                        <div className="flex items-center gap-1 border-r border-gray-300 pr-3">
+                            <div className="flex items-center gap-0.5">
+                                <Button
+                                    variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('bulletList')
+                                            ? "bg-green-100 text-green-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Bullet List"
+                                >
+                                    <List className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('orderedList')
+                                            ? "bg-green-100 text-green-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Numbered List"
+                                >
+                                    <ListOrdered className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant={editor.isActive('taskList') ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => editor.chain().focus().toggleTaskList().run()}
+                                    className={cn(
+                                        "h-8 transition-all duration-200",
+                                        editor.isActive('taskList')
+                                            ? "bg-green-100 text-green-700 shadow-sm"
+                                            : "hover:bg-gray-100"
+                                    )}
+                                    title="Task List"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 hover:bg-yellow-50 hover:text-yellow-700" title="Highlight Text">
+                                        <HighlighterIcon className="w-4 h-4" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <Label className="text-sm font-medium">Professional Highlights</Label>
+                                            <div className="grid grid-cols-4 gap-2 mt-2">
+                                                {Object.entries(HIGHLIGHT_COLORS).map(([key, { bg, text, name }]) => (
+                                                    <button
+                                                        key={key}
+                                                        className="group relative w-full h-12 rounded-lg border-2 border-gray-200 hover:border-gray-400 transition-all duration-200 hover:scale-105 flex flex-col items-center justify-center"
+                                                        style={{ backgroundColor: bg, color: text }}
+                                                        onClick={() => editor.chain().focus().toggleHighlight({ color: bg }).run()}
+                                                        title={`${name} Highlight`}
+                                                    >
+                                                        <HighlighterIcon className="w-4 h-4 mb-1" />
+                                                        <span className="text-xs font-medium">{name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().unsetHighlight().run()}
+                                                className="flex-1"
+                                            >
+                                                Remove Highlight
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 hover:bg-indigo-50 hover:text-indigo-700" title="Insert">
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Insert
+                                        <ChevronDown className="w-3 h-3 ml-1" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-48">
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <TableIcon className="w-4 h-4" />
+                                        Table
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            const url = window.prompt('Enter image URL:');
+                                            if (url) {
+                                                editor.chain().focus().setImage({ src: url }).run();
+                                            }
+                                        }}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <ImageIcon className="w-4 h-4" />
+                                        Image
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            const url = window.prompt('Enter link URL:');
+                                            if (url) {
+                                                editor.chain().focus().setLink({ href: url }).run();
+                                            }
+                                        }}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <LinkIcon className="w-4 h-4" />
+                                        Link
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Separator className="w-4 h-4" />
+                                        Horizontal Rule
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => editor.chain().focus().setHardBreak().run()}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Hash className="w-4 h-4" />
+                                        Line Break
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+
+                        {/* Advanced Features */}
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    const searchTerm = window.prompt('Search for text:');
+                                    if (searchTerm) {
+                                        // This would implement search functionality
+                                        toast.info(`Searching for: ${searchTerm}`);
+                                    }
+                                }}
+                                className="h-8 hover:bg-cyan-50 hover:text-cyan-700"
+                                title="Find & Replace"
+                            >
+                                <Search className="w-4 h-4" />
+                            </Button>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 hover:bg-purple-50 hover:text-purple-700" title="AI Tools">
+                                        <Robot className="w-4 h-4 mr-1" />
+                                        AI
+                                        <ChevronDown className="w-3 h-3 ml-1" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-48">
+                                    <DropdownMenuItem
+                                        onClick={() => editor && generateAIFeedback(editor.getText())}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Brain className="w-4 h-4" />
+                                        Analyze Writing
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => toast.info('Grammar check coming soon!')}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Edit3 className="w-4 h-4" />
+                                        Grammar Check
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => toast.info('Style suggestions coming soon!')}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Sparkles className="w-4 h-4" />
+                                        Style Suggestions
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={() => toast.info('Plagiarism check coming soon!')}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Target className="w-4 h-4" />
+                                        Plagiarism Check
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+
+                    {/* Right side controls */}
+                    <div className="flex items-center gap-3">
+                        {/* Live Status Indicators */}
+                        <div className="flex items-center gap-2">
+                            {collaborators.length > 0 && (
+                                <div className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded-full text-xs">
+                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                    <span>{collaborators.length + 1} live</span>
+                                </div>
+                            )}
+
+                            {autoSaveEnabled && (
+                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
+                                    <Save className="w-3 h-3" />
+                                    <span>Auto-save</span>
+                                </div>
+                            )}
+
+                            {aiAssistantEnabled && (
+                                <div className="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded-full text-xs">
+                                    <Robot className="w-3 h-3" />
+                                    <span>AI Active</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <Separator orientation="vertical" className="h-6" />
+
+                        {/* Document Metrics */}
+                        <div className="flex items-center gap-3 text-sm">
+                            <div className="flex items-center gap-1 text-gray-600">
+                                <Type className="w-3 h-3" />
+                                <span className="font-medium">{metrics.wordCount}</span>
+                                <span className="text-gray-400">words</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-gray-600">
+                                <Clock className="w-3 h-3" />
+                                <span className="font-medium">{metrics.estimatedReadingTime}</span>
+                                <span className="text-gray-400">min</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-gray-600">
+                                <TrendingUp className="w-3 h-3" />
+                                <span className="font-medium">{metrics.readabilityScore}</span>
+                                <span className="text-gray-400">score</span>
+                            </div>
+                        </div>
+
+                        <Separator orientation="vertical" className="h-6" />
+
+                        {/* View Controls */}
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant={viewMode === 'edit' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setViewMode('edit')}
+                                className="h-8 text-xs"
+                            >
+                                <Edit3 className="w-3 h-3 mr-1" />
+                                Edit
+                            </Button>
+                            <Button
+                                variant={viewMode === 'preview' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setViewMode('preview')}
+                                className="h-8 text-xs"
+                            >
+                                <Eye className="w-3 h-3 mr-1" />
+                                Preview
+                            </Button>
+                            <Button
+                                variant={viewMode === 'focus' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setViewMode('focus')}
+                                className="h-8 text-xs"
+                            >
+                                <Target className="w-3 h-3 mr-1" />
+                                Focus
+                            </Button>
+                        </div>
+
+                        <Separator orientation="vertical" className="h-6" />
+
+                        {/* Revision Mode Controls */}
+                        <div className="flex items-center gap-1">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant={revisionMode === 'track' ? 'default' : 'ghost'}
+                                        size="sm"
+                                        className={cn(
+                                            "h-8 text-xs",
+                                            revisionMode === 'track' && "bg-orange-100 text-orange-700 border-orange-200"
+                                        )}
+                                    >
+                                        <RefreshCw className="w-3 h-3 mr-1" />
+                                        {revisionMode === 'track' ? 'Tracking' : revisionMode === 'review' ? 'Reviewing' : 'Final'}
+                                        <ChevronDown className="w-3 h-3 ml-1" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                    <DropdownMenuItem
+                                        onClick={() => setRevisionMode('track')}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                        <div>
+                                            <div className="font-medium">Track Changes</div>
+                                            <div className="text-xs text-gray-500">Record all edits</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setRevisionMode('review')}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <MessageSquare className="w-4 h-4" />
+                                        <div>
+                                            <div className="font-medium">Review Mode</div>
+                                            <div className="text-xs text-gray-500">Focus on suggestions</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setRevisionMode('final')}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <CheckCircle className="w-4 h-4" />
+                                        <div>
+                                            <div className="font-medium">Final Mode</div>
+                                            <div className="text-xs text-gray-500">Clean document</div>
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {suggestions.filter(s => s.status === 'pending').length > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                    {suggestions.filter(s => s.status === 'pending').length} pending
+                                </Badge>
+                            )}
+
+                            {versionHistory.length > 0 && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowVersionHistory(!showVersionHistory)}
+                                    className="h-8 text-xs hover:bg-gray-100"
+                                    title="Version History"
+                                >
+                                    <History className="w-3 h-3 mr-1" />
+                                    {versionHistory.length}
+                                </Button>
+                            )}
+                        </div>
+
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDarkMode(!darkMode)}
+                            className="h-8 hover:bg-gray-100"
+                            title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                        >
+                            {darkMode ? <Monitor className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
+                        </Button>
+
+                        {selectedText && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowCommentDialog(true)}
+                                className="h-8 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 shadow-sm animate-pulse"
+                            >
+                                <MessageSquare className="w-4 h-4 mr-1" />
+                                Add Comment
+                            </Button>
+                        )}
+
+                        {userRole === 'student' && onRaiseHand && (
+                            <Button
+                                variant={handsRaised.has(userId) ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={onRaiseHand}
+                                className={cn(
+                                    "h-8 transition-all duration-200",
+                                    handsRaised.has(userId)
+                                        ? "bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg"
+                                        : "border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+                                )}
+                            >
+                                <Hand className="w-4 h-4 mr-1" />
+                                {handsRaised.has(userId) ? 'Lower Hand' : 'Raise Hand'}
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Secondary Toolbar with View Options */}
+                <div className={cn(
+                    "flex items-center justify-between px-3 py-2 border-t",
+                    darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+                )}>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="font-family" className="text-xs">Font:</Label>
+                            <select
+                                id="font-family"
+                                value={fontFamily}
+                                onChange={(e) => setFontFamily(e.target.value)}
+                                className="text-xs border rounded px-2 py-1"
+                            >
+                                <option value="Georgia">Georgia</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Arial">Arial</option>
+                                <option value="Helvetica">Helvetica</option>
+                                <option value="Courier New">Courier New</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="font-size" className="text-xs">Size:</Label>
+                            <Slider
+                                id="font-size"
+                                min={12}
+                                max={24}
+                                step={1}
+                                value={[fontSize]}
+                                onValueChange={(value) => setFontSize(value[0])}
+                                className="w-16"
+                            />
+                            <span className="text-xs w-8">{fontSize}px</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="line-height" className="text-xs">Line:</Label>
+                            <Slider
+                                id="line-height"
+                                min={1.2}
+                                max={2.5}
+                                step={0.1}
+                                value={[lineHeight]}
+                                onValueChange={(value) => setLineHeight(value[0])}
+                                className="w-16"
+                            />
+                            <span className="text-xs w-8">{lineHeight.toFixed(1)}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                            <Switch
+                                id="ai-assistant"
+                                checked={aiAssistantEnabled}
+                                onCheckedChange={setAiAssistantEnabled}
+                            />
+                            <Label htmlFor="ai-assistant" className="text-xs">AI Assistant</Label>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <Switch
+                                id="auto-save"
+                                checked={autoSaveEnabled}
+                                onCheckedChange={setAutoSaveEnabled}
+                            />
+                            <Label htmlFor="auto-save" className="text-xs">Auto-save</Label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Continue with the rest of the component implementation...
+    return (
+        <div className={cn(
+            "flex flex-col h-full transition-colors duration-200",
+            darkMode ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-900",
+            isFullscreen && "fixed inset-0 z-50"
+        )}>
+            <ProfessionalToolbar />
+
+            <div className="flex-1 flex overflow-hidden">
+                {/* Main Editor Area */}
+                <div className="flex-1 flex flex-col">
+                    <div className="flex-1 relative overflow-auto">
+                        {/* Collaboration cursors would be rendered here */}
+                        <div ref={editorRef} className="h-full">
+                            {editor && (
+                                <>
+                                    <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+                                        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().toggleBold().run()}
+                                                className="h-8"
+                                            >
+                                                <Bold className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().toggleItalic().run()}
+                                                className="h-8"
+                                            >
+                                                <Italic className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setShowCommentDialog(true)}
+                                                className="h-8"
+                                            >
+                                                <MessageSquare className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </BubbleMenu>
+
+                                    <FloatingMenu editor={editor} tippyOptions={{ duration: 100 }}>
+                                        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                                                className="h-8"
+                                            >
+                                                <Heading1 className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                                                className="h-8"
+                                            >
+                                                <List className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                                                className="h-8"
+                                            >
+                                                <TableIcon className="w-3 h-3" />
+                                            </Button>
+                                        </div>
+                                    </FloatingMenu>
+                                </>
+                            )}
+
+                            <EditorContent
+                                editor={editor}
+                                className="h-full"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Professional Sidebar */}
+                <div className={cn(
+                    "w-80 border-l transition-colors duration-200",
+                    darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"
+                )}>
+                    <Tabs defaultValue="analytics" className="h-full flex flex-col">
+                        <TabsList className="grid w-full grid-cols-5 rounded-none border-b">
+                            <TabsTrigger value="analytics" className="text-xs">
+                                <BarChart3 className="w-3 h-3 mr-1" />
+                                Stats
+                            </TabsTrigger>
+                            <TabsTrigger value="comments" className="text-xs">
+                                <MessageSquare className="w-3 h-3 mr-1" />
+                                Comments
+                            </TabsTrigger>
+                            <TabsTrigger value="suggestions" className="text-xs relative">
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                                Revisions
+                                {suggestions.filter(s => s.status === 'pending').length > 0 && (
+                                    <Badge variant="destructive" className="absolute -top-1 -right-1 w-4 h-4 text-xs p-0 flex items-center justify-center">
+                                        {suggestions.filter(s => s.status === 'pending').length}
+                                    </Badge>
+                                )}
+                            </TabsTrigger>
+                            <TabsTrigger value="ai" className="text-xs">
+                                <Robot className="w-3 h-3 mr-1" />
+                                AI
+                            </TabsTrigger>
+                            <TabsTrigger value="collaboration" className="text-xs">
+                                <Users className="w-3 h-3 mr-1" />
+                                Live
+                            </TabsTrigger>
+                        </TabsList>
+
+                        <div className="flex-1 overflow-hidden">
+                            <TabsContent value="analytics" className="h-full m-0 p-4 overflow-y-auto space-y-4">
+                                {/* Writing Metrics */}
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm flex items-center gap-2">
+                                            <Target className="w-4 h-4" />
+                                            Writing Metrics
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                                <div className="text-2xl font-bold text-blue-600">{metrics.wordCount}</div>
+                                                <div className="text-xs text-gray-500">Words</div>
+                                            </div>
+                                            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                                <div className="text-2xl font-bold text-green-600">{metrics.estimatedReadingTime}m</div>
+                                                <div className="text-xs text-gray-500">Read Time</div>
+                                            </div>
+                                            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                                <div className="text-lg font-bold text-purple-600">{metrics.sentenceCount}</div>
+                                                <div className="text-xs text-gray-500">Sentences</div>
+                                            </div>
+                                            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                                                <div className="text-lg font-bold text-orange-600">{metrics.paragraphCount}</div>
+                                                <div className="text-xs text-gray-500">Paragraphs</div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm font-medium">Readability</span>
+                                                <span className="text-sm text-gray-500">{metrics.readingLevel}</span>
+                                            </div>
+                                            <Progress value={metrics.readabilityScore} className="h-2" />
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                Score: {metrics.readabilityScore}/100
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <span className="text-sm font-medium">Avg Words/Sentence</span>
+                                            <div className="text-lg font-semibold">{metrics.averageWordsPerSentence}</div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Top Keywords */}
+                                <Card>
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm">Top Keywords</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            {Object.entries(metrics.keywordDensity).slice(0, 5).map(([word, count]) => (
+                                                <div key={word} className="flex justify-between items-center">
+                                                    <span className="text-sm capitalize">{word}</span>
+                                                    <Badge variant="secondary">{count}</Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="comments" className="h-full m-0 p-4 overflow-y-auto">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold">Comments & Feedback</h3>
+                                        <Badge variant="secondary">{comments.length}</Badge>
+                                    </div>
+
+                                    {selectedText && (
+                                        <Card className="border-blue-200 bg-blue-50">
+                                            <CardContent className="p-3">
+                                                <div className="text-xs text-blue-600 mb-2">Selected Text</div>
+                                                <div className="text-sm mb-2 italic">"{selectedText.slice(0, 100)}..."</div>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => setShowCommentDialog(true)}
+                                                    className="bg-blue-600 hover:bg-blue-700"
+                                                >
+                                                    <Plus className="w-3 h-3 mr-1" />
+                                                    Add Comment
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    <ScrollArea className="h-64">
+                                        <div className="space-y-3">
+                                            {comments.map((comment) => {
+                                                const commentConfig = COMMENT_TYPES[comment.type];
+                                                const IconComponent = commentConfig.icon;
+
+                                                return (
+                                                    <Card key={comment.id} className="border-l-4" style={{ borderLeftColor: commentConfig.color }}>
+                                                        <CardContent className="p-3">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <IconComponent className="w-4 h-4" style={{ color: commentConfig.color }} />
+                                                                <Badge variant="outline" style={{ color: commentConfig.color, borderColor: commentConfig.color }}>
+                                                                    {commentConfig.name}
+                                                                </Badge>
+                                                                {comment.priority === 'high' && (
+                                                                    <Badge variant="destructive" className="text-xs">High Priority</Badge>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500 mb-1 italic">
+                                                                "{comment.text.slice(0, 50)}..."
+                                                            </div>
+                                                            <div className="text-sm mb-2">{comment.comment}</div>
+                                                            <div className="flex items-center justify-between text-xs text-gray-400">
+                                                                <span>{comment.author}</span>
+                                                                <span>{comment.timestamp.toLocaleTimeString()}</span>
+                                                            </div>
+                                                            <div className="flex gap-2 mt-2">
+                                                                <Button variant="ghost" size="sm" className="text-xs h-6">
+                                                                    Reply
+                                                                </Button>
+                                                                <Button variant="ghost" size="sm" className="text-xs h-6">
+                                                                    Resolve
+                                                                </Button>
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                );
+                                            })}
+                                        </div>
+                                    </ScrollArea>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="suggestions" className="h-full m-0 p-4 overflow-y-auto">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold flex items-center gap-2">
+                                            <RefreshCw className="w-4 h-4" />
+                                            Suggestions & Revisions
+                                        </h3>
+                                        <div className="flex gap-1">
+                                            <Badge variant="outline" className="text-xs">
+                                                {suggestions.filter(s => s.status === 'pending').length} pending
+                                            </Badge>
+                                            <Badge variant="secondary" className="text-xs">
+                                                {suggestions.filter(s => s.status === 'accepted').length} accepted
+                                            </Badge>
+                                        </div>
+                                    </div>
+
+                                    {/* Revision Mode Status */}
+                                    <Card className={cn(
+                                        "border-l-4",
+                                        revisionMode === 'track' ? "border-orange-500 bg-orange-50" :
+                                        revisionMode === 'review' ? "border-blue-500 bg-blue-50" :
+                                        "border-green-500 bg-green-50"
+                                    )}>
+                                        <CardContent className="p-3">
+                                            <div className="text-xs font-medium mb-1">
+                                                {revisionMode === 'track' ? '📝 Tracking Changes' :
+                                                 revisionMode === 'review' ? '👁️ Reviewing Suggestions' :
+                                                 '✅ Final Mode'}
+                                            </div>
+                                            <div className="text-xs text-gray-600">
+                                                {revisionMode === 'track' ? 'All edits are being recorded automatically' :
+                                                 revisionMode === 'review' ? 'Review and accept/reject suggestions' :
+                                                 'Clean document view without revision marks'}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Quick Actions */}
+                                    {selectedText && userRole === 'teacher' && (
+                                        <Card className="border-blue-200 bg-blue-50">
+                                            <CardContent className="p-3">
+                                                <div className="text-xs text-blue-600 mb-2">Selected Text</div>
+                                                <div className="text-sm mb-2 italic bg-white p-2 rounded border">
+                                                    "{selectedText.slice(0, 80)}..."
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            const suggestion = window.prompt('Enter replacement text:');
+                                                            if (suggestion) {
+                                                                addSuggestion('replacement', selectedText, suggestion);
+                                                            }
+                                                        }}
+                                                        className="flex-1 text-xs h-7"
+                                                    >
+                                                        <Edit3 className="w-3 h-3 mr-1" />
+                                                        Suggest
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => addSuggestion('deletion', selectedText, '')}
+                                                        className="flex-1 text-xs h-7"
+                                                    >
+                                                        <X className="w-3 h-3 mr-1" />
+                                                        Delete
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {/* Suggestions List */}
+                                    <ScrollArea className="h-96">
+                                        <div className="space-y-3">
+                                            {suggestions.length === 0 ? (
+                                                <div className="text-center py-8 text-gray-500">
+                                                    <RefreshCw className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                                    <div className="text-sm">No suggestions yet</div>
+                                                    <div className="text-xs">Select text to make suggestions</div>
+                                                </div>
+                                            ) : (
+                                                suggestions.map((suggestion) => (
+                                                    <Card key={suggestion.id} className={cn(
+                                                        "border-l-4 transition-all duration-200",
+                                                        suggestion.status === 'pending' ? "border-yellow-500 bg-yellow-50" :
+                                                        suggestion.status === 'accepted' ? "border-green-500 bg-green-50" :
+                                                        "border-red-500 bg-red-50"
+                                                    )}>
+                                                        <CardContent className="p-3">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <Badge
+                                                                    variant={suggestion.status === 'pending' ? 'default' : 'secondary'}
+                                                                    className="text-xs"
+                                                                >
+                                                                    {suggestion.type}
+                                                                </Badge>
+                                                                <Badge
+                                                                    variant={
+                                                                        suggestion.status === 'pending' ? 'destructive' :
+                                                                        suggestion.status === 'accepted' ? 'default' :
+                                                                        'secondary'
+                                                                    }
+                                                                    className="text-xs"
+                                                                >
+                                                                    {suggestion.status}
+                                                                </Badge>
+                                                            </div>
+
+                                                            {suggestion.type === 'replacement' && (
+                                                                <div className="space-y-2 mb-3">
+                                                                    <div>
+                                                                        <div className="text-xs text-gray-500 mb-1">Original:</div>
+                                                                        <div className="text-sm bg-red-100 p-2 rounded border line-through">
+                                                                            {suggestion.originalText.slice(0, 100)}...
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="text-xs text-gray-500 mb-1">Suggested:</div>
+                                                                        <div className="text-sm bg-green-100 p-2 rounded border">
+                                                                            {suggestion.suggestedText.slice(0, 100)}...
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {suggestion.type === 'deletion' && (
+                                                                <div className="mb-3">
+                                                                    <div className="text-xs text-gray-500 mb-1">Delete:</div>
+                                                                    <div className="text-sm bg-red-100 p-2 rounded border line-through">
+                                                                        {suggestion.originalText.slice(0, 100)}...
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                                                                <span>{suggestion.author}</span>
+                                                                <span>{suggestion.timestamp.toLocaleTimeString()}</span>
+                                                            </div>
+
+                                                            {suggestion.status === 'pending' && (
+                                                                <div className="flex gap-2">
+                                                                    <Button
+                                                                        variant="default"
+                                                                        size="sm"
+                                                                        onClick={() => acceptSuggestion(suggestion.id)}
+                                                                        className="flex-1 text-xs h-6 bg-green-600 hover:bg-green-700"
+                                                                    >
+                                                                        <CheckCircle className="w-3 h-3 mr-1" />
+                                                                        Accept
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => rejectSuggestion(suggestion.id)}
+                                                                        className="flex-1 text-xs h-6 border-red-300 text-red-700 hover:bg-red-50"
+                                                                    >
+                                                                        <X className="w-3 h-3 mr-1" />
+                                                                        Reject
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+
+                                                            {suggestion.reason && (
+                                                                <div className="mt-2 text-xs text-gray-500 italic">
+                                                                    Reason: {suggestion.reason}
+                                                                </div>
+                                                            )}
+                                                        </CardContent>
+                                                    </Card>
+                                                ))
+                                            )}
+                                        </div>
+                                    </ScrollArea>
+
+                                    {/* Version History */}
+                                    {versionHistory.length > 0 && (
+                                        <Card>
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-sm flex items-center gap-2">
+                                                    <History className="w-4 h-4" />
+                                                    Recent Changes
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <ScrollArea className="h-32">
+                                                    <div className="space-y-2">
+                                                        {versionHistory.slice(-5).reverse().map((version) => (
+                                                            <div key={version.id} className="text-xs border-l-2 border-gray-200 pl-3">
+                                                                <div className="font-medium">{version.changes}</div>
+                                                                <div className="text-gray-500">
+                                                                    {version.author} • {version.timestamp.toLocaleTimeString()}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </ScrollArea>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="ai" className="h-full m-0 p-4 overflow-y-auto">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold flex items-center gap-2">
+                                            <Robot className="w-4 h-4" />
+                                            AI Writing Assistant
+                                        </h3>
+                                        <Badge variant="secondary">{aiFeedback.length}</Badge>
+                                    </div>
+
+                                    <Card className="border-purple-200 bg-purple-50">
+                                        <CardContent className="p-3">
+                                            <div className="text-xs text-purple-600 mb-2">AI Analysis Status</div>
+                                            <div className="text-sm mb-2">
+                                                {aiAssistantEnabled ?
+                                                    "Real-time analysis active. Suggestions appear as you write." :
+                                                    "AI assistant is disabled. Enable in toolbar to get suggestions."
+                                                }
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                onClick={() => editor && generateAIFeedback(editor.getText())}
+                                                disabled={!aiAssistantEnabled}
+                                                className="bg-purple-600 hover:bg-purple-700"
+                                            >
+                                                <Wand2 className="w-3 h-3 mr-1" />
+                                                Analyze Now
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+
+                                    <ScrollArea className="h-64">
+                                        <div className="space-y-3">
+                                            {aiFeedback.map((feedback) => (
+                                                <Card
+                                                    key={feedback.id}
+                                                    className={cn(
+                                                        "border-l-4",
+                                                        feedback.severity === 'high' ? "border-red-500" :
+                                                        feedback.severity === 'medium' ? "border-yellow-500" :
+                                                        "border-green-500"
+                                                    )}
+                                                >
+                                                    <CardContent className="p-3">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <Badge
+                                                                variant={
+                                                                    feedback.severity === 'high' ? 'destructive' :
+                                                                    feedback.severity === 'medium' ? 'default' :
+                                                                    'secondary'
+                                                                }
+                                                                className="text-xs"
+                                                            >
+                                                                {feedback.type}
+                                                            </Badge>
+                                                            <span className="text-xs text-gray-500">
+                                                                {Math.round(feedback.confidence * 100)}% confident
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-sm mb-2">{feedback.message}</div>
+                                                        <div className="text-xs text-blue-600 italic mb-2">
+                                                            💡 {feedback.suggestion}
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <Button variant="ghost" size="sm" className="text-xs h-6">
+                                                                <CheckCircle className="w-3 h-3 mr-1" />
+                                                                Apply
+                                                            </Button>
+                                                            <Button variant="ghost" size="sm" className="text-xs h-6">
+                                                                <X className="w-3 h-3 mr-1" />
+                                                                Dismiss
+                                                            </Button>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </ScrollArea>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="collaboration" className="h-full m-0 p-4 overflow-y-auto">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold">Live Collaboration</h3>
+                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                    </div>
+
+                                    {/* Active Users */}
+                                    <Card>
+                                        <CardHeader className="pb-3">
+                                            <CardTitle className="text-sm">Active Participants</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="space-y-3">
+                                                {collaborators.map((user) => (
+                                                    <div key={user.id} className="flex items-center gap-3">
+                                                        <Avatar className="h-8 w-8">
+                                                            <AvatarFallback
+                                                                className="text-white text-xs"
+                                                                style={{ backgroundColor: user.color }}
+                                                            >
+                                                                {user.name.charAt(0).toUpperCase()}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex-1">
+                                                            <div className="text-sm font-medium">{user.name}</div>
+                                                            <div className="text-xs text-gray-500">
+                                                                {user.isTeacher ? 'Teacher' : 'Student'}
+                                                                {user.isTyping && ' • typing...'}
+                                                            </div>
+                                                        </div>
+                                                        <div className={cn(
+                                                            "w-2 h-2 rounded-full",
+                                                            user.isOnline ? "bg-green-400" : "bg-gray-400"
+                                                        )} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Reference Document */}
+                                    {uploadedDocument && (
+                                        <Card>
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-sm flex items-center gap-2">
+                                                    <FileText className="w-4 h-4" />
+                                                    Reference Document
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="space-y-2">
+                                                    <div className="text-sm font-medium">{uploadedDocument.name}</div>
+                                                    {uploadedDocument.instructions && (
+                                                        <div className="text-xs text-gray-500">{uploadedDocument.instructions}</div>
+                                                    )}
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="w-full"
+                                                        onClick={() => setDocumentViewerOpen(!documentViewerOpen)}
+                                                    >
+                                                        <Eye className="w-3 h-3 mr-1" />
+                                                        {documentViewerOpen ? 'Hide' : 'View'} Document
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {/* Hands Raised */}
+                                    {handsRaised.size > 0 && (
+                                        <Card className="border-yellow-200 bg-yellow-50">
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-sm text-yellow-700 flex items-center gap-2">
+                                                    <Hand className="w-4 h-4" />
+                                                    Hands Raised ({handsRaised.size})
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="space-y-1">
+                                                    {Array.from(handsRaised).map(studentId => {
+                                                        const student = students.find(s => s.id === studentId);
+                                                        return (
+                                                            <div key={studentId} className="text-sm">
+                                                                {student?.username || studentId}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </div>
+                            </TabsContent>
+                        </div>
+                    </Tabs>
+                </div>
+            </div>
+
+            {/* Comment Dialog */}
+            <Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Add Comment</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div>
+                            <Label className="text-sm font-medium">Selected Text</Label>
+                            <div className="p-3 bg-gray-100 rounded-lg text-sm italic mt-1">
+                                "{selectedText.slice(0, 150)}..."
+                            </div>
+                        </div>
+                        <div>
+                            <Label className="text-sm font-medium">Comment Type</Label>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-between mt-1">
+                                        <span className="flex items-center gap-2">
+                                            {React.createElement(COMMENT_TYPES[commentType].icon, { className: "w-4 h-4" })}
+                                            {COMMENT_TYPES[commentType].name}
+                                        </span>
+                                        <ChevronDown className="w-4 h-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start" className="w-full">
+                                    {Object.entries(COMMENT_TYPES).map(([key, { icon: Icon, name, color }]) => (
+                                        <DropdownMenuItem
+                                            key={key}
+                                            onClick={() => setCommentType(key as keyof typeof COMMENT_TYPES)}
+                                        >
+                                            <Icon className="w-4 h-4 mr-2" style={{ color }} />
+                                            {name}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <div>
+                            <Label className="text-sm font-medium">Your Comment</Label>
+                            <Textarea
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                placeholder="Enter your feedback or suggestion..."
+                                rows={4}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <Button onClick={addComment} disabled={!commentText.trim()} className="flex-1">
+                                <Plus className="w-4 h-4 mr-1" />
+                                Add Comment
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowCommentDialog(false)}>
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+};

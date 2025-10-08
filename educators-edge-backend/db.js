@@ -18,11 +18,13 @@ const pool = new Pool({
     rejectUnauthorized: false,
   } : false, // Disable SSL for local databases
   // Reduced connection limits for Neon free tier
-  connectionTimeoutMillis: 15000,
-  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 30000,
+  idleTimeoutMillis: 30000,
   max: 3, // Reduce max connections to avoid "too many clients"
   min: 0, // Allow pool to scale down to 0
-  acquireTimeoutMillis: 20000,
+  acquireTimeoutMillis: 30000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
 });
 
 console.log(`Database configuration: ${isCloudDatabase ? 'Cloud (SSL enabled)' : 'Local (SSL disabled)'}`);

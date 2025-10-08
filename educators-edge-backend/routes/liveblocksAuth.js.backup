@@ -1,0 +1,96 @@
+const express = require('express');
+const { Liveblocks } = require('@liveblocks/node');
+const authMiddleware = require('../middleware/authMiddleware');
+
+const router = express.Router();
+
+// Initialize Liveblocks with your secret key
+const liveblocks = new Liveblocks({
+  secret: process.env.LIVEBLOCKS_SECRET_KEY,
+});
+
+// Authentication endpoint for Liveblocks
+router.post('/api/liveblocks-auth', authMiddleware, async (req, res) => {
+  try {
+    const { user } = req;
+
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Determine user role and permissions
+    const userRole = user.role || 'student'; // Default to student if no role specified
+    const permissions = {
+      canEdit: userRole === 'teacher', // Only teachers can edit by default
+      canComment: true, // Everyone can comment
+    };
+
+    // Prepare user info for Liveblocks
+    const liveblocksUser = {
+      userId: user.id.toString(),
+      userInfo: {
+        name: user.username || user.name || 'Anonymous',
+        avatar: user.avatar || null,
+        role: userRole,
+        email: user.email || null,
+        permissions,
+      },
+    };
+
+    // Create session for the user
+    const session = liveblocks.prepareSession(liveblocksUser.userId, {
+      userInfo: liveblocksUser.userInfo,
+    });
+
+    // Allow access to rooms based on user permissions
+    // Teachers can access any room, students need specific permissions
+    if (userRole === 'teacher') {
+      session.allow(`*`, session.FULL_ACCESS);
+    } else {
+      // Students can read all rooms but edit only if they have permission
+      session.allow(`*`, session.READ_ACCESS);
+
+      // Check if student has edit permission for specific rooms
+      // This would be based on your business logic
+      if (permissions.canEdit) {
+        session.allow(`*`, session.FULL_ACCESS);
+      }
+    }
+
+    // Authorize the session
+    const { body, status } = await session.authorize();
+
+    res.status(status).json(body);
+  } catch (error) {
+    console.error('Liveblocks auth error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+});
+
+// Endpoint to grant edit permissions to students
+router.post('/api/liveblocks-permissions', authMiddleware, async (req, res) => {
+  try {
+    const { user } = req;
+    const { studentId, roomId, permissions } = req.body;
+
+    // Only teachers can grant permissions
+    if (user.role !== 'teacher') {
+      return res.status(403).json({ error: 'Only teachers can grant permissions' });
+    }
+
+    // Here you would update your database with the new permissions
+    // For now, we'll just return success
+    // In a real implementation, you'd store these permissions and use them in the auth endpoint
+
+    res.json({
+      success: true,
+      message: `Permissions updated for student ${studentId} in room ${roomId}`,
+      permissions,
+    });
+  } catch (error) {
+    console.error('Permission update error:', error);
+    res.status(500).json({ error: 'Failed to update permissions' });
+  }
+});
+
+module.exports = router;

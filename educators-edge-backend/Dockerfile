@@ -11,7 +11,7 @@ FROM docker:24-dind AS docker-base
 RUN apk add --no-cache nodejs npm python3 py3-pip openjdk17-jdk bash curl
 
 # Stage 2: Application build
-FROM node:18-bullseye AS app-builder
+FROM node:20-bullseye AS app-builder
 
 # Set environment variable to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive

@@ -33,25 +33,48 @@ import CourseManagementPage from './pages/CourseManagementPage';
 import DiscoverCoursesPage from './pages/DiscoverCoursesPage';
 import CourseLandingPage from './pages/CourseLandingPage';
 import StudentCoursePage from './pages/StudentCoursePage';
+import EnhancedCoursePage from './pages/EnhancedCoursePage';
+import EnhancedCourseLessonsPage from './pages/EnhancedCourseLessonsPage';
 import { RecordingsPage } from './pages/RecordingsPage';
 import mixpanel from 'mixpanel-browser';
 import LessonLoaderPage from './pages/LessonLoaderPage';
 import CreateChapterPage from './pages/CreateChapterPage';
 import VideoPlayerPage from './pages/VideoPlayerPage';
 import ScribeSessionPage from './pages/ScribeSessionPage';
+import DualModeLiveSession from './pages/DualModeLiveSession';
+import EssaySessionPage from './pages/EssaySessionPage';
+import UrgentEssaySessionPage from './pages/UrgentEssaySessionPage';
+import ModernResumeOptimizationPage from './pages/ModernResumeOptimizationPage';
+import CleanResumeAssistant from './pages/CleanResumeAssistant';
+import AzureVisionTestPage from './pages/AzureVisionTestPage';
+import CssPdfResumePage from './pages/CssPdfResumePage';
+import SessionTypeSelector from './components/session/SessionTypeSelector';
+import SessionDocumentsPage from './pages/SessionDocumentsPage';
 import TeacherSearchPage from './pages/TeacherSearchPage';
 import ProfileSetupPage from './pages/ProfileSetupPage';
 import ProfileViewPage from './pages/ProfileViewPage';
 import ProfileSearchPage from './pages/ProfileSearchPage';
 import TalentCruciblePage from './pages/TalentCruciblePage';
 import SessionManagementPage from './pages/SessionManagementPage';
-import TrustGraphPage from './pages/TrustGraphSimple';
+import StudentSessionsPage from './pages/StudentSessionsPage';
+import SessionMailbox from './pages/SessionMailbox';
+import TrustGraphPage from './pages/TrustGraphPage';
 import AIChatPage from './pages/AIChatPage';
 import TradingTerminalPage from './pages/TradingTerminalPage';
+import TrustGraphSimple from './pages/TrustGraphSimple';
+import SessionCalendarPage from './pages/SessionCalendarPage';
+import VideoSessionPage from './pages/VideoSessionPage';
+import SessionsPage from './pages/SessionsPage';
+import TeacherProfile from './pages/TeacherProfile';
 import { ZenithTradeCommandCenter } from './pages/ZenithTradeCommandCenter';
+import LeetCodeCoursesPage from './pages/LeetCodeCoursesPage';
+import LeetCodeIDE from './pages/LeetCodeIDE';
+import SolvedProblemsPage from './pages/SolvedProblemsPage';
+import EcosystemDashboard from './pages/EcosystemDashboard';
 import DiscoverPage from './pages/DiscoverPage';
 import AnalysisPage from './pages/AnalysisPage';
 import PortfolioPage from './pages/PortfolioPage';
+import VisualContextResumePage from './pages/VisualContextResumePage';
 import { FinancialRoute } from './components/route/FinancialRoute';
 import { LiveblocksProvider } from "@liveblocks/react";
 
@@ -138,7 +161,7 @@ export default function App() {
   }
 
   return (
-    <LiveblocksProvider authEndpoint="/api/liveblocks/auth">
+    <LiveblocksProvider authEndpoint="http://localhost:10000/api/liveblocks/auth">
       <Routes>
         {/* --- Public Routes (No Layout) --- */}
         <Route path="/login" element={<LoginPage setToken={setToken} setUser={setUser} />} />
@@ -168,25 +191,57 @@ export default function App() {
                 <Route path="/courses/discover" element={<DiscoverCoursesPage />} />
                 <Route path="/courses/:courseId/learn" element={<StudentCoursePage />} />
                 <Route path="/courses/:courseId/landing" element={<CourseLandingPage />} />
+                <Route path="/enhanced-courses/:courseId" element={<EnhancedCoursePage />} />
+                <Route path="/enhanced-courses/:courseId/lessons" element={<EnhancedCourseLessonsPage />} />
+                <Route path="/enhanced-courses/:courseId/ide" element={<AscentIDE />} />
                 <Route path="/courses/:courseId/edit" element={<CourseEditorPage />} />`
                 <Route path="/watch/:recordingId" element={<VideoPlayerPage />} />
                 
+                {/* LeetCode System Routes */}
+                <Route path="/leetcode" element={<LeetCodeCoursesPage />} />
+                <Route path="/leetcode/courses" element={<LeetCodeCoursesPage />} />
+                <Route path="/leetcode/ide/:problemNumber" element={<LeetCodeIDE />} />
+                <Route path="/leetcode/courses/:courseId/lessons/:lessonId" element={<LeetCodeIDE />} />
+                <Route path="/enhanced-courses/:courseId/lessons/:lessonId/leetcode" element={<LeetCodeIDE />} />
+
+                {/* Session Documents Route */}
+                <Route path="/session-documents" element={<SessionDocumentsPage />} />
+
+                {/* Submission Tracking Routes */}
+                <Route path="/solved-problems" element={<SolvedProblemsPage />} />
+                <Route path="/ecosystem-dashboard" element={<EcosystemDashboard />} />
+                
                 <Route path="/chapters/new" element={<CreateChapterPage />} /> {/* <-- 2. ADD THE NEW ROUTE */}
                 <Route path="/scribe/:documentId" element={<ScribeSessionPage />} />
-                <Route path="/urgent-session/:sessionId/essay" element={<ScribeSessionPage />} />
+                <Route path="/live-session/:sessionId" element={<DualModeLiveSession />} />
+                <Route path="/urgent-session/:sessionId/essay" element={<UrgentEssaySessionPage />} />
+                <Route path="/resume-optimization" element={<VisualContextResumePage />} />
+                <Route path="/resume-optimization/:sessionId" element={<VisualContextResumePage />} />
+                <Route path="/resume-assistant" element={<CleanResumeAssistant />} />
+                <Route path="/resume-coach" element={<VisualContextResumePage />} />
+                <Route path="/resume-pdf" element={<CssPdfResumePage />} />
+                <Route path="/azure-vision-test" element={<AzureVisionTestPage />} />
+                <Route path="/ai-writing-assistant" element={<SessionTypeSelector />} />
                 
                 {/* Teacher/Profile Search Routes */}
                 <Route path="/teachers/search" element={<TeacherSearchPage />} />
                 <Route path="/profile/setup" element={<ProtectedRoute token={token} user={user}><ProfileSetupPage /></ProtectedRoute>} />
                 <Route path="/profile/:profileId" element={<ProfileViewPage />} />
                 <Route path="/profiles/search" element={<ProfileSearchPage />} />
+                <Route path="/teacher-profile" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><TeacherProfile /></ProtectedRoute>} />
 
                 {/* ASCENDIA PLATFORM: New Mentor & Social Features */}
                 <Route path="/talent-crucible" element={<ProtectedRoute token={token} user={user}><TalentCruciblePage /></ProtectedRoute>} />
-                <Route path="/sessions" element={<ProtectedRoute token={token} user={user}><SessionManagementPage /></ProtectedRoute>} />
+                <Route path="/sessions" element={<ProtectedRoute token={token} user={user}><SessionsPage /></ProtectedRoute>} />
+                <Route path="/sessions/calendar" element={<ProtectedRoute token={token} user={user}><SessionCalendarPage /></ProtectedRoute>} />
+                <Route path="/session-management" element={<ProtectedRoute token={token} user={user}><SessionManagementPage /></ProtectedRoute>} />
+                <Route path="/student-sessions" element={<ProtectedRoute token={token} user={user}><StudentSessionsPage /></ProtectedRoute>} />
+                <Route path="/session-mailbox" element={<ProtectedRoute token={token} user={user}><SessionMailbox /></ProtectedRoute>} />
                 <Route path="/trust-graph" element={<ProtectedRoute token={token} user={user}><TrustGraphPage /></ProtectedRoute>} />
+                <Route path="/trust-graph-simple" element={<ProtectedRoute token={token} user={user}><TrustGraphSimple /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute token={token} user={user}><AIChatPage /></ProtectedRoute>} />
                 <Route path="/trade" element={<ProtectedRoute token={token} user={user}><TradingTerminalPage /></ProtectedRoute>} />
+                <Route path="/video-session/:sessionId" element={<ProtectedRoute token={token} user={user}><VideoSessionPage /></ProtectedRoute>} />
                 
                 {/* Financial Hub Routes */}
                 <Route path="/trading-terminal" element={<ProtectedRoute token={token} user={user}><FinancialRoute><ZenithTradeCommandCenter /></FinancialRoute></ProtectedRoute>} />

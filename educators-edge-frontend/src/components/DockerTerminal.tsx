@@ -34,7 +34,7 @@ interface DockerTerminalProps {
 }
 
 export interface DockerTerminalRef {
-    executeCode: (code: string, language: string) => Promise<any>;
+    executeCode: (code: string, language: string, options?: { testCases?: any[] }) => Promise<any>;
     quickExecute: (code: string, language: string) => Promise<any>;
     sendInput: (input: string) => void;
     createSession: () => Promise<void>;
@@ -82,9 +82,9 @@ const DockerTerminal = forwardRef<DockerTerminalRef, DockerTerminalProps>(({
 
     // Expose methods through ref
     useImperativeHandle(ref, () => ({
-        executeCode: async (code: string, language: string) => {
+        executeCode: async (code: string, language: string, options?: { testCases?: any[] }) => {
             try {
-                const result = await executeCode(code, language);
+                const result = await executeCode(code, language, options);
                 onCodeExecution?.(result);
                 return result;
             } catch (err: any) {

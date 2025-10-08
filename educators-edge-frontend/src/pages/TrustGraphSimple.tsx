@@ -1,6 +1,6 @@
 // Simplified Trust Graph - Clean, intuitive teacher-student interactions
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import TeacherCalendar from '../components/TeacherCalendar';
 import {
     MessageCircle,
     Calendar,
@@ -18,13 +19,32 @@ import {
     Clock,
     Star,
     BookOpen,
-    Video,
     Send,
-    X
+    Award,
+    TrendingUp,
+    Brain,
+    HandHeart,
+    Users2,
+    BarChart3,
+    Bot
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+interface Achievement {
+    title: string;
+    description: string;
+    type: string;
+    issuer: string;
+    date: string;
+}
+
+interface PScores {
+    academic: number;
+    community: number;
+    mentorship: number;
+    analytical: number;
+    total: number;
+}
 
 interface Teacher {
     id: string;
@@ -38,6 +58,8 @@ interface Teacher {
     total_sessions: number;
     average_rating: number;
     specializations: string[];
+    achievements: Achievement[];
+    p_scores: PScores;
     location?: string;
 }
 
@@ -51,7 +73,6 @@ interface SessionRequest {
 }
 
 const TrustGraphSimple: React.FC = () => {
-    const navigate = useNavigate();
     
     // State
     const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -70,6 +91,8 @@ const TrustGraphSimple: React.FC = () => {
     const [sessionType, setSessionType] = useState('tutoring');
     const [sessionDescription, setSessionDescription] = useState('');
     const [messageText, setMessageText] = useState('');
+    const [selectedDateTime, setSelectedDateTime] = useState<string | null>(null);
+    const [showCalendar, setShowCalendar] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -79,14 +102,14 @@ const TrustGraphSimple: React.FC = () => {
         try {
             setLoading(true);
             const [teachersRes, connectionsRes, requestsRes] = await Promise.all([
-                apiClient.get('/api/ascendia/network/search?q=&role=teacher'),
+                apiClient.get('/api/profiles/search/profiles?service_type=all&limit=50'),
                 apiClient.get('/api/ascendia/connections/my-connections'),
                 apiClient.get('/api/sessions/requests?type=outgoing')
             ]);
 
-            // All teachers/mentors
-            if (teachersRes.data.success) {
-                setTeachers(teachersRes.data.results || []);
+            // All teachers/mentors (including AI bots)
+            if (teachersRes.data.profiles) {
+                setTeachers(teachersRes.data.profiles || []);
             }
 
             // Connected teachers
@@ -115,6 +138,8 @@ const TrustGraphSimple: React.FC = () => {
         setSelectedTeacher(teacher);
         setSessionDescription('');
         setSessionType(teacher.is_mentor ? 'mentoring' : 'tutoring');
+        setSelectedDateTime(null);
+        setShowCalendar(false);
         setShowSessionModal(true);
     };
 
@@ -131,15 +156,27 @@ const TrustGraphSimple: React.FC = () => {
         }
 
         try {
-            const response = await apiClient.post('/api/sessions/request', {
+            const requestData: any = {
                 mentorId: selectedTeacher.id,
                 sessionType: sessionType,
                 description: sessionDescription.trim(),
                 preferredTool: 'ascendialaunchpad'
-            });
+            };
+
+            // Add calendar data if time slot was selected
+            if (selectedDateTime) {
+                requestData.preferred_datetime = selectedDateTime;
+                requestData.duration_minutes = 60; // Default duration
+                requestData.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            }
+
+            const response = await apiClient.post('/api/sessions/request', requestData);
 
             if (response.data.success) {
-                toast.success('Session request sent! The teacher will be notified.');
+                const message = selectedDateTime 
+                    ? 'Session request sent with your preferred time! The teacher will review and confirm.'
+                    : 'Session request sent! The teacher will be notified.';
+                toast.success(message);
                 setShowSessionModal(false);
                 fetchData(); // Refresh requests
             }
@@ -155,12 +192,49 @@ const TrustGraphSimple: React.FC = () => {
         }
 
         try {
-            // For now, redirect to sessions page or implement messaging
-            navigate(`/sessions?teacher=${selectedTeacher.id}&message=${encodeURIComponent(messageText)}`);
-            setShowMessageModal(false);
+            // Create a session request with the message as description
+            const response = await apiClient.post('/api/sessions/request', {
+                mentorId: selectedTeacher.id,
+                sessionType: 'consultation',
+                description: `Message: ${messageText.trim()}`,
+                preferredTool: 'messages'
+            });
+
+            if (response.data.success) {
+                toast.success('Message sent! The teacher can respond by accepting a consultation session.');
+                setShowMessageModal(false);
+                fetchData(); // Refresh requests
+            }
         } catch (error: any) {
-            toast.error('Failed to send message');
+            console.error('Message error:', error);
+            toast.error('Failed to send message. Try requesting a session instead.');
         }
+    };
+
+    const handleAIBotChat = async (aiBot: any) => {
+        try {
+            // Start a session with the AI bot
+            const response = await apiClient.post('/api/ai-bots/session/start', {
+                botId: aiBot.ai_bot_id,
+                sessionType: 'mentoring',
+                problem: 'General inquiry from Trust Graph'
+            });
+
+            if (response.data.success) {
+                toast.success(`Starting chat with ${aiBot.display_name}!`);
+                // Navigate to AI chat interface
+                window.location.href = `/ai-chat?session=${response.data.session.id}&bot=${aiBot.ai_bot_id}`;
+            }
+        } catch (error: any) {
+            console.error('AI bot chat error:', error);
+            toast.error(error.response?.data?.error || 'Failed to start chat with AI mentor');
+        }
+    };
+
+    const handleUrgentRequest = (aiBot: any) => {
+        // For urgent requests, we could implement a modal or direct navigation
+        // For now, let's just start a chat session
+        handleAIBotChat(aiBot);
     };
 
     const filteredTeachers = teachers.filter(teacher => 
@@ -169,37 +243,143 @@ const TrustGraphSimple: React.FC = () => {
         teacher.specializations?.some(spec => spec.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
-    const renderTeacherCard = (teacher: Teacher, isConnected = false) => (
-        <Card key={teacher.id} className="bg-slate-900/40 border-slate-700 hover:border-slate-600 transition-all">
-            <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12 border border-slate-600">
-                        <AvatarImage src={`/api/avatars/${teacher.id}`} />
-                        <AvatarFallback className="bg-slate-700 text-white">
-                            {teacher.display_name?.charAt(0) || teacher.username?.charAt(0) || '?'}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-white">{teacher.display_name || teacher.username}</h3>
-                            {teacher.is_mentor && (
-                                <Badge className="bg-blue-500/20 text-blue-300 text-xs">Mentor</Badge>
-                            )}
-                            {(teacher.role === 'teacher' || teacher.is_searchable_teacher) && (
-                                <Badge className="bg-green-500/20 text-green-300 text-xs">
-                                    <GraduationCap className="h-3 w-3 mr-1" />
-                                    Teacher
-                                </Badge>
-                            )}
+    const renderTeacherCard = (teacher: Teacher) => {
+        const isAIBot = teacher.is_ai_bot || teacher.ai_bot_id;
+        
+        return (
+            <Card key={teacher.id} className={`bg-slate-900/40 border-slate-700 hover:border-slate-600 transition-all ${isAIBot ? 'ring-1 ring-cyan-500/20 border-cyan-500/50' : ''}`}>
+                <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3">
+                        <Avatar className={`h-12 w-12 border ${isAIBot ? 'border-cyan-500 ring-2 ring-cyan-500/30' : 'border-slate-600'}`}>
+                            <AvatarImage src={`/api/avatars/${teacher.id}`} />
+                            <AvatarFallback className={`text-white ${isAIBot ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-slate-700'}`}>
+                                {isAIBot ? (
+                                    <Bot className="h-6 w-6 text-white" />
+                                ) : (
+                                    teacher.display_name?.charAt(0) || teacher.username?.charAt(0) || '?'
+                                )}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-white">{teacher.display_name || teacher.username}</h3>
+                                {isAIBot && (
+                                    <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-xs">
+                                        <Bot className="h-3 w-3 mr-1" />
+                                        AI Mentor
+                                    </Badge>
+                                )}
+                                {!isAIBot && teacher.is_mentor && (
+                                    <Badge className="bg-blue-500/20 text-blue-300 text-xs">Mentor</Badge>
+                                )}
+                                {!isAIBot && (teacher.role === 'teacher' || teacher.is_searchable_teacher) && (
+                                    <Badge className="bg-green-500/20 text-green-300 text-xs">
+                                        <GraduationCap className="h-3 w-3 mr-1" />
+                                        Teacher
+                                    </Badge>
+                                )}
+                            </div>
+                            <p className="text-sm text-slate-400">{isAIBot ? teacher.personality_type : teacher.user_tier}</p>
                         </div>
-                        <p className="text-sm text-slate-400">{teacher.user_tier}</p>
                     </div>
-                </div>
-            </CardHeader>
+                </CardHeader>
             
             <CardContent className="space-y-3">
                 {teacher.bio && (
                     <p className="text-sm text-slate-300 line-clamp-2">{teacher.bio}</p>
+                )}
+                
+                {/* P Scores - Four Pillars */}
+                {teacher.p_scores && (
+                    <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <TrendingUp className="h-4 w-4 text-blue-400" />
+                            <span className="text-sm font-medium text-white">P Score: {teacher.p_scores.total}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-1">
+                                <Brain className="h-3 w-3 text-purple-400" />
+                                <span className="text-slate-300">Academic: {teacher.p_scores.academic}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <Users2 className="h-3 w-3 text-green-400" />
+                                <span className="text-slate-300">Community: {teacher.p_scores.community}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <HandHeart className="h-3 w-3 text-blue-400" />
+                                <span className="text-slate-300">Mentorship: {teacher.p_scores.mentorship}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <BarChart3 className="h-3 w-3 text-orange-400" />
+                                <span className="text-slate-300">Analytical: {teacher.p_scores.analytical}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Specializations */}
+                {((teacher.specializations && teacher.specializations.length > 0) || (isAIBot && teacher.ai_specialization)) && (
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <GraduationCap className="h-4 w-4 text-green-400" />
+                            <span className="text-sm font-medium text-white">Specializations</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                            {isAIBot && teacher.ai_specialization ? (
+                                // AI Bot specializations from their focus area
+                                teacher.ai_specialization.split(', ').slice(0, 3).map((spec: string, idx: number) => (
+                                    <Badge key={idx} variant="secondary" className="text-xs bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
+                                        <Bot className="h-2 w-2 mr-1" />
+                                        {spec.trim()}
+                                    </Badge>
+                                ))
+                            ) : (
+                                // Regular teacher specializations
+                                teacher.specializations?.slice(0, 3).map((spec: any, idx: number) => (
+                                    <Badge key={idx} variant="secondary" className="text-xs bg-slate-700 text-slate-300">
+                                        {typeof spec === 'string' ? spec : spec.name}
+                                    </Badge>
+                                ))
+                            )}
+                            {!isAIBot && teacher.specializations && teacher.specializations.length > 3 && (
+                                <Badge variant="secondary" className="text-xs bg-slate-700 text-slate-400">
+                                    +{teacher.specializations.length - 3}
+                                </Badge>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Top Achievements */}
+                {teacher.achievements && teacher.achievements.length > 0 && (
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <Award className="h-4 w-4 text-yellow-400" />
+                            <span className="text-sm font-medium text-white">Top Achievements</span>
+                        </div>
+                        <div className="space-y-1">
+                            {teacher.achievements.slice(0, 2).map((achievement, index) => (
+                                <div key={index} className="bg-slate-800/30 rounded p-2">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <p className="text-xs font-medium text-slate-200">{achievement.title}</p>
+                                            {achievement.issuer && (
+                                                <p className="text-xs text-slate-400">{achievement.issuer}</p>
+                                            )}
+                                        </div>
+                                        <Badge className="bg-yellow-500/20 text-yellow-300 text-xs">
+                                            {achievement.type}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            ))}
+                            {teacher.achievements.length > 2 && (
+                                <p className="text-xs text-slate-400 text-center">
+                                    +{teacher.achievements.length - 2} more achievements
+                                </p>
+                            )}
+                        </div>
+                    </div>
                 )}
                 
                 {teacher.total_sessions > 0 && (
@@ -216,26 +396,50 @@ const TrustGraphSimple: React.FC = () => {
                 )}
 
                 <div className="flex gap-2 pt-2">
-                    <Button 
-                        size="sm" 
-                        onClick={() => handleSendMessage(teacher)}
-                        className="flex-1 bg-blue-600 hover:bg-blue-500"
-                    >
-                        <MessageCircle className="h-3 w-3 mr-1" />
-                        Message
-                    </Button>
-                    <Button 
-                        size="sm" 
-                        onClick={() => handleRequestSession(teacher)}
-                        className="flex-1 bg-green-600 hover:bg-green-500"
-                    >
-                        <Calendar className="h-3 w-3 mr-1" />
-                        Book Session
-                    </Button>
+                    {isAIBot ? (
+                        <>
+                            <Button 
+                                size="sm" 
+                                onClick={() => handleAIBotChat(teacher)}
+                                className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white"
+                            >
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                Chat Now
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                onClick={() => handleUrgentRequest(teacher)}
+                                className="flex-1 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
+                            >
+                                <Bot className="h-3 w-3 mr-1" />
+                                Urgent Help
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button 
+                                size="sm" 
+                                onClick={() => handleSendMessage(teacher)}
+                                className="flex-1 bg-blue-600 hover:bg-blue-500"
+                            >
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                Message
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                onClick={() => handleRequestSession(teacher)}
+                                className="flex-1 bg-green-600 hover:bg-green-500"
+                            >
+                                <Calendar className="h-3 w-3 mr-1" />
+                                Book Session
+                            </Button>
+                        </>
+                    )}
                 </div>
             </CardContent>
         </Card>
-    );
+        );
+    };
 
     if (loading) {
         return (
@@ -312,7 +516,7 @@ const TrustGraphSimple: React.FC = () => {
 
                 {activeTab === 'connected' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {connectedTeachers.map(teacher => renderTeacherCard(teacher, true))}
+                        {connectedTeachers.map(teacher => renderTeacherCard(teacher))}
                         {connectedTeachers.length === 0 && (
                             <div className="col-span-full text-center text-slate-400 py-12">
                                 <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -386,10 +590,12 @@ const TrustGraphSimple: React.FC = () => {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="tutoring">Tutoring</SelectItem>
-                                        <SelectItem value="mentoring">Mentoring</SelectItem>
+                                        <SelectItem value="tutoring">Tutoring Session</SelectItem>
+                                        <SelectItem value="mentoring">Mentoring Session</SelectItem>
                                         <SelectItem value="essay_editing">Essay Review</SelectItem>
                                         <SelectItem value="counseling">Academic Counseling</SelectItem>
+                                        <SelectItem value="consultation">Quick Consultation</SelectItem>
+                                        <SelectItem value="collaboration">Collaboration</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -405,6 +611,57 @@ const TrustGraphSimple: React.FC = () => {
                                     className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-400"
                                     rows={4}
                                 />
+                            </div>
+
+                            {/* Calendar Integration */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="block text-sm font-medium text-slate-300">
+                                        Schedule (Optional)
+                                    </label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowCalendar(!showCalendar)}
+                                        className="text-xs"
+                                    >
+                                        {showCalendar ? 'Hide Calendar' : 'Pick Time'}
+                                    </Button>
+                                </div>
+                                
+                                {selectedDateTime && (
+                                    <div className="mb-3 p-2 bg-green-900/20 border border-green-500/30 rounded">
+                                        <div className="flex items-center gap-2 text-sm text-green-300">
+                                            <Calendar className="h-4 w-4" />
+                                            <span>
+                                                Preferred time: {new Date(selectedDateTime).toLocaleString()}
+                                            </span>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => setSelectedDateTime(null)}
+                                                className="ml-auto h-6 w-6 p-0 text-green-300 hover:text-green-100"
+                                            >
+                                                ×
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {showCalendar && selectedTeacher && (
+                                    <div className="border border-slate-600 rounded-lg overflow-hidden">
+                                        <TeacherCalendar
+                                            teacherId={selectedTeacher.id}
+                                            isOwnCalendar={false}
+                                            onTimeSlotSelect={(startTime, endTime) => {
+                                                setSelectedDateTime(startTime);
+                                                setShowCalendar(false);
+                                                toast.success('Time selected! Continue with your request.');
+                                            }}
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex gap-3 pt-4">

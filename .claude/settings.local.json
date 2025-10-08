@@ -1,10 +1,45 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(node:*)",
+      "WebSearch",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-backend\\controllers/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-frontend\\src\\pages/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-frontend\\src\\pages/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-frontend\\src\\pages/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-frontend\\src\\pages/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-frontend\\src\\pages/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-frontend\\src\\pages/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-backend\\services/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-backend\\services/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-backend\\services/**)",
+      "Read(/C:\\Users\\Bilal\\Downloads\\educator-app\\educators-edge-backend\\services/**)",
+      "Bash(npm test)",
+      "Bash(sed:*)",
+      "Bash(awk:*)",
+      "Bash(npx tsc:*)",
+      "Bash(find:*)",
+      "Bash(psql:*)",
+      "Bash(cat:*)",
+      "Bash(npm install:*)",
+      "Bash(rm:*)",
+      "Bash(npm cache clean:*)",
+      "WebFetch(domain:liveblocks.io)",
+      "Bash(npm start)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)",
+      "Bash(dir:*)",
+      "Bash(ping:*)",
+      "Bash(timeout:*)"
+    ],
     "additionalDirectories": [
       "C:\\c\\Users\\Bilal\\Downloads\\educator-app"
-    ],
-    "allow": [
-      "Bash(git add:*)"
     ]
   }
 }

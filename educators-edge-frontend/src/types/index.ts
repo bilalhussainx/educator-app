@@ -46,6 +46,53 @@ export interface Course {
     lesson_count: number;
 }
 
+// Enhanced AI-powered course structure
+export interface EnhancedCourse {
+    id: string;
+    title: string;
+    description: string;
+    teacher_id: string;
+    teacher_name?: string;
+    difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+    estimated_duration: string;
+    target_audience: string;
+    learning_outcomes: string[];
+    prerequisites: string[];
+    metadata: {
+        generationType?: 'smart' | 'premium';
+        originalData?: any;
+    };
+    language: string;
+    course_type: 'smart' | 'premium' | 'standard';
+    is_published: boolean;
+    created_at: string;
+    updated_at?: string;
+    enrolled_count?: number;
+    ai_tutor?: {
+        name: string;
+        personality: 'encouraging' | 'socratic' | 'direct' | 'mentor';
+        specialization: string[];
+        teaching_style: string;
+    };
+}
+
+// AI supervision session data
+export interface AISupervisionSession {
+    id: string;
+    student_id: string;
+    lesson_id: string;
+    session_data: any;
+    start_time: string;
+    end_time?: string;
+    hints_used: number;
+    progress_metrics: any;
+    ai_interventions: Array<{
+        timestamp: string;
+        type: 'hint' | 'suggestion' | 'correction';
+        content: string;
+    }>;
+}
+
 // NEW & MOVED: Represents a student's enrolled course with progress.
 // This extends the base Course type with student-specific progress info.
 export interface EnrolledCourse extends Course {

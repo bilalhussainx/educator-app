@@ -1,5 +1,6 @@
 // educators-edge-backend/src/services/websocketRouter.js
 const { WebSocketServer } = require('ws');
+const { Server } = require('socket.io');
 const url = require('url');
 const initializeLiveTutorialHandler = require('../handlers/liveTutorialHandler'); // The old websocketHandler, renamed
 const initializeSimulationHandler = require('../handlers/simulationHandler');   // The new handler we will create
@@ -10,6 +11,26 @@ function initializeWebSocketRouting(httpServer) {
     const simulationWss = new WebSocketServer({ noServer: true });
     const collaborationWss = new WebSocketServer({ noServer: true });
     const terminalWss = new WebSocketServer({ noServer: true });
+
+    // Create Socket.io server for live sessions
+    const io = new Server(httpServer, {
+        cors: {
+            origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
+            credentials: true
+        },
+        path: '/socket.io'
+    });
+
+    // Handle Socket.io connections
+    io.on('connection', (socket) => {
+        console.log('[SOCKET.IO] Client connected:', socket.id);
+
+        socket.on('disconnect', () => {
+            console.log('[SOCKET.IO] Client disconnected:', socket.id);
+        });
+
+        // Add any additional Socket.io event handlers here as needed
+    });
 
     // Initialize handlers with their respective WebSocket servers
     initializeSimulationHandler(simulationWss);
@@ -44,6 +65,9 @@ function initializeWebSocketRouting(httpServer) {
     });
 
     console.log('✅ Unified WebSocket routing initialized.');
+
+    // Return the Socket.IO instance so it can be used elsewhere
+    return io;
 }
 
 module.exports = initializeWebSocketRouting;

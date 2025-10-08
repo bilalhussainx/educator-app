@@ -1,0 +1,100 @@
+
+> educators-edge-backend@1.0.0 start
+> node server.js
+
+Raw DATABASE_URL: postgresql://neondb_owner:npg_AX7NorpK3bLU@ep-calm-dawn-aeeyn1n1-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+Cleaned DATABASE_URL: postgresql://neondb_owner:npg_AX7NorpK3bLU@ep-calm-dawn-aeeyn1n1-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+Is Cloud Database: true
+Database configuration: Cloud (SSL enabled)
+Connecting to: ep-calm-dawn-aeeyn1n1-pooler.c-2.us-east-2.aws.neon.tech
+--- BullMQ Queue Initializing ---
+[CLOUDINARY] SDK configured successfully.
+[SimulationService] Initialized with default date: 2020-01-01
+🚀 Fast Execution Service initialized
+🔧 TestCaseNormalizer initialized
+🏛️ Judge0Service initialized
+⚠️  STRIPE_SECRET_KEY not configured - Payment service will be disabled
+[DOCUMENT] Mammoth library loaded successfully
+[DOCUMENT] PDF-parse library loaded successfully
+[SimulationPortfolio] Service initialized
+MozartStroke AI Service initialized with Claude API (primary)
+Enhanced MozartStroke Service initialized with Claude API
+Claude Inline Analysis Service initialized with Claude API
+Enhanced AI Comment Service initialized with Claude API
+Comprehensive AI Coach Service initialized with Claude API
+Gemini Assistant Service initialized with Claude API
+✅ Unified WebSocket routing initialized.
+Server is running on port 10000
+WebSocket server is ready.
+✅ Redis client for Queue connected.
+✅ Database connected successfully
+✅ Initial database connection test successful
+[URGENT_SESSION] Processing scheduled sessions. Current time: 2025-10-07T03:27:49.813Z
+[URGENT_SESSION] Total scheduled sessions: 0
+[URGENT_SESSION] Processing scheduled sessions. Current time: 2025-10-07T03:28:49.814Z
+[URGENT_SESSION] Total scheduled sessions: 0
+Error: read ECONNRESET
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+[URGENT_SESSION] Processing scheduled sessions. Current time: 2025-10-07T06:29:09.179Z
+[URGENT_SESSION] Total scheduled sessions: 0
+❌ Redis client for Queue Error: read ECONNRESET
+BullMQ Queue Error: read ECONNRESET
+Error: read ECONNRESET
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:216:20) {
+  errno: -4077,
+  code: 'ECONNRESET',
+  syscall: 'read'
+}
+✅ Redis client for Queue connected.
+[URGENT_SESSION] Processing scheduled sessions. Current time: 2025-10-07T06:59:33.183Z
+[URGENT_SESSION] Total scheduled sessions: 0
+[URGENT_SESSION] Processing scheduled sessions. Current time: 2025-10-07T07:00:33.189Z
+[URGENT_SESSION] Total scheduled sessions: 0
+[WSS ROUTER] Upgrade request for path: /socket.io/
+[WSS ROUTER] No handler for path /socket.io/. Destroying socket.
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired
+[WSS ROUTER] Upgrade request for path: /ws
+[WS DEBUG] New connection attempt
+[WS Auth] Connection rejected due to invalid token: jwt expired

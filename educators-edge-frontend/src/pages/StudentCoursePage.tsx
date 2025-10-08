@@ -9,7 +9,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { Course, Lesson } from '../types/index.ts';
+import type { Course, Lesson, EnhancedCourse, AISupervisionSession } from '../types/index.ts';
 import apiClient from '../services/apiClient';
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import * as ProgressPrimitive from "@radix-ui/react-progress";
@@ -123,7 +123,11 @@ const StudentCoursePage: React.FC = () => {
     useEffect(() => {
         const fetchCourse = async () => {
             const token = localStorage.getItem('authToken');
-            if (!token || !courseId) { navigate('/login'); return; }
+            if (!token || !courseId || courseId === 'undefined') {
+                console.error('[StudentCoursePage] Invalid courseId:', courseId);
+                navigate('/courses/discover');
+                return;
+            }
             setIsLoading(true);
             try {
                 const response = await apiClient.get(`/api/students/my-courses/${courseId}`);

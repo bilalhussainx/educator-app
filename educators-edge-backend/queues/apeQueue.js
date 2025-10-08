@@ -6,19 +6,42 @@ require('dotenv').config();
 console.log("--- BullMQ Queue Initializing ---");
 
 if (!process.env.REDIS_URL) {
-    console.error("FATAL ERROR: REDIS_URL is not defined in the environment.");
-    process.exit(1);
+    console.warn("⚠️  REDIS_URL not defined, falling back to local Redis at localhost:6379");
 }
 
 // 1. Create an explicit Redis client instance from the URL.
-const redisClient = new Redis(process.env.REDIS_URL, {
-    // Recommended options for production environments like Render
-    maxRetriesPerRequest: null,
-    enableReadyCheck: false,
-});
+let redisClient;
+try {
+    redisClient = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+        // Recommended options for production environments like Render
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        lazyConnect: true,
+        retryDelayOnFailover: 100,
+        maxRetriesPerRequest: null
+    });
 
-redisClient.on('connect', () => console.log('Redis client for Queue connected.'));
-redisClient.on('error', (err) => console.error('Redis client for Queue Error:', err));
+    redisClient.on('connect', () => console.log('✅ Redis client for Queue connected.'));
+    redisClient.on('error', (err) => {
+        console.error('❌ Redis client for Queue Error:', err.message);
+        // Try to reconnect with local Redis if remote fails
+        if (err.message.includes('ENOTFOUND') && process.env.REDIS_URL) {
+            console.log('🔄 Queue falling back to local Redis...');
+            redisClient = new Redis('redis://localhost:6379', {
+                maxRetriesPerRequest: null,
+                enableReadyCheck: false,
+                lazyConnect: true
+            });
+        }
+    });
+} catch (error) {
+    console.error('❌ Failed to create Queue Redis client:', error);
+    redisClient = new Redis('redis://localhost:6379', {
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        lazyConnect: true
+    });
+}
 
 // 2. Pass the created client directly to BullMQ.
 //    This removes all guesswork.
@@ -66,7 +89,7 @@ module.exports = apeQueue;
 // });
 
 // console.log("BullMQ Worker started and waiting for jobs.");
-// // // src/queues/apeQueue.js
+// // // s404rc/queues/apeQueue.js
 // // const { Queue } = require('bullmq');
 // // const redisConnection = require('../config/redis');
 

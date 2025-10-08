@@ -10,7 +10,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Course } from '../types/index.ts';
+import type { Course, EnhancedCourse } from '../types/index.ts';
 import { cn } from "@/lib/utils";
 import apiClient from '../services/apiClient';
 
@@ -26,6 +26,11 @@ interface PublicCourse extends Course {
     teacher_name: string;
 }
 
+// --- Type definition for a public enhanced course ---
+interface PublicEnhancedCourse extends EnhancedCourse {
+    teacher_name: string;
+}
+
 // --- CoreZenith Styled Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
     <Card 
@@ -36,13 +41,15 @@ const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...
 
 const DiscoverCoursesPage: React.FC = () => {
     const navigate = useNavigate();
-    // --- State Management (100% Original) ---
+    // --- State Management (Enhanced) ---
     const [courses, setCourses] = useState<PublicCourse[]>([]);
+    const [enhancedCourses, setEnhancedCourses] = useState<PublicEnhancedCourse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showEnhanced, setShowEnhanced] = useState(true);
 
-    // --- Data Fetching Logic (100% Original) ---
+    // --- Enhanced Data Fetching Logic ---
     useEffect(() => {
         const fetchCourses = async () => {
             const token = localStorage.getItem('authToken');
@@ -51,8 +58,24 @@ const DiscoverCoursesPage: React.FC = () => {
                 return;
             }
             try {
-                const response = await apiClient.get('/api/courses/discover');
-                setCourses(response.data);
+                // Fetch both regular and enhanced courses in parallel
+                const [regularResponse, enhancedResponse] = await Promise.allSettled([
+                    apiClient.get('/api/courses/discover'),
+                    apiClient.get('/api/enhanced-courses/discover')
+                ]);
+
+                if (regularResponse.status === 'fulfilled') {
+                    setCourses(regularResponse.value.data);
+                }
+
+                if (enhancedResponse.status === 'fulfilled') {
+                    setEnhancedCourses(enhancedResponse.value.data);
+                }
+
+                // If both fail, show error
+                if (regularResponse.status === 'rejected' && enhancedResponse.status === 'rejected') {
+                    setError('Failed to load courses');
+                }
             } catch (err: any) {
                 const errorMessage = err.response?.data?.error || err.message || 'An unknown error occurred.';
                 setError(errorMessage);
@@ -63,12 +86,22 @@ const DiscoverCoursesPage: React.FC = () => {
         fetchCourses();
     }, [navigate]);
 
-    // --- Filtering Logic (100% Original) ---
+    // --- Enhanced Filtering Logic ---
     const filteredCourses = courses.filter(course => 
         course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         course.teacher_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const filteredEnhancedCourses = enhancedCourses.filter(course => 
+        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.teacher_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Combine courses for display
+    const displayCourses = showEnhanced ? filteredEnhancedCourses : filteredCourses;
+    const totalCoursesCount = filteredCourses.length + filteredEnhancedCourses.length;
 
     const renderContent = () => {
         if (isLoading) {
@@ -85,24 +118,76 @@ const DiscoverCoursesPage: React.FC = () => {
             );
         }
 
-        if (filteredCourses.length > 0) {
+        if (displayCourses.length > 0) {
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredCourses.map(course => (
+                    {displayCourses.map(course => (
                         <GlassCard key={course.id} className="flex flex-col">
                             <CardHeader>
-                                <CardTitle className="text-xl font-bold text-slate-100">{course.title}</CardTitle>
-                                <CardDescription className="text-slate-400">By {course.teacher_name}</CardDescription>
+                                <CardTitle className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                                    {course.title}
+                                    {showEnhanced && (
+                                        <span className="text-xs bg-gradient-to-r from-cyan-400 to-purple-400 text-black px-2 py-1 rounded-full font-bold">
+                                            AI
+                                        </span>
+                                    )}
+                                </CardTitle>
+                                <CardDescription className="text-slate-400">
+                                    By {course.teacher_name || 'AI Tutor'}
+                                    {showEnhanced && (course as PublicEnhancedCourse).difficulty_level && (
+                                        <span className="ml-2 text-cyan-400 capitalize">• {(course as PublicEnhancedCourse).difficulty_level}</span>
+                                    )}
+                                </CardDescription>
                             </CardHeader>
                             <CardContent className="flex-grow flex flex-col justify-between">
                                 <p className="text-sm text-slate-300 mb-6 flex-grow">{course.description}</p>
-                                <div className="space-y-4">
-                                     <div className="flex justify-between text-sm text-slate-400 border-t border-slate-700 pt-4">
-                                        <div className="flex items-center gap-2"><Users className="h-4 w-4 text-cyan-400/70" /><span>{course.student_count} Students</span></div>
-                                        <div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-cyan-400/70" /><span>{course.lesson_count} Lessons</span></div>
+                                
+                                {/* Enhanced course features */}
+                                {showEnhanced && (course as PublicEnhancedCourse).ai_tutor && (
+                                    <div className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                                            <span className="text-xs font-medium text-cyan-400">AI Tutor</span>
+                                        </div>
+                                        <p className="text-xs text-slate-400">{(course as PublicEnhancedCourse).ai_tutor?.teaching_style}</p>
                                     </div>
-                                    <Button className="w-full bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-bold" onClick={() => navigate(`/courses/${course.id}/landing`)}>
-                                        Explore Blueprint
+                                )}
+
+                                <div className="space-y-4">
+                                    <div className="flex justify-between text-sm text-slate-400 border-t border-slate-700 pt-4">
+                                        {showEnhanced ? (
+                                            <>
+                                                <div className="flex items-center gap-2">
+                                                    <Users className="h-4 w-4 text-cyan-400/70" />
+                                                    <span>{(course as PublicEnhancedCourse).enrolled_count || 0} Enrolled</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <BookOpen className="h-4 w-4 text-cyan-400/70" />
+                                                    <span>{(course as PublicEnhancedCourse).estimated_duration}</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center gap-2">
+                                                    <Users className="h-4 w-4 text-cyan-400/70" />
+                                                    <span>{(course as PublicCourse).student_count} Students</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <BookOpen className="h-4 w-4 text-cyan-400/70" />
+                                                    <span>{(course as PublicCourse).lesson_count} Lessons</span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                    <Button 
+                                        className={`w-full font-bold ${
+                                            showEnhanced 
+                                                ? 'bg-gradient-to-r from-cyan-400 to-purple-400 hover:from-cyan-300 hover:to-purple-300 text-black' 
+                                                : 'bg-cyan-400 hover:bg-cyan-300 text-slate-900'
+                                        }`}
+                                        onClick={() => navigate(showEnhanced ? `/enhanced-courses/${course.id}` : `/courses/${course.id}/landing`)}
+                                    >
+                                        {showEnhanced ? 'Start AI Course' : 'Explore Blueprint'}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -132,11 +217,40 @@ const DiscoverCoursesPage: React.FC = () => {
                 <header className="mb-12 text-center">
                     <h1 className="text-5xl font-bold tracking-tighter text-slate-100">Stellar Marketplace</h1>
                     <p className="text-lg text-slate-400 mt-2 max-w-2xl mx-auto">Chart your course. Discover your next learning adventure in the CoreZenith cosmos.</p>
+                    
+                    {/* Course Type Toggle */}
+                    <div className="flex justify-center mt-6 mb-8">
+                        <div className="bg-slate-800/50 p-1 rounded-lg border border-slate-700">
+                            <Button
+                                variant={showEnhanced ? "default" : "ghost"}
+                                className={`px-6 py-2 text-sm font-medium transition-all ${
+                                    showEnhanced 
+                                        ? 'bg-gradient-to-r from-cyan-400 to-purple-400 text-black hover:from-cyan-300 hover:to-purple-300' 
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                                }`}
+                                onClick={() => setShowEnhanced(true)}
+                            >
+                                AI-Enhanced ({filteredEnhancedCourses.length})
+                            </Button>
+                            <Button
+                                variant={!showEnhanced ? "default" : "ghost"}
+                                className={`px-6 py-2 text-sm font-medium transition-all ${
+                                    !showEnhanced 
+                                        ? 'bg-cyan-400 text-slate-900 hover:bg-cyan-300' 
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                                }`}
+                                onClick={() => setShowEnhanced(false)}
+                            >
+                                Traditional ({filteredCourses.length})
+                            </Button>
+                        </div>
+                    </div>
+
                     <div className="relative mt-8 max-w-xl mx-auto">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                         <Input 
                             type="text"
-                            placeholder="Search by course, topic, or instructor..."
+                            placeholder={`Search ${showEnhanced ? 'AI-enhanced' : 'traditional'} courses...`}
                             className="w-full p-4 pl-12 text-base bg-slate-900/60 border-2 border-slate-700 rounded-lg focus:border-cyan-400 focus:ring-0"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}

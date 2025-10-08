@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+
+        
+        body {
+            font-family: Arial, sans-serif;
+            color: #000000;
+            margin: 0;
+            padding: 40px;
+            background: white;
+        }
+        h1 { font-size: 28px; font-weight: bold; margin: 0 0 10px 0; }
+        h2 {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 5px;
+            margin: 20px 0 15px 0;
+        }
+        h3 { font-size: 14px; font-weight: bold; margin: 12px 0 8px 0; }
+        p { margin: 8px 0; line-height: 1.6; }
+        ul, ol { margin: 8px 0; padding-left: 20px; }
+        li { margin: 6px 0; line-height: 1.5; }
+        strong, b { font-weight: bold; }
+        em, i { font-style: italic; }
+        .resume-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 20px;
+        }
+        .resume-section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        .contact-info {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    
+
+        /* Preserve inline styles */
+        [style] {
+            /* Inline styles will be preserved */
+        }
+    </style>
+</head>
+<body>
+    
+<div class="resume-container" style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; max-width: 8.5in; margin: 0 auto; padding: 0.75in; line-height: 1.4; background: white;">
+  <div class="header" style="margin-bottom: 20px; text-align: center;">
+    <h1 style="font-size: 24pt; font-weight: 700; color: #2c3e50; margin: 0 0 10px 0; letter-spacing: 1px;">BILAL HUSSAIN</h1>
+    <div class="contact-info" style="font-size: 10pt; color: #555;">
+      Toronto, Ontario, M9L 2C5 | 437-907-1483 | bilalhussain.v1@gmail.com | <a href="#" style="color: #3498db; text-decoration: none;">LinkedIn</a>
+    </div>
+  </div>
+
+  <div class="section" style="margin-bottom: 20px;">
+    <h2 style="font-size: 14pt; font-weight: 600; color: #2c3e50; text-transform: uppercase; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 10px;">PROFESSIONAL SUMMARY</h2>
+    <p style="font-size: 10.5pt; margin: 8px 0;">
+      Harvard Computer Science graduate with 5+ years of experience in administration, curriculum development, and technical support. Skilled in office management, documentation, and client communication with proficiency in MS Office and Google Workspace. Seeking an Administrative Assistant position to leverage strong technical, organizational, and problem-solving abilities in a dynamic environment.
+    </p>
+  </div>
+
+  <div class="section" style="margin-bottom: 20px;">
+    <h2 style="font-size: 14pt; font-weight: 600; color: #2c3e50; text-transform: uppercase; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 10px;">TECHNICAL SKILLS</h2>
+    <div class="skills-container" style="display: flex; flex-direction: column; gap: 8px;">
+      <div class="skill-category" style="font-size: 10.5pt;">
+        <span class="skill-title" style="font-weight: 600; color: #2c3e50;">Software:</span>
+        MS Office Suite (Word, Excel, PowerPoint, Outlook), Google Workspace (Docs, Sheets, Gmail, Calendar)
+      </div>
+      <div class="skill-category" style="font-size: 10.5pt;">
+        <span class="skill-title" style="font-weight: 600; color: #2c3e50;">Administrative:</span>
+        Documentation, Data Entry, Scheduling, Calendar Management, Records Management
+      </div>
+      <div class="skill-category" style="font-size: 10.5pt;">
+        <span class="skill-title" style="font-weight: 600; color: #2c3e50;">Communication:</span>
+        Client Interaction, Email & Phone Correspondence, Multilingual (English, Urdu, Hindi, Punjabi)
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="margin-bottom: 20px;">
+    <h2 style="font-size: 14pt; font-weight: 600; color: #2c3e50; text-transform: uppercase; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 10px;">PROFESSIONAL EXPERIENCE</h2>
+
+    <div class="job" style="margin-bottom: 15px;">
+      <div class="job-header" style="margin-bottom: 5px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;">
+        <div>
+          <div class="job-title" style="font-weight: 600; font-size: 11pt; color: #2c3e50;">Program Facilitator & Curriculum Support Administrator</div>
+          <div class="company-info" style="font-weight: 600; font-size: 10.5pt;">Milton Academy | Milton, MA</div>
+        </div>
+        <div class="job-duration" style="font-size: 10pt; color: #555;">August 2022 - May 2024</div>
+      </div>
+      <ul class="job-bullets" style="margin: 5px 0 0 20px; padding-left: 0;">
+        <li style="font-size: 10.5pt; margin-bottom: 5px; position: relative; list-style-type: none; padding-left: 15px;">Developed and implemented Computer Science curriculum for 100+ high school students, resulting in 30% improvement in student technical proficiency</li>
+        <li style="font-size: 10.5pt; margin-bottom: 5px; position: relative; list-style-type: none; padding-left: 15px;">Managed administrative operations including scheduling, material organization, and documentation for 5+ classes per semester</li>
+        <li style="font-size: 10.5pt; margin-bottom: 5px; position: relative; list-style-type: none; padding-left: 15px;">Resolved 25+ student and faculty inquiries weekly, maintaining 98% satisfaction rate through clear communication and prompt response</li>
+      </ul>
+    </div>
+
+    <div class="job" style="margin-bottom: 15px;">
+      <div class="job-header" style="margin-bottom: 5px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;">
+        <div>
+          <div class="job-title" style="font-weight: 600; font-size: 11pt; color: #2c3e50;">Administrative Support Specialist</div>
+          <div class="company-info" style="font-weight: 600; font-size: 10.5pt;">Dignosco | Lahore, Pakistan</div>
+        </div>
+        <div class="job-duration" style="font-size: 10pt; color: #555;">August 2019 - January 2020</div>
+      </div>
+      <ul class="job-bullets" style="margin: 5px 0 0 20px; padding-left: 0;">
+        <li style="font-size: 10.5pt; margin-bottom: 5px; position: relative; list-style-type: none; padding-left: 15px;">Processed and organized 50+ high-volume documents daily with 99% accuracy while meeting strict deadlines</li>
+        <li style="font-size: 10.5pt; margin-bottom: 5px; position: relative; list-style-type: none; padding-left: 15px;">Coordinated and facilitated 10+ preparation sessions monthly, improving information delivery efficiency by 25%</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section" style="margin-bottom: 20px;">
+    <h2 style="font-size: 14pt; font-weight: 600; color: #2c3e50; text-transform: uppercase; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 10px;">EDUCATION</h2>
+    <div class="education-entry" style="display: flex; flex-direction: column; gap: 3px;">
+      <div class="degree" style="font-weight: 600; font-size: 11pt; color: #2c3e50;">Bachelor of Arts in Computer Science</div>
+      <div class="education-details" style="display: flex; justify-content: space-between; font-size: 10.5pt;">
+        <span class="institution" style="font-weight: 600;">Harvard College</span>
+        <span class="location">Cambridge, MA</span>
+        <span class="graduation" style="color: #555;">Graduated: May 2022</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+    

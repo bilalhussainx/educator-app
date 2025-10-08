@@ -20,10 +20,18 @@ export default defineConfig({
   },
   // This server block is crucial for fixing the WebSocket error.
   server: {
+    host: true, // Listen on all network interfaces (0.0.0.0)
     port: 5173, // The default Vite port
     strictPort: true,
     hmr: {
       port: 5173,
     },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:10000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   },
 })

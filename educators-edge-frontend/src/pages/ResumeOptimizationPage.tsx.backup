@@ -1,0 +1,1390 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import documentProcessor, { DocumentProcessingResult } from '../services/documentProcessor';
+import ProfessionalResumeViewer from '../components/ProfessionalResumeViewer';
+import professionalResumeEngine from '../services/professionalResumeEngine';
+import {
+    Briefcase,
+    FileText,
+    Upload,
+    Download,
+    Share,
+    Save,
+    User,
+    Settings,
+    Target,
+    TrendingUp,
+    Brain,
+    MessageSquare,
+    Clock,
+    CheckCircle,
+    AlertCircle,
+    ArrowLeft,
+    RefreshCw,
+    Zap,
+    Star
+} from 'lucide-react';
+
+interface UploadedResume {
+    id: string;
+    name: string;
+    content: string;
+    lastModified: number;
+    size: number;
+}
+
+const ResumeOptimizationPage: React.FC = () => {
+    const { sessionId } = useParams();
+    const navigate = useNavigate();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [uploadedResume, setUploadedResume] = useState<UploadedResume | null>(null);
+    const [resumeContent, setResumeContent] = useState<string>('');
+    const [inlineComments, setInlineComments] = useState<ResumeInlineComment[]>([]);
+    const [activeComment, setActiveComment] = useState<string | null>(null);
+    const [sessionTitle, setSessionTitle] = useState<string>('Resume Optimization Session');
+    const [lastSaved, setLastSaved] = useState<Date | null>(null);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'template' | 'structured'>('edit');
+    const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+    const [templatedResume, setTemplatedResume] = useState<{html: string, css: string} | null>(null);
+    const [availableTemplates, setAvailableTemplates] = useState<ResumeTemplate[]>([]);
+    const [modernThemes, setModernThemes] = useState<ModernResumeTheme[]>([]);
+    const [jsonResume, setJsonResume] = useState<JSONResume | null>(null);
+    const [structuredContent, setStructuredContent] = useState<string>('');
+    const [parsingQuality, setParsingQuality] = useState<{score: number, issues: string[], suggestions: string[]} | null>(null);
+
+    // AI Comments state
+    const [showAIComments, setShowAIComments] = useState(false);
+    const [jobDescription, setJobDescription] = useState<JobDescriptionContext | undefined>(undefined);
+
+    // AI Learning state
+    const [showLearningPanel, setShowLearningPanel] = useState(false);
+
+    // Initialize session and templates
+    useEffect(() => {
+        if (sessionId) {
+            // Load existing session data
+            console.log('Loading resume session:', sessionId);
+            setSessionTitle(`Resume Session ${sessionId}`);
+        } else {
+            // Create new session
+            const newSessionId = Date.now().toString();
+            setSessionTitle(`New Resume Session ${newSessionId}`);
+        }
+
+        // Load available templates and modern themes
+        setAvailableTemplates(resumeTemplateService.getTemplates());
+        setModernThemes(jsonResumeService.getThemes());
+
+        // Debug: Check if we have any existing content
+        console.log('📋 Initial resume content length:', resumeContent.length);
+        console.log('📋 Current view mode:', viewMode);
+    }, [sessionId]);
+
+    // Format resume content for preview with proper styling
+    const formatResumeForPreview = (content: string): string => {
+        if (!content) return '';
+
+        return content
+            // Convert section headers (ALL CAPS or Title Case followed by newline)
+            .replace(/^([A-Z][A-Z\s]+)$/gm, '<h2 class="text-xl font-bold text-blue-700 dark:text-blue-400 mt-6 mb-3 pb-1 border-b-2 border-blue-200 dark:border-blue-600">$1</h2>')
+            // Convert job titles/positions (lines with | separators)
+            .replace(/^(.+\s\|\s.+\s\|\s.+)$/gm, '<h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mt-4 mb-2">$1</h3>')
+            // Convert bullet points
+            .replace(/^[\s]*[•\-\*]\s+(.+)$/gm, '<li class="ml-4 mb-1 text-gray-700 dark:text-gray-300">$1</li>')
+            // Wrap consecutive bullet points in ul
+            .replace(/(<li[^>]*>.*<\/li>\s*)+/gs, '<ul class="list-disc list-inside space-y-1 mb-3">$&</ul>')
+            // Convert regular paragraphs
+            .replace(/^([^<\n].{10,})$/gm, '<p class="mb-3 text-gray-700 dark:text-gray-300 leading-relaxed">$1</p>')
+            // Convert contact information (email, phone patterns)
+            .replace(/([\w\.-]+@[\w\.-]+\.\w+)/g, '<a href="mailto:$1" class="text-blue-600 dark:text-blue-400 hover:underline">$1</a>')
+            .replace(/(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/g, '<span class="text-gray-600 dark:text-gray-400 font-mono">$1</span>')
+            // Add spacing for sections
+            .replace(/\n\n/g, '<br><br>')
+            .replace(/\n/g, '<br>');
+    };
+
+    // Handle file upload with real document processing
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        console.log('🚀 SMART Upload:', file.name, file.type, file.size + ' bytes');
+
+        // Validate file first
+        const validation = documentProcessor.validateFile(file);
+        if (!validation.valid) {
+            alert(`❌ ${validation.error}`);
+            event.target.value = '';
+            return;
+        }
+
+        // Get processing info
+        const processingInfo = documentProcessor.getProcessingInfo(file);
+        console.log('📋 Processing capabilities:', processingInfo);
+
+        setIsAnalyzing(true);
+
+        // Immediately show file info with processing status
+        const newResume: UploadedResume = {
+            id: Date.now().toString(),
+            name: file.name,
+            content: '', // Will be populated shortly
+            lastModified: Date.now(),
+            size: file.size
+        };
+        setUploadedResume(newResume);
+
+        try {
+            // Show processing status
+            if (processingInfo.method === 'extraction') {
+                const statusContent = `🔄 PROCESSING: ${file.name} (${Math.round(file.size/1024)}KB)\n\n` +
+                                    `📊 Processing Details:\n` +
+                                    `• Method: ${processingInfo.method === 'extraction' ? 'Smart Extraction' : 'Direct Loading'}\n` +
+                                    `• Estimated Time: ${processingInfo.estimatedTime}\n` +
+                                    `• Features: ${processingInfo.features.join(', ')}\n\n` +
+                                    `⏳ Please wait while we extract your resume content...\n` +
+                                    `This may take a few moments for large documents.\n\n` +
+                                    `✨ Content will appear here automatically when ready!`;
+
+                setResumeContent(statusContent);
+            }
+
+            // Process the document with enhanced processing and template generation
+            console.log('📄 Starting enhanced document processing...');
+            const result: DocumentProcessingResult = await documentProcessor.processFile(file, {
+                useEnhancedProcessing: true,
+                generateTemplates: true,
+                templateOptions: [
+                    {
+                        style: 'modern',
+                        colorScheme: 'blue',
+                        layout: 'single-column',
+                        fontSize: 'medium',
+                        includePhoto: false
+                    },
+                    {
+                        style: 'professional',
+                        colorScheme: 'monochrome',
+                        layout: 'single-column',
+                        fontSize: 'medium',
+                        includePhoto: false
+                    },
+                    {
+                        style: 'creative',
+                        colorScheme: 'purple',
+                        layout: 'two-column',
+                        fontSize: 'medium',
+                        includePhoto: false
+                    }
+                ]
+            });
+
+            if (result.success) {
+                console.log('🎉 Enhanced document processing successful!');
+                console.log('📊 Enhanced processing results:', {
+                    contentLength: result.content.length,
+                    wordCount: result.metadata.wordCount,
+                    extractionMethod: result.metadata.extractionMethod,
+                    completeness: result.metadata.completeness,
+                    formattingPreserved: result.metadata.formattingPreserved,
+                    templatesGenerated: result.templates?.length || 0,
+                    hasEnhancedResult: !!result.enhancedResult,
+                    parsingQuality: result.metadata.parsingQuality
+                });
+
+                // Log parsed resume sections if available
+                if (result.parsedResume) {
+                    console.log('👤 Parsed resume details:', {
+                        name: result.parsedResume.name,
+                        contactFields: Object.values(result.parsedResume.contact).filter(v => v).length,
+                        sectionsFound: result.parsedResume.sections.length,
+                        sectionTitles: result.parsedResume.sections.map(s => s.title),
+                        wordCount: result.parsedResume.wordCount
+                    });
+                }
+
+                // Log enhanced processing details
+                if (result.enhancedResult) {
+                    console.log('⚡ Enhanced result details:', {
+                        method: result.enhancedResult.quality.extractionMethod,
+                        completeness: result.enhancedResult.quality.completeness,
+                        issues: result.enhancedResult.quality.issues
+                    });
+                }
+
+                // Log template generation results
+                if (result.templates && result.templates.length > 0) {
+                    console.log('🎨 Generated templates:', result.templates.map(t => ({
+                        style: t.metadata.templateUsed,
+                        sections: t.metadata.sectionsIncluded.length,
+                        estimatedPages: t.metadata.estimatedPages
+                    })));
+
+                    // Use the first enhanced template and prevent override
+                    const firstTemplate = result.templates[0];
+                    setTemplatedResume({
+                        html: firstTemplate.html,
+                        css: firstTemplate.css
+                    });
+                    setSelectedTemplate(firstTemplate.metadata.templateUsed);
+
+                    // Switch to template view after a short delay to ensure rendering
+                    setTimeout(() => {
+                        setViewMode('template');
+                        console.log('✨ Enhanced template applied and locked:', firstTemplate.metadata.templateUsed);
+                    }, 100);
+                } else {
+                    // Fallback to old system only if no enhanced templates were generated
+                    console.log('⚠️ No enhanced templates generated, falling back to legacy system');
+
+                    setTimeout(() => {
+                        if (result.content && result.content.trim().length > 100) {
+                            console.log('🚀 Auto-generating fallback template...');
+                            try {
+                                const jsonResumeData = jsonResumeService.convertToJSONResume(result.content);
+                                setJsonResume(jsonResumeData);
+
+                                const templateResult = jsonResumeService.renderResume(jsonResumeData, 'modern-professional-2024');
+                                if (templateResult) {
+                                    setTemplatedResume(templateResult);
+                                    setSelectedTemplate('modern-professional-2024');
+                                    setViewMode('template');
+                                    console.log('✨ Applied fallback template');
+                                }
+                            } catch (error) {
+                                console.log('⚠️ Fallback template generation failed');
+                            }
+                        }
+                    }, 500);
+                }
+
+                // Set both original and structured content
+                setResumeContent(result.content);
+
+                if (result.structuredContent) {
+                    setStructuredContent(result.structuredContent);
+                    console.log('📋 Structured template generated');
+                }
+
+                if (result.metadata.parsingQuality) {
+                    setParsingQuality(result.metadata.parsingQuality);
+                }
+
+                // Note: Template generation is now handled above with enhanced templates
+                // This legacy setTimeout has been removed to prevent conflicts
+
+                // Show enhanced success notification with template info
+                setTimeout(() => {
+                    alert(`🎉 Successfully processed ${file.name}!\n\n` +
+                          `📊 Statistics:\n` +
+                          `• ${result.metadata.wordCount.toLocaleString()} words extracted\n` +
+                          `• ${result.metadata.charactersCount.toLocaleString()} characters\n` +
+                          `${result.metadata.pages ? `• ${result.metadata.pages} pages processed\n` : ''}` +
+                          `• Processing time: ${(result.metadata.processingTime / 1000).toFixed(1)}s\n\n` +
+                          `✨ Modern template auto-applied!\n` +
+                          `🎨 View: Template tab to see professional format\n` +
+                          `✏️ Edit: Click Edit tab to modify content\n\n` +
+                          `🚀 Ready for AI-powered analysis and export!`);
+                }, 3000);
+
+                console.log('🎉 Document processing complete:', {
+                    words: result.metadata.wordCount,
+                    characters: result.metadata.charactersCount,
+                    pages: result.metadata.pages,
+                    processingTime: result.metadata.processingTime
+                });
+
+            } else {
+                // Processing failed - show error with fallback options
+                const errorContent = `❌ PROCESSING FAILED: ${file.name}\n\n` +
+                                   `🚨 Error: ${result.error}\n\n` +
+                                   `🔧 Alternative Options:\n` +
+                                   `1. Try saving your document as a .txt file\n` +
+                                   `2. Copy content from your document and paste below\n` +
+                                   `3. Type your resume content directly\n\n` +
+                                   `📝 Manual Entry Area:\n` +
+                                   `${'='.repeat(50)}\n\n`;
+
+                setResumeContent(errorContent);
+
+                console.error('❌ Document processing failed:', result.error);
+                alert(`❌ Failed to process ${file.name}\n\nError: ${result.error}\n\nPlease try copying and pasting your content instead.`);
+            }
+
+            // Update resume object
+            setUploadedResume(prev => ({
+                ...prev!,
+                content: result.success ? result.content : '',
+                lastModified: Date.now()
+            }));
+            setHasUnsavedChanges(true);
+
+        } catch (error: any) {
+            console.error('❌ Unexpected upload error:', error);
+
+            const errorContent = `❌ UNEXPECTED ERROR: ${file.name}\n\n` +
+                               `🚨 Something went wrong: ${error.message}\n\n` +
+                               `💡 This can happen with:\n` +
+                               `• Corrupted or password-protected files\n` +
+                               `• Very complex document formatting\n` +
+                               `• Network connectivity issues\n\n` +
+                               `🔧 Solutions:\n` +
+                               `1. Try a simpler file format (.txt)\n` +
+                               `2. Copy-paste content directly from your document\n` +
+                               `3. Contact support if the problem persists\n\n` +
+                               `📝 Manual Entry Area:\n` +
+                               `${'='.repeat(50)}\n\n`;
+
+            setResumeContent(errorContent);
+            alert(`❌ Unexpected error processing ${file.name}\n\n${error.message}\n\nPlease try copying and pasting your content instead.`);
+
+        } finally {
+            setIsAnalyzing(false);
+        }
+
+        // Clear the input so same file can be uploaded again
+        event.target.value = '';
+    };
+
+    // Handle content changes
+    const handleContentChange = (newContent: string) => {
+        console.log('📝 Content changed, length:', newContent.length);
+        setResumeContent(newContent);
+        setHasUnsavedChanges(true);
+
+        if (uploadedResume) {
+            setUploadedResume({
+                ...uploadedResume,
+                content: newContent,
+                lastModified: Date.now()
+            });
+        }
+    };
+
+    // Handle inline comments generated
+    const handleInlineCommentsGenerated = (comments: ResumeInlineComment[]) => {
+        setInlineComments(comments);
+        console.log('✅ Generated inline comments:', comments.length);
+    };
+
+    // Handle comment click
+    const handleCommentClick = (commentId: string) => {
+        setActiveComment(activeComment === commentId ? null : commentId);
+    };
+
+    // Apply suggestion from comment
+    const handleApplySuggestion = (commentId: string) => {
+        const comment = inlineComments.find(c => c.id === commentId);
+        if (!comment || !comment.alternatives[0]) return;
+
+        const beforeText = resumeContent.substring(0, comment.startOffset);
+        const afterText = resumeContent.substring(comment.endOffset);
+        const newContent = beforeText + comment.alternatives[0] + afterText;
+
+        handleContentChange(newContent);
+
+        // Remove the applied comment
+        setInlineComments(prev => prev.filter(c => c.id !== commentId));
+        setActiveComment(null);
+    };
+
+    // Save session
+    const handleSave = () => {
+        console.log('💾 Saving resume session...');
+        // TODO: Implement actual save functionality
+        setLastSaved(new Date());
+        setHasUnsavedChanges(false);
+    };
+
+    // Generate templated resume
+    const generateTemplatedResume = (templateId: string) => {
+        if (!resumeContent) {
+            alert('Please upload or enter resume content first');
+            return;
+        }
+
+        const result = resumeTemplateService.generateTemplatedResume(resumeContent, templateId);
+        if (result) {
+            setTemplatedResume(result);
+            setSelectedTemplate(templateId);
+            setViewMode('template');
+            console.log('📄 Generated templated resume:', templateId);
+        } else {
+            alert('Failed to generate templated resume');
+        }
+    };
+
+    // Generate JSON Resume with modern theme
+    const generateJSONResumeTemplate = (themeId: string) => {
+        if (!resumeContent) {
+            alert('Please upload or enter resume content first');
+            return;
+        }
+
+        console.log('🚀 Generating JSON Resume with theme:', themeId);
+
+        try {
+            // Convert content to JSON Resume format
+            const jsonResumeData = jsonResumeService.convertToJSONResume(resumeContent);
+            setJsonResume(jsonResumeData);
+
+            // Render with selected theme
+            const result = jsonResumeService.renderResume(jsonResumeData, themeId);
+            if (result) {
+                setTemplatedResume(result);
+                setSelectedTemplate(themeId);
+                setViewMode('template');
+                console.log('✨ Generated modern JSON Resume template:', themeId);
+
+                // Show success notification
+                const theme = modernThemes.find(t => t.id === themeId);
+                alert(`🎉 Successfully generated ${theme?.name} resume!\n\n✨ Features:\n• ${theme?.features.join('\n• ')}\n\nYour resume is now ready for viewing and export.`);
+            } else {
+                alert('Failed to render resume with selected theme');
+            }
+        } catch (error: any) {
+            console.error('❌ JSON Resume generation failed:', error);
+            alert(`❌ Failed to generate JSON Resume\n\nError: ${error.message}\n\nPlease try again or use a legacy template.`);
+        }
+    };
+
+    // Export templated resume
+    const exportTemplatedResume = () => {
+        if (!templatedResume || !selectedTemplate) {
+            alert('No template selected');
+            return;
+        }
+
+        // Check if it's a modern JSON Resume theme or legacy template
+        const modernTheme = modernThemes.find(t => t.id === selectedTemplate);
+        const legacyTemplate = availableTemplates.find(t => t.id === selectedTemplate);
+
+        const templateName = modernTheme?.name || legacyTemplate?.name || 'Unknown';
+        const fileName = `resume-${templateName.replace(/\s+/g, '-').toLowerCase()}.html`;
+
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - ${templateName}</title>
+    ${modernTheme ? '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">' : ''}
+    <style>
+        ${templatedResume.css}
+
+        /* Enhanced print optimizations */
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            body {
+                margin: 0;
+                font-size: 12px;
+            }
+
+            .resume-container, .resume-modern, .resume-classic {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                padding: 0.5in !important;
+                max-width: none !important;
+                width: 100% !important;
+            }
+
+            .minimal-tech .resume-header {
+                border-bottom: 2px solid #22d3ee !important;
+            }
+
+            .executive-premium .resume-header {
+                background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+            }
+
+            a {
+                text-decoration: none !important;
+            }
+        }
+
+        /* ATS-friendly optimizations */
+        .resume-container {
+            background: white !important;
+        }
+    </style>
+</head>
+<body>
+    ${templatedResume.html}
+
+    <!-- Resume metadata for ATS systems -->
+    <div style="display: none;" id="resume-metadata">
+        <meta name="template" content="${templateName}" />
+        <meta name="generated-by" content="Educators Edge Resume Builder" />
+        <meta name="format" content="${modernTheme ? 'JSON Resume v1.0.0' : 'Legacy Template'}" />
+        <meta name="export-date" content="${new Date().toISOString()}" />
+        ${jsonResume ? `<script type="application/ld+json">${JSON.stringify(jsonResume, null, 2)}</script>` : ''}
+    </div>
+</body>
+</html>`;
+
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        console.log('📄 Exported resume:', fileName, modernTheme ? '(JSON Resume)' : '(Legacy)');
+
+        // Show export success notification
+        const features = modernTheme ? modernTheme.features : ['Basic formatting'];
+        alert(`✅ Resume exported successfully!\n\n📄 File: ${fileName}\n🎨 Template: ${templateName}\n✨ Features: ${features.join(', ')}\n\n💡 Tip: This resume is optimized for both viewing and printing!`);
+    };
+
+    // Download resume
+    const handleDownload = () => {
+        if (!resumeContent) return;
+
+        const blob = new Blob([resumeContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `optimized_resume_${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // AI Comments handlers
+    const handleApplyAISuggestion = (originalText: string, improvedText: string) => {
+        if (!resumeContent) return;
+
+        const updatedContent = resumeContent.replace(originalText, improvedText);
+        handleContentChange(updatedContent);
+        setHasUnsavedChanges(true);
+
+        console.log('✅ Applied AI suggestion:', { originalText, improvedText });
+    };
+
+    const handleJobDescriptionSet = (newJobDescription: JobDescriptionContext) => {
+        setJobDescription(newJobDescription);
+        console.log('🎯 Job description set:', newJobDescription);
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900">
+            {/* Header */}
+            <div className="bg-white dark:bg-gray-800 border-b border-blue-200 dark:border-blue-800 shadow-sm">
+                <div className="max-w-full mx-auto px-4 py-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate('/dashboard')}
+                                className="text-blue-600 hover:text-blue-800"
+                            >
+                                <ArrowLeft className="w-4 h-4 mr-2" />
+                                Back to Dashboard
+                            </Button>
+
+                            <div className="flex items-center gap-2">
+                                <Briefcase className="w-5 h-5 text-blue-600" />
+                                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {sessionTitle}
+                                </h1>
+                                <Badge variant="outline" className="text-blue-600">
+                                    Resume AI Assistant
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {lastSaved && (
+                                <div className="flex items-center gap-1 text-xs text-green-600">
+                                    <CheckCircle className="w-3 h-3" />
+                                    Saved {lastSaved.toLocaleTimeString()}
+                                </div>
+                            )}
+
+                            {hasUnsavedChanges && (
+                                <div className="flex items-center gap-1 text-xs text-amber-600">
+                                    <Clock className="w-3 h-3" />
+                                    Unsaved changes
+                                </div>
+                            )}
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleSave}
+                                disabled={!hasUnsavedChanges}
+                            >
+                                <Save className="w-4 h-4 mr-2" />
+                                Save
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDownload}
+                                disabled={!resumeContent}
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex min-h-[calc(100vh-73px)]">
+                {/* Resume Editor */}
+                <div className="flex-1 flex flex-col" style={{ minHeight: 'auto' }}>
+                    {/* Resume Upload/Editor Header */}
+                    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                                    Resume Content
+                                </h2>
+                                {uploadedResume && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <FileText className="w-4 h-4" />
+                                        {uploadedResume.name}
+                                        <Badge variant="secondary" className="text-xs">
+                                            {Math.round(uploadedResume.size / 1024)}KB
+                                        </Badge>
+                                    </div>
+                                )}
+
+                                {resumeContent && (
+                                    <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                        <span>📝 {resumeContent.trim().split(/\s+/).length} words</span>
+                                        <span>🔤 {resumeContent.length} characters</span>
+                                        <span>🕰️ ~{Math.ceil(resumeContent.trim().split(/\s+/).length / 200)} min read</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {inlineComments.length > 0 && (
+                                    <Badge variant="outline" className="text-blue-600">
+                                        <MessageSquare className="w-3 h-3 mr-1" />
+                                        {inlineComments.length} suggestions
+                                    </Badge>
+                                )}
+
+                                <div className="flex items-center gap-2">
+                                    {resumeContent && (
+                                        <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                                            <Button
+                                                variant={viewMode === 'edit' ? 'default' : 'ghost'}
+                                                size="sm"
+                                                onClick={() => setViewMode('edit')}
+                                                className="h-7 px-2 text-xs"
+                                            >
+                                                ✏️ Edit
+                                            </Button>
+                                            {structuredContent && (
+                                                <Button
+                                                    variant={viewMode === 'structured' ? 'default' : 'ghost'}
+                                                    size="sm"
+                                                    onClick={() => setViewMode('structured')}
+                                                    className="h-7 px-2 text-xs"
+                                                >
+                                                    📋 Structured
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant={viewMode === 'preview' ? 'default' : 'ghost'}
+                                                size="sm"
+                                                onClick={() => setViewMode('preview')}
+                                                className="h-7 px-2 text-xs"
+                                            >
+                                                👁️ Preview
+                                            </Button>
+                                            <Button
+                                                variant={viewMode === 'template' ? 'default' : 'ghost'}
+                                                size="sm"
+                                                onClick={() => setViewMode('template')}
+                                                className="h-7 px-2 text-xs"
+                                            >
+                                                🎨 Templates
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    {resumeContent && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                console.log('🔍 DEBUG - Resume content:', {
+                                                    length: resumeContent.length,
+                                                    firstChars: resumeContent.substring(0, 100),
+                                                    lastChars: resumeContent.substring(resumeContent.length - 100),
+                                                    wordCount: resumeContent.trim().split(/\s+/).length
+                                                });
+                                                alert(`Debug Info:\nLength: ${resumeContent.length}\nWords: ${resumeContent.trim().split(/\s+/).length}\nFirst 100 chars: ${resumeContent.substring(0, 100)}`);
+                                            }}
+                                            className="h-7 px-2 text-xs text-gray-500"
+                                        >
+                                            🔍 Debug
+                                        </Button>
+                                    )}
+
+                                    {resumeContent && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                (window as any).debugFullDocument?.();
+                                            }}
+                                            className="h-7 px-2 text-xs text-orange-500"
+                                        >
+                                            📄 Full Debug
+                                        </Button>
+                                    )}
+
+                                    {resumeContent && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                (window as any).debugSectionParsing?.();
+                                            }}
+                                            className="h-7 px-2 text-xs text-purple-500"
+                                        >
+                                            🧩 Section Debug
+                                        </Button>
+                                    )}
+
+                                    {resumeContent && (
+                                        <>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setShowAIComments(!showAIComments)}
+                                                className={`h-7 px-2 text-xs ${showAIComments ? 'bg-purple-100 text-purple-700' : 'text-purple-500'}`}
+                                            >
+                                                🤖 AI Coach
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setShowLearningPanel(!showLearningPanel)}
+                                                className={`h-7 px-2 text-xs ${showLearningPanel ? 'bg-blue-100 text-blue-700' : 'text-blue-500'}`}
+                                            >
+                                                🧠 AI Learning
+                                            </Button>
+                                        </>
+                                    )}
+
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".txt,.doc,.docx,.pdf"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isAnalyzing}
+                                        className="bg-gradient-to-r from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 border-green-300"
+                                    >
+                                        {isAnalyzing ? (
+                                            <>
+                                                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                                Processing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload className="w-4 h-4 mr-2" />
+                                                📄 Smart Upload
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Resume Editor Area */}
+                    <div className="flex-1 p-4 relative" style={{ minHeight: '600px' }}>
+                        {/* Job Description Input */}
+                        <JobDescriptionInput
+                            onJobDescriptionSet={handleJobDescriptionSet}
+                            currentJobDescription={jobDescription}
+                        />
+
+                        {resumeContent ? (
+                            <div className="h-full relative" style={{ minHeight: '600px' }}>
+                                {console.log('🔍 Rendering content, length:', resumeContent.length, 'viewMode:', viewMode)}
+                                {viewMode === 'edit' ? (
+                                    /* Resume Text Editor */
+                                    <textarea
+                                        value={resumeContent}
+                                        onChange={(e) => handleContentChange(e.target.value)}
+                                        className="w-full h-full p-4 text-sm border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono relative z-20"
+                                        spellCheck={false}
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        onFocus={() => console.log('📝 Textarea focused - editing enabled')}
+                                        onBlur={() => console.log('📝 Textarea blurred - editing paused')}
+                                        onInput={(e) => console.log('⌨️ Text input detected:', e.currentTarget.value.length + ' chars')}
+                                        onClick={() => console.log('🖱️ Textarea clicked')}
+                                        placeholder="🚀 SMART RESUME PROCESSING\n\n📄 Upload any resume format:\n• .txt files → Instant loading\n• .pdf files → Smart extraction with layout preservation\n• .docx files → Full formatting conversion\n• Direct typing → Real-time analysis\n\n✨ Features:\n• Section header detection\n• Bullet point formatting\n• Contact info organization\n• Professional enhancement\n\nStart by uploading your resume or typing here..."
+                                        style={{
+                                            lineHeight: '1.6',
+                                            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                                            fontSize: '14px',
+                                            whiteSpace: 'pre-wrap',
+                                            wordWrap: 'break-word',
+                                            overflowWrap: 'break-word',
+                                            tabSize: 4,
+                                            color: '#1f2937 !important',
+                                            backgroundColor: '#ffffff !important',
+                                            // Force text visibility
+                                            textShadow: 'none',
+                                            opacity: '1',
+                                            userSelect: 'text',
+                                            WebkitUserSelect: 'text',
+                                            MozUserSelect: 'text',
+                                            msUserSelect: 'text',
+                                            // Ensure text is always visible
+                                            '::selection': {
+                                                backgroundColor: '#3b82f6',
+                                                color: '#ffffff'
+                                            }
+                                        }}
+                                    />
+                                ) : viewMode === 'structured' ? (
+                                    /* Structured Template View */
+                                    <div className="w-full h-full flex flex-col bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                                        {/* Header with quality metrics */}
+                                        <div className="p-4 border-b bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-700 dark:to-gray-600">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div>
+                                                    <h3 className="font-semibold text-lg">📋 Structured Resume Template</h3>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                        AI-optimized format ready for Claude editing
+                                                    </p>
+                                                </div>
+                                                {parsingQuality && (
+                                                    <div className="text-right">
+                                                        <div className="text-2xl font-bold text-green-600">
+                                                            {parsingQuality.score}%
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">Parsing Quality</div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {parsingQuality && (parsingQuality.issues.length > 0 || parsingQuality.suggestions.length > 0) && (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                                    {parsingQuality.issues.length > 0 && (
+                                                        <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                                                            <h4 className="font-medium text-yellow-800 mb-2">⚠️ Issues Found:</h4>
+                                                            <ul className="text-sm text-yellow-700 space-y-1">
+                                                                {parsingQuality.issues.map((issue, index) => (
+                                                                    <li key={index}>• {issue}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                    {parsingQuality.suggestions.length > 0 && (
+                                                        <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                                                            <h4 className="font-medium text-blue-800 mb-2">💡 Suggestions:</h4>
+                                                            <ul className="text-sm text-blue-700 space-y-1">
+                                                                {parsingQuality.suggestions.map((suggestion, index) => (
+                                                                    <li key={index}>• {suggestion}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className="flex gap-2 mt-4">
+                                                <Button
+                                                    onClick={() => {
+                                                        setResumeContent(structuredContent);
+                                                        setViewMode('edit');
+                                                    }}
+                                                    size="sm"
+                                                    className="bg-green-600 hover:bg-green-700"
+                                                >
+                                                    ✏️ Edit Structured Version
+                                                </Button>
+                                                <Button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(structuredContent);
+                                                        alert('Structured template copied to clipboard!');
+                                                    }}
+                                                    variant="outline"
+                                                    size="sm"
+                                                >
+                                                    📋 Copy Template
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {/* Structured content display */}
+                                        <div className="flex-1 overflow-auto p-4">
+                                            <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 dark:text-gray-200 leading-relaxed">
+                                                {structuredContent}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                ) : viewMode === 'preview' ? (
+                                    /* Formatted Preview */
+                                    <div className="w-full h-full p-6 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg overflow-auto">
+                                        <div className="max-w-none">
+                                            <div
+                                                className="formatted-resume font-sans text-gray-900 dark:text-gray-100"
+                                                dangerouslySetInnerHTML={{
+                                                    __html: formatResumeForPreview(resumeContent)
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Template Selection and Preview */
+                                    <div className="w-full min-h-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg overflow-visible">
+                                        {!templatedResume ? (
+                                            /* Template Selection */
+                                            <div className="p-6">
+                                                <div className="mb-6">
+                                                    <h3 className="text-lg font-semibold mb-2">📄 Professional Resume Templates</h3>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                        Transform your resume content into professional formats while preserving all content
+                                                    </p>
+                                                    <div className="mt-2 flex items-center gap-2 text-xs text-blue-600">
+                                                        <span className="bg-blue-100 px-2 py-1 rounded">✨ AI-Enhanced</span>
+                                                        <span className="bg-green-100 px-2 py-1 rounded">📄 Content-Preserving</span>
+                                                        <span className="bg-purple-100 px-2 py-1 rounded">🎯 ATS-Friendly</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Modern JSON Resume Themes - 2024 */}
+                                                <div className="mb-8">
+                                                    <div className="mb-4">
+                                                        <h4 className="text-md font-semibold text-blue-600 mb-2">🚀 Modern Themes 2024</h4>
+                                                        <p className="text-sm text-gray-600">Professional JSON Resume templates with contemporary design</p>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                                        {modernThemes.map((theme) => (
+                                                            <Card key={theme.id} className="cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
+                                                                <CardContent className="p-5">
+                                                                    <div className="mb-4">
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <h4 className="font-semibold text-sm text-gray-900">{theme.name}</h4>
+                                                                            <Badge
+                                                                                variant="outline"
+                                                                                className={`text-xs ${
+                                                                                    theme.category === 'modern' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                                                    theme.category === 'minimal' ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                                    theme.category === 'classic' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                                                    'bg-gray-50 text-gray-700'
+                                                                                }`}
+                                                                            >
+                                                                                {theme.category}
+                                                                            </Badge>
+                                                                        </div>
+                                                                        <p className="text-xs text-gray-600 leading-relaxed">{theme.description}</p>
+                                                                        <p className="text-xs text-blue-600 mt-1">{theme.preview}</p>
+                                                                    </div>
+
+                                                                    <div className="mb-4">
+                                                                        <div className="flex flex-wrap gap-1 mb-2">
+                                                                            {theme.colors.slice(0, 4).map((color, index) => (
+                                                                                <div
+                                                                                    key={index}
+                                                                                    className="w-4 h-4 rounded-full border border-gray-200"
+                                                                                    style={{ backgroundColor: color }}
+                                                                                />
+                                                                            ))}
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500">
+                                                                            {theme.features.slice(0, 2).join(' • ')}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <Button
+                                                                        onClick={() => generateJSONResumeTemplate(theme.id)}
+                                                                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                                                                        size="sm"
+                                                                    >
+                                                                        <Star className="w-3 h-3 mr-1" />
+                                                                        Apply Modern Theme
+                                                                    </Button>
+                                                                </CardContent>
+                                                            </Card>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Legacy Templates */}
+                                                <div>
+                                                    <div className="mb-4">
+                                                        <h4 className="text-md font-semibold text-gray-600 mb-2">📄 Legacy Templates</h4>
+                                                        <p className="text-sm text-gray-500">Basic resume formats for simple layouts</p>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {availableTemplates.map((template) => (
+                                                            <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                                                                <CardContent className="p-4">
+                                                                    <div className="flex items-start justify-between mb-3">
+                                                                        <div>
+                                                                            <h4 className="font-medium text-sm">{template.name}</h4>
+                                                                            <p className="text-xs text-gray-500 mt-1">{template.description}</p>
+                                                                        </div>
+                                                                        <Badge variant="outline" className="text-xs">
+                                                                            {template.style}
+                                                                        </Badge>
+                                                                    </div>
+
+                                                                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded text-xs text-gray-600 dark:text-gray-300 mb-3">
+                                                                        {template.preview}
+                                                                    </div>
+
+                                                                    <Button
+                                                                        onClick={() => generateTemplatedResume(template.id)}
+                                                                        className="w-full"
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                    >
+                                                                        Apply Template
+                                                                    </Button>
+                                                                </CardContent>
+                                                            </Card>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* Template Preview */
+                                            <div className="min-h-full flex flex-col">
+                                                <div className="p-4 border-b bg-gray-50 dark:bg-gray-700">
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <h3 className="font-medium">
+                                                                {availableTemplates.find(t => t.id === selectedTemplate)?.name} Template
+                                                            </h3>
+                                                            <p className="text-xs text-gray-500">Professional resume format</p>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                onClick={() => {
+                                                                    setTemplatedResume(null);
+                                                                    setSelectedTemplate(null);
+                                                                }}
+                                                                variant="outline"
+                                                                size="sm"
+                                                            >
+                                                                ← Back to Templates
+                                                            </Button>
+                                                            <Button
+                                                                onClick={exportTemplatedResume}
+                                                                size="sm"
+                                                            >
+                                                                📄 Export HTML
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div
+                                                    className="flex-1 p-4"
+                                                    style={{
+                                                        maxHeight: 'none',
+                                                        height: 'auto',
+                                                        minHeight: '600px',
+                                                        overflow: 'visible'
+                                                    }}
+                                                >
+                                                    <div
+                                                        className="resume-template-preview"
+                                                        dangerouslySetInnerHTML={{ __html: templatedResume.html }}
+                                                        style={{
+                                                            fontSize: '14px',
+                                                            lineHeight: '1.5',
+                                                            minHeight: 'auto',
+                                                            height: 'auto',
+                                                            maxHeight: 'none',
+                                                            width: '100%',
+                                                            overflow: 'visible'
+                                                        }}
+                                                    />
+                                                    <style
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: `
+                                                                ${templatedResume.css}
+
+                                                                /* Multi-page document support */
+                                                                .resume-template-preview {
+                                                                    max-height: none !important;
+                                                                    height: auto !important;
+                                                                    overflow: visible !important;
+                                                                }
+
+                                                                .resume-template-preview * {
+                                                                    max-height: none !important;
+                                                                }
+
+                                                                /* Page break support */
+                                                                @media print {
+                                                                    .page-break {
+                                                                        page-break-before: always;
+                                                                    }
+                                                                }
+
+                                                                @media screen {
+                                                                    .page-break {
+                                                                        margin-top: 40px;
+                                                                        border-top: 2px dashed #e5e5e5;
+                                                                        padding-top: 40px;
+                                                                    }
+                                                                }
+                                                            `
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Inline Comments Overlay - only show in edit mode */}
+                                {viewMode === 'edit' && inlineComments.map((comment) => {
+                                    // Calculate position based on text offset (simplified)
+                                    const lines = resumeContent.substring(0, comment.startOffset).split('\n').length;
+                                    const topPosition = (lines - 1) * 24; // Approximate line height
+
+                                    return (
+                                        <div
+                                            key={comment.id}
+                                            className="absolute left-0 w-full pointer-events-none z-10"
+                                            style={{ top: `${topPosition}px` }}
+                                        >
+                                            <div className="relative">
+                                                <div
+                                                    className={`inline-block px-1 rounded cursor-pointer pointer-events-auto ${
+                                                        comment.severity === 'high' ? 'bg-red-200 dark:bg-red-900/30' :
+                                                        comment.severity === 'medium' ? 'bg-yellow-200 dark:bg-yellow-900/30' :
+                                                        'bg-blue-200 dark:bg-blue-900/30'
+                                                    }`}
+                                                    onClick={() => handleCommentClick(comment.id)}
+                                                >
+                                                    {resumeContent.substring(comment.startOffset, comment.endOffset)}
+                                                </div>
+
+                                                {activeComment === comment.id && (
+                                                    <Card className="absolute left-0 top-6 w-80 z-10 shadow-lg border-2 border-blue-500">
+                                                        <CardContent className="p-3">
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-start justify-between">
+                                                                    <Badge variant={
+                                                                        comment.severity === 'high' ? 'destructive' :
+                                                                        comment.severity === 'medium' ? 'secondary' : 'outline'
+                                                                    } className="text-xs">
+                                                                        {comment.commentType.replace('_', ' ')}
+                                                                    </Badge>
+                                                                    <Badge variant="outline" className="text-xs">
+                                                                        {comment.category}
+                                                                    </Badge>
+                                                                </div>
+
+                                                                <p className="text-sm text-gray-700 dark:text-gray-300">
+                                                                    {comment.suggestion}
+                                                                </p>
+
+                                                                <div className="text-xs text-gray-500">
+                                                                    {comment.reasoning}
+                                                                </div>
+
+                                                                {comment.alternatives.length > 0 && (
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                                                            Suggested alternatives:
+                                                                        </p>
+                                                                        {comment.alternatives.slice(0, 3).map((alt, index) => (
+                                                                            <Button
+                                                                                key={index}
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => handleApplySuggestion(comment.id)}
+                                                                                className="w-full text-left justify-start h-auto p-2 text-xs"
+                                                                            >
+                                                                                <Target className="w-3 h-3 mr-2 flex-shrink-0" />
+                                                                                <span className="truncate">{alt}</span>
+                                                                            </Button>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-blue-900 border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg">
+                                <div className="text-center max-w-md">
+                                    <div className="bg-blue-600 w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center">
+                                        <Brain className="w-10 h-10 text-white" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                        🚀 AI Resume Optimizer
+                                    </h3>
+                                    <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                                        The smartest resume analyzer that gives you instant, actionable feedback to land your dream job
+                                    </p>
+
+                                    <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+                                        <div className="flex items-center justify-center mb-3">
+                                            <Zap className="w-5 h-5 text-yellow-500 mr-2" />
+                                            <span className="font-semibold text-gray-800 dark:text-gray-200">🏆 What You'll Get:</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-700 dark:text-gray-300">
+                                            <div className="flex items-center"><Target className="w-3 h-3 mr-1 text-blue-500" /> Job match scoring</div>
+                                            <div className="flex items-center"><Brain className="w-3 h-3 mr-1 text-purple-500" /> AI-powered suggestions</div>
+                                            <div className="flex items-center"><TrendingUp className="w-3 h-3 mr-1 text-green-500" /> Keyword optimization</div>
+                                            <div className="flex items-center"><Star className="w-3 h-3 mr-1 text-yellow-500" /> Real-time feedback</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <Button
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isAnalyzing}
+                                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 font-semibold disabled:opacity-50"
+                                            size="lg"
+                                        >
+                                            {isAnalyzing ? (
+                                                <>
+                                                    <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                                                    🔍 Processing Upload...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Upload className="w-5 h-5 mr-2" />
+                                                    🚀 Smart Upload (All Formats)
+                                                </>
+                                            )}
+                                        </Button>
+
+                                        <div className="text-center">
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">OR</span>
+                                        </div>
+
+                                        <Button
+                                            onClick={() => setResumeContent('Start typing your resume here...\n\nName: [Your Name]\nEmail: [Your Email]\nPhone: [Your Phone]\n\nSUMMARY\n[Brief professional summary]\n\nEXPERIENCE\n[Job Title] | [Company] | [Dates]\n• [Achievement 1]\n• [Achievement 2]\n\nEDUCATION\n[Degree] | [School] | [Year]\n\nSKILLS\n[Relevant skills for target job]')}
+                                            variant="outline"
+                                            className="w-full border-2 border-dashed border-blue-300 hover:border-blue-500 py-3"
+                                            size="lg"
+                                        >
+                                            <FileText className="w-5 h-5 mr-2" />
+                                            ✍️ Start Writing Resume
+                                        </Button>
+                                    </div>
+
+                                    <div className="text-xs text-gray-500 mt-4 space-y-2">
+                                        <p className="font-medium text-center">🚀 Advanced Document Processing:</p>
+                                        <div className="grid grid-cols-2 gap-1 text-center">
+                                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded">.txt (instant)</span>
+                                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">.pdf (smart extract)</span>
+                                            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded">.docx (full process)</span>
+                                            <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">📝 Direct typing</span>
+                                        </div>
+                                        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded p-2 mt-2">
+                                            <p className="font-medium text-green-700 text-center mb-1">✨ New Features:</p>
+                                            <div className="text-xs text-green-600 space-y-1">
+                                                <div>🔍 Smart layout preservation</div>
+                                                <div>📋 Section header detection</div>
+                                                <div>• Bullet point formatting</div>
+                                                <div>📊 Professional resume enhancement</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Resume Analysis Panel */}
+                <div className="w-96 border-l border-gray-200 dark:border-gray-700">
+                    <ResumeAnalysisPanel
+                        resumeContent={resumeContent}
+                        onContentChange={handleContentChange}
+                        onInlineCommentsGenerated={handleInlineCommentsGenerated}
+                    />
+                </div>
+            </div>
+
+            {/* Status Bar */}
+            <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-2">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-4">
+                        <span>Resume Optimization Session</span>
+                        {resumeContent && (
+                            <>
+                                <span>|</span>
+                                <span>{resumeContent.split(' ').filter(w => w.length > 0).length} words</span>
+                                <span>|</span>
+                                <span>{resumeContent.length} characters</span>
+                            </>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-4">
+                        {inlineComments.length > 0 && (
+                            <>
+                                <span>{inlineComments.length} AI suggestions</span>
+                                <span>|</span>
+                            </>
+                        )}
+                        <span>Claude AI Resume Assistant</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* AI Inline Comments Panel */}
+            <AIInlineCommentsPanel
+                resumeContent={resumeContent || ''}
+                jobDescription={jobDescription}
+                onApplySuggestion={handleApplyAISuggestion}
+                isVisible={showAIComments}
+                onToggle={() => setShowAIComments(!showAIComments)}
+            />
+
+            {/* Web AI Learning Panel */}
+            <WebLearningPanel
+                resumeContent={resumeContent || ''}
+                isVisible={showLearningPanel}
+                onToggle={() => setShowLearningPanel(!showLearningPanel)}
+            />
+        </div>
+    );
+};
+
+export default ResumeOptimizationPage;

@@ -33,7 +33,7 @@ router.get('/leetcode', verifyToken, async (req, res) => {
             SELECT id, title, description, difficulty_level, estimated_duration, 
                    created_at, course_type, is_published
             FROM enhanced_courses 
-            WHERE course_type = 'leetcode_patterns' 
+            WHERE course_type IN ('leetcode_patterns', 'leetcode_enhanced') 
             ORDER BY created_at DESC
         `;
         

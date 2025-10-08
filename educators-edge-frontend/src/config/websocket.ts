@@ -13,6 +13,6 @@ export const getWebSocketUrl = (): string => {
     }
   }
   
-  // Default to localhost for development
-  return 'ws://localhost:10000';
+  // Default to localhost for development (port 5000 is where backend runs)
+  return 'ws://localhost:5000';
 };

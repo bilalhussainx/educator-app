@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Bilal/Downloads/educator-app/educators-edge-frontend/src/components/classroom/**)",
+      "Read(//c/Users/Bilal/Downloads/educator-app/educators-edge-frontend/src/**)",
+      "Bash(node:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

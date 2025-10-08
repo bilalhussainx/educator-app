@@ -1,0 +1,48 @@
+# Production LeetCode Execution Environment
+FROM ubuntu:22.04
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 18
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# Install Python 3.11
+RUN apt-get update && apt-get install -y \
+    python3.11 \
+    python3.11-pip \
+    python3.11-dev \
+    && ln -s /usr/bin/python3.11 /usr/bin/python \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Java 17
+RUN apt-get update && apt-get install -y openjdk-17-jdk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create execution directory
+WORKDIR /app
+RUN mkdir -p /app/temp
+
+# Copy execution scripts
+COPY execute.js /app/
+COPY execute.py /app/
+COPY Execute.java /app/
+
+# Create non-root user for security
+RUN groupadd -r leetcode && useradd -r -g leetcode leetcode
+RUN chown -R leetcode:leetcode /app
+USER leetcode
+
+# Set environment variables
+ENV NODE_PATH=/usr/lib/node_modules
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH=$PATH:$JAVA_HOME/bin
+
+# Default command
+CMD ["node", "execute.js"]

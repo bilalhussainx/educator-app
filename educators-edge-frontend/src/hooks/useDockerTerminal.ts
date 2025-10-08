@@ -22,6 +22,9 @@ interface CodeExecutionResult {
   error?: string;
   executionTime: number;
   language: string;
+  testCaseResults?: any[];
+  passed?: number;
+  failed?: number;
 }
 
 interface UseDockerTerminalOptions {
@@ -43,7 +46,7 @@ interface UseDockerTerminalReturn {
   createSession: () => Promise<void>;
   connectToSession: (sessionId: string) => Promise<void>;
   terminateSession: () => Promise<void>;
-  executeCode: (code: string, language: string) => Promise<CodeExecutionResult>;
+  executeCode: (code: string, language: string, options?: { testCases?: any[] }) => Promise<CodeExecutionResult>;
   quickExecute: (code: string, language: string) => Promise<CodeExecutionResult>;
   sendInput: (input: string) => void;
   
@@ -79,6 +82,18 @@ export const useDockerTerminal = (
   const wsRef = useRef<WebSocket | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const terminalInstanceRef = useRef<Terminal | null>(null);
+
+  // Helper function to write to terminal and auto-scroll
+  const writeToTerminal = useCallback((text: string) => {
+    const currentTerminal = terminalInstanceRef.current;
+    if (currentTerminal) {
+      currentTerminal.write(text);
+      // Auto-scroll to bottom after writing
+      setTimeout(() => {
+        currentTerminal.scrollToBottom();
+      }, 50);
+    }
+  }, []);
 
   // Initialize terminal
   useEffect(() => {
@@ -141,7 +156,7 @@ export const useDockerTerminal = (
         wsRef.current.close();
       }
     };
-  }, [terminalRef, autoConnect, enableWebSocket]);
+  }, [terminalRef, autoConnect, enableWebSocket, writeToTerminal]);
 
   // WebSocket message handler
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
@@ -160,7 +175,7 @@ export const useDockerTerminal = (
           // Try to get terminal from current state or wait briefly for initialization
           if (terminal) {
             console.log('✅ DockerTerminal: Writing to terminal:', message.payload.output.length, 'characters');
-            terminal.write(message.payload.output);
+            writeToTerminal(message.payload.output);
             console.log('✅ DockerTerminal: TERMINAL_OUTPUT written to terminal');
           } else {
             console.error('❌ DockerTerminal: No terminal instance available for TERMINAL_OUTPUT');
@@ -168,12 +183,8 @@ export const useDockerTerminal = (
             console.log('🔄 DockerTerminal: Queuing TERMINAL_OUTPUT for later processing');
             const outputToWrite = message.payload.output;
             setTimeout(() => {
-              // Use ref to avoid closure issues
-              const currentTerminal = terminalInstanceRef.current;
-              if (currentTerminal) {
-                console.log('🔄 DockerTerminal: Retrying queued TERMINAL_OUTPUT');
-                currentTerminal.write(outputToWrite);
-              }
+              console.log('🔄 DockerTerminal: Retrying queued TERMINAL_OUTPUT');
+              writeToTerminal(outputToWrite);
             }, 100);
           }
           setOutput(prev => prev + message.payload.output);
@@ -185,7 +196,7 @@ export const useDockerTerminal = (
           setIsConnected(true);
           setError(null);
           if (terminal) {
-            terminal.write(`\r\n✅ Connected to Docker terminal session\r\n$ `);
+            writeToTerminal(`\r\n✅ Connected to Docker terminal session\r\n$ `);
             console.log('✅ DockerTerminal: Connection message written to terminal');
           }
           break;
@@ -198,7 +209,7 @@ export const useDockerTerminal = (
           
           if (terminal && result && result.output) {
             console.log('✅ DockerTerminal: Writing execution result to terminal:', result.output.length, 'characters');
-            terminal.write(`\r\n${result.output}\r\n$ `);
+            writeToTerminal(`\r\n${result.output}\r\n$ `);
             console.log('✅ DockerTerminal: CODE_EXECUTION_RESULT written to terminal');
           } else {
             console.error('❌ DockerTerminal: Cannot write execution result - terminal:', !!terminal, 'result:', !!result, 'output:', !!(result?.output));
@@ -206,12 +217,8 @@ export const useDockerTerminal = (
             if (result && result.output) {
               const outputToWrite = `\r\n${result.output}\r\n$ `;
               setTimeout(() => {
-                // Use ref to avoid closure issues
-                const currentTerminal = terminalInstanceRef.current;
-                if (currentTerminal) {
-                  console.log('🔄 DockerTerminal: Retrying queued CODE_EXECUTION_RESULT');
-                  currentTerminal.write(outputToWrite);
-                }
+                console.log('🔄 DockerTerminal: Retrying queued CODE_EXECUTION_RESULT');
+                writeToTerminal(outputToWrite);
               }, 100);
             }
           }
@@ -222,7 +229,7 @@ export const useDockerTerminal = (
           setIsConnected(true);
           setError(null);
           if (terminal) {
-            terminal.write(`\r\n🎊 Terminal connection established\r\n$ `);
+            writeToTerminal(`\r\n🎊 Terminal connection established\r\n$ `);
           }
           break;
 
@@ -230,7 +237,7 @@ export const useDockerTerminal = (
           console.log('❌ DockerTerminal: Terminal error received:', message.payload.error);
           setError(message.payload.error);
           if (terminal) {
-            terminal.write(`\r\n❌ Error: ${message.payload.error}\r\n$ `);
+            writeToTerminal(`\r\n❌ Error: ${message.payload.error}\r\n$ `);
           }
           break;
 
@@ -252,7 +259,7 @@ export const useDockerTerminal = (
       console.error('❌ DockerTerminal: Error handling WebSocket message:', error);
       console.error('❌ DockerTerminal: Raw message data:', event.data);
     }
-  }, [terminal]);
+  }, [terminal, writeToTerminal]);
 
   // WebSocket connection management
   const connectWebSocket = useCallback((sessionId?: string) => {
@@ -335,23 +342,46 @@ export const useDockerTerminal = (
 
     try {
       if (enableWebSocket) {
-        console.log('🔗 DockerTerminal: Creating session via WebSocket');
-        // Create session via WebSocket
+        console.log('🔗 DockerTerminal: Trying WebSocket connection first...');
+        // Try WebSocket connection first
         connectWebSocket();
-        
-        // Wait for connection and then request session creation
-        if (wsRef.current) {
-          wsRef.current.addEventListener('open', () => {
-            wsRef.current?.send(JSON.stringify({
-              type: 'CREATE_TERMINAL_SESSION',
-              payload: {}
-            }));
-          });
+
+        // Wait a short time to see if WebSocket connects
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          console.log('✅ DockerTerminal: WebSocket connected, creating session via WebSocket');
+          wsRef.current.send(JSON.stringify({
+            type: 'CREATE_TERMINAL_SESSION',
+            payload: {}
+          }));
+          // Session will be set via WebSocket message handler
+        } else {
+          console.log('❌ DockerTerminal: WebSocket failed, falling back to REST API');
+          // Fallback to REST API
+          const response = await apiClient.post('/api/terminal/session');
+
+          if (response.data.success) {
+            const newSession: TerminalSession = {
+              sessionId: response.data.sessionId,
+              status: 'connected',
+              createdAt: new Date()
+            };
+            setSession(newSession);
+            setIsConnected(true);
+
+            if (terminal) {
+              writeToTerminal(`✅ Session ${response.data.sessionId} created (REST API)\r\n$ `);
+            }
+          } else {
+            throw new Error(response.data.error || 'Failed to create session');
+          }
         }
       } else {
-        // Create session via REST API
+        // Create session via REST API only
+        console.log('🔗 DockerTerminal: Creating session via REST API (WebSocket disabled)');
         const response = await apiClient.post('/api/terminal/session');
-        
+
         if (response.data.success) {
           const newSession: TerminalSession = {
             sessionId: response.data.sessionId,
@@ -360,9 +390,9 @@ export const useDockerTerminal = (
           };
           setSession(newSession);
           setIsConnected(true);
-          
+
           if (terminal) {
-            terminal.write(`✅ Session ${response.data.sessionId} created\r\n$ `);
+            writeToTerminal(`✅ Session ${response.data.sessionId} created\r\n$ `);
           }
         } else {
           throw new Error(response.data.error || 'Failed to create session');
@@ -371,14 +401,14 @@ export const useDockerTerminal = (
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Failed to create terminal session';
       setError(errorMessage);
-      
+
       if (terminal) {
-        terminal.write(`❌ ${errorMessage}\r\n`);
+        writeToTerminal(`❌ ${errorMessage}\r\n`);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [terminal, enableWebSocket, connectWebSocket]);
+  }, [terminal, enableWebSocket, connectWebSocket, writeToTerminal]);
 
   // Connect to existing session
   const connectToSession = useCallback(async (sessionId: string) => {
@@ -389,10 +419,10 @@ export const useDockerTerminal = (
       if (enableWebSocket) {
         connectWebSocket(sessionId);
       }
-      
+
       // Verify session exists
       const response = await apiClient.get(`/api/terminal/session/${sessionId}/status`);
-      
+
       if (response.data.success) {
         const existingSession: TerminalSession = {
           sessionId,
@@ -401,9 +431,9 @@ export const useDockerTerminal = (
         };
         setSession(existingSession);
         setIsConnected(true);
-        
+
         if (terminal) {
-          terminal.write(`✅ Connected to session ${sessionId}\r\n$ `);
+          writeToTerminal(`✅ Connected to session ${sessionId}\r\n$ `);
         }
       } else {
         throw new Error('Session not found or access denied');
@@ -411,34 +441,34 @@ export const useDockerTerminal = (
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Failed to connect to session';
       setError(errorMessage);
-      
+
       if (terminal) {
-        terminal.write(`❌ ${errorMessage}\r\n`);
+        writeToTerminal(`❌ ${errorMessage}\r\n`);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [terminal, enableWebSocket, connectWebSocket]);
+  }, [terminal, enableWebSocket, connectWebSocket, writeToTerminal]);
 
   // Terminate session
   const terminateSession = useCallback(async () => {
     if (!session) return;
 
     setIsLoading(true);
-    
+
     try {
       await apiClient.delete(`/api/terminal/session/${session.sessionId}`);
-      
+
       if (wsRef.current) {
         wsRef.current.close(1000, 'Session terminated by user');
       }
-      
+
       setSession(null);
       setIsConnected(false);
       setError(null);
-      
+
       if (terminal) {
-        terminal.write('\r\n✅ Session terminated\r\n');
+        writeToTerminal('\r\n✅ Session terminated\r\n');
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error || error.message || 'Failed to terminate session';
@@ -446,10 +476,10 @@ export const useDockerTerminal = (
     } finally {
       setIsLoading(false);
     }
-  }, [session, terminal]);
+  }, [session, terminal, writeToTerminal]);
 
   // Execute code in session
-  const executeCode = useCallback(async (code: string, language: string): Promise<CodeExecutionResult> => {
+  const executeCode = useCallback(async (code: string, language: string, options: { testCases?: any[] } = {}): Promise<CodeExecutionResult> => {
     console.log('🚀 DockerTerminal: executeCode called with:', { code: code.substring(0, 50), language });
     console.log('🔍 DockerTerminal: Session exists:', !!session);
     console.log('🔍 DockerTerminal: EnableWebSocket:', enableWebSocket);
@@ -494,7 +524,11 @@ export const useDockerTerminal = (
         
         const executeMessage = {
           type: 'EXECUTE_CODE',
-          payload: { code, language }
+          payload: {
+            code,
+            language,
+            testCases: options.testCases || []
+          }
         };
         
         console.log('📤 DockerTerminal: Sending EXECUTE_CODE message:', executeMessage);
@@ -503,16 +537,42 @@ export const useDockerTerminal = (
       });
     } else {
       // Fallback to REST API
-      const response = await apiClient.post('/api/terminal/execute', {
-        sessionId: session.sessionId,
-        code,
-        language
-      });
+      // Use LeetCode tests endpoint if test cases are provided, otherwise use regular execute
+      if (options.testCases && options.testCases.length > 0) {
+        console.log('🧪 DockerTerminal: Using LeetCode tests endpoint for test validation');
+        const response = await apiClient.post('/api/terminal/leetcode-tests', {
+          code,
+          language,
+          testCases: options.testCases
+        });
 
-      if (response.data.success) {
-        return response.data.result;
+        if (response.data.success) {
+          return {
+            success: response.data.results.success,
+            output: response.data.results.output || response.data.results.stderr || '',
+            executionTime: response.data.results.executionTime || 0,
+            language,
+            testCaseResults: response.data.results.testResults || [],
+            passed: response.data.results.passedTests || 0,
+            failed: response.data.results.failedTests || 0
+          };
+        } else {
+          throw new Error(response.data.error || 'LeetCode test execution failed');
+        }
       } else {
-        throw new Error(response.data.error || 'Execution failed');
+        console.log('🔧 DockerTerminal: Using regular execute endpoint (no test cases)');
+        const response = await apiClient.post('/api/terminal/execute', {
+          sessionId: session.sessionId,
+          code,
+          language,
+          testCases: options.testCases || []
+        });
+
+        if (response.data.success) {
+          return response.data.result;
+        } else {
+          throw new Error(response.data.error || 'Execution failed');
+        }
       }
     }
   }, [session, enableWebSocket]);

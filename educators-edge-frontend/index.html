@@ -4,10 +4,20 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Educators Edge - Professional Learning Platform</title>
+    
+    <!-- Permissions Policy for Calendly Integration -->
+    <meta http-equiv="Permissions-Policy" content="payment=*, web-share=*, microphone=*, camera=*, geolocation=*, fullscreen=*, autoplay=*, encrypted-media=*" />
+    <meta http-equiv="Feature-Policy" content="payment 'src'; web-share 'src'; microphone 'src'; camera 'src'; geolocation 'src'; fullscreen 'src'" />
+    
+    <!-- Additional meta tags for professional appearance -->
+    <meta name="description" content="Connect with expert mentors and educators for personalized learning sessions" />
+    <meta name="theme-color" content="#3b82f6" />
   </head>
   <body>
     <div id="root"></div>
+    <!-- Hidden div for Calendly widgets -->
+    <div id="calendly-root" style="display: none;"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

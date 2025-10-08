@@ -121,7 +121,8 @@ function initializeWebSocket(wss) {
                 return ws.close(1011, "Cannot join homework for a session that does not exist.");
             }
             
-            log(`Creating new session: ${sessionKey}`);
+            const sessionStartTime = new Date().toISOString();
+            log(`[SESSION_MONITORING] Creating new session: ${sessionKey} at ${sessionStartTime}`);
             sessions.set(sessionKey, {
                 clients: new Set(),
                 files: [],
@@ -143,7 +144,17 @@ function initializeWebSocket(wss) {
                     resourceId: null,
                     sid: null,
                     startTime: null
-                }
+                },
+                // Essay session state
+                essayContent: '',
+                sessionMode: null,
+                essayHomework: null,
+                essayComments: [],
+                // Session monitoring
+                createdAt: sessionStartTime,
+                participantCount: 0,
+                teacherCount: 0,
+                studentCount: 0
             });
         }
         const session = sessions.get(sessionKey);
@@ -177,7 +188,16 @@ function initializeWebSocket(wss) {
             });
         }
 
-        log(`${clientInfo.role} ${clientInfo.username} (${clientInfo.tierName}) connected to session ${sessionKey} (Homework: ${isHomeworkSession}). Total clients: ${session.clients.size}`);
+        // Update participant counts
+        if (clientInfo.role === 'teacher') {
+            session.teacherCount++;
+        } else if (clientInfo.role === 'student') {
+            session.studentCount++;
+        }
+        session.participantCount = session.teacherCount + session.studentCount;
+
+        log(`[SESSION_MONITORING] ${clientInfo.role} ${clientInfo.username} (${clientInfo.tierName}) connected to session ${sessionKey}`);
+        log(`[SESSION_MONITORING] Session ${sessionKey} Stats - Total: ${session.participantCount}, Teachers: ${session.teacherCount}, Students: ${session.studentCount}, Created: ${session.createdAt}`);
         const teacher = getTeacher(session);
 
         // Broadcast updated participant list with tier information
@@ -214,6 +234,12 @@ function initializeWebSocket(wss) {
 
             const studentList = Array.from(session.clients).filter(c => c.role === 'student' && !c.isHomework).map(c => ({ id: c.id, username: c.username }));
             broadcast(session, { type: 'STUDENT_LIST_UPDATE', payload: { students: studentList }});
+
+            // Also broadcast teacher information to students
+            const teacher = Array.from(session.clients).find(c => c.role === 'teacher' && !c.isHomework);
+            if (teacher) {
+                broadcast(session, { type: 'TEACHER_INFO_UPDATE', payload: { teacher: { id: teacher.id, username: teacher.username } }});
+            }
         }
 
         ws.on('message', async (message) => {
@@ -246,6 +272,51 @@ function initializeWebSocket(wss) {
                 if (data.type === 'RAISE_HAND' && clientInfo.role === 'student') {
                     session.handsRaised.has(clientInfo.id) ? session.handsRaised.delete(clientInfo.id) : session.handsRaised.add(clientInfo.id);
                     broadcast(session, { type: 'HAND_RAISED_LIST_UPDATE', payload: { studentsWithHandsRaised: Array.from(session.handsRaised) } });
+                    return;
+                }
+
+                // Essay Session Message Types (available to all users)
+                if (data.type === 'ESSAY_CONTENT_UPDATE') {
+                    console.log(`[ESSAY_MONITORING] Content update from ${clientInfo.username} (${clientInfo.role}) in session ${sessionKey}, content length: ${data.payload.content?.length || 0}`);
+                    session.essayContent = data.payload.content;
+                    // Broadcast to all other clients except sender
+                    session.clients.forEach(client => {
+                        if (client.id !== clientInfo.id && !client.isHomework && client.ws.readyState === client.ws.OPEN) {
+                            client.ws.send(JSON.stringify({
+                                type: 'ESSAY_CONTENT_UPDATE',
+                                payload: {
+                                    content: data.payload.content,
+                                    userId: clientInfo.id,
+                                    timestamp: data.payload.timestamp
+                                }
+                            }));
+                        }
+                    });
+                    return;
+                }
+
+                if (data.type === 'ESSAY_CURSOR_UPDATE') {
+                    // Broadcast cursor position to other clients
+                    session.clients.forEach(client => {
+                        if (client.id !== clientInfo.id && !client.isHomework && client.ws.readyState === client.ws.OPEN) {
+                            client.ws.send(JSON.stringify({
+                                type: 'ESSAY_CURSOR_UPDATE',
+                                payload: {
+                                    position: data.payload.position,
+                                    userId: clientInfo.id,
+                                    username: clientInfo.username,
+                                    color: data.payload.color,
+                                    timestamp: data.payload.timestamp
+                                }
+                            }));
+                        }
+                    });
+                    return;
+                }
+
+                if (data.type === 'ESSAY_SAVE_REQUEST') {
+                    // Handle save request
+                    console.log(`[ESSAY] Save request from ${clientInfo.username}`);
                     return;
                 }
 
@@ -294,6 +365,86 @@ function initializeWebSocket(wss) {
                     case 'ASSIGN_HOMEWORK':
                         sendToClient(session, data.payload.studentId, { type: 'HOMEWORK_ASSIGNED', payload: data.payload });
                         session.assignments.set(data.payload.studentId, data.payload);
+                        break;
+
+                    // Essay Session Message Types
+                    case 'JOIN_SESSION':
+                        // Send current session state to joining participant
+                        ws.send(JSON.stringify({
+                            type: 'SESSION_JOINED',
+                            participants: Array.from(session.clients)
+                                .filter(client => !client.isHomework)
+                                .map(client => ({
+                                    id: client.id,
+                                    username: client.username,
+                                    role: client.role
+                                }))
+                        }));
+
+                        // Broadcast participant joined to others
+                        broadcast(session, {
+                            type: 'PARTICIPANT_JOINED',
+                            participant: {
+                                id: clientInfo.id,
+                                username: clientInfo.username,
+                                role: clientInfo.role
+                            }
+                        });
+                        break;
+
+                    case 'LEAVE_SESSION':
+                        // This will be handled in the close event
+                        break;
+
+                    case 'CHAT_MESSAGE':
+                        broadcast(session, {
+                            type: 'CHAT_MESSAGE',
+                            message: data.message
+                        });
+                        break;
+
+                    case 'HAND_RAISED':
+                        session.handsRaised.add(data.userId);
+                        broadcast(session, {
+                            type: 'HAND_RAISED',
+                            userId: data.userId
+                        });
+                        break;
+
+                    case 'HAND_LOWERED':
+                        session.handsRaised.delete(data.userId);
+                        broadcast(session, {
+                            type: 'HAND_LOWERED',
+                            userId: data.userId
+                        });
+                        break;
+
+                    case 'SESSION_MODE_SET':
+                        session.sessionMode = data.mode;
+                        broadcast(session, {
+                            type: 'SESSION_MODE_SET',
+                            mode: data.mode,
+                            userId: data.userId
+                        });
+                        break;
+
+                    // Essay Teacher-only Message Types
+                    case 'ESSAY_HOMEWORK_ASSIGNED':
+                        broadcast(session, {
+                            type: 'ESSAY_HOMEWORK_ASSIGNED',
+                            assignment: data.assignment
+                        });
+                        break;
+
+                    case 'ESSAY_COMMENT_ADDED':
+                        broadcast(session, {
+                            type: 'ESSAY_COMMENT_ADDED',
+                            id: data.id,
+                            text: data.text,
+                            comment: data.comment,
+                            author: data.author,
+                            timestamp: data.timestamp
+                        });
                         break;
 
                     case 'START_RECORDING':
@@ -693,7 +844,17 @@ function initializeWebSocket(wss) {
 
         ws.on('close', async () => {
             session.clients.delete(clientInfo);
-            log(`${clientInfo.role} ${clientInfo.username} disconnected. Total clients left: ${session.clients.size}`);
+
+            // Update participant counts
+            if (clientInfo.role === 'teacher') {
+                session.teacherCount = Math.max(0, session.teacherCount - 1);
+            } else if (clientInfo.role === 'student') {
+                session.studentCount = Math.max(0, session.studentCount - 1);
+            }
+            session.participantCount = session.teacherCount + session.studentCount;
+
+            log(`[SESSION_MONITORING] ${clientInfo.role} ${clientInfo.username} disconnected from session ${sessionKey}`);
+            log(`[SESSION_MONITORING] Session ${sessionKey} Stats - Total: ${session.participantCount}, Teachers: ${session.teacherCount}, Students: ${session.studentCount}`);
 
             if (session.handsRaised.has(clientInfo.id)) {
                 session.handsRaised.delete(clientInfo.id);
@@ -735,6 +896,27 @@ function initializeWebSocket(wss) {
         });
     });
 }
+
+// Periodic session monitoring report
+setInterval(() => {
+    if (sessions.size > 0) {
+        console.log(`[SESSION_MONITORING] === Active Sessions Report at ${new Date().toISOString()} ===`);
+        let totalParticipants = 0;
+        let totalTeachers = 0;
+        let totalStudents = 0;
+
+        sessions.forEach((session, sessionId) => {
+            const sessionAge = Math.round((Date.now() - new Date(session.createdAt).getTime()) / 1000 / 60); // minutes
+            console.log(`[SESSION_MONITORING] Session ${sessionId}: ${session.participantCount} participants (${session.teacherCount}T, ${session.studentCount}S), Age: ${sessionAge}min, Created: ${session.createdAt}`);
+
+            totalParticipants += session.participantCount;
+            totalTeachers += session.teacherCount;
+            totalStudents += session.studentCount;
+        });
+
+        console.log(`[SESSION_MONITORING] === Total: ${sessions.size} sessions, ${totalParticipants} participants (${totalTeachers}T, ${totalStudents}S) ===`);
+    }
+}, 60000); // Every minute
 
 module.exports = initializeWebSocket;
 // const jwt = require('jsonwebtoken');

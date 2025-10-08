@@ -233,8 +233,8 @@ router.get('/requests', verifyToken, async (req, res) => {
         } else {
             // All requests (both incoming and outgoing)
             query = `
-                (SELECT sr.*, 
-                        u.username as other_username, 
+                (SELECT sr.*,
+                        u.username as other_username,
                         up.display_name as other_display_name,
                         'incoming' as request_direction
                  FROM session_requests sr
@@ -242,14 +242,14 @@ router.get('/requests', verifyToken, async (req, res) => {
                  LEFT JOIN user_profiles up ON u.id = up.user_id
                  WHERE sr.mentor_id = $1)
                 UNION ALL
-                (SELECT sr.*, 
-                        u.username as other_username, 
+                (SELECT sr.*,
+                        u.username as other_username,
                         up.display_name as other_display_name,
                         'outgoing' as request_direction
                  FROM session_requests sr
                  JOIN users u ON sr.mentor_id = u.id
                  LEFT JOIN user_profiles up ON u.id = up.user_id
-                 WHERE sr.requester_id = $1)
+                 WHERE sr.requester_id = $2)
                 ORDER BY created_at DESC
             `;
             params = [userId, userId];
@@ -282,12 +282,19 @@ router.get('/requests', verifyToken, async (req, res) => {
 router.post('/requests/:requestId/respond', verifyToken, async (req, res) => {
     const { requestId } = req.params;
     const { action, scheduledTime } = req.body; // action: 'accept' or 'decline'
-    
+
     try {
         const mentorId = req.user.id;
 
+        console.log('[RESPOND_TO_REQUEST] ==========================================');
+        console.log('[RESPOND_TO_REQUEST] Request ID:', requestId);
+        console.log('[RESPOND_TO_REQUEST] Mentor ID:', mentorId);
+        console.log('[RESPOND_TO_REQUEST] Action:', action);
+        console.log('[RESPOND_TO_REQUEST] Scheduled Time:', scheduledTime);
+
         // Validate action
         if (!['accept', 'decline'].includes(action)) {
+            console.log('[RESPOND_TO_REQUEST] ❌ Invalid action');
             return res.status(400).json({
                 success: false,
                 message: 'Invalid action. Must be "accept" or "decline"'
@@ -295,42 +302,77 @@ router.post('/requests/:requestId/respond', verifyToken, async (req, res) => {
         }
 
         // Check if request exists and belongs to this mentor
+        console.log('[RESPOND_TO_REQUEST] Querying for session request...');
         const requestResult = await db.query(
             'SELECT * FROM session_requests WHERE id = $1 AND mentor_id = $2 AND status = $3',
             [requestId, mentorId, 'pending']
         );
 
+        console.log('[RESPOND_TO_REQUEST] Query result:', {
+            rowCount: requestResult.rows.length,
+            rows: requestResult.rows
+        });
+
         if (requestResult.rows.length === 0) {
+            console.log('[RESPOND_TO_REQUEST] ❌ Request not found or already responded to');
+
+            // Debug: Check if request exists at all
+            const debugResult = await db.query('SELECT * FROM session_requests WHERE id = $1', [requestId]);
+            console.log('[RESPOND_TO_REQUEST] Debug - Request exists:', debugResult.rows.length > 0);
+            if (debugResult.rows.length > 0) {
+                console.log('[RESPOND_TO_REQUEST] Debug - Request details:', debugResult.rows[0]);
+                console.log('[RESPOND_TO_REQUEST] Debug - Mentor ID match:', debugResult.rows[0].mentor_id === mentorId);
+                console.log('[RESPOND_TO_REQUEST] Debug - Status:', debugResult.rows[0].status);
+            }
+
             return res.status(404).json({
                 success: false,
-                message: 'Session request not found or already responded to'
+                message: 'Session request not found or already responded to',
+                debug: {
+                    requestExists: debugResult.rows.length > 0,
+                    requestStatus: debugResult.rows[0]?.status,
+                    mentorMatch: debugResult.rows[0]?.mentor_id === mentorId
+                }
             });
         }
 
         const sessionRequest = requestResult.rows[0];
 
         if (action === 'accept') {
+            console.log('[RESPOND_TO_REQUEST] ✅ Accepting request and creating session...');
+
             // Update request status and create actual session
             await db.query('BEGIN');
 
             try {
                 // Use provided scheduledTime or fall back to preferred_datetime
                 const finalScheduledTime = scheduledTime || sessionRequest.preferred_datetime || sessionRequest.scheduled_time;
-                
+
+                console.log('[RESPOND_TO_REQUEST] Final scheduled time:', finalScheduledTime);
+                console.log('[RESPOND_TO_REQUEST] Session request details:', {
+                    requester_id: sessionRequest.requester_id,
+                    mentor_id: sessionRequest.mentor_id,
+                    session_type: sessionRequest.session_type,
+                    description: sessionRequest.description
+                });
+
                 // Update session request
+                console.log('[RESPOND_TO_REQUEST] Updating session request status to accepted...');
                 await db.query(
                     'UPDATE session_requests SET status = $1, responded_at = NOW(), scheduled_time = $2 WHERE id = $3',
                     ['accepted', finalScheduledTime, requestId]
                 );
+                console.log('[RESPOND_TO_REQUEST] ✅ Session request updated');
 
                 // Create actual session
+                console.log('[RESPOND_TO_REQUEST] Creating session...');
                 const sessionResult = await db.query(`
                     INSERT INTO sessions (
-                        student_id, 
-                        mentor_id, 
-                        session_type, 
-                        description, 
-                        status, 
+                        student_id,
+                        mentor_id,
+                        session_type,
+                        description,
+                        status,
                         scheduled_time,
                         created_at
                     ) VALUES ($1, $2, $3, $4, 'scheduled', $5, NOW())
@@ -343,25 +385,30 @@ router.post('/requests/:requestId/respond', verifyToken, async (req, res) => {
                     finalScheduledTime
                 ]);
 
+                console.log('[RESPOND_TO_REQUEST] ✅ Session created:', sessionResult.rows[0]);
+
                 // If there was a preferred time, try to mark any corresponding time slot as booked
                 // Only if calendar tables exist and finalScheduledTime is valid
                 if (finalScheduledTime) {
                     try {
                         await db.query(`
-                            UPDATE teacher_time_slots 
+                            UPDATE teacher_time_slots
                             SET status = 'booked', session_request_id = $1
-                            WHERE teacher_id = $2 
-                            AND start_datetime <= $3 
+                            WHERE teacher_id = $2
+                            AND start_datetime <= $3
                             AND end_datetime >= $3
                             AND status = 'available'
                         `, [sessionRequest.id, sessionRequest.mentor_id, finalScheduledTime]);
                     } catch (timeSlotError) {
                         // Calendar integration is optional - don't fail if time slot update fails
-                        console.log('Optional time slot update failed (this is OK for older requests):', timeSlotError.message);
+                        console.log('[RESPOND_TO_REQUEST] Optional time slot update failed (this is OK):', timeSlotError.message);
                     }
                 }
 
                 await db.query('COMMIT');
+                console.log('[RESPOND_TO_REQUEST] ✅ Transaction committed');
+
+                console.log('[RESPOND_TO_REQUEST] ==========================================');
 
                 res.json({
                     success: true,
@@ -370,7 +417,9 @@ router.post('/requests/:requestId/respond', verifyToken, async (req, res) => {
                 });
 
             } catch (error) {
+                console.error('[RESPOND_TO_REQUEST] ❌ Error during accept:', error);
                 await db.query('ROLLBACK');
+                console.log('[RESPOND_TO_REQUEST] Transaction rolled back');
                 throw error;
             }
         } else {
@@ -632,6 +681,269 @@ router.post('/messages/:messageId/mark-read', verifyToken, async (req, res) => {
     }
 });
 
+// @route   POST api/sessions/:sessionId/start
+// @desc    Start a session immediately (sets status to active and notifies participants)
+// @access  Private (Protected by verifyToken - must be mentor/teacher)
+router.post('/:sessionId/start', verifyToken, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const { mode } = req.body; // Get mode from request body
+        const userId = req.user.id;
+
+        console.log('[START_SESSION] Teacher starting session:', sessionId, 'by user:', userId, 'mode:', mode);
+
+        // Validate mode
+        if (mode && !['code', 'essay'].includes(mode)) {
+            return res.status(400).json({
+                success: false,
+                error: `Invalid session mode: ${mode}. Must be 'code' or 'essay'`
+            });
+        }
+
+        // Get the session - handle both integer and UUID strings
+        const sessionQuery = !isNaN(sessionId)
+            ? 'SELECT * FROM sessions WHERE id = $1'
+            : 'SELECT * FROM sessions WHERE id::text = $1';
+        const sessionParam = !isNaN(sessionId) ? parseInt(sessionId) : sessionId;
+        const sessionResult = await db.query(sessionQuery, [sessionParam]);
+
+        if (sessionResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Session not found'
+            });
+        }
+
+        const session = sessionResult.rows[0];
+
+        // Verify user is the mentor/teacher
+        if (session.mentor_id !== userId) {
+            return res.status(403).json({
+                success: false,
+                error: 'Only the teacher can start this session'
+            });
+        }
+
+        // First, mark any other active sessions by this teacher as completed
+        const excludeQuery = !isNaN(sessionId)
+            ? `UPDATE sessions SET status = 'completed', ended_at = NOW(), updated_at = NOW() WHERE mentor_id = $1 AND status = 'active' AND id != $2 RETURNING id, student_id`
+            : `UPDATE sessions SET status = 'completed', ended_at = NOW(), updated_at = NOW() WHERE mentor_id = $1 AND status = 'active' AND id::text != $2 RETURNING id, student_id`;
+        const excludeParam = !isNaN(sessionId) ? parseInt(sessionId) : sessionId;
+        const oldSessionsResult = await db.query(excludeQuery, [userId, excludeParam]);
+
+        console.log('[START_SESSION] Marked', oldSessionsResult.rows.length, 'previous active sessions as completed');
+
+        // Notify students that their old sessions have ended
+        const io = req.app.get('io');
+        if (io && oldSessionsResult.rows.length > 0) {
+            oldSessionsResult.rows.forEach(oldSession => {
+                io.emit('session_ended', {
+                    sessionId: oldSession.id,
+                    studentId: oldSession.student_id,
+                    message: 'Teacher has started a new session'
+                });
+                console.log('[START_SESSION] Notified student', oldSession.student_id, 'that session', oldSession.id, 'ended');
+            });
+        }
+
+        // Update session status to active, set started_at, and save mode
+        const updateQuery = !isNaN(sessionId)
+            ? `UPDATE sessions SET status = 'active', started_at = NOW(), updated_at = NOW(), session_mode = $2 WHERE id = $1 RETURNING *`
+            : `UPDATE sessions SET status = 'active', started_at = NOW(), updated_at = NOW(), session_mode = $2 WHERE id::text = $1 RETURNING *`;
+        const updateParam = !isNaN(sessionId) ? parseInt(sessionId) : sessionId;
+        const updateResult = await db.query(updateQuery, [updateParam, mode || null]);
+
+        const updatedSession = updateResult.rows[0];
+
+        console.log('[START_SESSION] Session started:', updatedSession.id);
+
+        // Send Socket.IO notification to all connected clients (especially the student)
+        // Reusing the io variable declared earlier
+        if (io) {
+            const notificationData = {
+                sessionId: updatedSession.id,
+                sessionType: updatedSession.session_type,
+                sessionMode: updatedSession.session_mode,
+                mentorId: session.mentor_id,
+                studentId: session.student_id,
+                startedAt: updatedSession.started_at,
+                message: `Session has been started in ${mode === 'code' ? 'Code Editor' : 'Essay Writing'} mode!`
+            };
+
+            console.log('[START_SESSION] =====================================');
+            console.log('[START_SESSION] Emitting session_started event');
+            console.log('[START_SESSION] Session ID:', sessionId);
+            console.log('[START_SESSION] Session Mode:', mode);
+            console.log('[START_SESSION] Session Type:', updatedSession.session_type);
+            console.log('[START_SESSION] Student ID:', session.student_id);
+            console.log('[START_SESSION] Connected sockets:', io.sockets.sockets.size);
+            console.log('[START_SESSION] Notification data:', notificationData);
+            console.log('[START_SESSION] =====================================');
+
+            // Broadcast to all clients
+            io.emit('session_started', notificationData);
+
+            // Also try room-based notification if rooms are set up
+            io.to(`user_${session.student_id}`).emit('session_started', notificationData);
+
+            console.log('[START_SESSION] ✅ Socket.IO events emitted');
+        } else {
+            console.log('[START_SESSION] ❌ WARNING: Socket.IO not available');
+        }
+
+        res.json({
+            success: true,
+            message: 'Session started successfully',
+            session: updatedSession
+        });
+
+    } catch (error) {
+        console.error('Start session error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to start session',
+            details: error.message
+        });
+    }
+});
+
+// @route   POST api/sessions/:sessionId/end
+// @desc    End and delete an active session
+// @access  Private (Protected by verifyToken - must be mentor)
+router.post('/:sessionId/end', verifyToken, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const userId = req.user.id;
+        const { deleteSession = true } = req.body; // Option to delete or just mark as completed
+
+        console.log('[END_SESSION] Request from user:', req.user.username, 'for session:', sessionId);
+        console.log('[END_SESSION] Delete session:', deleteSession);
+
+        // Get session details - handle both UUID string and integer IDs
+        let sessionQuery;
+        try {
+            // Try as integer first if it looks like a number
+            if (!isNaN(sessionId)) {
+                sessionQuery = await db.query(
+                    'SELECT * FROM sessions WHERE id = $1',
+                    [parseInt(sessionId)]
+                );
+            } else {
+                // Otherwise try as text/UUID
+                sessionQuery = await db.query(
+                    'SELECT * FROM sessions WHERE id::text = $1',
+                    [sessionId]
+                );
+            }
+        } catch (err) {
+            console.log('[END_SESSION] Query error:', err.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to query session',
+                details: err.message
+            });
+        }
+
+        if (sessionQuery.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Session not found'
+            });
+        }
+
+        const session = sessionQuery.rows[0];
+
+        // Verify user is the mentor (handle both string and UUID comparison)
+        const sessionMentorId = String(session.mentor_id);
+        const requestUserId = String(userId);
+
+        console.log('[END_SESSION] Comparing IDs - Session mentor:', sessionMentorId, 'Request user:', requestUserId);
+
+        if (sessionMentorId !== requestUserId) {
+            return res.status(403).json({
+                success: false,
+                error: 'Only the teacher can end this session'
+            });
+        }
+
+        // Send Socket.IO notification BEFORE deleting (optional, won't fail if not available)
+        try {
+            const io = req.app.get('io');
+            if (io) {
+                const notificationData = {
+                    sessionId: session.id,
+                    studentId: session.student_id,
+                    mentorId: session.mentor_id,
+                    endedAt: new Date().toISOString(),
+                    message: 'Session has been ended and removed by the teacher'
+                };
+
+                console.log('[END_SESSION] Emitting session_ended event');
+                io.emit('session_ended', notificationData);
+                io.to(`user_${session.student_id}`).emit('session_ended', notificationData);
+                console.log('[END_SESSION] ✅ Socket.IO events emitted');
+            } else {
+                console.log('[END_SESSION] ⚠️ Socket.IO not available, skipping notification');
+            }
+        } catch (ioError) {
+            console.log('[END_SESSION] ⚠️ Socket.IO error (non-fatal):', ioError.message);
+        }
+
+        let result;
+        try {
+            if (deleteSession) {
+                // Delete the session completely
+                console.log('[END_SESSION] Attempting to delete session:', sessionId);
+                const deleteQuery = !isNaN(sessionId)
+                    ? 'DELETE FROM sessions WHERE id = $1 RETURNING *'
+                    : 'DELETE FROM sessions WHERE id::text = $1 RETURNING *';
+                const deleteParam = !isNaN(sessionId) ? parseInt(sessionId) : sessionId;
+                const deleteResult = await db.query(deleteQuery, [deleteParam]);
+
+                if (deleteResult.rows.length === 0) {
+                    throw new Error('Session not found or already deleted');
+                }
+
+                result = deleteResult.rows[0];
+                console.log('[END_SESSION] ✅ Session deleted:', result.id);
+            } else {
+                // Just mark as completed
+                console.log('[END_SESSION] Attempting to mark session as completed:', sessionId);
+                const updateQuery = !isNaN(sessionId)
+                    ? `UPDATE sessions SET status = 'completed', ended_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *`
+                    : `UPDATE sessions SET status = 'completed', ended_at = NOW(), updated_at = NOW() WHERE id::text = $1 RETURNING *`;
+                const updateParam = !isNaN(sessionId) ? parseInt(sessionId) : sessionId;
+                const updateResult = await db.query(updateQuery, [updateParam]);
+
+                if (updateResult.rows.length === 0) {
+                    throw new Error('Session not found or update failed');
+                }
+
+                result = updateResult.rows[0];
+                console.log('[END_SESSION] ✅ Session marked as completed:', result.id);
+            }
+
+            res.json({
+                success: true,
+                message: deleteSession ? 'Session ended and removed successfully' : 'Session ended successfully',
+                session: result,
+                deleted: deleteSession
+            });
+        } catch (dbError) {
+            console.error('[END_SESSION] ❌ Database error:', dbError);
+            throw dbError;
+        }
+
+    } catch (error) {
+        console.error('[END_SESSION] ❌ Error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to end session',
+            details: error.message
+        });
+    }
+});
+
 // @route   GET api/sessions
 // @desc    Get sessions for the authenticated user (as student or mentor)
 // @access  Private (Protected by verifyToken)
@@ -688,6 +1000,249 @@ router.get('/', verifyToken, async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to get sessions'
+        });
+    }
+});
+
+// REMOVED: Duplicate /start endpoint that didn't save session_mode
+// The correct /start endpoint is defined earlier in this file (around line 638)
+// which properly saves the session_mode parameter
+
+// @route   POST api/sessions/upload-document
+// @desc    Upload document for live sessions
+// @access  Private (Protected by verifyToken)
+router.post('/upload-document', verifyToken, async (req, res) => {
+    try {
+        // Import the document controller upload functionality
+        const { uploadDocument } = require('../controllers/documentController');
+
+        // Use the existing document upload middleware and controller
+        const multer = require('multer');
+        const path = require('path');
+        const fs = require('fs').promises;
+
+        // Configure multer for session document uploads
+        const storage = multer.diskStorage({
+            destination: async (req, file, cb) => {
+                const uploadDir = path.join(__dirname, '../uploads/session-documents');
+                try {
+                    await fs.mkdir(uploadDir, { recursive: true });
+                    cb(null, uploadDir);
+                } catch (error) {
+                    cb(error);
+                }
+            },
+            filename: (req, file, cb) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                const extension = path.extname(file.originalname);
+                cb(null, `session-doc-${uniqueSuffix}${extension}`);
+            }
+        });
+
+        const upload = multer({
+            storage: storage,
+            limits: {
+                fileSize: 10 * 1024 * 1024, // 10MB limit
+            },
+            fileFilter: (req, file, cb) => {
+                const allowedTypes = [
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+                    'application/msword', // .doc
+                    'text/plain', // .txt
+                    'application/pdf' // .pdf
+                ];
+
+                if (allowedTypes.includes(file.mimetype)) {
+                    cb(null, true);
+                } else {
+                    cb(new Error('Invalid file type. Only Word documents, PDFs, and text files are allowed.'));
+                }
+            }
+        });
+
+        // Use multer middleware to handle the file upload
+        upload.single('document')(req, res, async (err) => {
+            if (err) {
+                console.error('File upload error:', err);
+                return res.status(400).json({
+                    success: false,
+                    error: err.message || 'File upload failed'
+                });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No file uploaded'
+                });
+            }
+
+            try {
+                const { sessionId, courseId, instructions, teacherId } = req.body;
+
+                // Create a simple document record for the session
+                const db = require('../db');
+                const { v4: uuidv4 } = require('uuid');
+
+                const documentId = uuidv4();
+
+                // Store document info in a session_documents table (create if needed)
+                await db.query(`
+                    CREATE TABLE IF NOT EXISTS session_documents (
+                        id VARCHAR(36) PRIMARY KEY,
+                        session_id VARCHAR(36),
+                        teacher_id VARCHAR(36),
+                        course_id VARCHAR(36),
+                        original_name VARCHAR(255) NOT NULL,
+                        file_path VARCHAR(500) NOT NULL,
+                        file_size INTEGER NOT NULL,
+                        mime_type VARCHAR(100),
+                        instructions TEXT,
+                        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+
+                await db.query(`
+                    INSERT INTO session_documents
+                    (id, session_id, teacher_id, course_id, original_name, file_path, file_size, mime_type, instructions)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                `, [
+                    documentId,
+                    sessionId,
+                    teacherId || req.user.id,
+                    courseId,
+                    req.file.originalname,
+                    req.file.path,
+                    req.file.size,
+                    req.file.mimetype,
+                    instructions
+                ]);
+
+                console.log(`[SESSION] Document uploaded for session ${sessionId}: ${req.file.originalname}`);
+
+                // Extract content from the uploaded file
+                const fs = require('fs').promises;
+                let content = '';
+
+                try {
+                    if (req.file.mimetype === 'text/plain') {
+                        content = await fs.readFile(req.file.path, 'utf-8');
+                    } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                        // For .docx files, use mammoth
+                        try {
+                            const mammoth = require('mammoth');
+                            const result = await mammoth.extractRawText({ path: req.file.path });
+                            content = result.value;
+                        } catch (mammothError) {
+                            console.log('Mammoth not available, trying to install it...');
+                            content = '[Document uploaded but content extraction failed. Please install mammoth: npm install mammoth]';
+                        }
+                    } else if (req.file.mimetype === 'application/pdf') {
+                        content = '[PDF content extraction not implemented yet. Document uploaded successfully.]';
+                    }
+                } catch (extractError) {
+                    console.error('Content extraction error:', extractError);
+                    content = '[Content extraction failed but document was uploaded successfully]';
+                }
+
+                res.json({
+                    success: true,
+                    documentId: documentId,
+                    message: 'Document uploaded successfully',
+                    fileName: req.file.originalname,
+                    fileSize: req.file.size,
+                    content: content
+                });
+
+            } catch (dbError) {
+                console.error('Database error during document upload:', dbError);
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to save document information'
+                });
+            }
+        });
+
+    } catch (error) {
+        console.error('Document upload route error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
+
+// @route   GET api/sessions/:sessionId/document
+// @desc    Get document for a session
+// @access  Private (Protected by verifyToken)
+router.get('/:sessionId/document', verifyToken, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const db = require('../db');
+
+        // Get document for this session
+        const result = await db.query(`
+            SELECT
+                id,
+                session_id,
+                original_name,
+                file_path,
+                file_size,
+                mime_type,
+                instructions,
+                uploaded_at
+            FROM session_documents
+            WHERE session_id = $1
+            ORDER BY uploaded_at DESC
+            LIMIT 1
+        `, [sessionId]);
+
+        if (result.rows.length === 0) {
+            return res.json({
+                success: false,
+                message: 'No document found for this session'
+            });
+        }
+
+        const document = result.rows[0];
+
+        // Try to extract content from the file
+        const fs = require('fs').promises;
+        const path = require('path');
+        let content = '';
+
+        try {
+            if (document.mime_type === 'text/plain') {
+                content = await fs.readFile(document.file_path, 'utf-8');
+            } else if (document.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                // For .docx files, use mammoth if available
+                try {
+                    const mammoth = require('mammoth');
+                    const result = await mammoth.extractRawText({ path: document.file_path });
+                    content = result.value;
+                } catch (mammothError) {
+                    console.log('Mammoth not available or failed, returning empty content');
+                    content = '';
+                }
+            }
+        } catch (fileError) {
+            console.error('Failed to read file content:', fileError);
+            content = '';
+        }
+
+        res.json({
+            success: true,
+            document: {
+                ...document,
+                content
+            }
+        });
+
+    } catch (error) {
+        console.error('Error getting session document:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get session document'
         });
     }
 });

@@ -249,6 +249,74 @@ function initializeWebSocket(wss) {
                     return;
                 }
 
+                // Handle collaborative session messages (for DualModeLiveSession)
+                if (data.type === 'CODE_UPDATE') {
+                    console.log(`[WS] CODE_UPDATE from ${clientInfo.username} for file ${data.payload?.fileId}`);
+                    broadcastToAll(session, {
+                        type: 'CODE_UPDATE',
+                        payload: data.payload
+                    });
+                    return;
+                }
+
+                if (data.type === 'SESSION_MODE_SET') {
+                    console.log(`[WS] SESSION_MODE_SET received from ${clientInfo.username}`);
+                    console.log(`[WS] Payload:`, data.payload);
+                    console.log(`[WS] Session has ${session.clients.size} clients`);
+
+                    // Log each client before broadcasting
+                    session.clients.forEach(client => {
+                        console.log(`[WS] - Client: ${client.username} (${client.role}), ws.readyState=${client.ws.readyState}`);
+                    });
+
+                    const broadcastMessage = {
+                        type: 'SESSION_MODE_SET',
+                        payload: data.payload
+                    };
+                    console.log(`[WS] Broadcasting message:`, broadcastMessage);
+
+                    broadcastToAll(session, broadcastMessage);
+                    console.log(`[WS] Broadcast complete for SESSION_MODE_SET`);
+                    return;
+                }
+
+                if (data.type === 'ESSAY_CONTENT_UPDATE') {
+                    console.log(`[WS] ESSAY_CONTENT_UPDATE from ${clientInfo.username}, content length: ${data.payload?.content?.length || 0}`);
+                    broadcastToAll(session, {
+                        type: 'ESSAY_CONTENT_UPDATE',
+                        payload: data.payload
+                    });
+                    return;
+                }
+
+                if (data.type === 'CHAT_MESSAGE') {
+                    console.log(`[WS] CHAT_MESSAGE from ${clientInfo.username}: ${data.payload?.message?.text}`);
+                    broadcastToAll(session, {
+                        type: 'CHAT_MESSAGE',
+                        payload: data.payload
+                    });
+                    return;
+                }
+
+                if (data.type === 'END_SESSION') {
+                    console.log(`[WS] END_SESSION from ${clientInfo.username} (role: ${clientInfo.role})`);
+                    // Only teachers can end sessions
+                    if (clientInfo.role === 'teacher') {
+                        console.log(`[WS] Broadcasting END_SESSION to all clients in session ${sessionId}`);
+                        broadcastToAll(session, {
+                            type: 'END_SESSION',
+                            payload: {
+                                sessionId: data.sessionId || sessionId,
+                                teacherId: clientInfo.id,
+                                timestamp: new Date().toISOString()
+                            }
+                        });
+                    } else {
+                        console.log(`[WS] END_SESSION rejected - user ${clientInfo.username} is not a teacher`);
+                    }
+                    return;
+                }
+
                 if (clientInfo.role !== 'teacher') return;
 
                 switch (data.type) {
@@ -287,9 +355,21 @@ function initializeWebSocket(wss) {
                         broadcast(session, { type: 'SPOTLIGHT_UPDATE', payload: { studentId: session.spotlightedStudentId, workspace: spotlightWorkspace }});
                         break;
                     case 'TEACHER_CODE_UPDATE':
+                        console.log(`[WS] TEACHER_CODE_UPDATE received from ${clientInfo.username}`);
+                        console.log(`[WS] Files count: ${data.payload.files?.length}, Active file: ${data.payload.activeFileName}`);
+                        console.log(`[WS] Session has ${session.clients.size} clients`);
+
                         session.files = data.payload.files;
                         session.activeFile = data.payload.activeFileName;
-                        broadcast(session, { type: 'TEACHER_CODE_DID_UPDATE', payload: { files: session.files, activeFileName: session.activeFile } });
+
+                        const updateMessage = {
+                            type: 'TEACHER_CODE_DID_UPDATE',
+                            payload: { files: session.files, activeFileName: session.activeFile }
+                        };
+
+                        console.log(`[WS] Broadcasting TEACHER_CODE_DID_UPDATE to all clients`);
+                        broadcast(session, updateMessage);
+                        console.log(`[WS] Broadcast complete`);
                         break;
                     case 'ASSIGN_HOMEWORK':
                         sendToClient(session, data.payload.studentId, { type: 'HOMEWORK_ASSIGNED', payload: data.payload });

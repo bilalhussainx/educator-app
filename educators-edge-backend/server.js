@@ -1,4 +1,5 @@
 // FILE: server.js (Definitive, Final Version)
+require('dotenv').config();
 
 const express = require('express');
 const http = require('http');
@@ -34,6 +35,16 @@ const messageRoutes = require('./routes/messageRoutes'); // <-- MESSAGE ROUTES
 const enhancedCourseRoutes = require('./routes/enhancedCourseRoutes'); // <-- ENHANCED COURSE ROUTES
 const aiCourseRoutes = require('./routes/aiCourseRoutes'); // <-- AI COURSE ROUTES
 const submissionsRoutes = require('./routes/submissionsRoutes'); // <-- SUBMISSIONS & ECOSYSTEM TRACKING ROUTES
+const aiSupervisorRoutes = require('./routes/aiSupervisorRoutes'); // <-- AI WRITING SUPERVISOR ROUTES
+const sessionDocumentsRoutes = require('./routes/sessionDocumentsRoutes'); // <-- SESSION DOCUMENTS ROUTES
+const azureVisionResumeRoutes = require('./routes/azureVisionResumeRoutes'); // <-- AZURE VISION RESUME ANALYSIS ROUTES
+const semanticDOMRoutes = require('./routes/semanticDOMRoutes'); // <-- SEMANTIC DOM ROUTES
+const visualContextResumeRoutes = require('./routes/visualContextResumeRoutes'); // <-- VISUAL CONTEXT RESUME SYSTEM ROUTES
+const resumeTemplateRoutes = require('./routes/resumeTemplateRoutes'); // <-- RESUME TEMPLATE ENGINE ROUTES
+const enhancedAICommentRoutes = require('./routes/enhancedAICommentRoutes'); // <-- ENHANCED AI COMMENT SYSTEM ROUTES
+const smartPromptRoutes = require('./routes/smartPromptRoutes'); // <-- SMART PROMPT AI COMMENT ROUTES
+const comprehensiveAICoachRoutes = require('./routes/comprehensiveAICoachRoutes'); // <-- COMPREHENSIVE AI WRITING COACH ROUTES
+const geminiAssistantRoutes = require('./routes/geminiAssistantRoutes'); // <-- GEMINI-STYLE WRITING ASSISTANT ROUTES
 
 //...
 const app = express();
@@ -49,6 +60,7 @@ app.use(express.json());
 const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:5173',
+      'http://192.168.2.11:5173',  // Network access for phone/other devices
       'https://educator-app.vercel.app',
       'https://educator-a9yc0y90h-bilalhussainxs-projects.vercel.app',
       'https://educator-2ovjl9xd8-bilalhussainxs-projects.vercel.app'
@@ -129,11 +141,24 @@ app.use('/api/messages', messageRoutes); // <-- REGISTER MESSAGE ROUTES
 app.use('/api/enhanced-courses', enhancedCourseRoutes); // <-- REGISTER ENHANCED COURSE ROUTES
 app.use('/api/ai-courses', aiCourseRoutes); // <-- REGISTER AI COURSE ROUTES
 app.use('/api/submissions', submissionsRoutes); // <-- REGISTER SUBMISSIONS & ECOSYSTEM TRACKING ROUTES
+app.use('/api/ai/scribe', aiSupervisorRoutes); // <-- REGISTER AI WRITING SUPERVISOR ROUTES
+app.use('/api/session-documents', sessionDocumentsRoutes); // <-- REGISTER SESSION DOCUMENTS ROUTES
+app.use('/api/azure-vision', azureVisionResumeRoutes); // <-- REGISTER AZURE VISION RESUME ANALYSIS ROUTES
+app.use('/api/semantic-dom', semanticDOMRoutes); // <-- REGISTER SEMANTIC DOM ROUTES
+app.use('/api/resume-coach', visualContextResumeRoutes); // <-- REGISTER VISUAL CONTEXT RESUME SYSTEM ROUTES
+app.use('/api/resume-templates', resumeTemplateRoutes); // <-- REGISTER RESUME TEMPLATE ENGINE ROUTES
+app.use('/api/ai-comments', enhancedAICommentRoutes); // <-- REGISTER ENHANCED AI COMMENT SYSTEM ROUTES
+app.use('/api/ai/smart-prompts', smartPromptRoutes); // <-- REGISTER SMART PROMPT AI COMMENT ROUTES
+app.use('/api/ai-coach', comprehensiveAICoachRoutes); // <-- REGISTER COMPREHENSIVE AI WRITING COACH ROUTES
+app.use('/api/gemini-assistant', geminiAssistantRoutes); // <-- REGISTER GEMINI-STYLE WRITING ASSISTANT ROUTES
 
 const server = http.createServer(app); // Create an HTTP server from your Express app
 
 // [THE CRITICAL FIX] Initialize the WebSocket router and pass it the HTTP server.
-initializeWebSocketRouting(server);
+const io = initializeWebSocketRouting(server);
+
+// Store Socket.IO instance on app for use in routes
+app.set('io', io);
 
 
 const PORT = process.env.PORT || 10000;
@@ -423,3 +448,4 @@ server.listen(PORT, HOST, () => {
 // app.listen(PORT, () => {
 //   console.log(`Server is running on port ${PORT}`);
 // });
+

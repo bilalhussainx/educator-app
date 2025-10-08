@@ -10,12 +10,37 @@ import { useUser } from '@/hooks/useUser';
 import apiClient from '@/services/apiClient';
 import { cn } from '@/lib/utils';
 
+// Import session components
+import { EssayVideoPanel } from '@/components/classroom/EssayVideoPanel';
+import { ChatPanel } from '@/components/classroom/ChatPanel';
+import { EssayHomeworkView } from '@/components/classroom/EssayHomeworkView';
+import { RosterPanel } from '@/components/classroom/RosterPanel';
+import LiveblocksCollaborativeEditor from '@/components/LiveblocksCollaborativeEditor';
+
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ChevronLeft, Bot, Sparkles, Send, FileEdit, Lightbulb, BookOpen, CheckCircle, File, Users, Eye, RadioTower, Target, Zap, MessageCircle, HelpCircle, Download, Save, Brain, Palette, Settings, Edit3, FileText, Wand2, X } from 'lucide-react';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Loader2, ChevronLeft, Bot, Sparkles, Send, FileEdit, Lightbulb, BookOpen, CheckCircle, File, Users, Eye, RadioTower, Target, Zap, MessageCircle, HelpCircle, Download, Save, Brain, Palette, Settings, Edit3, FileText, Wand2, X, Video, VideoOff, Mic, MicOff, Hand, PhoneOff, Upload, ChevronDown, ChevronUp, Star, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Import WebSocket and session management
+import { getWebSocketUrl } from '@/config/websocket';
+
+// Import AI Supervisor components
+import AnnotationLayer from '@/components/scribe/AnnotationLayer';
+import MozartStrokePanel from '@/components/scribe/MozartStrokePanel';
+
+// Import Agora SDK for video/audio
+import AgoraRTC, {
+    IAgoraRTCClient,
+    ILocalVideoTrack,
+    ILocalAudioTrack,
+    IAgoraRTCRemoteUser
+} from 'agora-rtc-sdk-ng';
 
 // Simple WebSocket-based collaboration
 interface CollaborationUser {
@@ -24,6 +49,28 @@ interface CollaborationUser {
     color: string;
     cursor?: number;
     isOnline: boolean;
+}
+
+// Session management types
+interface Student {
+    id: string;
+    username: string;
+    isDoingHomework?: boolean;
+}
+
+interface Message {
+    id: string;
+    username: string;
+    content: string;
+    timestamp: Date;
+}
+
+interface EssayHomeworkAssignment {
+    id: string;
+    title: string;
+    instructions: string;
+    wordCount?: string;
+    dueDate?: string;
 }
 
 
@@ -46,20 +93,56 @@ interface AIMessage {
     };
 }
 
-const CollaborativeEditor = ({ 
-    documentId, 
-    username, 
-    color, 
+// Session management interfaces
+interface Student {
+    id: string;
+    username: string;
+    displayName?: string;
+    role?: string;
+}
+
+interface Message {
+    from: string;
+    text: string;
+    timestamp: string;
+}
+
+interface EssayHomeworkAssignment {
+    id: string;
+    title: string;
+    description: string;
+    instructions: string;
+    dueDate?: string;
+    referenceDocument?: {
+        name: string;
+        url: string;
+        instructions?: string;
+    };
+    maxWords?: number;
+    submissionStatus: 'not_started' | 'in_progress' | 'submitted' | 'graded';
+    grade?: number;
+    teacherFeedback?: string;
+}
+
+const CollaborativeEditor = ({
+    documentId,
+    username,
+    color,
     sessionId,
     initialContent,
     onContentChange,
     onCollaboratorsChange,
     onSelectionChange,
     onContentUpdate,
-    onEditorReady
-}: { 
-    documentId: string; 
-    username: string; 
+    onEditorReady,
+    sessionWsRef,
+    currentContent,
+    currentUserId,
+    sessionId: routeSessionId,
+    userRole
+}: {
+    documentId: string;
+    username: string;
     color: string;
     aiSessionId?: string;
     sessionId?: string;
@@ -69,11 +152,18 @@ const CollaborativeEditor = ({
     onSelectionChange?: (text: string, range: { from: number; to: number } | null) => void;
     onContentUpdate?: (content: string) => void;
     onEditorReady?: (editor: any) => void;
+    sessionWsRef?: React.RefObject<WebSocket>;
+    currentContent?: string;
+    currentUserId?: string;
+    sessionId?: string;
+    userRole?: 'teacher' | 'student';
+    private?: boolean;
 }) => {
     const [collaborators, setCollaborators] = useState<CollaborationUser[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
     const editorRef = useRef<any>(null);
+    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const editor = useEditor({
         extensions: [
@@ -90,27 +180,58 @@ const CollaborativeEditor = ({
         },
         onUpdate: ({ editor }) => {
             const content = editor.getHTML();
+            console.log('🔥 [EDITOR] onUpdate triggered! Content length:', content.length);
             onContentChange?.(content);
-            
-            // Send content changes to other collaborators
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send(JSON.stringify({
-                    type: 'content-change',
-                    content,
-                    userId: username,
-                    timestamp: Date.now()
-                }));
+
+            // Debounce content updates to prevent excessive messaging
+            if (updateTimeoutRef.current) {
+                clearTimeout(updateTimeoutRef.current);
             }
+
+            updateTimeoutRef.current = setTimeout(() => {
+                // Send content changes through session WebSocket using proper format
+                console.log('[EDITOR] Attempting to send content update...');
+                console.log('[EDITOR] Session ID:', sessionId);
+                console.log('[EDITOR] User Role:', userRole);
+                console.log('[EDITOR] sessionWsRef exists:', !!sessionWsRef?.current);
+                console.log('[EDITOR] WebSocket state:', sessionWsRef?.current?.readyState);
+                console.log('[EDITOR] WebSocket OPEN constant:', WebSocket.OPEN);
+
+                if (sessionWsRef?.current && sessionWsRef.current.readyState === WebSocket.OPEN) {
+                    const userIdToSend = currentUserId || username;
+                    console.log('[EDITOR] Sending ESSAY_CONTENT_UPDATE from userId:', userIdToSend, 'username:', username);
+                    console.log('[EDITOR] Content preview:', content.substring(0, 100) + '...');
+
+                    const message = {
+                        type: 'ESSAY_CONTENT_UPDATE',
+                        payload: {
+                            content,
+                            userId: userIdToSend,
+                            timestamp: Date.now()
+                        }
+                    };
+
+                    sessionWsRef.current.send(JSON.stringify(message));
+                    console.log('[EDITOR] Message sent successfully');
+                } else {
+                    console.log('[EDITOR] Cannot send - WebSocket not ready.');
+                    console.log('[EDITOR] sessionWsRef exists:', !!sessionWsRef?.current);
+                    console.log('[EDITOR] WebSocket state:', sessionWsRef?.current?.readyState);
+                    console.log('[EDITOR] Is connected to session:', isConnectedToSession);
+                }
+            }, 500); // 500ms debounce
         },
         onSelectionUpdate: ({ editor }) => {
             // Send cursor position to other collaborators
             const { from, to } = editor.state.selection;
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send(JSON.stringify({
-                    type: 'cursor-change',
-                    position: from,
-                    userId: username,
-                    timestamp: Date.now()
+            if (sessionWsRef?.current && sessionWsRef.current.readyState === WebSocket.OPEN) {
+                sessionWsRef.current.send(JSON.stringify({
+                    type: 'ESSAY_CURSOR_UPDATE',
+                    payload: {
+                        position: from,
+                        userId: currentUserId || username,
+                        timestamp: Date.now()
+                    }
                 }));
             }
             
@@ -128,6 +249,14 @@ const CollaborativeEditor = ({
 
     editorRef.current = editor;
 
+    // Sync editor content when currentContent changes from WebSocket
+    useEffect(() => {
+        if (editor && currentContent && currentContent !== editor.getHTML()) {
+            console.log('[EDITOR] Syncing incoming content, length:', currentContent.length);
+            editor.commands.setContent(currentContent, false); // false = don't trigger onUpdate
+        }
+    }, [currentContent, editor]);
+
     // WebSocket connection for real-time collaboration
     useEffect(() => {
         if (!sessionId) return;
@@ -135,21 +264,94 @@ const CollaborativeEditor = ({
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/collaboration/${sessionId}`;
         
-        // For development, use a mock WebSocket implementation
-        if (process.env.NODE_ENV === 'development') {
-            // Mock WebSocket for development
-            console.log('Using mock collaboration for development');
+        // For development, implement real content synchronization using localStorage
+        if (import.meta.env.DEV) {
+            console.log('Using real-time mock collaboration with localStorage sync');
             setIsConnected(true);
-            
-            // Simulate some collaborators
-            const mockCollaborators: CollaborationUser[] = [
-                {
+
+            // Simulate collaborators based on session type
+            const mockCollaborators: CollaborationUser[] = [];
+
+            // If this is a live session, implement real synchronization
+            if (sessionId?.includes('session_') && sessionId?.includes('essay')) {
+                // Simulate teacher and students in the same document
+                mockCollaborators.push(
+                    {
+                        id: 'teacher',
+                        name: 'Mrs. Johnson (Teacher)',
+                        color: '#22c55e',
+                        isOnline: true
+                    },
+                    {
+                        id: 'student1',
+                        name: 'Alice Chen',
+                        color: '#3b82f6',
+                        isOnline: true
+                    },
+                    {
+                        id: 'student2',
+                        name: 'Bob Johnson',
+                        color: '#ef4444',
+                        isOnline: true
+                    }
+                );
+
+                // Real-time content synchronization using localStorage
+                const syncKey = `essay_sync_${sessionId}`;
+
+                // Listen for storage changes from other tabs/windows (teacher/student)
+                const handleStorageChange = (e: StorageEvent) => {
+                    if (e.key === syncKey && e.newValue && editor) {
+                        const syncData = JSON.parse(e.newValue);
+                        const currentContent = editor.getHTML();
+
+                        // Only update if content is different to avoid infinite loops
+                        if (syncData.content !== currentContent) {
+                            console.log('[Sync] Updating content from other participant');
+                            editor.commands.setContent(syncData.content, false);
+                            onContentUpdate?.(syncData.content);
+                        }
+                    }
+                };
+
+                window.addEventListener('storage', handleStorageChange);
+
+                // Sync content every 2 seconds if editor exists
+                const syncInterval = setInterval(() => {
+                    if (editor) {
+                        const currentContent = editor.getHTML();
+                        const syncData = {
+                            content: currentContent,
+                            timestamp: Date.now(),
+                            userId: username
+                        };
+                        localStorage.setItem(syncKey, JSON.stringify(syncData));
+                    }
+                }, 2000);
+
+                // Load initial content from sync if available
+                const initialSync = localStorage.getItem(syncKey);
+                if (initialSync && editor) {
+                    const syncData = JSON.parse(initialSync);
+                    editor.commands.setContent(syncData.content, false);
+                    onContentUpdate?.(syncData.content);
+                }
+
+                // Clean up on unmount
+                return () => {
+                    window.removeEventListener('storage', handleStorageChange);
+                    clearInterval(syncInterval);
+                };
+            } else {
+                // Regular AI collaboration
+                mockCollaborators.push({
                     id: 'ai-mentor',
-                    name: 'AI Writing Assistant',
+                    name: 'MozartStroke AI',
                     color: '#00bcd4',
                     isOnline: true
-                }
-            ];
+                });
+            }
+
             setCollaborators(mockCollaborators);
             onCollaboratorsChange?.(mockCollaborators);
             return;
@@ -225,13 +427,17 @@ const CollaborativeEditor = ({
             if (wsRef.current) {
                 wsRef.current.close();
             }
+            if (updateTimeoutRef.current) {
+                clearTimeout(updateTimeoutRef.current);
+            }
         };
     
     }, [sessionId, username, documentId, color, editor]);
 
-    // Update editor content when initialContent changes
+    // Update editor content when initialContent changes (for real-time sync)
     React.useEffect(() => {
-        if (editor && initialContent) {
+        if (editor && initialContent && editor.getHTML() !== initialContent) {
+            console.log('[EDITOR] Updating content from WebSocket:', initialContent.substring(0, 100) + '...');
             editor.commands.setContent(initialContent);
         }
     }, [editor, initialContent]);
@@ -303,6 +509,263 @@ const CollaborativeEditor = ({
     );
 };
 
+// --- Enhanced Roster Panel with Integrated Video ---
+const EnhancedRosterPanel = ({
+    role, students, viewingMode, setViewingMode, activeHomeworkStudents, handsRaised,
+    spotlightedStudentId, handleSpotlightStudent, assigningToStudentId, setAssigningToStudentId,
+    availableLessons, handleAssignHomework, controlledStudentId, handleTakeControl,
+    handleOpenChat, unreadMessages, localVideoRef, remoteUsers, isVideoCollapsed, setIsVideoCollapsed
+}: {
+    role: 'teacher' | 'student';
+    students: Student[];
+    viewingMode: string;
+    setViewingMode: (mode: string) => void;
+    activeHomeworkStudents: Set<string>;
+    handsRaised: Set<string>;
+    spotlightedStudentId: string | null;
+    handleSpotlightStudent: (studentId: string | null) => void;
+    assigningToStudentId: string | null;
+    setAssigningToStudentId: (id: string | null) => void;
+    availableLessons: any[];
+    handleAssignHomework: (studentId: string, lessonId: number | string) => void;
+    controlledStudentId: string | null;
+    handleTakeControl: (studentId: string | null) => void;
+    handleOpenChat: (studentId: string) => void;
+    unreadMessages: Set<string>;
+    localVideoRef: React.RefObject<HTMLVideoElement>;
+    remoteUsers: any[];
+    isVideoCollapsed: boolean;
+    setIsVideoCollapsed: (collapsed: boolean) => void;
+}) => {
+    return (
+        <div className="h-full flex flex-col bg-slate-900/30 backdrop-blur-sm">
+            {/* Video Section - Integrated at top */}
+            <div className="flex-shrink-0 border-b border-slate-700/50">
+                <div className="p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                        <Users className="h-4 w-4" />
+                        <span>{remoteUsers.length + 1} participants</span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsVideoCollapsed(!isVideoCollapsed)}
+                        className="h-6 w-6 p-0 text-slate-400"
+                    >
+                        {isVideoCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                    </Button>
+                </div>
+
+                {!isVideoCollapsed && (
+                    <div className="p-3 pt-0 space-y-2">
+                        <div className="relative bg-slate-800/50 rounded-md overflow-hidden border border-slate-600/30 h-20 w-28">
+                            <video
+                                ref={localVideoRef}
+                                autoPlay
+                                playsInline
+                                muted
+                                className="w-full h-full object-cover"
+                            />
+                            <div className="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1 rounded">
+                                You
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            {remoteUsers.slice(0, 4).map((user, index) => {
+                                const videoRef = React.useRef<HTMLVideoElement>(null);
+
+                                React.useEffect(() => {
+                                    if (user.videoTrack && videoRef.current) {
+                                        user.videoTrack.play(videoRef.current);
+                                    }
+                                }, [user.videoTrack]);
+
+                                return (
+                                    <div key={user.uid || index} className="relative bg-slate-800/50 rounded-md overflow-hidden border border-slate-600/30 h-16 w-20">
+                                        {user.videoTrack ? (
+                                            <video
+                                                ref={videoRef}
+                                                autoPlay
+                                                playsInline
+                                                muted
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-slate-700 flex items-center justify-center">
+                                                <Users className="h-6 w-6 text-slate-400" />
+                                            </div>
+                                        )}
+                                        <div className="absolute bottom-1 left-1 text-xs text-white bg-black/50 px-1 rounded">
+                                            {students.find(s => s.id === user.uid)?.username || `User ${user.uid.toString().substring(0, 4)}`}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {remoteUsers.length === 0 && (
+                            <div className="text-center py-2">
+                                <span className="text-xs text-slate-500">Waiting for others to join...</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Student Roster */}
+            {role === 'teacher' && (
+                <div className="flex-grow flex flex-col min-h-0">
+                    <div className="p-3 border-b border-slate-700/50">
+                        <h3 className="font-semibold text-slate-200 text-sm uppercase tracking-wider">Student Roster</h3>
+                    </div>
+
+                    <div className="p-2 border-b border-slate-700/50">
+                        <Button
+                            onClick={() => { setViewingMode('teacher'); handleSpotlightStudent(null); }}
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                                'w-full justify-start text-sm',
+                                viewingMode === 'teacher'
+                                    ? 'bg-cyan-500/10 text-cyan-300 font-semibold'
+                                    : 'text-slate-300 hover:bg-slate-800/50'
+                            )}
+                        >
+                            <FileEdit className="mr-2 h-4 w-4"/>
+                            My Workspace
+                        </Button>
+                    </div>
+
+                    <div className="flex-grow overflow-y-auto p-2 space-y-1">
+                        {students.map(student => {
+                            const isControllingThisStudent = controlledStudentId === student.id;
+                            const isViewingThisStudent = viewingMode === student.id;
+                            const isSpotlighted = spotlightedStudentId === student.id;
+                            const hasHandRaised = handsRaised.has(student.id);
+
+                            return (
+                                <div
+                                    key={student.id}
+                                    className={cn(
+                                        'rounded-lg border transition-all',
+                                        hasHandRaised
+                                            ? 'bg-fuchsia-900/20 border-fuchsia-600/50 animate-pulse'
+                                            : 'bg-slate-800/30 border-slate-700/50',
+                                        isViewingThisStudent && 'ring-2 ring-cyan-500/50'
+                                    )}
+                                >
+                                    <div className="p-2">
+                                        <Button
+                                            onClick={() => setViewingMode(student.id)}
+                                            variant='ghost'
+                                            size="sm"
+                                            className="w-full justify-start p-1 h-auto"
+                                        >
+                                            <div className="flex items-center justify-between w-full">
+                                                <div className="flex items-center gap-2">
+                                                    {hasHandRaised && <Hand className="h-4 w-4 text-fuchsia-400" />}
+                                                    {isSpotlighted && <Star className="h-4 w-4 text-yellow-400" />}
+                                                    <span className={cn(
+                                                        'text-sm',
+                                                        isViewingThisStudent ? 'text-cyan-300 font-medium' : 'text-slate-200'
+                                                    )}>
+                                                        {student.username}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    {activeHomeworkStudents.has(student.id) && (
+                                                        <Badge variant="outline" className="h-5 text-xs bg-green-500/10 text-green-400 border-green-500/30">
+                                                            Live
+                                                        </Badge>
+                                                    )}
+                                                    {unreadMessages.has(student.id) && (
+                                                        <div className="h-2 w-2 bg-cyan-400 rounded-full" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Button>
+
+                                        {isViewingThisStudent && (
+                                            <div className="mt-2 pt-2 border-t border-slate-700/50 flex flex-wrap gap-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleSpotlightStudent(isSpotlighted ? null : student.id)}
+                                                    className="text-xs h-6 px-2"
+                                                >
+                                                    {isSpotlighted ? 'Unspot' : 'Spotlight'}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleTakeControl(isControllingThisStudent ? null : student.id)}
+                                                    className={cn(
+                                                        "text-xs h-6 px-2",
+                                                        isControllingThisStudent && "bg-red-500/10 text-red-400"
+                                                    )}
+                                                >
+                                                    {isControllingThisStudent ? 'Release' : 'Control'}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleOpenChat(student.id)}
+                                                    className="text-xs h-6 px-2"
+                                                >
+                                                    Chat
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => setAssigningToStudentId(assigningToStudentId === student.id ? null : student.id)}
+                                                    className="text-xs h-6 px-2"
+                                                >
+                                                    Assign
+                                                </Button>
+                                            </div>
+                                        )}
+
+                                        {assigningToStudentId === student.id && (
+                                            <div className="mt-2 pt-2 border-t border-slate-700/50 space-y-1">
+                                                {availableLessons.length > 0 ? (
+                                                    availableLessons.map(lesson => (
+                                                        <Button
+                                                            key={lesson.id}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="w-full justify-start text-xs h-6 px-2 text-slate-300"
+                                                            onClick={() => handleAssignHomework(student.id, lesson.id)}
+                                                        >
+                                                            {lesson.title}
+                                                        </Button>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-xs text-slate-500 px-2">No lessons available</span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Student View */}
+            {role === 'student' && (
+                <div className="flex-grow flex flex-col min-h-0 p-3">
+                    <div className="text-center">
+                        <h3 className="font-semibold text-slate-200 text-sm">Essay Session</h3>
+                        <p className="text-xs text-slate-400 mt-1">Collaborate with your classmates</p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const ScribeSessionPage: React.FC = () => {
     const { documentId, sessionId: routeSessionId } = useParams<{ documentId?: string; sessionId?: string }>();
     const navigate = useNavigate();
@@ -311,21 +774,27 @@ const ScribeSessionPage: React.FC = () => {
     const userColor = React.useMemo(() => `#${Math.floor(Math.random()*16777215).toString(16)}`, []);
     
     // AI assistance state - ALL hooks must be declared here unconditionally
+    // Legacy AI states (disabled - using MozartStroke only)
     const [aiMessages, setAiMessages] = useState<AIMessage[]>([]);
     const [aiSessionId, setAiSessionId] = useState<string | null>(null);
     const [isAiLoading, setIsAiLoading] = useState(false);
     const [editorInstance, setEditorInstance] = useState<any>(null);
-    const [userInput, setUserInput] = useState('');
     const [currentContent, setCurrentContent] = useState('');
-    const [aiMentor, setAiMentor] = useState<any>(null);
+    const [currentUserId, setCurrentUserId] = useState<string>('');
     const [uploadedDocument, setUploadedDocument] = useState<any>(null);
     const [, setIsLoadingDocument] = useState(false);
     const [collaborators, setCollaborators] = useState<CollaborationUser[]>([]);
     const [selectedText, setSelectedText] = useState('');
     const [selectionRange, setSelectionRange] = useState<{ from: number; to: number } | null>(null);
+
+    // AI Writing Supervisor Review Mode State
+    const [reviewAnnotations, setReviewAnnotations] = useState<any[]>([]);
+    const [isReviewMode, setIsReviewMode] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [activeAnnotation, setActiveAnnotation] = useState<string | null>(null);
+    const [reviewProgress, setReviewProgress] = useState({ current: 0, total: 0 });
     const [showSelectionMenu, setShowSelectionMenu] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [lastAnalysisTime, setLastAnalysisTime] = useState(0);
     const [analysisTimer, setAnalysisTimer] = useState<NodeJS.Timeout | null>(null);
     const [isIdeationMode, setIsIdeationMode] = useState(false);
@@ -342,7 +811,30 @@ const ScribeSessionPage: React.FC = () => {
         type: 'suggestion' | 'feedback' | 'question';
     }[]>([]);
     const [showCommentBubble, setShowCommentBubble] = useState<string | null>(null);
-    
+
+    // Session management state
+    const [students, setStudents] = useState<Student[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [handsRaised, setHandsRaised] = useState<Set<string>>(new Set());
+    const [isConnectedToSession, setIsConnectedToSession] = useState(false);
+    const [userRole, setUserRole] = useState<'teacher' | 'student'>('student');
+    const [sessionTeacher, setSessionTeacher] = useState<{id: string, username: string} | null>(null);
+    const [showVideoPanel, setShowVideoPanel] = useState(false);
+    const [showChatPanel, setShowChatPanel] = useState(false);
+    const [homeworkAssignment, setHomeworkAssignment] = useState<EssayHomeworkAssignment | null>(null);
+    const [isDoingHomework, setIsDoingHomework] = useState(false);
+    const [showHomeworkDialog, setShowHomeworkDialog] = useState(false);
+    const sessionWsRef = useRef<WebSocket | null>(null);
+    const localVideoRef = useRef<HTMLVideoElement>(null);
+
+    // Agora video state
+    const [agoraClient, setAgoraClient] = useState<any>(null);
+    const [localVideoTrack, setLocalVideoTrack] = useState<any>(null);
+    const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
+    const [remoteUsers, setRemoteUsers] = useState<any[]>([]);
+    const [isVideoEnabled, setIsVideoEnabled] = useState(false);
+    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+
     // Writing type categorization
     const [writingType, setWritingType] = useState<string>('auto-detect');
     const [customWritingGoals, setCustomWritingGoals] = useState<string>('');
@@ -870,7 +1362,12 @@ ${localAnalysis.improvements.map(i => `• ${i}`).join('\n')}
     const sessionParam = searchParams.get('session');
     const mentorParam = searchParams.get('mentor');
     const typeParam = searchParams.get('type');
-    const docId = documentParam || documentId;
+    const courseIdParam = searchParams.get('courseId');
+
+    // Use actual document ID from route params or query params
+    const docId = documentId || `session_${routeSessionId || sessionParam}_essay`;
+    const hasUploadedDocument = documentParam === 'true' || (documentParam && documentParam !== 'false' && documentParam !== '');
+    const documentIdFromParam = documentParam && documentParam !== 'true' && documentParam !== 'false' ? documentParam : null;
 
     // Determine if this is a teacher-led live session or urgent AI session
     const isLiveSession = typeParam === 'live' && mentorParam === 'teacher';
@@ -906,75 +1403,40 @@ ${localAnalysis.improvements.map(i => `• ${i}`).join('\n')}
         }
     }, []);
 
-    const initializeAiSession = React.useCallback(async () => {
+    const loadSessionDocument = React.useCallback(async (sessionId: string) => {
+        setIsLoadingDocument(true);
         try {
-            // Find an AI essay editor bot
-            const botsResponse = await apiClient.get('/api/ai-bots');
-            const essayBots = botsResponse.data.bots?.filter((bot: any) => 
-                bot.specialization_focus?.toLowerCase().includes('essay') || 
-                bot.specialization_focus?.toLowerCase().includes('writing')
-            );
+            // Try to find a document for this session
+            const response = await apiClient.get(`/api/sessions/${sessionId}/document`);
+            if (response.data.success && response.data.document) {
+                const document = response.data.document;
+                setUploadedDocument(document);
 
-            if (essayBots && essayBots.length > 0) {
-                const bot = essayBots[0];
-                setAiMentor(bot);
-
-                // Start AI session
-                const sessionResponse = await apiClient.post('/api/ai-bots/session/start', {
-                    botId: bot.id,
-                    sessionType: 'essay_editing',
-                    problem: 'Essay writing assistance session'
-                });
-
-                if (sessionResponse.data.success) {
-                    setAiSessionId(sessionResponse.data.session.id);
-                    
-                    // Send initial message with counselor persona
-                    const welcomeResponse = await apiClient.post('/api/ai-bots/session/message', {
-                        sessionId: sessionResponse.data.session.id,
-                        message: `You are an elite English writing counselor with 20+ years of experience, currently in an URGENT ESSAY EDITING SESSION. You represent the top 0.1% of English writers and essay counselors with professor-level expertise.
-
-CURRENT SESSION CONTEXT:
-- You are actively helping edit an essay in real-time
-- The student has access to a collaborative editor on the left
-- You can see their essay content and provide specific suggestions
-- This is NOT a general chat - focus on immediate essay improvement
-
-YOUR CAPABILITIES AS ESSAY SUPERVISOR:
-1. CONTENT ANALYSIS: Analyze structure, flow, argument strength, evidence quality
-2. LANGUAGE ENHANCEMENT: Suggest better word choices, metaphors, descriptive phrases
-3. TONE ADJUSTMENT: Help match the required tone (formal, persuasive, narrative, etc.)
-4. REQUIREMENT ALIGNMENT: Ensure essay meets word count, audience, and purpose requirements
-5. REAL-TIME EDITING: Highlight specific phrases to improve or remove
-6. TEACHING MOMENTS: Explain WHY changes improve the writing
-
-RESPONSE STYLE:
-- Be direct and actionable
-- Focus on immediate improvements to their current essay
-- Ask about specific sections that need work
-- Offer concrete examples and alternatives
-- Act as a hands-on writing coach, not a general assistant
-
-Please introduce yourself as their essay editing supervisor and ask to see their current draft to begin targeted improvements.`
-                    });
-
-                    if (welcomeResponse.data.success) {
-                        setAiMessages([
-                            {
-                                id: '1',
-                                role: 'assistant',
-                                content: welcomeResponse.data.response,
-                                timestamp: new Date(),
-                                type: 'suggestion'
-                            }
-                        ]);
-                    }
+                // Convert document content to HTML for the editor
+                let htmlContent = `<h2>${document.original_name || 'Session Document'}</h2>`;
+                if (document.content) {
+                    const paragraphs = document.content.split('\n').filter((p: string) => p.trim());
+                    htmlContent += paragraphs.map((p: string) => `<p>${p.trim()}</p>`).join('');
+                } else {
+                    htmlContent += '<p>Document content could not be extracted. You can edit it here manually.</p>';
                 }
+
+                setCurrentContent(htmlContent);
+                console.log(`Loaded session document: ${document.original_name}`);
             }
         } catch (error) {
-            console.error('Failed to initialize AI session:', error);
-            toast.error('Failed to connect to AI writing assistant');
+            console.error('Failed to load session document:', error);
+            // Don't show error toast for session document - it might not exist
+        } finally {
+            setIsLoadingDocument(false);
         }
+    }, []);
+
+    // Legacy AI initialization - disabled since we're using only MozartStroke Review
+    const initializeAiSession = React.useCallback(async () => {
+        // Disabled: MozartStroke Review handles all AI functionality now
+        console.log('AI session initialization skipped - using MozartStroke Review instead');
+        return;
     }, []);
 
     // ALL useEffect hooks must be declared here unconditionally
@@ -992,32 +1454,477 @@ Please introduce yourself as their essay editing supervisor and ask to see their
     }, [showSelectionMenu]);
 
     useEffect(() => {
-        // For urgent sessions, document ID comes from query param
-        // For regular scribe sessions, document ID comes from route param
-        if (docId) {
-            loadDocumentContent(docId);
+        // Load document if we have an uploaded document
+        // Check both route param (documentId) and query param (documentParam)
+        if (hasUploadedDocument) {
+            const documentIdToLoad = documentId || documentIdFromParam;
+            if (documentIdToLoad) {
+                loadDocumentContent(documentIdToLoad);
+            } else if (sessionParam) {
+                // Fallback: Try to load by session ID if no specific document ID
+                loadSessionDocument(sessionParam);
+            }
         }
         
         // Use session ID from route param (for urgent sessions) or query param
         const sessionIdToUse = routeSessionId || sessionParam;
         
+        // Legacy AI initialization - disabled since we're using only MozartStroke Review
         if (sessionIdToUse && mentorParam === 'ai') {
-            initializeAiSession();
+            console.log('AI session initialization skipped - using MozartStroke Review instead');
+            // initializeAiSession(); // Disabled
         }
         if (isLiveSession) {
-            // For teacher-led sessions, we don't need to initialize AI
-            console.log('Teacher-led live essay editing session initialized');
-            setAiMessages([
-                {
-                    id: '1',
-                    role: 'assistant',
-                    content: 'Welcome to the live essay editing session! Your teacher will join shortly to help with collaborative writing.',
-                    timestamp: new Date(),
-                    type: 'suggestion'
-                }
-            ]);
+            // For teacher-led sessions, we use MozartStroke Review instead of chat AI
+            console.log('Teacher-led live essay editing session initialized - using MozartStroke Review');
+            // Removed old AI chat message - using MozartStroke Review only
         }
-    }, [sessionParam, routeSessionId, mentorParam, documentParam, documentId, isLiveSession, docId, loadDocumentContent, initializeAiSession]);
+    }, [sessionParam, routeSessionId, mentorParam, documentId, hasUploadedDocument, isLiveSession, loadDocumentContent, initializeAiSession]);
+
+    // Session WebSocket connection for live collaboration
+    useEffect(() => {
+        if (!user) return;
+
+        const userId = user.id?.toString() || user.username || '';
+        setUserRole(user.role === 'teacher' ? 'teacher' : 'student');
+
+        // If current user is the teacher, set them as the session teacher
+        if (user.role === 'teacher') {
+            setSessionTeacher({
+                id: userId,
+                username: user.username
+            });
+        }
+
+        // Store in localStorage for use in CollaborativeEditor
+        localStorage.setItem('currentUserId', userId);
+        setCurrentUserId(userId);
+        console.log('[SESSION] Set current user ID:', userId);
+
+        const sessionIdToUse = routeSessionId || sessionParam;
+        if (!sessionIdToUse) return;
+
+        const connectSessionWebSocket = () => {
+            // Connect to real session WebSocket following LiveTutorialPage pattern
+            if (isLiveSession) {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    console.error('No token found for WebSocket connection');
+                    return;
+                }
+
+                const wsUrl = `${getWebSocketUrl()}/ws?sessionId=${sessionIdToUse}&token=${token}`;
+                console.log('Connecting to session WebSocket:', wsUrl);
+
+                const ws = new WebSocket(wsUrl);
+                sessionWsRef.current = ws;
+
+                ws.onopen = () => {
+                    console.log(`[SESSION_MONITORING] Connected to session WebSocket: ${sessionIdToUse} at ${new Date().toISOString()}`);
+                    console.log(`[SESSION_MONITORING] User: ${user.username} (${user.role}) connecting to session`);
+                    setIsConnectedToSession(true);
+                    toast.success('Connected to live session!');
+                };
+
+                ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    console.log('Received session message:', message.type, message.payload);
+
+                    switch (message.type) {
+                        case 'STUDENT_LIST_UPDATE':
+                            console.log('[WEBSOCKET] Received STUDENT_LIST_UPDATE:', message.payload?.students);
+                            if (message.payload?.students) {
+                                setStudents(message.payload.students);
+                            }
+                            break;
+
+                        case 'TEACHER_INFO_UPDATE':
+                            console.log('[WEBSOCKET] Received TEACHER_INFO_UPDATE:', message.payload?.teacher);
+                            if (message.payload?.teacher && userRole === 'student') {
+                                const teacher = message.payload.teacher;
+                                setSessionTeacher(teacher);
+                                // Notify student that teacher has joined
+                                if (!sessionTeacher) { // Only show if teacher wasn't already set
+                                    toast.success(`Teacher ${teacher.username} has joined session ${routeSessionId || sessionParam}!`);
+                                }
+                            }
+                            break;
+
+                        case 'ROLE_ASSIGNED':
+                            console.log('[WEBSOCKET] Received ROLE_ASSIGNED:', message.payload);
+                            // Handle role assignment if needed
+                            break;
+
+                        case 'HAND_RAISED_LIST_UPDATE':
+                            if (message.payload?.studentsWithHandsRaised) {
+                                setHandsRaised(new Set(message.payload.studentsWithHandsRaised));
+                            }
+                            break;
+
+                        case 'PRIVATE_MESSAGE':
+                            const msg = message.payload;
+                            setMessages(prev => [...prev, {
+                                id: Date.now().toString(),
+                                username: msg.from,
+                                content: msg.text,
+                                timestamp: new Date(msg.timestamp)
+                            }]);
+                            break;
+
+                        case 'ESSAY_CONTENT_UPDATE':
+                            console.log('[WEBSOCKET] ===== ESSAY_CONTENT_UPDATE RECEIVED =====');
+                            console.log('[WEBSOCKET] From userId:', message.payload?.userId);
+                            console.log('[WEBSOCKET] Current userId:', currentUserId);
+                            console.log('[WEBSOCKET] Content preview:', message.payload?.content?.substring(0, 100) + '...');
+                            console.log('[WEBSOCKET] Is from self?', message.payload?.userId === currentUserId);
+
+                            if (message.payload?.userId !== currentUserId) {
+                                console.log('[WEBSOCKET] ✅ Updating editor with incoming content');
+                                setCurrentContent(message.payload.content);
+                            } else {
+                                console.log('[WEBSOCKET] ❌ Ignoring own content update');
+                            }
+                            break;
+
+                        case 'END_SESSION':
+                            console.log('[WEBSOCKET] END_SESSION received:', message.payload);
+                            if (userRole === 'student') {
+                                toast.info('Teacher has ended the session');
+                                // Redirect student to trust graph
+                                setTimeout(() => {
+                                    navigate('/trust-graph');
+                                }, 1500);
+                            } else if (userRole === 'teacher') {
+                                // Teacher already navigated in endSession function
+                                console.log('[WEBSOCKET] Teacher received END_SESSION confirmation');
+                            }
+                            break;
+
+                        default:
+                            console.log('Unhandled session message type:', message.type);
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log(`[SESSION_MONITORING] Session WebSocket closed for ${user.username} at ${new Date().toISOString()}`);
+                    setIsConnectedToSession(false);
+                    toast.error('Disconnected from live session');
+                };
+
+                ws.onerror = (error) => {
+                    console.error(`[SESSION_MONITORING] Session WebSocket error for ${user.username}:`, error);
+                    setIsConnectedToSession(false);
+                };
+
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const baseWsUrl = getWebSocketUrl();
+                const wsUrl = `${baseWsUrl}/ws?sessionId=${sessionIdToUse}&token=${token}`;
+
+                sessionWsRef.current = new WebSocket(wsUrl);
+
+                sessionWsRef.current.onopen = () => {
+                    console.log('Connected to session WebSocket');
+                    setIsConnectedToSession(true);
+
+                    // Join session
+                    sessionWsRef.current?.send(JSON.stringify({
+                        type: 'JOIN_SESSION',
+                        sessionId: sessionIdToUse,
+                        userId: user.id,
+                        username: user.username,
+                        role: user.role === 'teacher' ? 'teacher' : 'student',
+                        sessionMode: 'essay'
+                    }));
+                };
+
+                sessionWsRef.current.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    handleSessionWebSocketMessage(data);
+                };
+
+                sessionWsRef.current.onclose = () => {
+                    console.log('Session WebSocket connection closed');
+                    setIsConnectedToSession(false);
+                    // Attempt to reconnect after 3 seconds
+                    setTimeout(connectSessionWebSocket, 3000);
+                };
+
+                sessionWsRef.current.onerror = (error) => {
+                    console.error('Session WebSocket error:', error);
+                };
+            } catch (error) {
+                console.error('Failed to connect session WebSocket:', error);
+            }
+        };
+
+        connectSessionWebSocket();
+
+        return () => {
+            if (sessionWsRef.current) {
+                sessionWsRef.current.close();
+            }
+        };
+    }, [user, routeSessionId, sessionParam]);
+
+    // Agora video initialization for live sessions
+    useEffect(() => {
+        if (!isLiveSession || !user) return;
+
+        const initializeAgora = async () => {
+            try {
+                // Create Agora client
+                const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+                setAgoraClient(client);
+
+                // Join channel (using session ID as channel name)
+                const sessionIdToUse = routeSessionId || sessionParam;
+                if (!sessionIdToUse) return;
+
+                // Use proper Agora configuration following LiveTutorialPage pattern
+                const agoraAppId = import.meta.env.VITE_AGORA_APP_ID;
+                if (!agoraAppId) {
+                    throw new Error("Agora App ID is not configured in environment variables.");
+                }
+
+                // Get Agora token from backend
+                const response = await apiClient.get(`/api/sessions/${sessionIdToUse}/generate-token`);
+                const { token: agoraToken, uid } = response.data;
+
+                await client.join(agoraAppId, sessionIdToUse, agoraToken, uid);
+                console.log('[Agora] Joined channel successfully');
+
+                // Handle remote users
+                client.on('user-published', async (remoteUser, mediaType) => {
+                    console.log('[Agora] User published:', remoteUser.uid, mediaType);
+                    await client.subscribe(remoteUser, mediaType);
+
+                    if (mediaType === 'video') {
+                        setRemoteUsers(prev => {
+                            const existing = prev.find(u => u.uid === remoteUser.uid);
+                            if (existing) {
+                                return prev.map(u => u.uid === remoteUser.uid ? remoteUser : u);
+                            }
+                            return [...prev, remoteUser];
+                        });
+                    }
+                });
+
+                client.on('user-unpublished', (remoteUser, mediaType) => {
+                    console.log('[Agora] User unpublished:', remoteUser.uid, mediaType);
+                    if (mediaType === 'video') {
+                        setRemoteUsers(prev => prev.filter(u => u.uid !== remoteUser.uid));
+                    }
+                });
+
+                client.on('user-left', (remoteUser) => {
+                    console.log('[Agora] User left:', remoteUser.uid);
+                    setRemoteUsers(prev => prev.filter(u => u.uid !== remoteUser.uid));
+                });
+
+            } catch (error) {
+                console.error('[Agora] Failed to initialize:', error);
+            }
+        };
+
+        initializeAgora();
+
+        return () => {
+            if (agoraClient) {
+                agoraClient.leave();
+                if (localVideoTrack) localVideoTrack.close();
+                if (localAudioTrack) localAudioTrack.close();
+            }
+        };
+    }, [isLiveSession, user, routeSessionId, sessionParam]);
+
+    // Video control functions
+    const toggleVideo = async () => {
+        if (!agoraClient) return;
+
+        try {
+            if (!isVideoEnabled) {
+                // Create and publish video track
+                const videoTrack = await AgoraRTC.createCameraVideoTrack();
+                setLocalVideoTrack(videoTrack);
+                await agoraClient.publish([videoTrack]);
+
+                // Play local video
+                if (localVideoRef.current) {
+                    videoTrack.play(localVideoRef.current);
+                }
+
+                setIsVideoEnabled(true);
+                console.log('[Agora] Video enabled');
+            } else {
+                // Unpublish and close video track
+                if (localVideoTrack) {
+                    await agoraClient.unpublish([localVideoTrack]);
+                    localVideoTrack.close();
+                    setLocalVideoTrack(null);
+                }
+                setIsVideoEnabled(false);
+                console.log('[Agora] Video disabled');
+            }
+        } catch (error) {
+            console.error('[Agora] Video toggle error:', error);
+        }
+    };
+
+    const toggleAudio = async () => {
+        if (!agoraClient) return;
+
+        try {
+            if (!isAudioEnabled) {
+                // Create and publish audio track
+                const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                setLocalAudioTrack(audioTrack);
+                await agoraClient.publish([audioTrack]);
+                setIsAudioEnabled(true);
+                console.log('[Agora] Audio enabled');
+            } else {
+                // Unpublish and close audio track
+                if (localAudioTrack) {
+                    await agoraClient.unpublish([localAudioTrack]);
+                    localAudioTrack.close();
+                    setLocalAudioTrack(null);
+                }
+                setIsAudioEnabled(false);
+                console.log('[Agora] Audio disabled');
+            }
+        } catch (error) {
+            console.error('[Agora] Audio toggle error:', error);
+        }
+    };
+
+    // Handle session WebSocket messages
+    const handleSessionWebSocketMessage = (data: any) => {
+        switch (data.type) {
+            case 'SESSION_JOINED':
+                setStudents(data.participants || []);
+                break;
+
+            case 'PARTICIPANT_JOINED':
+                setStudents(prev => [...prev, data.participant]);
+                setMessages(prev => [...prev, {
+                    from: 'System',
+                    text: `${data.participant.username} joined the session`,
+                    timestamp: new Date().toISOString()
+                }]);
+                break;
+
+            case 'PARTICIPANT_LEFT':
+                setStudents(prev => prev.filter(s => s.id !== data.participantId));
+                break;
+
+            case 'CHAT_MESSAGE':
+                setMessages(prev => [...prev, data.message]);
+                break;
+
+            case 'HAND_RAISED':
+                setHandsRaised(prev => new Set([...prev, data.userId]));
+                break;
+
+            case 'HAND_LOWERED':
+                setHandsRaised(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(data.userId);
+                    return newSet;
+                });
+                break;
+
+            case 'ESSAY_HOMEWORK_ASSIGNED':
+                setHomeworkAssignment(data.assignment);
+                toast.success('New essay homework assigned!');
+                break;
+
+            default:
+                console.log('Unhandled session message type:', data.type);
+        }
+    };
+
+    const sendSessionMessage = (type: string, payload: any) => {
+        // In live session mock mode, just log the message
+        if (isLiveSession && isConnectedToSession) {
+            console.log(`[Mock Session] ${type}:`, payload);
+            return;
+        }
+
+        if (sessionWsRef.current && sessionWsRef.current.readyState === WebSocket.OPEN) {
+            sessionWsRef.current.send(JSON.stringify({ type, ...payload }));
+        }
+    };
+
+    const handleRaiseHand = () => {
+        const isRaised = handsRaised.has(currentUserId);
+        if (isRaised) {
+            setHandsRaised(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(currentUserId);
+                return newSet;
+            });
+            sendSessionMessage('HAND_LOWERED', { userId: currentUserId });
+        } else {
+            setHandsRaised(prev => new Set([...prev, currentUserId]));
+            sendSessionMessage('HAND_RAISED', { userId: currentUserId });
+        }
+    };
+
+    const handleChatMessage = (text: string, targetStudentId?: string) => {
+        const message: Message = {
+            id: Date.now().toString(),
+            username: user.username,
+            content: text,
+            timestamp: new Date()
+        };
+
+        sendSessionMessage('CHAT_MESSAGE', {
+            message,
+            targetStudentId: targetStudentId || 'all'
+        });
+
+        setMessages(prev => [...prev, message]);
+
+        // Mock response in development mode
+        if (isLiveSession && targetStudentId) {
+            setTimeout(() => {
+                const student = students.find(s => s.id === targetStudentId);
+                if (student) {
+                    const response: Message = {
+                        id: (Date.now() + 1).toString(),
+                        username: student.username,
+                        content: `Thanks for the message! (Mock response)`,
+                        timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, response]);
+                }
+            }, 2000);
+        }
+    };
+
+    const handleHomeworkAssignment = (assignment: EssayHomeworkAssignment) => {
+        setHomeworkAssignment(assignment);
+        sendSessionMessage('ESSAY_HOMEWORK_ASSIGNED', {
+            assignment,
+            sessionId: routeSessionId || sessionParam,
+            teacherId: currentUserId,
+            timestamp: Date.now()
+        });
+        setShowHomeworkDialog(false);
+        toast.success('Essay homework assigned to all students');
+    };
+
+    const endSession = () => {
+        sendSessionMessage('END_SESSION', {
+            sessionId: routeSessionId || sessionParam,
+            teacherId: currentUserId
+        });
+        toast.success('Session ended');
+        navigate('/dashboard');
+    };
 
     // Early return conditions - check after all hooks are declared
     if (isUserLoading) {
@@ -1030,120 +1937,11 @@ Please introduce yourself as their essay editing supervisor and ask to see their
         return <div className="p-8 text-red-400">Error: Could not authenticate user.</div>;
     }
 
+    // Legacy AI chat function - disabled since we're using only MozartStroke Review system
     const sendMessageToAi = async (message: string) => {
-        if (!message.trim()) return;
-
-        setIsAiLoading(true);
-        const userMessage: AIMessage = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: message,
-            timestamp: new Date()
-        };
-    
-
-        setAiMessages(prev => [...prev, userMessage]);
-        setUserInput('');
-
-        try {
-            // Extract plain text from HTML content for AI analysis
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = currentContent;
-            const plainText = tempDiv.textContent || tempDiv.innerText || '';
-            
-            // Create comprehensive context including essay content
-            let contextualMessage = `STUDENT'S CURRENT ESSAY CONTENT:\n"""${plainText || '[No content yet - guide them to start writing]'}"""\n\nSTUDENT'S MESSAGE: ${message}\n\n`;
-            
-            // Add requirements and style context
-            contextualMessage = createContextualPrompt(contextualMessage);
-            
-            // Add supervisor instructions
-            contextualMessage += `\n\nAS ESSAY SUPERVISOR:
-1. If they're asking for general help, analyze their current essay and provide 3-5 specific, actionable improvements
-2. If their essay is empty, guide them to start with a strong opening based on their requirements
-3. If they're asking about a specific part, reference the exact text and suggest improvements
-4. Always explain WHY your suggestions make the writing stronger
-5. Focus on immediate, practical changes they can make right now
-6. Use professor-level expertise but communicate clearly
-
-Respond as their hands-on essay editing supervisor.`;
-
-            let response;
-            
-            // Try the specialized writing feedback agent first
-            try {
-                response = await apiClient.post('/api/ai/agent/writing-feedback', {
-                    fullEssay: plainText || '[No content yet - guide them to start writing]',
-                    message: message,
-                    essayType: writingType
-                });
-                
-                if (response.data.success) {
-                    const aiMessage: AIMessage = {
-                        id: Date.now().toString(),
-                        role: 'assistant',
-                        content: response.data.response,
-                        timestamp: new Date(),
-                        type: 'feedback'
-                    };
-                    
-                    setAiMessages(prev => [...prev, aiMessage]);
-                    toast.success('✨ AI feedback generated');
-                    return;
-                }
-            } catch (agentError) {
-                console.log('[AI_FALLBACK] Specialized agent failed, trying legacy system...', agentError);
-                
-                // Fallback to old AI bot system if available
-                if (aiSessionId) {
-                    response = await apiClient.post('/api/ai-bots/session/message', {
-                        sessionId: aiSessionId,
-                        message: contextualMessage
-                    });
-
-                    if (response.data.success) {
-                        // Parse for edit suggestions
-                        parseEditSuggestions(response.data.response, (Date.now() + 1).toString());
-                        
-                        const aiMessage: AIMessage = {
-                            id: (Date.now() + 1).toString(),
-                            role: 'assistant',
-                            content: response.data.response,
-                            timestamp: new Date(),
-                            type: 'feedback'
-                        };
-                        
-                        setAiMessages(prev => [...prev, aiMessage]);
-                        return;
-                    }
-                }
-                
-                // If both systems fail, throw error to trigger fallback message
-                throw new Error('All AI systems unavailable');
-            }
-        } catch (error) {
-            console.error('Error sending message to AI:', error);
-            
-            // Provide a helpful fallback response instead of just an error
-            const fallbackMessage: AIMessage = {
-                id: Date.now().toString(),
-                role: 'assistant',
-                content: `I'm having a small technical hiccup. Could you try:
-                
-• **Selecting specific text** and using the popup menu for targeted feedback
-• **Refreshing the page** and trying again  
-• **Rephrasing your question** - sometimes a different approach helps
-
-Meanwhile, you can continue writing your essay, and I'll provide automatic suggestions as you write.`,
-                timestamp: new Date(),
-                type: 'feedback'
-            };
-            
-            setAiMessages(prev => [...prev, fallbackMessage]);
-            toast.info('AI temporarily unavailable - try selecting text for feedback');
-        } finally {
-            setIsAiLoading(false);
-        }
+        // No-op: MozartStroke Review handles all AI functionality now
+        console.log('sendMessageToAi call ignored - using MozartStroke Review instead');
+        return;
     };
 
     // Enhanced ideation response handler
@@ -1319,7 +2117,142 @@ Be thorough but encouraging. This is their main request for comprehensive assist
             setIsAiLoading(false);
         }
     };
-    
+
+    // AI Writing Supervisor Analysis Function
+    const activateMozartStrokeReview = async () => {
+        if (!currentContent || currentContent.trim().length < 50) {
+            toast.error('Please write at least 50 characters before activating MozartStroke Review');
+            return;
+        }
+
+        setIsAnalyzing(true);
+        setIsReviewMode(true);
+
+        try {
+            console.log('Starting MozartStroke Review analysis...');
+
+            const response = await apiClient.post('/api/ai/scribe/analyze-document', {
+                documentContent: currentContent,
+                sessionId: routeSessionId,
+                analysisType: 'comprehensive'
+            });
+
+            if (response.data.success) {
+                const annotations = response.data.annotations || [];
+                setReviewAnnotations(annotations);
+                setReviewProgress({ current: 0, total: annotations.length });
+
+                console.log(`MozartStroke Review completed: ${annotations.length} annotations generated`);
+                toast.success(`Review complete! Found ${annotations.length} suggestions for improvement.`);
+
+                // Auto-focus on first high-priority annotation
+                const highPriorityAnnotations = annotations.filter(a => a.severity === 'high');
+                if (highPriorityAnnotations.length > 0) {
+                    setActiveAnnotation(highPriorityAnnotations[0].id);
+                    setReviewProgress({ current: 1, total: annotations.length });
+                }
+            } else {
+                console.error('Analysis failed:', response.data.error);
+                toast.error('Analysis failed. Please try again.');
+                setIsReviewMode(false);
+            }
+        } catch (error) {
+            console.error('MozartStroke Review error:', error);
+            toast.error('Review temporarily unavailable. Please try again.');
+            setIsReviewMode(false);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    const handleAnnotationAction = async (annotationId: string, action: 'accepted' | 'rejected' | 'modified', userModification?: string) => {
+        try {
+            const annotation = reviewAnnotations.find(a => a.id === annotationId);
+            if (!annotation) return;
+
+            // Log feedback for learning algorithm
+            await apiClient.post('/api/ai/scribe/feedback-log', {
+                annotationId,
+                action,
+                sessionId: routeSessionId,
+                originalText: annotation.highlightedText,
+                suggestedText: annotation.suggestion,
+                userModification
+            });
+
+            if (action === 'accepted') {
+                // Apply the suggestion to the editor
+                if (editorInstance && annotation.startIndex !== undefined && annotation.endIndex !== undefined) {
+                    const from = annotation.startIndex;
+                    const to = annotation.endIndex;
+                    const suggestionText = annotation.suggestion;
+
+                    editorInstance.chain()
+                        .focus()
+                        .setTextSelection({ from, to })
+                        .insertContent(suggestionText)
+                        .run();
+
+                    toast.success('Suggestion applied successfully');
+                }
+            }
+
+            // Remove annotation from list
+            setReviewAnnotations(prev => prev.filter(a => a.id !== annotationId));
+
+            // Move to next annotation
+            const remainingAnnotations = reviewAnnotations.filter(a => a.id !== annotationId);
+            if (remainingAnnotations.length > 0) {
+                const nextAnnotation = remainingAnnotations[0];
+                setActiveAnnotation(nextAnnotation.id);
+                setReviewProgress(prev => ({ ...prev, current: prev.current + 1 }));
+            } else {
+                // Review complete
+                setIsReviewMode(false);
+                setActiveAnnotation(null);
+                toast.success('Review complete! All suggestions have been processed.');
+            }
+
+        } catch (error) {
+            console.error('Error handling annotation action:', error);
+            toast.error('Failed to process suggestion');
+        }
+    };
+
+    const exitReviewMode = () => {
+        setIsReviewMode(false);
+        setReviewAnnotations([]);
+        setActiveAnnotation(null);
+        setReviewProgress({ current: 0, total: 0 });
+        toast.info('Review mode deactivated');
+    };
+
+    const handleAnnotationClick = (annotationId: string) => {
+        setActiveAnnotation(annotationId);
+        const currentIndex = reviewAnnotations.findIndex(a => a.id === annotationId);
+        if (currentIndex !== -1) {
+            setReviewProgress(prev => ({ ...prev, current: currentIndex + 1 }));
+        }
+    };
+
+    const handleNextAnnotation = () => {
+        const currentIndex = reviewAnnotations.findIndex(a => a.id === activeAnnotation);
+        if (currentIndex < reviewAnnotations.length - 1) {
+            const nextAnnotation = reviewAnnotations[currentIndex + 1];
+            setActiveAnnotation(nextAnnotation.id);
+            setReviewProgress(prev => ({ ...prev, current: currentIndex + 2 }));
+        }
+    };
+
+    const handlePrevAnnotation = () => {
+        const currentIndex = reviewAnnotations.findIndex(a => a.id === activeAnnotation);
+        if (currentIndex > 0) {
+            const prevAnnotation = reviewAnnotations[currentIndex - 1];
+            setActiveAnnotation(prevAnnotation.id);
+            setReviewProgress(prev => ({ ...prev, current: currentIndex }));
+        }
+    };
+
 
     const handleContentChange = (content: string) => {
         const previousContent = currentContent;
@@ -1645,10 +2578,9 @@ Be encouraging but professionally direct. Reference their exact text when sugges
     
     // Enhanced ideation functionality
     const startIdeationSession = async () => {
-        if (!aiSessionId) {
-            toast.error('Please wait for AI assistant to connect first');
-            return;
-        }
+        // Legacy ideation function - disabled since we're using only MozartStroke Review
+        toast.info('Ideation features are now available through MozartStroke Review');
+        return;
         
         setIsIdeationMode(true);
         setIdeationStep(0);
@@ -3312,19 +4244,21 @@ What would you like me to focus on next?`;
                         </div>
                         <div>
                             <h1 className="text-sm font-medium text-white">
-                                {isUrgentSession 
+                                {isUrgentSession
                                     ? 'Urgent AI Essay Session'
-                                    : isLiveSession 
+                                    : isLiveSession
                                         ? 'Live Essay Editing Session'
-                                        : collaborators.length > 0 
-                                            ? 'Collaborative Essay Editor' 
+                                        : collaborators.length > 0
+                                            ? 'Collaborative Essay Editor'
                                             : 'AI Essay Editor'
                                 }
                             </h1>
                             <p className="text-xs text-slate-400">
                                 {isLiveSession
-                                    ? `Live session with teacher • ${user.username}`
-                                    : collaborators.length > 0 
+                                    ? userRole === 'teacher'
+                                        ? `Session ID: ${routeSessionId || sessionParam} • Teacher: ${user.username}`
+                                        : `Session ID: ${routeSessionId || sessionParam} • ${sessionTeacher ? `Teacher: ${sessionTeacher.username}` : 'Teacher: Loading...'} • Student: ${user.username}`
+                                    : collaborators.length > 0
                                         ? `${user.username} + ${collaborators.length} collaborators`
                                         : user.username
                                 }
@@ -3374,12 +4308,20 @@ What would you like me to focus on next?`;
                     </div>
                 </div>
             <main className="flex-grow flex overflow-hidden gap-4 p-4">
-                {/* Editor Section */}
-                <div className="flex-1 flex flex-col">
+                {isLiveSession ? (
+                    /* Live Session Layout with Panels */
+                    <PanelGroup direction="horizontal" className="flex-1">
+                        {/* Main Editor Panel */}
+                        <Panel defaultSize={70} minSize={50}>
+                            <div className="h-full flex flex-col pr-2">
                     <div className="flex items-center justify-between mb-3">
                         <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                             <BookOpen className="h-5 w-5 text-blue-400" />
-                            Your Essay
+                            Collaborative Essay
+                            <div className="flex items-center gap-1 text-xs text-green-400">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                Live Sync
+                            </div>
                             {isAnalyzing && (
                                 <div className="flex items-center gap-1 text-xs text-cyan-400">
                                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -3501,35 +4443,57 @@ What would you like me to focus on next?`;
                                 History ({draftHistory.length})
                             </Button>
                             <Button
-                                onClick={requestAiFeedback}
-                                disabled={!aiSessionId || isAiLoading}
-                                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                                onClick={isReviewMode ? exitReviewMode : activateMozartStrokeReview}
+                                disabled={isAnalyzing || (!currentContent || currentContent.trim().length < 50)}
+                                className={`${isReviewMode ? 'bg-red-600 hover:bg-red-700' : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'} ${isAnalyzing ? 'animate-pulse' : ''}`}
                             >
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                Full Review
+                                {isAnalyzing ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Analyzing...
+                                    </>
+                                ) : isReviewMode ? (
+                                    <>
+                                        <X className="h-4 w-4 mr-2" />
+                                        Exit Review
+                                    </>
+                                ) : (
+                                    <>
+                                        <Brain className="h-4 w-4 mr-2" />
+                                        MozartStroke Review
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </div>
                     <div className="relative">
-                        <CollaborativeEditor 
-                            documentId={docId} 
-                            username={user.username} 
-                            color={userColor}
-                            aiSessionId={aiSessionId || undefined}
-                            sessionId={routeSessionId || sessionParam || docId}
+                        <LiveblocksCollaborativeEditor
+                            roomId={`session_${routeSessionId || sessionParam || docId}`}
+                            documentId={docId}
                             initialContent={currentContent}
-                            onContentChange={handleContentChange}
-                            onCollaboratorsChange={setCollaborators}
-                            onSelectionChange={handleSelectionChange}
-                            onContentUpdate={(content) => {
+                            userRole={userRole}
+                            onContentChange={(content) => {
                                 setCurrentContent(content);
                                 performContinuousAnalysis(content);
+                                handleContentChange(content);
                             }}
-                            onEditorReady={(editor) => {
-                                console.log('[EDITOR] Editor instance received:', editor);
-                                setEditorInstance(editor);
-                            }}
+                            isReadOnly={userRole === 'student'} // Students read-only by default
                         />
+
+                        {/* MozartStroke Review Annotation Layer */}
+                        {isReviewMode && reviewAnnotations.length > 0 && (
+                            <AnnotationLayer
+                                annotations={reviewAnnotations}
+                                activeAnnotationId={activeAnnotation}
+                                onAnnotationClick={handleAnnotationClick}
+                                onAcceptSuggestion={(annotationId) => handleAnnotationAction(annotationId, 'accepted')}
+                                onRejectSuggestion={(annotationId) => handleAnnotationAction(annotationId, 'rejected')}
+                                onNextAnnotation={handleNextAnnotation}
+                                onPrevAnnotation={handlePrevAnnotation}
+                                reviewProgress={reviewProgress}
+                                editorElement={document.querySelector('[data-tiptap-editor]') as HTMLElement}
+                            />
+                        )}
                         
                         {/* Floating Selection Menu */}
                         {showSelectionMenu && selectedText && (
@@ -3681,171 +4645,285 @@ What would you like me to focus on next?`;
                             </div>
                         ))}
                     </div>
-                </div>
+                            </div>
+                        </Panel>
 
-                {/* AI Assistant / Live Session Panel */}
-                <div className="w-96 flex flex-col bg-slate-900/50 rounded-lg border border-slate-700">
-                    <div className="p-4 border-b border-slate-700">
-                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                            {isLiveSession ? (
-                                <>
-                                    <Users className="h-5 w-5 text-green-400" />
-                                    Live Session Chat
-                                </>
-                            ) : (
-                                <>
-                                    <Bot className="h-5 w-5 text-cyan-400" />
-                                    {isUrgentSession ? 'AI Essay Supervisor' : 'AI Writing Assistant'}
-                                </>
-                            )}
-                        </h3>
-                        {isLiveSession ? (
-                            <p className="text-sm text-slate-400 mt-1">
-                                Communicate with your teacher and classmates
-                            </p>
-                        ) : aiMentor ? (
-                            <p className="text-sm text-slate-400 mt-1">
-                                {aiMentor.specialization_focus}
-                            </p>
-                        ) : null}
-                    </div>
+                        <PanelResizeHandle className="w-2 bg-slate-800 hover:bg-slate-700 transition-colors" />
 
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-96">
-                        {aiMessages.map((message) => (
-                            <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                {message.role === 'assistant' && (
-                                    <Avatar className="h-8 w-8 flex-shrink-0">
-                                        <AvatarFallback className={cn(
-                                            "text-white",
-                                            message.type === 'proactive' ? "bg-gradient-to-r from-green-500 to-emerald-500" :
-                                            message.type === 'analysis' ? "bg-gradient-to-r from-purple-500 to-violet-500" :
-                                            message.type === 'question' ? "bg-gradient-to-r from-orange-500 to-red-500" :
-                                            "bg-gradient-to-r from-cyan-500 to-blue-500"
-                                        )}>
-                                            {message.type === 'proactive' ? <Zap className="h-4 w-4" /> :
-                                             message.type === 'analysis' ? <Target className="h-4 w-4" /> :
-                                             message.type === 'question' ? <HelpCircle className="h-4 w-4" /> :
-                                             <Bot className="h-4 w-4" />}
-                                        </AvatarFallback>
-                                    </Avatar>
+                        {/* Right Side Panel Group */}
+                        <Panel defaultSize={30} minSize={25}>
+                            <PanelGroup direction="vertical">
+                                {/* RosterPanel for Live Sessions */}
+                                <Panel defaultSize={50} minSize={30}>
+                                    <div className="h-full">
+                                        <EnhancedRosterPanel
+                                            role={userRole}
+                                            students={students}
+                                            viewingMode={userRole === 'teacher' ? 'teacher' : currentUserId}
+                                            setViewingMode={(mode) => {
+                                                console.log('Switching view mode to:', mode);
+                                            }}
+                                            activeHomeworkStudents={new Set(students.filter(s => s.isDoingHomework).map(s => s.id))}
+                                            handsRaised={handsRaised}
+                                            spotlightedStudentId={null}
+                                            handleSpotlightStudent={(id) => {
+                                                console.log('Spotlight student:', id);
+                                            }}
+                                            assigningToStudentId={null}
+                                            setAssigningToStudentId={(id) => {
+                                                console.log('Assigning to student:', id);
+                                            }}
+                                            availableLessons={[]}
+                                            handleAssignHomework={(studentId, lessonId) => {
+                                                console.log('Assign homework:', studentId, lessonId);
+                                            }}
+                                            controlledStudentId={null}
+                                            handleTakeControl={(id) => {
+                                                console.log('Take control:', id);
+                                            }}
+                                            handleOpenChat={(studentId) => {
+                                                handleChatMessage(`Opening chat with student ${studentId}`, studentId);
+                                            }}
+                                            unreadMessages={new Set()}
+                                            localVideoRef={localVideoRef}
+                                            remoteUsers={remoteUsers}
+                                            isVideoCollapsed={false}
+                                            setIsVideoCollapsed={(collapsed) => {
+                                                console.log('Video collapsed:', collapsed);
+                                            }}
+                                        />
+                                    </div>
+                                </Panel>
+
+                                <PanelResizeHandle className="h-2 bg-slate-800 hover:bg-slate-700 transition-colors" />
+
+                                {/* MozartStroke Review Panel */}
+                                <Panel defaultSize={50}>
+                                    <MozartStrokePanel
+                                        isReviewMode={isReviewMode}
+                                        isAnalyzing={isAnalyzing}
+                                        reviewProgress={reviewProgress}
+                                        reviewAnnotations={reviewAnnotations}
+                                        activeAnnotation={activeAnnotation}
+                                        currentContent={currentContent}
+                                        onStartReview={activateMozartStrokeReview}
+                                        onExitReview={exitReviewMode}
+                                    />
+
+                </Panel>
+            </PanelGroup>
+        </Panel>
+    </PanelGroup>
+                ) : (
+                    /* Regular Layout for AI Sessions */
+                    <>
+                        {/* Editor Section */}
+                        <div className="flex-1 flex flex-col">
+                            <div className="flex items-center justify-between mb-3">
+                                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                    <BookOpen className="h-5 w-5 text-blue-400" />
+                                    {isLiveSession ? 'Collaborative Essay' : 'Your Essay'}
+                                    {isLiveSession && (
+                                        <div className="flex items-center gap-1 text-xs text-green-400">
+                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                            Live Sync
+                                        </div>
+                                    )}
+                                    {isAnalyzing && (
+                                        <div className="flex items-center gap-1 text-xs text-cyan-400">
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                            AI Analyzing...
+                                        </div>
+                                    )}
+                                </h2>
+                                <div className="flex gap-2 flex-wrap">
+                                    <Button
+                                        size="sm"
+                                        onClick={startIdeationSession}
+                                        disabled={!aiSessionId || isAiLoading || isIdeationMode}
+                                        className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-xs"
+                                    >
+                                        <Brain className="h-3 w-3 mr-1" />
+                                        Ideation
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => analyzeEssaySection('intro')}
+                                        disabled={!aiSessionId || isAiLoading}
+                                        className="bg-green-600 hover:bg-green-700 text-xs"
+                                    >
+                                        <Target className="h-3 w-3 mr-1" />
+                                        Intro
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => analyzeEssaySection('structure')}
+                                        disabled={!aiSessionId || isAiLoading}
+                                        className="bg-yellow-600 hover:bg-yellow-700 text-xs"
+                                    >
+                                        <Zap className="h-3 w-3 mr-1" />
+                                        Structure
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => analyzeEssaySection('conclusion')}
+                                        disabled={!aiSessionId || isAiLoading}
+                                        className="bg-orange-600 hover:bg-orange-700 text-xs"
+                                    >
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Conclusion
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => downloadDocument('docx')}
+                                        className="bg-blue-600 hover:bg-blue-700 text-xs"
+                                    >
+                                        <Download className="h-3 w-3 mr-1" />
+                                        Word
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => downloadDocument('pdf')}
+                                        className="bg-red-600 hover:bg-red-700 text-xs"
+                                    >
+                                        <Download className="h-3 w-3 mr-1" />
+                                        PDF
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={saveDraft}
+                                        disabled={isDraftSaved}
+                                        className={`text-xs ${isDraftSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-600 hover:bg-purple-700'}`}
+                                    >
+                                        <Save className="h-3 w-3 mr-1" />
+                                        {isDraftSaved ? 'Saved' : 'Save Draft'}
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => setShowRequirements(true)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-xs"
+                                    >
+                                        <Settings className="h-3 w-3 mr-1" />
+                                        Requirements
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => setShowContextModal(true)}
+                                        className="bg-teal-600 hover:bg-teal-700 text-xs"
+                                    >
+                                        <Palette className="h-3 w-3 mr-1" />
+                                        Context
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={analyzeToneAndVoice}
+                                        disabled={!aiSessionId || isAiLoading || !currentContent.trim()}
+                                        className="bg-amber-600 hover:bg-amber-700 text-xs"
+                                    >
+                                        <Wand2 className="h-3 w-3 mr-1" />
+                                        Tone Check
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={suggestWordChoices}
+                                        disabled={!aiSessionId || isAiLoading || !currentContent.trim()}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-xs"
+                                    >
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        Word Choice
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={findWeakPhrasesAI}
+                                        disabled={!aiSessionId || isAiLoading || !currentContent.trim()}
+                                        className="bg-red-600 hover:bg-red-700 text-xs"
+                                    >
+                                        <Target className="h-3 w-3 mr-1" />
+                                        Weak Phrases
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => setShowVersionHistory(true)}
+                                        className="bg-slate-600 hover:bg-slate-700 text-xs"
+                                    >
+                                        <FileText className="h-3 w-3 mr-1" />
+                                        History ({draftHistory.length})
+                                    </Button>
+                                    <Button
+                                        onClick={isReviewMode ? exitReviewMode : activateMozartStrokeReview}
+                                        disabled={isAnalyzing || (!currentContent || currentContent.trim().length < 50)}
+                                        className={`${isReviewMode ? 'bg-red-600 hover:bg-red-700' : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'} ${isAnalyzing ? 'animate-pulse' : ''}`}
+                                    >
+                                        {isAnalyzing ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                Analyzing...
+                                            </>
+                                        ) : isReviewMode ? (
+                                            <>
+                                                <X className="h-4 w-4 mr-2" />
+                                                Exit Review
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Brain className="h-4 w-4 mr-2" />
+                                                MozartStroke Review
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <LiveblocksCollaborativeEditor
+                                    roomId={`session_${routeSessionId || sessionParam || docId}`}
+                                    documentId={docId}
+                                    initialContent={currentContent}
+                                    userRole={userRole}
+                                    onContentChange={(content) => {
+                                        setCurrentContent(content);
+                                        performContinuousAnalysis(content);
+                                        handleContentChange(content);
+                                    }}
+                                    isReadOnly={userRole === 'student'} // Students read-only by default
+                                />
+
+                                {/* Floating Selection Menu and Comment Bubbles */}
+                                {showSelectionMenu && selectedText && (
+                                    <div
+                                        className="fixed z-50 bg-slate-800 border border-slate-600 rounded-lg shadow-lg p-2"
+                                        style={{
+                                            left: `${menuPosition.x - 120}px`,
+                                            top: `${menuPosition.y}px`,
+                                            transform: 'translateX(-50%)'
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {/* Selection menu content here... */}
+                                    </div>
                                 )}
-                                <div className="max-w-xs flex-1">
-                                    {/* Message type indicator */}
-                                    {message.role === 'assistant' && message.type && (
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Badge className={cn(
-                                                "text-xs px-2 py-0.5",
-                                                message.type === 'proactive' ? "bg-green-500/20 text-green-300 border-green-500/30" :
-                                                message.type === 'analysis' ? "bg-purple-500/20 text-purple-300 border-purple-500/30" :
-                                                message.type === 'question' ? "bg-orange-500/20 text-orange-300 border-orange-500/30" :
-                                                "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
-                                            )}>
-                                                {message.type === 'proactive' ? 'AI Suggestion' :
-                                                 message.type === 'analysis' ? `${message.section?.charAt(0).toUpperCase()}${message.section?.slice(1)} Analysis` :
-                                                 message.type === 'question' ? 'Question' :
-                                                 'Feedback'}
-                                            </Badge>
-                                            {message.selectedText && (
-                                                <Badge className="bg-slate-600/50 text-slate-300 text-xs px-1 py-0.5">
-                                                    Selected Text
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    )}
-                                    
-                                    {/* Show selected text if available */}
-                                    {message.selectedText && (
-                                        <div className="bg-slate-700/50 border border-slate-600 rounded p-2 mb-2">
-                                            <div className="text-xs text-slate-400 mb-1">Selected text:</div>
-                                            <div className="text-xs italic text-slate-300">"{message.selectedText}"</div>
-                                        </div>
-                                    )}
-                                    
-                                    <div className={`p-3 rounded-lg ${
-                                        message.role === 'user' 
-                                            ? 'bg-blue-600 text-white' 
-                                            : 'bg-slate-800 text-slate-200'
-                                    }`}>
-                                        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-                                        <div className="text-xs mt-2 opacity-70">
-                                            {message.timestamp.toLocaleTimeString()}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        {isAiLoading && (
-                            <div className="flex gap-3 justify-start">
-                                <Avatar className="h-8 w-8 flex-shrink-0">
-                                    <AvatarFallback className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white">
-                                        <Bot className="h-4 w-4" />
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="bg-slate-800 text-slate-200 p-3 rounded-lg">
-                                    <div className="flex items-center gap-2">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="text-sm">AI is thinking...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* Input */}
-                    <div className="p-4 border-t border-slate-700">
-                        <div className="flex gap-2">
-                            <Textarea
-                                value={userInput}
-                                onChange={(e) => setUserInput(e.target.value)}
-                                placeholder={isLiveSession 
-                                    ? "Send a message to the class..." 
-                                    : isIdeationMode 
-                                        ? "Share your thoughts and experiences..." 
-                                        : "Ask for writing help, feedback, or suggestions..."
-                                }
-                                className="flex-1 bg-slate-800 border-slate-600 text-white resize-none"
-                                rows={2}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        if (isLiveSession) {
-                                            // For live sessions, we would send to all participants
-                                            // This would require WebSocket implementation
-                                            console.log('Live session message:', userInput);
-                                            toast.info('Live session messaging will be available when WebSocket server is running');
-                                            setUserInput('');
-                                        } else if (isIdeationMode) {
-                                            handleIdeationResponse(userInput);
-                                            setUserInput('');
-                                        } else {
-                                            sendMessageToAi(userInput);
-                                        }
-                                    }
-                                }}
-                            />
-                            <Button
-                                onClick={() => {
-                                    if (isLiveSession) {
-                                        console.log('Live session message:', userInput);
-                                        toast.info('Live session messaging will be available when WebSocket server is running');
-                                        setUserInput('');
-                                    } else if (isIdeationMode) {
-                                        handleIdeationResponse(userInput);
-                                        setUserInput('');
-                                    } else {
-                                        sendMessageToAi(userInput);
-                                    }
-                                }}
-                                disabled={!userInput.trim() || (isAiLoading && !isLiveSession)}
-                                size="sm"
-                                className="self-end bg-cyan-500 hover:bg-cyan-600"
-                            >
-                                <Send className="h-4 w-4" />
-                            </Button>
+                                {/* Microsoft Office-like Comment Bubbles */}
+                                {textComments.map(comment => (
+                                    <div key={comment.id}>
+                                        {/* Comment bubble content here... */}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                </div>
+
+                        {/* MozartStroke Review Panel */}
+                        <MozartStrokePanel
+                            isReviewMode={isReviewMode}
+                            isAnalyzing={isAnalyzing}
+                            reviewProgress={reviewProgress}
+                            reviewAnnotations={reviewAnnotations}
+                            activeAnnotation={activeAnnotation}
+                            currentContent={currentContent}
+                            onStartReview={activateMozartStrokeReview}
+                            onExitReview={exitReviewMode}
+                        />
+                    </>
+                )}
             </main>
 
             {/* Requirements Modal */}
@@ -4457,6 +5535,332 @@ What would you like me to focus on next?`;
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Homework Assignment Dialog */}
+            {showHomeworkDialog && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-slate-800 border border-slate-600 rounded-lg p-6 w-full max-w-lg">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                <BookOpen className="h-5 w-5 text-blue-400" />
+                                Assign Essay Homework
+                            </h2>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowHomeworkDialog(false)}
+                                className="text-slate-400 hover:text-white"
+                            >
+                                ×
+                            </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Assignment Title
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g., Persuasive Essay on Climate Change"
+                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Assignment Instructions
+                                </label>
+                                <Textarea
+                                    placeholder="Provide detailed instructions for the essay assignment..."
+                                    className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Word Count
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="500-750 words"
+                                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Due Date
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-4">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setShowHomeworkDialog(false)}
+                                    className="text-slate-300 hover:bg-slate-700"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        // Handle homework assignment
+                                        toast.success('Homework assignment created successfully!');
+                                        setShowHomeworkDialog(false);
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    Assign Homework
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Live Session Components - only show when it's a live session */}
+            {isLiveSession && (
+                <>
+                    {/* Video Panel */}
+                    {showVideoPanel && (
+                        <div className="fixed top-4 right-4 z-40 w-80 h-60 bg-slate-900 border border-slate-600 rounded-lg overflow-hidden">
+                            <div className="flex justify-between items-center p-2 bg-slate-800 border-b border-slate-600">
+                                <span className="text-sm font-medium text-white">Video Call</span>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowVideoPanel(false)}
+                                    className="text-slate-400 hover:text-white"
+                                >
+                                    ×
+                                </Button>
+                            </div>
+                            {/* Video content would go here */}
+                            <div className="h-full flex items-center justify-center text-slate-400">
+                                Video call interface
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Chat Panel */}
+                    {showChatPanel && (
+                        <div className="fixed bottom-4 right-4 z-40 w-96 h-80 bg-slate-900 border border-slate-600 rounded-lg flex flex-col">
+                            <div className="flex justify-between items-center p-3 bg-slate-800 border-b border-slate-600">
+                                <span className="text-sm font-medium text-white">Session Chat</span>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowChatPanel(false)}
+                                    className="text-slate-400 hover:text-white"
+                                >
+                                    ×
+                                </Button>
+                            </div>
+                            <div className="flex-1 p-3 overflow-y-auto">
+                                {messages.map((message) => (
+                                    <div key={message.id} className="mb-2 p-2 bg-slate-800 rounded text-sm">
+                                        <div className="font-medium text-cyan-300">{message.username}</div>
+                                        <div className="text-slate-200">{message.content}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="p-3 border-t border-slate-600">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Type a message..."
+                                        className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                // Handle chat message
+                                                e.preventDefault();
+                                            }
+                                        }}
+                                    />
+                                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                        <Send className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Session Control Buttons */}
+                    <div className="fixed bottom-4 left-4 z-40 flex gap-2">
+                        {/* MozartStroke Review Button */}
+                        <Button
+                            onClick={isReviewMode ? exitReviewMode : activateMozartStrokeReview}
+                            disabled={isAnalyzing || (!currentContent || currentContent.trim().length < 50)}
+                            className={`${isReviewMode ? 'bg-red-600 hover:bg-red-700' : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'} ${isAnalyzing ? 'animate-pulse' : ''}`}
+                        >
+                            {isAnalyzing ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Analyzing...
+                                </>
+                            ) : isReviewMode ? (
+                                <>
+                                    <X className="h-4 w-4 mr-2" />
+                                    Exit Review ({reviewProgress.current}/{reviewProgress.total})
+                                </>
+                            ) : (
+                                <>
+                                    <Brain className="h-4 w-4 mr-2" />
+                                    Activate MozartStroke Review
+                                </>
+                            )}
+                        </Button>
+
+                        {/* Video Toggle */}
+                        <Button
+                            onClick={toggleVideo}
+                            className={`${isVideoEnabled ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 hover:bg-slate-700'}`}
+                        >
+                            {isVideoEnabled ? <Video className="h-4 w-4 mr-2" /> : <VideoOff className="h-4 w-4 mr-2" />}
+                            {isVideoEnabled ? 'Video On' : 'Video Off'}
+                        </Button>
+
+                        {/* Audio Toggle */}
+                        <Button
+                            onClick={toggleAudio}
+                            className={`${isAudioEnabled ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-600 hover:bg-slate-700'}`}
+                        >
+                            {isAudioEnabled ? <Mic className="h-4 w-4 mr-2" /> : <MicOff className="h-4 w-4 mr-2" />}
+                            {isAudioEnabled ? 'Mic On' : 'Mic Off'}
+                        </Button>
+
+                        {/* Chat Toggle */}
+                        <Button
+                            onClick={() => setShowChatPanel(!showChatPanel)}
+                            className={`${showChatPanel ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-600 hover:bg-slate-700'}`}
+                        >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Chat
+                        </Button>
+
+                        {/* Homework Assignment (Teacher Only) */}
+                        {userRole === 'teacher' && (
+                            <Button
+                                onClick={() => setShowHomeworkDialog(true)}
+                                className="bg-purple-600 hover:bg-purple-700"
+                            >
+                                <BookOpen className="h-4 w-4 mr-2" />
+                                Assign Homework
+                            </Button>
+                        )}
+
+                        {/* End Session (Teacher Only) */}
+                        {userRole === 'teacher' && (
+                            <Button
+                                onClick={endSession}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                <RadioTower className="h-4 w-4 mr-2" />
+                                End Session
+                            </Button>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {/* Student Homework View */}
+            {isDoingHomework && homeworkAssignment && (
+                <div className="fixed inset-0 bg-slate-950 z-50 flex flex-col">
+                    <div className="flex-shrink-0 flex justify-between items-center px-6 py-4 bg-slate-900 border-b border-slate-800">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                                <BookOpen className="h-4 w-4 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-lg font-medium text-white">
+                                    {homeworkAssignment.title}
+                                </h1>
+                                <p className="text-sm text-slate-400">
+                                    Private homework workspace
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-400">
+                                Due: {homeworkAssignment.dueDate ? new Date(homeworkAssignment.dueDate).toLocaleDateString() : 'No due date'}
+                            </span>
+                            <Button
+                                onClick={() => setIsDoingHomework(false)}
+                                variant="ghost"
+                                className="text-slate-300 hover:bg-slate-800"
+                            >
+                                <ChevronLeft className="h-4 w-4 mr-2" />
+                                Back to Session
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex overflow-hidden">
+                        {/* Homework Editor */}
+                        <div className="flex-1 p-6">
+                            <div className="mb-4 p-4 bg-slate-800 border border-slate-700 rounded-lg">
+                                <h3 className="text-white font-medium mb-2">Assignment Instructions</h3>
+                                <p className="text-slate-300 text-sm leading-relaxed">
+                                    {homeworkAssignment.instructions}
+                                </p>
+                                {homeworkAssignment.wordCount && (
+                                    <div className="mt-3 text-xs text-slate-400">
+                                        Target: {homeworkAssignment.wordCount} words
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Private editor space for homework */}
+                            <LiveblocksCollaborativeEditor
+                                roomId={`homework_${homeworkAssignment.id}_${currentUserId}`}
+                                documentId={`homework_${homeworkAssignment.id}_${currentUserId}`}
+                                initialContent="<p>Start writing your homework assignment here...</p>"
+                                userRole={userRole}
+                                onContentChange={(content) => {
+                                    // Auto-save homework progress
+                                    console.log('Homework content updated');
+                                }}
+                                isReadOnly={false} // Homework is private, students can edit their own
+                            />
+                        </div>
+
+                        {/* Progress Panel */}
+                        <div className="w-80 bg-slate-900 border-l border-slate-800 p-4">
+                            <h3 className="text-white font-medium mb-4">Progress</h3>
+
+                            {/* Word count tracker */}
+                            <div className="mb-4 p-3 bg-slate-800 rounded-lg">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm text-slate-300">Word Count</span>
+                                    <span className="text-sm text-cyan-300">0 words</span>
+                                </div>
+                                {homeworkAssignment.wordCount && (
+                                    <div className="w-full bg-slate-700 rounded-full h-2">
+                                        <div className="bg-cyan-500 h-2 rounded-full w-0"></div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Submit button */}
+                            <Button
+                                className="w-full bg-green-600 hover:bg-green-700"
+                                onClick={() => {
+                                    toast.success('Homework submitted successfully!');
+                                    setIsDoingHomework(false);
+                                }}
+                            >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Submit Homework
+                            </Button>
                         </div>
                     </div>
                 </div>

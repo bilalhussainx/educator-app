@@ -20,7 +20,15 @@ import {
     LogOut,
     Sparkles,
     Calendar,
-    Users
+    Users,
+    Code,
+    Trophy,
+    Activity,
+    PlusCircle,
+    BookOpen,
+    Edit3,
+    FileText,
+    Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -49,13 +57,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
         navigate('/login');
     };
 
-    const navItems = [
-        { path: '/dashboard', icon: Home, label: 'Dashboard' },
-        { path: '/courses/discover', icon: Compass, label: 'Discover Courses' },
-        { path: '/talent-crucible', icon: Sparkles, label: 'Talent Crucible', premium: true },
-        { path: '/sessions', icon: Calendar, label: 'My Sessions' },
-        { path: '/trust-graph', icon: Users, label: 'Trust Graph' },
-    ];
+    // Dynamic nav items based on user role
+    const getNavItems = () => {
+        const baseItems = [
+            { path: '/dashboard', icon: Home, label: user?.role === 'teacher' ? 'Teaching Hub' : 'Career Launchpad' },
+        ];
+
+        if (user?.role === 'teacher') {
+            return [
+                ...baseItems,
+                { path: '/courses/discover', icon: Compass, label: '🎓 Learn - Discover Courses' },
+                { path: '/courses/new', icon: PlusCircle, label: '📚 Create - New Course', teacher: true },
+                { path: '/session-documents', icon: FileText, label: '📄 Manage - Session Documents' },
+                { path: '/ai-writing-assistant', icon: Brain, label: '🤖 AI Writing Assistant' },
+                { path: '/azure-vision-test', icon: Sparkles, label: '🔍 Azure Vision Testing Lab' },
+                { path: '/trading-terminal', icon: Activity, label: '🔨 Build - Trading Terminal' },
+                { path: '/trust-graph', icon: Users, label: '🤝 Connect - Trust Graph' },
+                { path: '/sessions', icon: Calendar, label: '🤝 Connect - Sessions' },
+                { path: '/solved-problems', icon: Sparkles, label: '🏆 Prove - Achievements' },
+            ];
+        } else {
+            return [
+                ...baseItems,
+                { path: '/courses/discover', icon: Compass, label: '🎓 Learn - Discover Courses' },
+                { path: '/ascent-ide', icon: Code, label: '🔨 Build - IDE Projects' },
+                { path: '/leetcode', icon: Trophy, label: '🔨 Build - LeetCode' },
+                { path: '/session-documents', icon: FileText, label: '📄 Manage - Session Documents' },
+                { path: '/ai-writing-assistant', icon: Brain, label: '🤖 AI Writing Assistant' },
+                { path: '/trading-terminal', icon: Activity, label: '🔨 Build - Trading Terminal' },
+                { path: '/trust-graph', icon: Users, label: '🤝 Connect - Trust Graph' },
+                { path: '/sessions', icon: Calendar, label: '🤝 Connect - Mentorship' },
+                { path: '/solved-problems', icon: Sparkles, label: '🏆 Prove - Achievements' },
+                { path: '/talent-crucible', icon: Sparkles, label: '🏆 Prove - Certifications', premium: true },
+            ];
+        }
+    };
+
+    const navItems = getNavItems();
 
     return (
         <>
@@ -83,20 +121,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
                                         className={cn(
                                             "h-10 w-10 p-0 rounded-lg hover:bg-slate-700 relative",
                                             location.pathname.startsWith(item.path) && "bg-cyan-500/10 text-cyan-300",
-                                            item.premium && "bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20"
+                                            item.premium && "bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20",
+                                            item.teacher && "bg-gradient-to-r from-emerald-500/10 to-teal-500/10 hover:from-emerald-500/20 hover:to-teal-500/20"
                                         )}
                                     >
                                         <item.icon className={cn(
                                             "h-5 w-5",
-                                            item.premium && "text-purple-400"
+                                            item.premium && "text-purple-400",
+                                            item.teacher && "text-emerald-400"
                                         )} />
                                         {item.premium && (
                                             <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse" />
                                         )}
+                                        {item.teacher && (
+                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full animate-pulse" />
+                                        )}
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="right" className="bg-slate-800 border-slate-700 text-white">
-                                    <p>{item.label} {item.premium && '✨'}</p>
+                                    <p>{item.label} {item.premium && '✨'} {item.teacher && '👨‍🏫'}</p>
                                 </TooltipContent>
                             </Tooltip>
                         ))}
