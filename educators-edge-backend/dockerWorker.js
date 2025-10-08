@@ -330,11 +330,11 @@ function parseTestResults(output, testCases) {
 
         for (let i = 0; i < testCases.length; i++) {
             const testNum = i + 1;
-            const resultLine = lines.find(line => line.includes(\`TEST_RESULT_\${testNum}:\`));
+            const resultLine = lines.find(line => line.includes(`TEST_RESULT_${testNum}:`));
 
             if (resultLine) {
                 try {
-                    const jsonStr = resultLine.split(\`TEST_RESULT_\${testNum}: \`)[1];
+                    const jsonStr = resultLine.split(`TEST_RESULT_${testNum}: `)[1];
                     const testResult = JSON.parse(jsonStr);
 
                     results.push({
