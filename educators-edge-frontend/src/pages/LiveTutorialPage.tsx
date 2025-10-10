@@ -447,7 +447,7 @@ const LiveTutorialPage: React.FC = () => {
     const [files, setFiles] = useState<CodeFile[]>([]);
     const [activeFileName, setActiveFileName] = useState<string>('');
     const [students, setStudents] = useState<Student[]>([]);
-    const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+    const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -500,10 +500,54 @@ const LiveTutorialPage: React.FC = () => {
     useEffect(() => { teacherIdRef.current = teacherId; }, [teacherId]);
     useEffect(() => { activeChatStudentIdRef.current = activeChatStudentId; }, [activeChatStudentId]);
 
+    // --- Workspace Adapter for Different Homework Types ---
+    const adaptWorkspaceForDisplay = (workspace: UniversalWorkspace | StudentHomeworkState | null): { files: CodeFile[], activeFileName: string } => {
+        if (!workspace) return { files: [], activeFileName: '' };
+
+        // Check if it's a UniversalWorkspace (has 'type' field)
+        if ('type' in workspace) {
+            const universal = workspace as UniversalWorkspace;
+
+            if (universal.type === 'leetcode' || universal.type === 'external') {
+                // Convert LeetCode/external single code format to file-based format
+                const extension = universal.language === 'javascript' ? 'js'
+                    : universal.language === 'python' ? 'py'
+                    : universal.language === 'java' ? 'java' : 'txt';
+
+                const fileName = `solution.${extension}`;
+
+                return {
+                    files: [{
+                        id: '1',
+                        name: fileName,
+                        content: universal.code || '',
+                        language: universal.language || 'javascript'
+                    }],
+                    activeFileName: fileName
+                };
+            }
+
+            // Native format - convert from UniversalWorkspace
+            return {
+                files: universal.files || [],
+                activeFileName: universal.activeFileName || ''
+            };
+        }
+
+        // Already in StudentHomeworkState format
+        return {
+            files: (workspace as StudentHomeworkState).files || [],
+            activeFileName: (workspace as StudentHomeworkState).activeFileName || ''
+        };
+    };
+
     // --- Computed State ---
     const displayedWorkspace = (() => {
-        if (spotlightedStudentId && spotlightWorkspace) return spotlightWorkspace;
-        if (role === 'teacher' && viewingMode !== 'teacher') return studentHomeworkStates.get(viewingMode) || { files: [], activeFileName: '' };
+        if (spotlightedStudentId && spotlightWorkspace) return adaptWorkspaceForDisplay(spotlightWorkspace as any);
+        if (role === 'teacher' && viewingMode !== 'teacher') {
+            const rawWorkspace = studentHomeworkStates.get(viewingMode);
+            return adaptWorkspaceForDisplay(rawWorkspace as any);
+        }
         return { files, activeFileName };
     })();
     const activeFile = displayedWorkspace.files.find(file => file.name === displayedWorkspace.activeFileName);
@@ -726,6 +770,12 @@ const LiveTutorialPage: React.FC = () => {
                     break;
                 case 'STUDENT_WORKSPACE_UPDATED':
                     setStudentHomeworkStates(prev => new Map(prev).set(message.payload.studentId, { ...prev.get(message.payload.studentId), ...message.payload.workspace }));
+                    if (spotlightedStudentId === message.payload.studentId) setSpotlightWorkspace(message.payload.workspace);
+                    break;
+                case 'STUDENT_WORKSPACE_UPDATE':
+                    // Handle UniversalWorkspace updates (from LeetCode/external IDEs)
+                    console.log('[LiveSession] Received workspace update:', message.payload);
+                    setStudentHomeworkStates(prev => new Map(prev).set(message.payload.studentId, message.payload.workspace));
                     if (spotlightedStudentId === message.payload.studentId) setSpotlightWorkspace(message.payload.workspace);
                     break;
                 case 'HOMEWORK_ASSIGNED': 
@@ -1710,7 +1760,7 @@ export default LiveTutorialPage;
 //     const [spotlightedStudentId, setSpotlightedStudentId] = useState<string | null>(null);
 //     const [isFrozen, setIsFrozen] = useState<boolean>(false);
 //     const [controlledStudentId, setControlledStudentId] = useState<string | null>(null);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [pendingHomework, setPendingHomework] = useState<any>(null);
 //     const [isDoingHomework, setIsDoingHomework] = useState(false);
 //     const [homeworkFiles, setHomeworkFiles] = useState<any>(null);
@@ -2703,7 +2753,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -3471,7 +3521,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -4089,7 +4139,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -5236,7 +5286,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -5947,7 +5997,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -6659,7 +6709,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -7509,7 +7559,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -8229,7 +8279,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -8953,7 +9003,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -9565,7 +9615,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -10280,7 +10330,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -10998,7 +11048,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -11679,7 +11729,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -12289,7 +12339,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -12812,7 +12862,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
@@ -13331,7 +13381,7 @@ export default LiveTutorialPage;
 //     const [files, setFiles] = useState<CodeFile[]>([]);
 //     const [activeFileName, setActiveFileName] = useState<string>('');
 //     const [students, setStudents] = useState<Student[]>([]);
-//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState>>(new Map());
+//     const [studentHomeworkStates, setStudentHomeworkStates] = useState<Map<string, StudentHomeworkState | UniversalWorkspace>>(new Map());
 //     const [viewingMode, setViewingMode] = useState<ViewingMode>('teacher');
 //     const [availableLessons, setAvailableLessons] = useState<Lesson[]>([]);
 //     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
