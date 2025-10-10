@@ -110,6 +110,10 @@ export interface Lesson {
     lesson_type: 'algorithmic' | 'frontend-project' | 'chapter';
     order_index: number;
     files: LessonFile[];
+    // Homework session bridge fields
+    courseType?: 'native' | 'leetcode' | 'enhanced';
+    problemId?: string;  // For LeetCode problems
+    isLeetCodeProblem?: boolean;
 }
 
 // Represents a student's submission for a lesson
@@ -351,6 +355,45 @@ export interface StudentHomeworkState {
     files: CodeFile[];
     terminalOutput: string;
     activeFileName?: string;
+}
+
+// Homework type metadata for different course systems
+export type HomeworkType = 'native' | 'leetcode' | 'external';
+
+// Universal workspace format that adapts to different homework types
+export interface UniversalWorkspace {
+    type: HomeworkType;
+    studentId: string;
+    lastUpdate: number;
+
+    // For native lessons (AscentIDE)
+    files?: CodeFile[];
+    activeFileName?: string;
+    terminalOutput?: string;
+
+    // For LeetCode/code problems (LeetCodeIDE)
+    code?: string;
+    language?: string;
+    problemTitle?: string;
+    problemId?: string;
+    testResults?: Array<{
+        passed: boolean;
+        input: string;
+        expected: string;
+        actual: string;
+        error?: string;
+    }>;
+}
+
+// Enhanced homework assignment with type metadata
+export interface HomeworkAssignment {
+    lessonId: string;
+    teacherSessionId: string;
+    title: string;
+    homeworkType: HomeworkType;
+    courseType?: string;  // e.g., 'enhanced-course', 'leetcode-course'
+    courseId?: string;
+    problemId?: string;   // For LeetCode problems
 }
 
 // Test result interface for code execution

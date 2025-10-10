@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { Play, RefreshCw, BookOpen, Code, Terminal, CheckCircle, XCircle, Clock, Target, TrendingUp } from 'lucide-react';
+import { getWebSocketUrl } from '../config/websocket';
+import { toast } from 'sonner';
 
 interface Problem {
     id: string;
@@ -69,7 +71,8 @@ const languageConfigs = {
 const LeetCodeIDE: React.FC = () => {
     const { courseId, lessonId, problemNumber } = useParams();
     const navigate = useNavigate();
-    
+    const location = useLocation();
+
     const [problem, setProblem] = useState<Problem | null>(null);
     const [courseInfo, setCourseInfo] = useState<CourseInfo | null>(null);
     const [currentLanguage, setCurrentLanguage] = useState<keyof typeof languageConfigs>('javascript');
@@ -88,6 +91,31 @@ const LeetCodeIDE: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'description' | 'hints' | 'solution' | 'submissions'>('description');
     const [executionTime, setExecutionTime] = useState<number | null>(null);
     const [memoryUsage, setMemoryUsage] = useState<string | null>(null);
+
+    // Live homework session state
+    const wsRef = useRef<WebSocket | null>(null);
+    const [isLiveHomework, setIsLiveHomework] = useState(false);
+    const [teacherSessionId, setTeacherSessionId] = useState<string | null>(null);
+    const [teacherViewing, setTeacherViewing] = useState(false);
+
+    // Check if opened as live homework and connect to WebSocket
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const sessionId = params.get('sessionId');
+
+        if (sessionId) {
+            setIsLiveHomework(true);
+            setTeacherSessionId(sessionId);
+            connectToLiveSession(sessionId);
+            toast.info('Connected to live session');
+        }
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
+        };
+    }, [location.search]);
 
     // Load problem data
     useEffect(() => {
@@ -256,6 +284,88 @@ var twoSum = function(nums, target) {
         setProblem(mockProblem);
         setCode(mockProblem.starterCode[currentLanguage]);
     };
+
+    // WebSocket connection for live homework sessions
+    const connectToLiveSession = (sessionId: string) => {
+        const wsUrl = getWebSocketUrl();
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            console.error('No auth token found for live session');
+            return;
+        }
+
+        const ws = new WebSocket(`${wsUrl}/socket.io/?sessionId=${sessionId}&token=${token}&type=leetcode`);
+
+        ws.onopen = () => {
+            console.log('[LeetCode IDE] Connected to live session:', sessionId);
+            // Notify server that student joined LeetCode homework
+            ws.send(JSON.stringify({
+                type: 'LEETCODE_HOMEWORK_JOIN',
+                payload: {
+                    sessionId,
+                    problemId: problemNumber || lessonId
+                }
+            }));
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                console.log('[LeetCode IDE] Received message:', message.type);
+
+                switch (message.type) {
+                    case 'TEACHER_TAKE_CONTROL':
+                        setTeacherViewing(message.payload.isControlling);
+                        toast.info(message.payload.isControlling ?
+                            'Teacher is now viewing your work' :
+                            'Teacher stopped viewing');
+                        break;
+
+                    case 'TEACHER_CODE_UPDATE':
+                        // Teacher updated the code
+                        if (message.payload.code) {
+                            setCode(message.payload.code);
+                        }
+                        if (message.payload.language) {
+                            setCurrentLanguage(message.payload.language);
+                        }
+                        break;
+                }
+            } catch (error) {
+                console.error('[LeetCode IDE] Failed to parse WebSocket message:', error);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('[LeetCode IDE] WebSocket error:', error);
+            toast.error('Connection error with live session');
+        };
+
+        ws.onclose = () => {
+            console.log('[LeetCode IDE] Disconnected from live session');
+        };
+
+        wsRef.current = ws;
+    };
+
+    // Broadcast code changes to teacher in live session
+    useEffect(() => {
+        if (isLiveHomework && wsRef.current?.readyState === WebSocket.OPEN && problem) {
+            const updatePayload = {
+                type: 'LEETCODE_HOMEWORK_UPDATE',
+                payload: {
+                    code,
+                    language: currentLanguage,
+                    problemId: problem.id,
+                    problemTitle: problem.title,
+                    testResults
+                }
+            };
+
+            wsRef.current.send(JSON.stringify(updatePayload));
+        }
+    }, [code, currentLanguage, testResults, isLiveHomework, problem]);
 
     const runCode = async () => {
         if (!problem) return;

@@ -239,6 +239,36 @@ function initializeWebSocket(wss) {
                         case 'HOMEWORK_TERMINAL_IN':
                             sendToClient(session, teacher.id, { type: 'HOMEWORK_TERMINAL_UPDATE', payload: { studentId: user.id, output: data.payload } });
                             break;
+                        case 'LEETCODE_HOMEWORK_JOIN':
+                            // Student joined LeetCode homework
+                            log(`[LEETCODE] Student ${user.id} joined LeetCode homework: ${data.payload.problemId}`);
+                            if (!session.leetcodeStudents) session.leetcodeStudents = new Set();
+                            session.leetcodeStudents.add(user.id);
+                            sendToClient(session, teacher.id, {
+                                type: 'HOMEWORK_JOIN',
+                                payload: { studentId: user.id, homeworkType: 'leetcode', problemId: data.payload.problemId }
+                            });
+                            break;
+                        case 'LEETCODE_HOMEWORK_UPDATE':
+                            // Student updated their LeetCode code - transform to UniversalWorkspace
+                            const universalWorkspace = {
+                                type: 'leetcode',
+                                studentId: user.id,
+                                code: data.payload.code,
+                                language: data.payload.language,
+                                problemId: data.payload.problemId,
+                                problemTitle: data.payload.problemTitle,
+                                testResults: data.payload.testResults,
+                                lastUpdate: Date.now()
+                            };
+
+                            // Store and broadcast to teacher
+                            session.studentWorkspaces?.set(user.id, universalWorkspace);
+                            sendToClient(session, teacher.id, {
+                                type: 'STUDENT_WORKSPACE_UPDATE',
+                                payload: { studentId: user.id, workspace: universalWorkspace }
+                            });
+                            break;
                     }
                     return;
                 }

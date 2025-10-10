@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Import types and configs
-import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState } from '../types';
+import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState, HomeworkAssignment, UniversalWorkspace } from '../types';
 import apiClient from '../services/apiClient';
 import { getWebSocketUrl } from '../config/websocket';
 
@@ -453,7 +453,7 @@ const LiveTutorialPage: React.FC = () => {
     const [assigningToStudentId, setAssigningToStudentId] = useState<string | null>(null);
     const [controlledStudentId, setControlledStudentId] = useState<string | null>(null);
     const [isFrozen, setIsFrozen] = useState<boolean>(false);
-    const [pendingHomework, setPendingHomework] = useState<{ lessonId: string; teacherSessionId: string; title: string; } | null>(() => {
+    const [pendingHomework, setPendingHomework] = useState<HomeworkAssignment | null>(() => {
         const saved = sessionStorage.getItem(`pendingHomework_${sessionId}`);
         return saved ? JSON.parse(saved) : null;
     });
@@ -833,17 +833,44 @@ const LiveTutorialPage: React.FC = () => {
 
     const handleStartHomework = async () => {
         if (!pendingHomework) return;
-        if (!homeworkFiles) {
-            try {
-                const stateRes = await apiClient.get(`/api/lessons/${pendingHomework.lessonId}/student-state`);
-                setHomeworkFiles(stateRes.data.files || []);
-            } catch (error) {
-                console.error("Error fetching homework state:", error);
-                toast.error("A network error occurred.");
+
+        // Route to correct IDE based on homework type
+        const baseUrl = window.location.origin;
+        let homeworkUrl = '';
+
+        switch (pendingHomework.homeworkType) {
+            case 'leetcode':
+                // Open LeetCodeIDE with session connection
+                homeworkUrl = `${baseUrl}/leetcode-ide/${pendingHomework.courseId}/${pendingHomework.lessonId}/${pendingHomework.problemId}?sessionId=${pendingHomework.teacherSessionId}`;
+                break;
+
+            case 'external':
+                // Open Enhanced Course IDE
+                homeworkUrl = `${baseUrl}/enhanced-courses/${pendingHomework.courseId}/ide?sessionId=${pendingHomework.teacherSessionId}&lessonId=${pendingHomework.lessonId}`;
+                break;
+
+            case 'native':
+            default:
+                // Use traditional AscentIDE flow (in same tab)
+                if (!homeworkFiles) {
+                    try {
+                        const stateRes = await apiClient.get(`/api/lessons/${pendingHomework.lessonId}/student-state`);
+                        setHomeworkFiles(stateRes.data.files || []);
+                    } catch (error) {
+                        console.error("Error fetching homework state:", error);
+                        toast.error("A network error occurred.");
+                        return;
+                    }
+                }
+                setIsDoingHomework(true);
                 return;
-            }
         }
-        setIsDoingHomework(true);
+
+        // Open external homework in new tab
+        if (homeworkUrl) {
+            window.open(homeworkUrl, '_blank');
+            toast.success(`Opening ${pendingHomework.title} in new tab...`);
+        }
     };
 
     const handleWorkspaceChange = (value: string | undefined) => {
@@ -904,7 +931,28 @@ const LiveTutorialPage: React.FC = () => {
     const handleAssignHomework = (studentId: string, lessonId: number | string) => {
         const lesson = availableLessons.find(l => l.id.toString() === lessonId.toString());
         if (lesson) {
-            sendWsMessage('ASSIGN_HOMEWORK', { studentId, lessonId, teacherSessionId: sessionId, title: lesson.title });
+            // Detect homework type based on lesson metadata
+            let homeworkType: 'native' | 'leetcode' | 'external' = 'native';
+            let courseType = 'native';
+
+            if (lesson.isLeetCodeProblem || lesson.courseType === 'leetcode') {
+                homeworkType = 'leetcode';
+                courseType = 'leetcode-course';
+            } else if (lesson.courseType === 'enhanced') {
+                homeworkType = 'external';
+                courseType = 'enhanced-course';
+            }
+
+            sendWsMessage('ASSIGN_HOMEWORK', {
+                studentId,
+                lessonId,
+                teacherSessionId: sessionId,
+                title: lesson.title,
+                homeworkType,        // NEW
+                courseType,          // NEW
+                courseId: lesson.course_id,  // NEW
+                problemId: lesson.problemId  // NEW (for LeetCode)
+            });
             setAssigningToStudentId(null);
         }
     };
