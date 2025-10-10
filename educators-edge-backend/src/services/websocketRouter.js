@@ -13,12 +13,31 @@ function initializeWebSocketRouting(httpServer) {
     const terminalWss = new WebSocketServer({ noServer: true });
 
     // Create Socket.io server for live sessions
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://educator-app.vercel.app',
+        'https://educator-a9yc0y90h-bilalhussainxs-projects.vercel.app',
+        'https://educator-2ovjl9xd8-bilalhussainxs-projects.vercel.app'
+    ];
+
     const io = new Server(httpServer, {
         cors: {
-            origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
+            origin: (origin, callback) => {
+                // Allow requests with no origin (mobile apps, curl, etc)
+                if (!origin) return callback(null, true);
+
+                if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('.vercel.app')) {
+                    callback(null, true);
+                } else {
+                    console.log('[SOCKET.IO] CORS blocked origin:', origin);
+                    callback(new Error('Not allowed by CORS'));
+                }
+            },
             credentials: true
         },
-        path: '/socket.io'
+        path: '/socket.io',
+        transports: ['websocket', 'polling'] // Allow fallback to polling if WebSocket fails
     });
 
     // Handle Socket.io connections
