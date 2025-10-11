@@ -284,13 +284,17 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
     useEffect(() => {
         const wsBaseUrl = getWebSocketUrl();
         const homeworkSessionId = crypto.randomUUID();
-        const wsUrl = `${wsBaseUrl}?sessionId=${homeworkSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`;
+        const wsUrl = `${wsBaseUrl}/ws?sessionId=${homeworkSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`;
+        console.log(`[HOMEWORK] 🔗 Connecting to WebSocket URL: ${wsUrl}`);
         const currentWs = new WebSocket(wsUrl);
         hwWs.current = currentWs;
 
         currentWs.onopen = () => {
-            console.log(`[HOMEWORK] WebSocket for lesson ${lessonId} connected.`);
+            console.log(`[HOMEWORK] ✅ WebSocket connected for lesson ${lessonId}`);
+            console.log(`[HOMEWORK] Teacher session ID: ${teacherSessionId}`);
+            console.log(`[HOMEWORK] Student user ID: ${currentUserId}`);
             currentWs.send(JSON.stringify({ type: 'HOMEWORK_JOIN' }));
+            console.log(`[HOMEWORK] ✅ Sent HOMEWORK_JOIN message`);
             setIsWsConnected(true);
         };
         currentWs.onclose = () => setIsWsConnected(false);
@@ -341,8 +345,12 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
     
     useEffect(() => {
         if (isWsConnected && !initialPayloadSent.current) {
-            const broadcastFiles = initialFiles.map(f => ({ name: f.filename, language: 'javascript', content: f.content }));
+            const broadcastFiles = initialFiles.map(f => ({ name: f.filename, filename: f.filename, language: 'javascript', content: f.content }));
             const broadcastActiveFile = initialFiles.find(f => f.id === activeFileId)?.filename || '';
+            console.log(`[HOMEWORK] ✅ Sending initial HOMEWORK_CODE_UPDATE`);
+            console.log(`[HOMEWORK] Files count:`, broadcastFiles.length);
+            console.log(`[HOMEWORK] Active file:`, broadcastActiveFile);
+            console.log(`[HOMEWORK] Files:`, broadcastFiles.map(f => ({ name: f.name, contentLength: f.content?.length })));
             hwWs.current?.send(JSON.stringify({ type: 'HOMEWORK_CODE_UPDATE', payload: { files: broadcastFiles, activeFileName: broadcastActiveFile }}));
             initialPayloadSent.current = true;
         }
@@ -363,8 +371,9 @@ export const HomeworkView: React.FC<HomeworkViewProps> = ({ lessonId, teacherSes
         const updatedFiles = initialFiles.map(file => file.id === activeFileId ? { ...file, content: content || '' } : file);
         onFilesChange(updatedFiles);
         if (hwWs.current?.readyState === WebSocket.OPEN) {
-             const broadcastFiles = updatedFiles.map(f => ({ name: f.filename, language: 'javascript', content: f.content }));
+             const broadcastFiles = updatedFiles.map(f => ({ name: f.filename, filename: f.filename, language: 'javascript', content: f.content }));
              const broadcastActiveFile = updatedFiles.find(f => f.id === activeFileId)?.filename || '';
+             console.log(`[HOMEWORK] 📝 Code changed - sending HOMEWORK_CODE_UPDATE`);
              hwWs.current.send(JSON.stringify({ type: 'HOMEWORK_CODE_UPDATE', payload: { files: broadcastFiles, activeFileName: broadcastActiveFile }}));
         }
     };

@@ -129,7 +129,7 @@ const VideoParticipant = ({ user, students, isLocal = false, size = "sm", localV
 };
 
 // --- Enhanced Roster Panel with Integrated Video ---
-const EnhancedRosterPanel = ({ 
+const EnhancedRosterPanel = ({
     role, students, viewingMode, setViewingMode, activeHomeworkStudents, handsRaised,
     spotlightedStudentId, handleSpotlightStudent, assigningToStudentId, setAssigningToStudentId,
     availableLessons, handleAssignHomework, controlledStudentId, handleTakeControl,
@@ -156,6 +156,14 @@ const EnhancedRosterPanel = ({
     isVideoCollapsed: boolean;
     setIsVideoCollapsed: (collapsed: boolean) => void;
 }) => {
+    console.log('[EnhancedRosterPanel] Rendering with:', {
+        role,
+        studentsCount: students.length,
+        viewingMode,
+        availableLessonsCount: availableLessons.length,
+        assigningToStudentId
+    });
+
     return (
         <div className="h-full flex flex-col bg-slate-900/30 backdrop-blur-sm">
             {/* Video Section - Integrated at top */}
@@ -242,9 +250,12 @@ const EnhancedRosterPanel = ({
                                     )}
                                 >
                                     <div className="p-2">
-                                        <Button 
-                                            onClick={() => setViewingMode(student.id)} 
-                                            variant='ghost' 
+                                        <Button
+                                            onClick={() => {
+                                                console.log('[LiveTutorialPage] Teacher clicked to view student:', student.id);
+                                                setViewingMode(student.id);
+                                            }}
+                                            variant='ghost'
                                             size="sm"
                                             className="w-full justify-start p-1 h-auto"
                                         >
@@ -274,16 +285,17 @@ const EnhancedRosterPanel = ({
 
                                         {isViewingThisStudent && (
                                             <div className="mt-2 pt-2 border-t border-slate-700/50 flex flex-wrap gap-1">
-                                                <Button 
-                                                    size="sm" 
+                                                {console.log('[EnhancedRosterPanel] Showing control buttons for student:', student.id)}
+                                                <Button
+                                                    size="sm"
                                                     variant="outline"
                                                     onClick={() => handleSpotlightStudent(isSpotlighted ? null : student.id)}
                                                     className="text-xs h-6 px-2"
                                                 >
                                                     {isSpotlighted ? 'Unspot' : 'Spotlight'}
                                                 </Button>
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant="outline"
                                                     onClick={() => handleTakeControl(isControllingThisStudent ? null : student.id)}
                                                     className={cn(
@@ -293,18 +305,21 @@ const EnhancedRosterPanel = ({
                                                 >
                                                     {isControllingThisStudent ? 'Release' : 'Control'}
                                                 </Button>
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant="outline"
                                                     onClick={() => handleOpenChat(student.id)}
                                                     className="text-xs h-6 px-2"
                                                 >
                                                     Chat
                                                 </Button>
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant="outline"
-                                                    onClick={() => setAssigningToStudentId(assigningToStudentId === student.id ? null : student.id)}
+                                                    onClick={() => {
+                                                        console.log('[EnhancedRosterPanel] Assign button clicked for student:', student.id);
+                                                        setAssigningToStudentId(assigningToStudentId === student.id ? null : student.id);
+                                                    }}
                                                     className="text-xs h-6 px-2"
                                                 >
                                                     Assign
@@ -314,13 +329,14 @@ const EnhancedRosterPanel = ({
 
                                         {assigningToStudentId === student.id && (
                                             <div className="mt-2 pt-2 border-t border-slate-700/50 space-y-1">
+                                                {console.log('[EnhancedRosterPanel] Showing lesson list for student:', student.id, 'Available lessons:', availableLessons)}
                                                 {availableLessons.length > 0 ? (
                                                     availableLessons.map(lesson => (
-                                                        <Button 
-                                                            key={lesson.id} 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            className="w-full justify-start text-xs h-6 px-2 text-slate-300" 
+                                                        <Button
+                                                            key={lesson.id}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="w-full justify-start text-xs h-6 px-2 text-slate-300"
                                                             onClick={() => handleAssignHomework(student.id, lesson.id)}
                                                         >
                                                             {lesson.title}
@@ -502,11 +518,18 @@ const LiveTutorialPage: React.FC = () => {
 
     // --- Workspace Adapter for Different Homework Types ---
     const adaptWorkspaceForDisplay = (workspace: UniversalWorkspace | StudentHomeworkState | null): { files: CodeFile[], activeFileName: string } => {
-        if (!workspace) return { files: [], activeFileName: '' };
+        if (!workspace) {
+            console.log('[adaptWorkspace] No workspace provided');
+            return { files: [], activeFileName: '' };
+        }
+
+        console.log('[adaptWorkspace] Received workspace:', workspace);
+        console.log('[adaptWorkspace] Has type field:', 'type' in workspace);
 
         // Check if it's a UniversalWorkspace (has 'type' field)
         if ('type' in workspace) {
             const universal = workspace as UniversalWorkspace;
+            console.log('[adaptWorkspace] UniversalWorkspace type:', universal.type);
 
             if (universal.type === 'leetcode' || universal.type === 'external') {
                 // Convert LeetCode/external single code format to file-based format
@@ -515,6 +538,8 @@ const LiveTutorialPage: React.FC = () => {
                     : universal.language === 'java' ? 'java' : 'txt';
 
                 const fileName = `solution.${extension}`;
+
+                console.log('[adaptWorkspace] Converting LeetCode workspace to file format:', fileName);
 
                 return {
                     files: [{
@@ -528,6 +553,7 @@ const LiveTutorialPage: React.FC = () => {
             }
 
             // Native format - convert from UniversalWorkspace
+            console.log('[adaptWorkspace] Using native format from UniversalWorkspace');
             return {
                 files: universal.files || [],
                 activeFileName: universal.activeFileName || ''
@@ -535,6 +561,7 @@ const LiveTutorialPage: React.FC = () => {
         }
 
         // Already in StudentHomeworkState format
+        console.log('[adaptWorkspace] Using StudentHomeworkState format');
         return {
             files: (workspace as StudentHomeworkState).files || [],
             activeFileName: (workspace as StudentHomeworkState).activeFileName || ''
@@ -543,11 +570,39 @@ const LiveTutorialPage: React.FC = () => {
 
     // --- Computed State ---
     const displayedWorkspace = (() => {
-        if (spotlightedStudentId && spotlightWorkspace) return adaptWorkspaceForDisplay(spotlightWorkspace as any);
+        if (spotlightedStudentId && spotlightWorkspace) {
+            console.log('[displayedWorkspace] Showing spotlighted student workspace');
+            return adaptWorkspaceForDisplay(spotlightWorkspace as any);
+        }
         if (role === 'teacher' && viewingMode !== 'teacher') {
+            console.log('[displayedWorkspace] Teacher viewing student:', viewingMode);
+            console.log('[displayedWorkspace] All studentHomeworkStates keys:', Array.from(studentHomeworkStates.keys()));
             const rawWorkspace = studentHomeworkStates.get(viewingMode);
+            console.log('[displayedWorkspace] Raw workspace from state:', rawWorkspace);
+
+            if (!rawWorkspace) {
+                console.warn('[displayedWorkspace] No workspace data for student:', viewingMode);
+                console.warn('[displayedWorkspace] This means the student has not sent any workspace updates yet.');
+                console.warn('[displayedWorkspace] Possible reasons:');
+                console.warn('[displayedWorkspace]   1. Student has not started homework');
+                console.warn('[displayedWorkspace]   2. Student\'s IDE WebSocket is not connected');
+                console.warn('[displayedWorkspace]   3. Student has not made any code changes yet');
+
+                // Return empty workspace to show a clear message
+                return {
+                    files: [{
+                        id: 'placeholder',
+                        name: 'waiting.txt',
+                        language: 'plaintext',
+                        content: '// Waiting for student to start homework and send workspace updates...\n\n// The student needs to:\n// 1. Click "Start Now" button on the homework card\n// 2. Wait for the IDE to load (AscentIDE, LeetCodeIDE, or HomeworkView)\n// 3. The workspace should sync automatically within a few seconds\n// 4. If it doesn\'t appear, ask the student to make a code change\n\n// Troubleshooting:\n// - Check if student\'s WebSocket is connected (look for HOMEWORK_JOIN in backend logs)\n// - Verify HOMEWORK_CODE_UPDATE messages are being sent\n// - Ensure student clicked "Start Now" and the IDE fully loaded'
+                    }],
+                    activeFileName: 'waiting.txt'
+                };
+            }
+
             return adaptWorkspaceForDisplay(rawWorkspace as any);
         }
+        console.log('[displayedWorkspace] Showing teacher\'s own workspace');
         return { files, activeFileName };
     })();
     const activeFile = displayedWorkspace.files.find(file => file.name === displayedWorkspace.activeFileName);
@@ -654,10 +709,22 @@ const LiveTutorialPage: React.FC = () => {
 
     useEffect(() => {
         if (role === 'teacher') {
+            console.log('[LiveTutorialPage] Fetching available lessons for teacher...');
             apiClient.get('/api/lessons/teacher/list')
-            .then(res => res.data || [])
-            .then(setAvailableLessons)
-            .catch(() => setAvailableLessons([]));
+            .then(res => {
+                console.log('[LiveTutorialPage] Received lessons from API:', res.data);
+                return res.data || [];
+            })
+            .then(lessons => {
+                console.log('[LiveTutorialPage] Setting availableLessons:', lessons);
+                setAvailableLessons(lessons);
+            })
+            .catch(err => {
+                console.error('[LiveTutorialPage] Failed to fetch lessons:', err);
+                setAvailableLessons([]);
+            });
+        } else {
+            console.log('[LiveTutorialPage] User role is not teacher, role:', role);
         }
     }, [role, token]);
 
@@ -732,6 +799,20 @@ const LiveTutorialPage: React.FC = () => {
                     setTeacherId(message.payload.teacherId);
                     // Terminal output now handled by DockerTerminal component
                     break;
+                case 'WORKSPACE_SYNC_RESPONSE':
+                    console.log('[LiveTutorialPage] 🔄 Received workspace resync from server:', {
+                        filesCount: message.payload.files?.length,
+                        activeFile: message.payload.activeFile,
+                        isFrozen: message.payload.isFrozen
+                    });
+                    // Update workspace state with latest data from teacher
+                    setFiles(message.payload.files || []);
+                    setActiveFileName(message.payload.activeFile || '');
+                    setIsFrozen(message.payload.isFrozen);
+                    setControlledStudentId(message.payload.controlledStudentId);
+                    setSpotlightedStudentId(message.payload.spotlightedStudentId);
+                    console.log('[LiveTutorialPage] ✅ Workspace resynced successfully');
+                    break;
                 case 'TEACHER_WORKSPACE_UPDATE':
                     if (roleRef.current === 'student' && !spotlightedStudentId) {
                         setFiles(message.payload.files);
@@ -769,12 +850,26 @@ const LiveTutorialPage: React.FC = () => {
                     setStudents(message.payload.students); 
                     break;
                 case 'STUDENT_WORKSPACE_UPDATED':
-                    setStudentHomeworkStates(prev => new Map(prev).set(message.payload.studentId, { ...prev.get(message.payload.studentId), ...message.payload.workspace }));
+                    console.log('[LiveTutorialPage] ✅ Received STUDENT_WORKSPACE_UPDATED:', {
+                        studentId: message.payload.studentId,
+                        filesCount: message.payload.workspace?.files?.length,
+                        activeFileName: message.payload.workspace?.activeFileName,
+                        currentViewingMode: viewingMode
+                    });
+                    console.log('[LiveTutorialPage] Full workspace data:', message.payload.workspace);
+                    setStudentHomeworkStates(prev => {
+                        const newMap = new Map(prev).set(message.payload.studentId, { ...prev.get(message.payload.studentId), ...message.payload.workspace });
+                        console.log('[LiveTutorialPage] ✅ Updated studentHomeworkStates. Keys:', Array.from(newMap.keys()));
+                        console.log('[LiveTutorialPage] Workspace for student:', newMap.get(message.payload.studentId));
+                        return newMap;
+                    });
                     if (spotlightedStudentId === message.payload.studentId) setSpotlightWorkspace(message.payload.workspace);
                     break;
                 case 'STUDENT_WORKSPACE_UPDATE':
                     // Handle UniversalWorkspace updates (from LeetCode/external IDEs)
                     console.log('[LiveSession] Received workspace update:', message.payload);
+                    console.log('[LiveSession] Workspace type:', message.payload.workspace?.type);
+                    console.log('[LiveSession] Current studentHomeworkStates:', Array.from(studentHomeworkStates.keys()));
                     setStudentHomeworkStates(prev => new Map(prev).set(message.payload.studentId, message.payload.workspace));
                     if (spotlightedStudentId === message.payload.studentId) setSpotlightWorkspace(message.payload.workspace);
                     break;
@@ -884,6 +979,8 @@ const LiveTutorialPage: React.FC = () => {
     const handleStartHomework = async () => {
         if (!pendingHomework) return;
 
+        console.log('[HOMEWORK] Starting homework:', pendingHomework);
+
         // Route to correct IDE based on homework type
         const baseUrl = window.location.origin;
         let homeworkUrl = '';
@@ -892,11 +989,13 @@ const LiveTutorialPage: React.FC = () => {
             case 'leetcode':
                 // Open LeetCodeIDE with session connection
                 homeworkUrl = `${baseUrl}/leetcode-ide/${pendingHomework.courseId}/${pendingHomework.lessonId}/${pendingHomework.problemId}?sessionId=${pendingHomework.teacherSessionId}`;
+                console.log('[HOMEWORK] Opening LeetCode IDE at:', homeworkUrl);
                 break;
 
             case 'external':
                 // Open Enhanced Course IDE
                 homeworkUrl = `${baseUrl}/enhanced-courses/${pendingHomework.courseId}/ide?sessionId=${pendingHomework.teacherSessionId}&lessonId=${pendingHomework.lessonId}`;
+                console.log('[HOMEWORK] Opening Enhanced Course IDE at:', homeworkUrl);
                 break;
 
             case 'native':
@@ -980,6 +1079,8 @@ const LiveTutorialPage: React.FC = () => {
 
     const handleAssignHomework = (studentId: string, lessonId: number | string) => {
         const lesson = availableLessons.find(l => l.id.toString() === lessonId.toString());
+        console.log('[ASSIGN] Found lesson:', lesson);
+
         if (lesson) {
             // Detect homework type based on lesson metadata
             let homeworkType: 'native' | 'leetcode' | 'external' = 'native';
@@ -993,7 +1094,7 @@ const LiveTutorialPage: React.FC = () => {
                 courseType = 'enhanced-course';
             }
 
-            sendWsMessage('ASSIGN_HOMEWORK', {
+            const homeworkPayload = {
                 studentId,
                 lessonId,
                 teacherSessionId: sessionId,
@@ -1002,7 +1103,10 @@ const LiveTutorialPage: React.FC = () => {
                 courseType,          // NEW
                 courseId: lesson.course_id,  // NEW
                 problemId: lesson.problemId  // NEW (for LeetCode)
-            });
+            };
+
+            console.log('[ASSIGN] Sending homework assignment:', homeworkPayload);
+            sendWsMessage('ASSIGN_HOMEWORK', homeworkPayload);
             setAssigningToStudentId(null);
         }
     };
@@ -1242,19 +1346,34 @@ const LiveTutorialPage: React.FC = () => {
     };
 
     if (role === 'student' && isDoingHomework && pendingHomework && homeworkFiles) {
-        return <HomeworkView 
-            lessonId={pendingHomework.lessonId} 
-            teacherSessionId={pendingHomework.teacherSessionId} 
-            token={token} 
+        return <HomeworkView
+            lessonId={pendingHomework.lessonId}
+            teacherSessionId={pendingHomework.teacherSessionId}
+            token={token}
             onLeave={() => {
+                console.log('[LiveTutorialPage] 🔄 Student returning from homework to live session');
+                // Clear homework state
                 sessionStorage.setItem(`isDoingHomework_${sessionId}`, 'false');
                 sessionStorage.removeItem(`homeworkFiles_${sessionId}`);
                 sessionStorage.removeItem(`pendingHomework_${sessionId}`);
-                setTimeout(() => { window.location.reload(); }, 50);
-            }} 
-            initialFiles={homeworkFiles} 
-            onFilesChange={setHomeworkFiles} 
-            currentUserId={currentUserId} 
+
+                // Update React state to return to main session WITHOUT page reload
+                setIsDoingHomework(false);
+                setHomeworkFiles(null);
+                setPendingHomework(null);
+
+                // Request current workspace state from server to resync
+                console.log('[LiveTutorialPage] 📡 Requesting workspace resync from teacher');
+                if (ws.current?.readyState === WebSocket.OPEN) {
+                    ws.current.send(JSON.stringify({ type: 'REQUEST_WORKSPACE_SYNC' }));
+                }
+
+                console.log('[LiveTutorialPage] ✅ Returned to live session - WebSocket remains connected');
+                toast.success('Returned to classroom');
+            }}
+            initialFiles={homeworkFiles}
+            onFilesChange={setHomeworkFiles}
+            currentUserId={currentUserId}
         />;
     }
     
@@ -1472,6 +1591,30 @@ const LiveTutorialPage: React.FC = () => {
                         <span>Lesson: <strong>{pendingHomework.title}</strong></span>
                         <Button size="sm" onClick={handleStartHomework} className="bg-blue-600 hover:bg-blue-500">
                             Start Now <ChevronRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {/* Viewing Mode Indicator for Teachers */}
+            {role === 'teacher' && viewingMode !== 'teacher' && (
+                <Alert className="rounded-none border-0 border-b border-cyan-500/50 bg-cyan-950/40">
+                    <User className="h-4 w-4" />
+                    <AlertTitle>Viewing Student Workspace</AlertTitle>
+                    <AlertDescription className="flex items-center justify-between">
+                        <span>
+                            Currently viewing: <strong>{students.find(s => s.id === viewingMode)?.username || 'Unknown Student'}</strong>
+                            {!studentHomeworkStates.has(viewingMode) && (
+                                <span className="ml-2 text-yellow-400">(Waiting for student to start homework...)</span>
+                            )}
+                        </span>
+                        <Button
+                            size="sm"
+                            onClick={() => setViewingMode('teacher')}
+                            variant="outline"
+                            className="border-cyan-500/30 hover:bg-cyan-500/10"
+                        >
+                            Back to My Workspace
                         </Button>
                     </AlertDescription>
                 </Alert>

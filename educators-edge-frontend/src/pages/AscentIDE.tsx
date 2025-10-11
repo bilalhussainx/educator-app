@@ -283,27 +283,107 @@ const AscentIDE: React.FC = () => {
     // --- WebSocket Connection ---
     useEffect(() => {
         const token = localStorage.getItem('authToken');
-        if (!token || !lessonId || isLiveHomework) return; // Only for standalone homework for now
+        if (!token || !lessonId) return;
 
         const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
-        const terminalSessionId = crypto.randomUUID();
-        const wsUrl = `${wsBaseUrl}?sessionId=${terminalSessionId}&token=${token}`;
+        const homeworkSessionId = crypto.randomUUID();
+
+        // Build WebSocket URL with all required parameters for homework sessions
+        const wsUrl = isLiveHomework
+            ? `${wsBaseUrl}?sessionId=${homeworkSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${lessonId}`
+            : `${wsBaseUrl}?sessionId=${homeworkSessionId}&token=${token}`;
+
+        console.log(`[AscentIDE] Connecting WebSocket. Mode: ${isLiveHomework ? 'Live Homework' : 'Standalone'}`);
         const currentWs = new WebSocket(wsUrl);
         ws.current = currentWs;
 
-        currentWs.onopen = () => console.log(`WebSocket connected for standalone session.`);
+        currentWs.onopen = () => {
+            console.log(`[AscentIDE] WebSocket connected. Mode: ${isLiveHomework ? 'Live Homework' : 'Standalone'}`);
+            if (isLiveHomework) {
+                currentWs.send(JSON.stringify({ type: 'HOMEWORK_JOIN' }));
+
+                // Send initial workspace state to teacher
+                setTimeout(() => {
+                    if (files.length > 0 && currentWs.readyState === WebSocket.OPEN) {
+                        const broadcastFiles = files.map(f => ({
+                            name: f.filename,
+                            filename: f.filename,
+                            language: f.language || 'javascript',
+                            content: f.content
+                        }));
+                        const broadcastActiveFile = files.find(f => f.id === activeFileId)?.filename || '';
+
+                        console.log('[AscentIDE] Sending initial workspace state to teacher');
+                        currentWs.send(JSON.stringify({
+                            type: 'HOMEWORK_CODE_UPDATE',
+                            payload: {
+                                files: broadcastFiles,
+                                activeFileName: broadcastActiveFile
+                            }
+                        }));
+                    }
+                }, 500); // Small delay to ensure server is ready
+            }
+        };
+
         currentWs.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
-                if (message.type === 'TERMINAL_OUT') {
-                    term.current?.write(message.payload);
+                console.log('[AscentIDE] Received WebSocket message:', message.type);
+
+                switch (message.type) {
+                    case 'TERMINAL_OUT':
+                        term.current?.write(message.payload);
+                        break;
+                    case 'FREEZE_STATE_UPDATE':
+                        // Handle freeze state if needed
+                        console.log('[AscentIDE] Freeze state:', message.payload.isFrozen);
+                        break;
+                    case 'CONTROL_STATE_UPDATE':
+                        // Handle control state if needed
+                        console.log('[AscentIDE] Control state:', message.payload);
+                        break;
+                    case 'HOMEWORK_CODE_UPDATE':
+                        // Teacher updated the code - sync student's workspace
+                        if (message.payload.files) {
+                            const updatedFiles = message.payload.files.map((f: any) => ({
+                                id: crypto.randomUUID(),
+                                filename: f.name || f.filename,
+                                content: f.content,
+                                language: f.language || 'javascript'
+                            }));
+                            setFiles(updatedFiles);
+                            if (message.payload.activeFileName) {
+                                const activeFile = updatedFiles.find((f: any) =>
+                                    f.filename === message.payload.activeFileName
+                                );
+                                if (activeFile) setActiveFileId(activeFile.id);
+                            }
+                        }
+                        break;
                 }
             } catch (error) {
-                console.error('Error processing WebSocket message:', error);
+                console.error('[AscentIDE] Error processing WebSocket message:', error);
             }
         };
-        return () => { currentWs.close(); };
-    }, [lessonId, isLiveHomework]);
+
+        currentWs.onerror = (error) => {
+            console.error('[AscentIDE] WebSocket error:', error);
+        };
+
+        currentWs.onclose = (event) => {
+            console.log('[AscentIDE] WebSocket disconnected:', event.code, event.reason);
+        };
+
+        return () => {
+            if (currentWs.readyState === WebSocket.OPEN) {
+                if (isLiveHomework) {
+                    currentWs.send(JSON.stringify({ type: 'HOMEWORK_LEAVE' }));
+                }
+                currentWs.close();
+            }
+        };
+    }, [lessonId, isLiveHomework, teacherSessionId]);
 
     // --- Core Handlers ---
     const handleFileContentChange = (content: string | undefined) => {
@@ -311,7 +391,31 @@ const AscentIDE: React.FC = () => {
         const churn = Math.abs(newContent.split('\n').length - prevFileContentRef.current.length);
         setCodeChurn(prev => prev + churn);
         prevFileContentRef.current = newContent;
-        setFiles(files.map(file => file.id === activeFileId ? { ...file, content: newContent } : file));
+
+        const updatedFiles = files.map(file =>
+            file.id === activeFileId ? { ...file, content: newContent } : file
+        );
+        setFiles(updatedFiles);
+
+        // Broadcast code changes to teacher in live homework sessions
+        if (isLiveHomework && ws.current?.readyState === WebSocket.OPEN) {
+            const broadcastFiles = updatedFiles.map(f => ({
+                name: f.filename,
+                filename: f.filename,
+                language: f.language || 'javascript',
+                content: f.content
+            }));
+            const broadcastActiveFile = updatedFiles.find(f => f.id === activeFileId)?.filename || '';
+
+            console.log('[AscentIDE] Broadcasting code update to teacher');
+            ws.current.send(JSON.stringify({
+                type: 'HOMEWORK_CODE_UPDATE',
+                payload: {
+                    files: broadcastFiles,
+                    activeFileName: broadcastActiveFile
+                }
+            }));
+        }
     };
 
     const handleRunTests = async () => {

@@ -286,24 +286,30 @@ var twoSum = function(nums, target) {
     };
 
     // WebSocket connection for live homework sessions
-    const connectToLiveSession = (sessionId: string) => {
+    const connectToLiveSession = (teacherSessionId: string) => {
         const wsUrl = getWebSocketUrl();
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
 
         if (!token) {
-            console.error('No auth token found for live session');
+            console.error('[LeetCode IDE] No auth token found for live session');
             return;
         }
 
-        const ws = new WebSocket(`${wsUrl}/socket.io/?sessionId=${sessionId}&token=${token}&type=leetcode`);
+        // Generate a unique sessionId for this student's homework connection
+        // Use all required parameters: sessionId, token, teacherSessionId, and lessonId
+        const homeworkSessionId = crypto.randomUUID();
+        const actualLessonId = lessonId || problemNumber || '1';
+        const wsUrlWithParams = `${wsUrl}?sessionId=${homeworkSessionId}&token=${token}&teacherSessionId=${teacherSessionId}&lessonId=${actualLessonId}`;
+        console.log('[LeetCode IDE] Connecting to WebSocket:', wsUrlWithParams);
+        const ws = new WebSocket(wsUrlWithParams);
 
         ws.onopen = () => {
-            console.log('[LeetCode IDE] Connected to live session:', sessionId);
+            console.log('[LeetCode IDE] Connected to live session:', teacherSessionId);
             // Notify server that student joined LeetCode homework
             ws.send(JSON.stringify({
                 type: 'LEETCODE_HOMEWORK_JOIN',
                 payload: {
-                    sessionId,
+                    sessionId: teacherSessionId,
                     problemId: problemNumber || lessonId
                 }
             }));
@@ -351,6 +357,13 @@ var twoSum = function(nums, target) {
 
     // Broadcast code changes to teacher in live session
     useEffect(() => {
+        console.log('[LeetCode IDE] Update check:', {
+            isLiveHomework,
+            wsReady: wsRef.current?.readyState === WebSocket.OPEN,
+            hasProblem: !!problem,
+            wsReadyState: wsRef.current?.readyState
+        });
+
         if (isLiveHomework && wsRef.current?.readyState === WebSocket.OPEN && problem) {
             const updatePayload = {
                 type: 'LEETCODE_HOMEWORK_UPDATE',
@@ -363,7 +376,10 @@ var twoSum = function(nums, target) {
                 }
             };
 
+            console.log('[LeetCode IDE] Sending workspace update:', updatePayload);
             wsRef.current.send(JSON.stringify(updatePayload));
+        } else {
+            console.log('[LeetCode IDE] Not sending update - conditions not met');
         }
     }, [code, currentLanguage, testResults, isLiveHomework, problem]);
 

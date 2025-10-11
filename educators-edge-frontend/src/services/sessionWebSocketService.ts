@@ -10,9 +10,17 @@ class SessionWebSocketService {
     private sessionId: string | null = null;
 
     constructor() {
+        // Use VITE_WS_URL from environment, fallback to localhost:5000
+        const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:5000';
+
+        // Remove any /ws suffix if already present in the env variable
+        const baseUrl = wsUrl.replace(/\/ws$/, '');
+
         this.url = import.meta.env.PROD
-            ? 'wss://your-production-domain.com/ws'
-            : 'ws://localhost:10000/ws';
+            ? 'wss://educator-app-backend-vxtu.onrender.com/ws'
+            : `${baseUrl}/ws`;
+
+        console.log('[SessionWebSocketService] Initialized with URL:', this.url);
     }
 
     connect(userId: string, token: string, sessionId?: string) {
