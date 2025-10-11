@@ -33,18 +33,36 @@ function broadcastToAll(session, message) {
 }
 
 function sendToClient(session, userId, message) {
-    if (!session || !session.clients) return;
-    const client = Array.from(session.clients).find(c => c.id === userId);
+    if (!session || !session.clients) {
+        console.error(`[sendToClient] Session or clients is null/undefined`);
+        return;
+    }
+
+    // Find the non-homework client for this user ID (main session connection)
+    const client = Array.from(session.clients).find(c => c.id === userId && !c.isHomework);
+
     if (client && client.ws.readyState === client.ws.OPEN) {
+        console.log(`[sendToClient] ✅ Sending ${message.type} to ${client.username} (${userId})`);
         client.ws.send(JSON.stringify(message));
     } else {
-        console.log(`[WEBSOCKET] Could not find or send to client ID: ${userId}`);
+        console.error(`[sendToClient] ❌ Could not send to client ID: ${userId}`);
+        console.error(`[sendToClient] Client found:`, !!client);
+        console.error(`[sendToClient] Available clients in session:`,
+            Array.from(session.clients).map(c => ({ id: c.id, username: c.username, isHomework: c.isHomework, wsState: c.ws.readyState }))
+        );
     }
 }
 
 function getTeacher(session) {
     if (!session || !session.clients) return null;
-    return Array.from(session.clients).find(c => c.role === 'teacher');
+    // Get the teacher's main session connection (not homework connection)
+    const teacher = Array.from(session.clients).find(c => c.role === 'teacher' && !c.isHomework);
+    if (!teacher) {
+        console.warn(`[getTeacher] No teacher found in session. Clients:`,
+            Array.from(session.clients).map(c => ({ username: c.username, role: c.role, isHomework: c.isHomework }))
+        );
+    }
+    return teacher;
 }
 
 function broadcastParticipantList(session) {
@@ -230,11 +248,22 @@ function initializeWebSocket(wss) {
                 }
 
                 if (clientInfo.isHomework) {
-                    if (!teacher) return;
+                    console.log(`[HOMEWORK] Message from homework client ${user.username} (${user.id}):`, data.type);
+                    if (!teacher) {
+                        console.error(`[HOMEWORK_ERROR] No teacher found for session ${sessionKey}. Cannot forward homework message.`);
+                        return;
+                    }
+                    console.log(`[HOMEWORK] Teacher found: ${teacher.username} (${teacher.id})`);
+
                     switch(data.type) {
                         case 'HOMEWORK_CODE_UPDATE':
+                            console.log(`[HOMEWORK] Storing workspace for student ${user.id}`);
+                            console.log(`[HOMEWORK] Workspace files count:`, data.payload?.files?.length);
+                            console.log(`[HOMEWORK] Active file:`, data.payload?.activeFileName);
                             session.studentWorkspaces?.set(user.id, data.payload);
+                            console.log(`[HOMEWORK] Sending STUDENT_WORKSPACE_UPDATED to teacher ${teacher.id}`);
                             sendToClient(session, teacher.id, { type: 'STUDENT_WORKSPACE_UPDATED', payload: { studentId: user.id, workspace: data.payload } });
+                            console.log(`[HOMEWORK] Successfully sent workspace update to teacher`);
                             break;
                         case 'HOMEWORK_TERMINAL_IN':
                             sendToClient(session, teacher.id, { type: 'HOMEWORK_TERMINAL_UPDATE', payload: { studentId: user.id, output: data.payload } });
@@ -251,6 +280,9 @@ function initializeWebSocket(wss) {
                             break;
                         case 'LEETCODE_HOMEWORK_UPDATE':
                             // Student updated their LeetCode code - transform to UniversalWorkspace
+                            log(`[LEETCODE] Received homework update from student ${user.id}`);
+                            log(`[LEETCODE] Code length: ${data.payload.code?.length}, Language: ${data.payload.language}`);
+
                             const universalWorkspace = {
                                 type: 'leetcode',
                                 studentId: user.id,
@@ -264,12 +296,34 @@ function initializeWebSocket(wss) {
 
                             // Store and broadcast to teacher
                             session.studentWorkspaces?.set(user.id, universalWorkspace);
+                            log(`[LEETCODE] Broadcasting to teacher ${teacher.id}`);
                             sendToClient(session, teacher.id, {
                                 type: 'STUDENT_WORKSPACE_UPDATE',
                                 payload: { studentId: user.id, workspace: universalWorkspace }
                             });
+                            log(`[LEETCODE] Workspace update sent to teacher`);
                             break;
                     }
+                    return;
+                }
+
+                if (data.type === 'REQUEST_WORKSPACE_SYNC' && clientInfo.role === 'student') {
+                    console.log(`[RESYNC] Student ${user.username} (${user.id}) requesting workspace resync`);
+                    // Send current session state to the student
+                    ws.send(JSON.stringify({
+                        type: 'WORKSPACE_SYNC_RESPONSE',
+                        payload: {
+                            files: session.files,
+                            activeFile: session.activeFile,
+                            isFrozen: session.isFrozen,
+                            controlledStudentId: session.controlledStudentId,
+                            spotlightedStudentId: session.spotlightedStudentId
+                        }
+                    }));
+                    console.log(`[RESYNC] ✅ Sent workspace state to student ${user.id}:`, {
+                        filesCount: session.files?.length,
+                        activeFile: session.activeFile
+                    });
                     return;
                 }
 
@@ -401,10 +455,57 @@ function initializeWebSocket(wss) {
                         broadcast(session, updateMessage);
                         console.log(`[WS] Broadcast complete`);
                         break;
-                    case 'ASSIGN_HOMEWORK':
-                        sendToClient(session, data.payload.studentId, { type: 'HOMEWORK_ASSIGNED', payload: data.payload });
-                        session.assignments.set(data.payload.studentId, data.payload);
+                    case 'ASSIGN_HOMEWORK': {
+                        console.log('[ASSIGN_HOMEWORK] Received homework assignment:', data.payload);
+
+                        // Extract homework metadata including type information
+                        const {
+                            studentId,
+                            lessonId,
+                            teacherSessionId,
+                            title,
+                            homeworkType = 'native',      // 'native' | 'leetcode' | 'external'
+                            courseType = 'native',        // 'leetcode-course' | 'enhanced-course' | 'native'
+                            courseId,
+                            problemId                     // For LeetCode problems
+                        } = data.payload;
+
+                        // Create comprehensive homework assignment with metadata
+                        const homeworkAssignment = {
+                            studentId,
+                            lessonId,
+                            teacherSessionId: teacherSessionId || sessionId,
+                            title,
+                            homeworkType,
+                            courseType,
+                            courseId,
+                            problemId,
+                            assignedAt: Date.now()
+                        };
+
+                        console.log('[ASSIGN_HOMEWORK] Sending to student:', studentId, homeworkAssignment);
+
+                        // Send homework with full metadata to student
+                        sendToClient(session, studentId, {
+                            type: 'HOMEWORK_ASSIGNED',
+                            payload: homeworkAssignment
+                        });
+
+                        // Store assignment in session for tracking
+                        session.assignments.set(studentId, homeworkAssignment);
+
+                        // Notify teacher of successful assignment
+                        const teacher = getTeacher(session);
+                        if (teacher) {
+                            teacher.ws.send(JSON.stringify({
+                                type: 'HOMEWORK_ASSIGNMENT_CONFIRMED',
+                                payload: { studentId, lessonId, title }
+                            }));
+                        }
+
+                        console.log('[ASSIGN_HOMEWORK] Assignment complete');
                         break;
+                    }
 
                     case 'START_RECORDING':
                         // if (session.recording.isRecording) {
