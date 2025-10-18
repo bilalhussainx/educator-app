@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware'); // Correctly import your middleware
-const db = require('../db'); 
+const db = require('../db');
 const { getActiveSessions } = require('../services/sessionStore');
 const sessionController = require('../controllers/sessionController');
+const { getSessionNotificationHandler } = require('../src/handlers/sessionNotificationHandler');
 
 // @route   GET api/sessions/active
 // @desc    Get active sessions for courses a student is enrolled in
@@ -46,7 +47,120 @@ router.get('/active', verifyToken, async (req, res) => {
     }
 });
 
-router.get('/:sessionId/generate-token', verifyToken, sessionController.generateAgoraToken);
+// @route   POST api/sessions/create-live
+// @desc    Create a new live session record in the database
+// @access  Private (Protected by verifyToken - must be teacher)
+// NOTE: This route MUST come before /:sessionId routes to avoid being matched by the parameter
+router.post('/create-live', verifyToken, async (req, res) => {
+    try {
+        const { sessionId, mode, courseId, sessionType, description } = req.body;
+        const teacherId = req.user.id;
+
+        console.log('[CREATE_LIVE_SESSION] Request body:', req.body);
+        console.log('[CREATE_LIVE_SESSION] Creating live session:', {
+            sessionId,
+            mode,
+            courseId,
+            courseIdType: typeof courseId,
+            sessionType,
+            teacherId
+        });
+
+        // Validate required fields
+        if (!courseId) {
+            console.log('[CREATE_LIVE_SESSION] ❌ Missing courseId');
+            return res.status(400).json({
+                success: false,
+                error: 'Course ID is required'
+            });
+        }
+
+        // Check if user is a teacher
+        if (req.user.role !== 'teacher') {
+            return res.status(403).json({
+                success: false,
+                error: 'Only teachers can create live sessions'
+            });
+        }
+
+        // Create the session record
+        // For live sessions without a specific student, we use the teacher's ID as both mentor and student
+        // This is a temporary solution - in a real system, students would join dynamically
+        // Note: We don't specify 'id' - let database auto-generate it
+        let result;
+        try {
+            result = await db.query(`
+                INSERT INTO sessions (
+                    mentor_id,
+                    student_id,
+                    session_type,
+                    description,
+                    status,
+                    scheduled_time
+                ) VALUES ($1, $1, $2, $3, 'active', NOW())
+                RETURNING *
+            `, [
+                teacherId,
+                sessionType || 'live_tutorial',
+                description || 'Live Session'
+            ]);
+        } catch (dbError) {
+            console.error('[CREATE_LIVE_SESSION] ❌ Database error:', dbError);
+            console.error('[CREATE_LIVE_SESSION] Error details:', {
+                code: dbError.code,
+                detail: dbError.detail,
+                message: dbError.message,
+                constraint: dbError.constraint
+            });
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to create session in database',
+                details: dbError.message,
+                code: dbError.code
+            });
+        }
+
+        const session = result.rows[0];
+
+        console.log('[CREATE_LIVE_SESSION] ✅ Session created:', session.id);
+
+        // Broadcast live session notification to enrolled students
+        try {
+            const notificationHandler = getSessionNotificationHandler();
+            const teacherResult = await db.query('SELECT username FROM users WHERE id = $1', [teacherId]);
+            const teacherName = teacherResult.rows[0]?.username || 'Teacher';
+
+            console.log('[CREATE_LIVE_SESSION] Broadcasting to enrolled students in course:', courseId);
+            await notificationHandler.broadcastSessionCreated({
+                courseId,
+                sessionId: session.id,
+                teacherId,
+                teacherName,
+                title: session.description || 'Live Session',
+                mode: mode || 'code'
+            });
+            console.log('[CREATE_LIVE_SESSION] ✅ Live session notifications sent to enrolled students');
+        } catch (notificationError) {
+            console.error('[CREATE_LIVE_SESSION] ⚠️  Error sending live session notifications:', notificationError);
+            console.error('[CREATE_LIVE_SESSION] Notification error stack:', notificationError.stack);
+            // Don't fail the request if notifications fail
+        }
+
+        res.json({
+            success: true,
+            message: 'Live session created successfully',
+            session
+        });
+
+    } catch (error) {
+        console.error('[CREATE_LIVE_SESSION] ❌ Error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create live session',
+            details: error.message
+        });
+    }
+});
 
 // @route   POST api/sessions/request
 // @desc    Request a session with a mentor
@@ -681,6 +795,12 @@ router.post('/messages/:messageId/mark-read', verifyToken, async (req, res) => {
     }
 });
 
+// @route   GET api/sessions/:sessionId/generate-token
+// @desc    Generate Agora token for video session
+// @access  Private (Protected by verifyToken)
+// NOTE: This must come AFTER all specific routes (like /create-live, /request, etc.)
+router.get('/:sessionId/generate-token', verifyToken, sessionController.generateAgoraToken);
+
 // @route   POST api/sessions/:sessionId/start
 // @desc    Start a session immediately (sets status to active and notifies participants)
 // @access  Private (Protected by verifyToken - must be mentor/teacher)
@@ -791,6 +911,35 @@ router.post('/:sessionId/start', verifyToken, async (req, res) => {
             console.log('[START_SESSION] ❌ WARNING: Socket.IO not available');
         }
 
+        // NEW: Broadcast live session notification to enrolled students if courseId is available
+        try {
+            const notificationHandler = getSessionNotificationHandler();
+            // Get teacher info for notification
+            const teacherResult = await db.query('SELECT username FROM users WHERE id = $1', [userId]);
+            const teacherName = teacherResult.rows[0]?.username || 'Teacher';
+
+            // Try to get courseId from the request body or session metadata
+            const courseId = req.body.courseId || updatedSession.course_id;
+
+            if (courseId) {
+                console.log('[START_SESSION] Broadcasting to enrolled students in course:', courseId);
+                await notificationHandler.broadcastSessionCreated({
+                    courseId,
+                    sessionId: updatedSession.id,
+                    teacherId: userId,
+                    teacherName,
+                    title: updatedSession.description || 'Live Session',
+                    mode: mode || 'code'
+                });
+                console.log('[START_SESSION] ✅ Live session notifications sent to enrolled students');
+            } else {
+                console.log('[START_SESSION] ⏭️  No courseId, skipping enrolled student notifications');
+            }
+        } catch (notificationError) {
+            console.error('[START_SESSION] ⚠️  Error sending live session notifications:', notificationError.message);
+            // Don't fail the request if notifications fail
+        }
+
         res.json({
             success: true,
             message: 'Session started successfully',
@@ -884,6 +1033,15 @@ router.post('/:sessionId/end', verifyToken, async (req, res) => {
                 console.log('[END_SESSION] ✅ Socket.IO events emitted');
             } else {
                 console.log('[END_SESSION] ⚠️ Socket.IO not available, skipping notification');
+            }
+
+            // Remove from active sessions
+            try {
+                const notificationHandler = getSessionNotificationHandler();
+                notificationHandler.removeActiveSession(session.id);
+                console.log('[END_SESSION] ✅ Removed session from active sessions');
+            } catch (err) {
+                console.log('[END_SESSION] ⚠️ Could not remove from active sessions:', err.message);
             }
         } catch (ioError) {
             console.log('[END_SESSION] ⚠️ Socket.IO error (non-fatal):', ioError.message);

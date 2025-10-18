@@ -1,9 +1,10 @@
 // educators-edge-backend/services/geminiService.js
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+// MIGRATED TO CLAUDE HAIKU
+const Anthropic = require('@anthropic-ai/sdk');
 const db = require('../db');
 
 class RateLimiter {
-    constructor(requestsPerMinute = 12, tokensPerMinute = 900000) { // Conservative limits for free tier
+    constructor(requestsPerMinute = 50, tokensPerMinute = 40000) { // Claude Haiku limits
         this.requests = [];
         this.tokens = [];
         this.requestLimit = requestsPerMinute;
@@ -64,8 +65,10 @@ class RateLimiter {
 
 class GeminiAIService {
     constructor() {
-        this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        this.anthropic = new Anthropic({
+            apiKey: process.env.ANTHROPIC_API_KEY
+        });
+        this.model = 'claude-3-haiku-20240307'; // Claude Haiku model
         this.rateLimiter = new RateLimiter();
         
         // Specialized agent configurations
@@ -95,32 +98,30 @@ Example of correct format:
 Original: "The story is very interesting and good"
 Suggested: "The story captivates readers with its compelling narrative"
 Reason: "More specific and engaging language"
-[/EDIT_SUGGESTION]`,
-                model: 'gemini-1.5-flash'
+[/EDIT_SUGGESTION]`
             },
-            
+
             feedbackAgent: {
                 name: 'Writing Feedback Specialist',
                 systemPrompt: `You are a writing coach that provides general feedback and guidance without specific text edits.
-                
+
 Your role is to:
 - Analyze overall structure and flow
 - Suggest improvements to style and tone
 - Provide encouragement and direction
 - Give high-level writing advice
 
-Do NOT provide specific text replacements. Focus on conceptual improvements and writing strategies.`,
-                model: 'gemini-1.5-flash'
+Do NOT provide specific text replacements. Focus on conceptual improvements and writing strategies.`
             },
-            
+
             commentAgent: {
-                name: 'Contextual Comment Specialist', 
+                name: 'Contextual Comment Specialist',
                 systemPrompt: `You are an expert at creating specific, contextual comments on selected text passages, like Microsoft Word comments.
 
 When given SELECTED TEXT, provide focused feedback that includes:
 
 1. SPECIFIC analysis of the selected passage
-2. CONCRETE suggestions for improvement 
+2. CONCRETE suggestions for improvement
 3. Clear explanations of why changes would help
 
 Your response should be concise (2-4 sentences) and directly address the selected text.
@@ -128,13 +129,12 @@ Think of this as a professional editor's comment bubble.
 
 Focus areas:
 - Clarity and readability
-- Word choice and precision  
+- Word choice and precision
 - Sentence structure and flow
 - Grammar and style
 - Engagement and impact
 
-Do NOT provide general essay feedback - focus ONLY on the specific selected text.`,
-                model: 'gemini-1.5-flash'
+Do NOT provide general essay feedback - focus ONLY on the specific selected text.`
             }
         };
         
@@ -151,7 +151,7 @@ Do NOT provide general essay feedback - focus ONLY on the specific selected text
 
     /**
      * Rate-limited API call wrapper with fallback handling
-     * @param {string} prompt - The prompt to send to Gemini
+     * @param {string} prompt - The prompt to send to Claude
      * @param {number} estimatedTokens - Estimated token count for rate limiting
      * @returns {Promise<object>} - API response or fallback
      */
@@ -159,36 +159,45 @@ Do NOT provide general essay feedback - focus ONLY on the specific selected text
         try {
             // Apply rate limiting
             await this.rateLimiter.throttle(estimatedTokens);
-            
+
             this.apiStats.totalRequests++;
-            console.log(`[GEMINI_API] Request ${this.apiStats.totalRequests} (Rate Limiter Status:`, this.rateLimiter.getStatus(), ')');
-            
-            // Make the API call
-            const result = await this.model.generateContent(prompt);
-            const response = await result.response;
-            
+            console.log(`[CLAUDE_API] Request ${this.apiStats.totalRequests} (Rate Limiter Status:`, this.rateLimiter.getStatus(), ')');
+
+            // Make the API call to Claude
+            const message = await this.anthropic.messages.create({
+                model: this.model,
+                max_tokens: 4096,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }]
+            });
+
             this.apiStats.successfulRequests++;
+            const responseText = message.content[0].text;
+
             return {
                 success: true,
-                response: response,
-                text: response.text(),
+                response: message,
+                text: responseText,
                 fromFallback: false
             };
-            
+
         } catch (error) {
             this.apiStats.failedRequests++;
             this.apiStats.lastError = error.message;
             this.apiStats.lastErrorTime = new Date().toISOString();
-            
+
             // Check if this is a quota/rate limit error
-            if (error.message.includes('429') || 
-                error.message.includes('quota') || 
+            if (error.status === 429 ||
+                error.message.includes('429') ||
+                error.message.includes('quota') ||
                 error.message.includes('rate limit') ||
                 error.message.includes('Too Many Requests')) {
-                
+
                 this.apiStats.quotaErrors++;
-                console.error(`[GEMINI_API] Quota exceeded (Error ${this.apiStats.quotaErrors}):`, error.message);
-                
+                console.error(`[CLAUDE_API] Quota exceeded (Error ${this.apiStats.quotaErrors}):`, error.message);
+
                 return {
                     success: false,
                     error: error,
@@ -197,9 +206,9 @@ Do NOT provide general essay feedback - focus ONLY on the specific selected text
                     quotaExceeded: true
                 };
             }
-            
+
             // Other API errors
-            console.error('[GEMINI_API] API Error:', error.message);
+            console.error('[CLAUDE_API] API Error:', error.message);
             throw error;
         }
     }

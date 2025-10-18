@@ -100,15 +100,24 @@ function getStudents(session) {
 function initializeWebSocket(wss) {
     wss.on('connection', async (ws, req) => {
         console.log('[WS DEBUG] New connection attempt');
-        
+        console.log('[WS DEBUG] req.url:', req.url);
+
         const urlParams = new URLSearchParams(req.url.split('?')[1]);
         const sessionId = urlParams.get('sessionId');
         const token = urlParams.get('token');
         const teacherSessionId = urlParams.get('teacherSessionId');
         const lessonId = urlParams.get('lessonId');
 
+        console.log('[WS DEBUG] Parsed params:', {
+            hasSessionId: !!sessionId,
+            hasToken: !!token,
+            hasTeacherSessionId: !!teacherSessionId,
+            hasLessonId: !!lessonId
+        });
+
         if (!sessionId || !token) {
             console.log('[WS ERROR] Missing sessionId or token');
+            console.log('[WS ERROR] URL was:', req.url);
             return ws.close(4001, "Session ID and token are required");
         }
 
@@ -282,6 +291,13 @@ function initializeWebSocket(wss) {
                             // Student updated their LeetCode code - transform to UniversalWorkspace
                             log(`[LEETCODE] Received homework update from student ${user.id}`);
                             log(`[LEETCODE] Code length: ${data.payload.code?.length}, Language: ${data.payload.language}`);
+                            log(`[LEETCODE] Problem data:`, {
+                                problemId: data.payload.problemId,
+                                problemTitle: data.payload.problemTitle,
+                                hasDescription: !!data.payload.problemDescription,
+                                hasExamples: !!data.payload.problemExamples,
+                                hasConstraints: !!data.payload.problemConstraints
+                            });
 
                             const universalWorkspace = {
                                 type: 'leetcode',
@@ -290,6 +306,11 @@ function initializeWebSocket(wss) {
                                 language: data.payload.language,
                                 problemId: data.payload.problemId,
                                 problemTitle: data.payload.problemTitle,
+                                problemDescription: data.payload.problemDescription,
+                                problemExamples: data.payload.problemExamples,
+                                problemConstraints: data.payload.problemConstraints,
+                                difficulty: data.payload.difficulty,
+                                pattern: data.payload.pattern,
                                 testResults: data.payload.testResults,
                                 lastUpdate: Date.now()
                             };
@@ -302,6 +323,17 @@ function initializeWebSocket(wss) {
                                 payload: { studentId: user.id, workspace: universalWorkspace }
                             });
                             log(`[LEETCODE] Workspace update sent to teacher`);
+                            break;
+                        case 'LEETCODE_HOMEWORK_LEAVE':
+                            // Student left LeetCode homework
+                            log(`[LEETCODE] Student ${user.id} left LeetCode homework`);
+                            if (session.leetcodeStudents) {
+                                session.leetcodeStudents.delete(user.id);
+                            }
+                            sendToClient(session, teacher.id, {
+                                type: 'HOMEWORK_LEAVE',
+                                payload: { studentId: user.id }
+                            });
                             break;
                     }
                     return;
