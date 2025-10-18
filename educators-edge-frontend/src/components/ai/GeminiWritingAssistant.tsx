@@ -1,7 +1,7 @@
 /**
- * Gemini-Style Writing Assistant
+ * AI Writing Assistant (Powered by Claude)
  *
- * Real-time, interactive AI writing assistance similar to Google Docs Gemini
+ * Real-time, interactive AI writing assistance (migrated from Gemini to Claude Haiku)
  *
  * Features:
  * - Floating assistant button (always accessible)

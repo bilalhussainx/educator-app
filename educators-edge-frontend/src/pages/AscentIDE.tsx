@@ -11,12 +11,16 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import type { AscentIdeData, LessonFile, Submission, TestResult } from '../types/index.ts';
 import Editor, { OnMount } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css';
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { registerLanguageProviders, getEditorOptions, getMonacoLanguage } from '../utils/editorConfig';
+import EditorFeaturesIndicator from '../components/EditorFeatures';
+import TestRunningLoader from '../components/TestRunningLoader';
 
 // --- APE & Analytics ---
 import analytics from '../services/analyticsService.ts';
@@ -36,7 +40,6 @@ import {
     FileCode, BotMessageSquare, NotebookPen, Check, FilePlus2, Trash2, Save, PanelLeft,
     Award, Loader2, Terminal as TerminalIcon
 } from 'lucide-react';
-import DockerTerminal, { DockerTerminalRef } from '../components/DockerTerminal';
 
 // --- Type Definitions for this component ---
 type MissionControlTab = "problem" | "submissions" | "solution";
@@ -153,7 +156,6 @@ const AscentIDE: React.FC = () => {
     const editorRef = useRef<any>(null);
     const ws = useRef<WebSocket | null>(null);
     const term = useRef<Terminal | null>(null);
-    const dockerTerminalRef = useRef<DockerTerminalRef>(null);
     const queryParams = new URLSearchParams(location.search);
     const teacherSessionId = queryParams.get('sessionId');
     const isLiveHomework = !!teacherSessionId;
@@ -447,25 +449,8 @@ const AscentIDE: React.FC = () => {
                 isEnhanced: isEnhancedCourse
             });
 
-            // Always use DockerTerminal for execution (like LiveTutorial)
-            console.log('🐳 Using Docker terminal for code execution');
-
-            if (!dockerTerminalRef.current) {
-                throw new Error('Docker terminal not available');
-            }
-
-            // Ensure session is created before executing code
-            if (!dockerTerminalRef.current.isConnected) {
-                console.log('🔗 Creating Docker terminal session...');
-                await dockerTerminalRef.current.createSession();
-
-                // Wait a moment for session to be established
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                if (!dockerTerminalRef.current.isConnected) {
-                    throw new Error('Failed to create Docker terminal session');
-                }
-            }
+            // Use simple API endpoint for code execution
+            console.log('🌐 Using API endpoint for code execution');
 
             // Check if we have valid test cases to run
             const testCases = ideData?.testCases || [];
@@ -475,23 +460,67 @@ const AscentIDE: React.FC = () => {
             console.log('  - Available test cases:', testCases.length);
             console.log('  - Will use test validation:', hasValidTestCases);
 
+            // Call the API endpoint
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/leetcode/run`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    code: currentCode,
+                    language: currentLanguage,
+                    problemId: actualId || lessonId || 'unknown',
+                    testCases: hasValidTestCases ? testCases : [],
+                    problemContext: {
+                        title: ideData?.lesson?.title || ideData?.title || 'LeetCode Problem',
+                        description: ideData?.lesson?.description || ideData?.description || ''
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.statusText}`);
+            }
+
+            const apiResult = await response.json();
+            console.log('📊 API response:', apiResult);
+
+            // Transform API response to match expected result format
             let result;
-            if (hasValidTestCases) {
-                console.log('🧪 Running with test case validation');
-                console.log('  - Test cases:', JSON.stringify(testCases, null, 2));
-                result = await dockerTerminalRef.current.executeCode(currentCode, currentLanguage, {
-                    testCases: testCases
-                });
+            if (hasValidTestCases && apiResult.testResults) {
+                // API returned test results
+                const passedCount = apiResult.testResults.filter((r: any) => r.passed).length;
+                const failedCount = apiResult.testResults.length - passedCount;
+
+                result = {
+                    success: passedCount === apiResult.testResults.length,
+                    output: apiResult.testResults.map((r: any) =>
+                        `${r.passed ? '✅' : '❌'} Input: ${r.input} | Expected: ${r.expected} | Got: ${r.actual}${r.error ? ` | Error: ${r.error}` : ''}`
+                    ).join('\n'),
+                    executionTime: apiResult.executionTime || 0,
+                    testCaseResults: apiResult.testResults,
+                    passed: passedCount,
+                    failed: failedCount
+                };
             } else {
-                console.log('🚀 Running basic code execution (no test cases)');
-                result = await dockerTerminalRef.current.executeCode(currentCode, currentLanguage, {});
+                // Basic execution without test validation
+                result = {
+                    success: apiResult.success !== false,
+                    output: apiResult.output || 'Code executed successfully',
+                    executionTime: apiResult.executionTime || 0,
+                    testCaseResults: [],
+                    passed: 0,
+                    failed: 0
+                };
             }
 
             // Store terminal output for display
             setTerminalOutput(result.output || 'Code executed without output');
 
             // If we have test cases, we need to validate them
-            // For now, store the basic result and let Docker handle validation
+            // Store the test results from API response
             setTestResults({
                 success: result.success !== false,
                 output: result.output,
@@ -603,8 +632,8 @@ Review the terminal output for specific error details.`;
                 is_enhanced: isEnhancedCourse
             });
         } catch (err: any) {
-            console.error('Error running Docker execution:', err);
-            const errorMessage = err.message || 'Docker execution failed';
+            console.error('Error running code execution:', err);
+            const errorMessage = err.message || 'Code execution failed';
             setTerminalOutput(`❌ Execution Error: ${errorMessage}`);
             setTestResults({
                 passed: 0,
@@ -961,8 +990,58 @@ Review the terminal output for specific error details.`;
         }
     };
 
-    const handleEditorDidMount: OnMount = (editor) => { editorRef.current = editor; };
-    
+    const handleEditorDidMount: OnMount = (editor, monaco) => {
+        editorRef.current = editor;
+
+        // Register language-specific IntelliSense and snippets
+        registerLanguageProviders();
+
+        // Configure editor theme and styling
+        monaco.editor.defineTheme('ascent-dark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [
+                { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },
+                { token: 'keyword', foreground: 'C586C0', fontStyle: 'bold' },
+                { token: 'string', foreground: 'CE9178' },
+                { token: 'number', foreground: 'B5CEA8' },
+                { token: 'function', foreground: 'DCDCAA' },
+                { token: 'variable', foreground: '9CDCFE' },
+                { token: 'type', foreground: '4EC9B0' },
+            ],
+            colors: {
+                'editor.background': '#1e1e2e',
+                'editor.foreground': '#cdd6f4',
+                'editor.lineHighlightBackground': '#313244',
+                'editor.selectionBackground': '#45475a',
+                'editorCursor.foreground': '#f5e0dc',
+                'editorWhitespace.foreground': '#585b70',
+            },
+        });
+
+        // Set the custom theme
+        monaco.editor.setTheme('ascent-dark');
+
+        // Add keyboard shortcuts
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+            // Trigger save (if needed)
+            console.log('Save triggered');
+        });
+
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+            // Trigger run tests
+            handleRunTests();
+        });
+
+        // Enable semantic highlighting
+        editor.updateOptions({
+            'semanticHighlighting.enabled': true,
+        });
+
+        // Focus the editor
+        editor.focus();
+    };
+
     if (isLoading || isLanguageSwitching) return (
         <div className="h-screen bg-[#0a091a] flex items-center justify-center text-white">
             <div className="text-center">
@@ -1234,7 +1313,7 @@ Review the terminal output for specific error details.`;
                                         <div className="flex justify-center items-center h-full"><Loader2 className="h-6 w-6 animate-spin"/></div> 
                                     ) : solutionFiles ? (
                                         <div className="space-y-4">
-                                            <Editor height="300px" language={solutionFiles[0]?.filename.split('.').pop()} value={solutionFiles[0]?.content} theme="vs-dark" options={{ readOnly: true, minimap: { enabled: false } }} />
+                                            <Editor height="300px" language={solutionFiles[0]?.filename.split('.').pop()} value={solutionFiles[0]?.content ? String(solutionFiles[0].content) : ''} theme="vs-dark" options={{ readOnly: true, minimap: { enabled: false } }} />
                                             <ReactMarkdown>{solutionFiles[0]?.explanation || ideData.officialSolution?.explanation || "This is the optimal solution for this problem. Study the approach and implementation details."}</ReactMarkdown>
                                         </div>
                                     ) : isEnhancedCourse ? (
@@ -1309,8 +1388,8 @@ Review the terminal output for specific error details.`;
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="text-xs text-slate-500">
-                                                {urlParams.language?.toUpperCase() || 'JAVASCRIPT'}
+                                            <div className="flex items-center gap-3">
+                                                <EditorFeaturesIndicator language={getMonacoLanguage(activeFile?.filename || '')} />
                                             </div>
                                         </div>
                                     </div>
@@ -1320,61 +1399,13 @@ Review the terminal output for specific error details.`;
                                         <Editor
                                             height="100%"
                                             path={activeFile?.filename}
-                                            language={activeFile?.filename.split('.').pop()}
-                                            theme="vs-dark"
-                                            value={activeFile?.content}
+                                            language={getMonacoLanguage(activeFile?.filename || '')}
+                                            theme="ascent-dark"
+                                            value={activeFile?.content ? String(activeFile.content) : ''}
                                             onChange={handleFileContentChange}
                                             onMount={handleEditorDidMount}
-                                            options={{
-                                                fontSize: 15,
-                                                fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
-                                                fontWeight: '400',
-                                                lineHeight: 1.6,
-                                                minimap: { enabled: false },
-                                                padding: { top: 20, bottom: 20 },
-                                            // Intelligent features
-                                            automaticLayout: true,
-                                            autoIndent: 'full',
-                                            formatOnPaste: true,
-                                            formatOnType: true,
-                                            tabSize: 2,
-                                            insertSpaces: true,
-                                            detectIndentation: true,
-                                            trimAutoWhitespace: true,
-                                            // Autocomplete and IntelliSense
-                                            suggestOnTriggerCharacters: true,
-                                            acceptSuggestionOnEnter: 'on',
-                                            quickSuggestions: {
-                                                other: true,
-                                                comments: true,
-                                                strings: true
-                                            },
-                                            parameterHints: { enabled: true },
-                                            wordBasedSuggestions: true,
-                                            // Code actions and refactoring
-                                            lightbulb: { enabled: true },
-                                            codeLens: true,
-                                            // Bracket matching and highlighting
-                                            matchBrackets: 'always',
-                                            bracketPairColorization: { enabled: true },
-                                            // Line numbers and folding
-                                            lineNumbers: 'on',
-                                            lineNumbersMinChars: 3,
-                                            folding: true,
-                                            foldingStrategy: 'indentation',
-                                            // Selection and cursor
-                                            cursorBlinking: 'smooth',
-                                            cursorSmoothCaretAnimation: true,
-                                            selectOnLineNumbers: true,
-                                            // Editor behavior
-                                            wordWrap: 'on',
-                                            wrappingIndent: 'indent',
-                                            smoothScrolling: true,
-                                            mouseWheelZoom: true,
-                                            // Accessibility
-                                            accessibilitySupport: 'auto'
-                                        }} 
-                                    />
+                                            options={getEditorOptions(getMonacoLanguage(activeFile?.filename || ''))}
+                                        />
                                 </div>
                                 </div>
                             </Panel>
@@ -1413,11 +1444,10 @@ Review the terminal output for specific error details.`;
                                     {/* Enhanced Test Results Tab */}
                                     <TabsContent value="results" className="flex-grow overflow-y-auto p-4 font-mono text-sm">
                                         {isTesting ? (
-                                            <div className="flex flex-col items-center justify-center h-full text-center">
-                                                <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mb-4"/>
-                                                <p className="text-slate-300 font-semibold">Running Tests...</p>
-                                                <p className="text-slate-500 text-sm mt-2">Executing your code and validating results</p>
-                                            </div>
+                                            <TestRunningLoader
+                                                totalTests={ideData?.testCases?.length || 0}
+                                                message="Executing tests in parallel..."
+                                            />
                                         ) : testResults ? (
                                             <div className="space-y-4">
                                                 {/* Test Summary Card */}
@@ -1523,58 +1553,15 @@ Review the terminal output for specific error details.`;
                                                 </div>
                                             </div>
 
-                                            {/* Enhanced Docker Terminal Component */}
-                                            <div className="flex-1 min-h-0">
-                                                <DockerTerminal
-                                                    ref={dockerTerminalRef}
-                                                    title=""
-                                                    showHeader={false}
-                                                    showCodeButtons={true}
-                                                    height="100%"
-                                                    initialCode={activeFile?.content || ''}
-                                                    initialLanguage={(isEnhancedCourse ? urlParams.language : 'javascript') || 'javascript'}
-                                                    autoConnect={true}
-                                                    enableWebSocket={true}
-                                                    className="h-full rounded-b-lg"
-                                                    onCodeExecution={(result) => {
-                                                        console.log('🎯 AscentIDE Docker execution result:', result);
-                                                        setTerminalOutput(result.output || 'Code executed successfully');
-
-                                                        // Enhanced test results with better data structure
-                                                        setTestResults({
-                                                            success: result.success !== false,
-                                                            output: result.output,
-                                                            results: result.output,
-                                                            executionTime: result.executionTime || 0,
-                                                            memory: result.memory || 0,
-                                                            total: result.totalTests || (result.testCaseResults?.length || 1),
-                                                            passed: result.passed || (result.success ? 1 : 0),
-                                                            failed: result.failed || (result.success ? 0 : 1),
-                                                            testCaseResults: result.testCaseResults || [],
-                                                            aiHint: result.aiHint || null
-                                                        });
-
-                                                        // Auto-switch to results tab when tests complete
-                                                        if (result.testCaseResults && result.testCaseResults.length > 0) {
-                                                            setDiagnosticsTab('results');
-                                                        }
-                                                    }}
-                                                    onError={(error) => {
-                                                        console.error('🔥 AscentIDE Docker execution error:', error);
-                                                        setTerminalOutput(`❌ Execution Error: ${error}`);
-                                                        setTestResults({
-                                                            success: false,
-                                                            output: `❌ Error: ${error}`,
-                                                            results: `❌ Error: ${error}`,
-                                                            total: 1,
-                                                            passed: 0,
-                                                            failed: 1,
-                                                            testCaseResults: [],
-                                                            executionTime: 0,
-                                                            memory: 0
-                                                        });
-                                                    }}
-                                                />
+                                            {/* Terminal Output Display */}
+                                            <div className="flex-1 min-h-0 bg-slate-950 rounded-b-lg overflow-hidden">
+                                                <div className="h-full overflow-y-auto p-4 font-mono text-sm">
+                                                    {terminalOutput ? (
+                                                        <pre className="text-green-400 whitespace-pre-wrap">{terminalOutput}</pre>
+                                                    ) : (
+                                                        <div className="text-slate-500">Terminal output will appear here after running tests...</div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </TabsContent>

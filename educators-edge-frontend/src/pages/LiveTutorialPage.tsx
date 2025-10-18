@@ -18,6 +18,7 @@ import AgoraRTC, { IAgoraRTCClient, ILocalVideoTrack, ILocalAudioTrack, IAgoraRT
 
 // Import child components
 import { HomeworkView } from '../components/classroom/HomeworkView';
+import { LeetCodeHomeworkView } from '../components/classroom/LeetCodeHomeworkView';
 import { WhiteboardPanel, Line } from '../components/classroom/WhiteboardPanel';
 import { ChatPanel } from '../components/classroom/ChatPanel';
 // Note: LiveEssayEditor has been replaced with ModernEssayEditor in DualModeLiveSession
@@ -517,7 +518,18 @@ const LiveTutorialPage: React.FC = () => {
     useEffect(() => { activeChatStudentIdRef.current = activeChatStudentId; }, [activeChatStudentId]);
 
     // --- Workspace Adapter for Different Homework Types ---
-    const adaptWorkspaceForDisplay = (workspace: UniversalWorkspace | StudentHomeworkState | null): { files: CodeFile[], activeFileName: string } => {
+    const adaptWorkspaceForDisplay = (workspace: UniversalWorkspace | StudentHomeworkState | null): {
+        files: CodeFile[],
+        activeFileName: string,
+        problemData?: {
+            title?: string,
+            description?: string,
+            examples?: Array<{ input: string, output: string, explanation?: string }>,
+            constraints?: string[],
+            difficulty?: string,
+            pattern?: string
+        }
+    } => {
         if (!workspace) {
             console.log('[adaptWorkspace] No workspace provided');
             return { files: [], activeFileName: '' };
@@ -537,18 +549,46 @@ const LiveTutorialPage: React.FC = () => {
                     : universal.language === 'python' ? 'py'
                     : universal.language === 'java' ? 'java' : 'txt';
 
-                const fileName = `solution.${extension}`;
+                // Use problem title if available, otherwise use generic name
+                const problemName = universal.problemTitle
+                    ? universal.problemTitle.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30)
+                    : 'solution';
+                const fileName = `${problemName}.${extension}`;
 
                 console.log('[adaptWorkspace] Converting LeetCode workspace to file format:', fileName);
+                console.log('[adaptWorkspace] Problem:', universal.problemTitle);
+                console.log('[adaptWorkspace] Has description:', !!universal.problemDescription);
+                console.log('[adaptWorkspace] Description content:', universal.problemDescription?.substring(0, 100));
+                console.log('[adaptWorkspace] Examples:', universal.problemExamples);
+                console.log('[adaptWorkspace] Constraints:', universal.problemConstraints);
+                console.log('[adaptWorkspace] Difficulty:', universal.difficulty);
+                console.log('[adaptWorkspace] Pattern:', universal.pattern);
+
+                // Add problem info as a comment at the top of the code
+                let codeWithContext = universal.code || '';
+                if (universal.problemTitle && !codeWithContext.includes(universal.problemTitle)) {
+                    const commentPrefix = extension === 'py' ? '#' : '//';
+                    const problemInfo = `${commentPrefix} Problem: ${universal.problemTitle}\n${commentPrefix} Language: ${universal.language}\n\n`;
+                    codeWithContext = problemInfo + codeWithContext;
+                }
 
                 return {
                     files: [{
                         id: '1',
                         name: fileName,
-                        content: universal.code || '',
+                        content: codeWithContext,
                         language: universal.language || 'javascript'
                     }],
-                    activeFileName: fileName
+                    activeFileName: fileName,
+                    // Preserve LeetCode problem data for teacher view
+                    problemData: {
+                        title: universal.problemTitle,
+                        description: universal.problemDescription,
+                        examples: universal.problemExamples,
+                        constraints: universal.problemConstraints,
+                        difficulty: universal.difficulty,
+                        pattern: universal.pattern
+                    }
                 };
             }
 
@@ -710,17 +750,75 @@ const LiveTutorialPage: React.FC = () => {
     useEffect(() => {
         if (role === 'teacher') {
             console.log('[LiveTutorialPage] Fetching available lessons for teacher...');
-            apiClient.get('/api/lessons/teacher/list')
-            .then(res => {
-                console.log('[LiveTutorialPage] Received lessons from API:', res.data);
-                return res.data || [];
-            })
-            .then(lessons => {
-                console.log('[LiveTutorialPage] Setting availableLessons:', lessons);
-                setAvailableLessons(lessons);
+
+            // Fetch both native lessons and LeetCode course lessons
+            Promise.all([
+                // Fetch native lessons
+                apiClient.get('/api/lessons/teacher/list')
+                    .then(res => res.data || [])
+                    .catch(err => {
+                        console.error('[LiveTutorialPage] Failed to fetch native lessons:', err);
+                        return [];
+                    }),
+
+                // Fetch LeetCode courses and their lessons
+                apiClient.get('/api/enhanced-courses/leetcode')
+                    .then(async (res) => {
+                        const courses = res.data || [];
+                        console.log('[LiveTutorialPage] Fetched LeetCode courses:', courses.length);
+
+                        // For each course, fetch ALL its lessons using the new endpoint
+                        const allLeetCodeLessons = [];
+                        for (const course of courses) {
+                            try {
+                                const lessonsRes = await apiClient.get(`/api/enhanced-courses/${course.id}/all-lessons`);
+                                const lessons = lessonsRes.data || [];
+                                console.log(`[LiveTutorialPage] Course "${course.title}": ${lessons.length} lessons`);
+
+                                // Transform LeetCode lessons to match Lesson interface
+                                const transformedLessons = lessons.map((lesson: any) => ({
+                                    id: lesson.id,
+                                    title: `[LeetCode] ${lesson.title}`,
+                                    description: lesson.description || `${course.title} - ${lesson.title}`,
+                                    teacher_id: course.teacher_id || '',
+                                    course_id: course.id,
+                                    created_at: lesson.created_at || new Date().toISOString(),
+                                    lesson_type: 'algorithmic',
+                                    order_index: lesson.order_index || 0,
+                                    files: [],
+                                    courseType: 'leetcode',
+                                    problemId: lesson.leetcode_problem_id || lesson.problem_id,
+                                    isLeetCodeProblem: true,
+                                    // Store module/lesson indices for homework assignment
+                                    moduleIndex: lesson.moduleIndex,
+                                    lessonIndex: lesson.lessonIndex
+                                }));
+
+                                allLeetCodeLessons.push(...transformedLessons);
+                            } catch (err) {
+                                console.error(`[LiveTutorialPage] Failed to fetch lessons for course ${course.id}:`, err);
+                            }
+                        }
+
+                        console.log('[LiveTutorialPage] Total LeetCode lessons fetched:', allLeetCodeLessons.length);
+                        return allLeetCodeLessons;
+                    })
+                    .catch(err => {
+                        console.error('[LiveTutorialPage] Failed to fetch LeetCode courses:', err);
+                        return [];
+                    })
+            ])
+            .then(([nativeLessons, leetCodeLessons]) => {
+                const allLessons = [...nativeLessons, ...leetCodeLessons];
+                console.log('[LiveTutorialPage] Combined lessons:', {
+                    native: nativeLessons.length,
+                    leetcode: leetCodeLessons.length,
+                    total: allLessons.length
+                });
+                setAvailableLessons(allLessons);
             })
             .catch(err => {
-                console.error('[LiveTutorialPage] Failed to fetch lessons:', err);
+                console.error('[LiveTutorialPage] Error combining lessons:', err);
                 setAvailableLessons([]);
             });
         } else {
@@ -885,8 +983,18 @@ const LiveTutorialPage: React.FC = () => {
                     setSpotlightedStudentId(message.payload.studentId); 
                     setSpotlightWorkspace(message.payload.workspace); 
                     break;
-                case 'HOMEWORK_JOIN': 
-                    setActiveHomeworkStudents(prev => new Set(prev).add(message.payload.studentId)); 
+                case 'HOMEWORK_JOIN':
+                    console.log('[LiveSession] Student joined homework:', message.payload);
+                    setActiveHomeworkStudents(prev => new Set(prev).add(message.payload.studentId));
+                    // Initialize empty workspace entry so subsequent updates can populate it
+                    setStudentHomeworkStates(prev => {
+                        const newMap = new Map(prev);
+                        if (!newMap.has(message.payload.studentId)) {
+                            console.log('[LiveSession] Initializing workspace entry for student:', message.payload.studentId);
+                            newMap.set(message.payload.studentId, { type: 'pending', files: [], activeFileName: '' });
+                        }
+                        return newMap;
+                    });
                     break;
                 case 'HOMEWORK_LEAVE': 
                     setActiveHomeworkStudents(prev => { const newSet = new Set(prev); newSet.delete(message.payload.studentId); return newSet; }); 
@@ -980,22 +1088,22 @@ const LiveTutorialPage: React.FC = () => {
         if (!pendingHomework) return;
 
         console.log('[HOMEWORK] Starting homework:', pendingHomework);
+        console.log('[HOMEWORK] Homework type:', pendingHomework.homeworkType);
 
-        // Route to correct IDE based on homework type
-        const baseUrl = window.location.origin;
-        let homeworkUrl = '';
-
+        // All homework types now open inline to maintain live session
         switch (pendingHomework.homeworkType) {
             case 'leetcode':
-                // Open LeetCodeIDE with session connection
-                homeworkUrl = `${baseUrl}/leetcode-ide/${pendingHomework.courseId}/${pendingHomework.lessonId}/${pendingHomework.problemId}?sessionId=${pendingHomework.teacherSessionId}`;
-                console.log('[HOMEWORK] Opening LeetCode IDE at:', homeworkUrl);
+                console.log('[HOMEWORK] Opening LeetCode IDE inline in live session');
+                // Set the state to render LeetCodeIDE inline
+                setIsDoingHomework(true);
+                toast.success(`Starting ${pendingHomework.title}...`);
                 break;
 
             case 'external':
-                // Open Enhanced Course IDE
-                homeworkUrl = `${baseUrl}/enhanced-courses/${pendingHomework.courseId}/ide?sessionId=${pendingHomework.teacherSessionId}&lessonId=${pendingHomework.lessonId}`;
-                console.log('[HOMEWORK] Opening Enhanced Course IDE at:', homeworkUrl);
+                console.log('[HOMEWORK] Opening Enhanced Course IDE inline in live session');
+                // Set the state to render Enhanced Course IDE inline
+                setIsDoingHomework(true);
+                toast.success(`Starting ${pendingHomework.title}...`);
                 break;
 
             case 'native':
@@ -1012,13 +1120,8 @@ const LiveTutorialPage: React.FC = () => {
                     }
                 }
                 setIsDoingHomework(true);
-                return;
-        }
-
-        // Open external homework in new tab
-        if (homeworkUrl) {
-            window.open(homeworkUrl, '_blank');
-            toast.success(`Opening ${pendingHomework.title} in new tab...`);
+                toast.success(`Starting ${pendingHomework.title}...`);
+                break;
         }
     };
 
@@ -1345,36 +1448,64 @@ const LiveTutorialPage: React.FC = () => {
         }
     };
 
-    if (role === 'student' && isDoingHomework && pendingHomework && homeworkFiles) {
-        return <HomeworkView
-            lessonId={pendingHomework.lessonId}
-            teacherSessionId={pendingHomework.teacherSessionId}
-            token={token}
-            onLeave={() => {
-                console.log('[LiveTutorialPage] 🔄 Student returning from homework to live session');
-                // Clear homework state
-                sessionStorage.setItem(`isDoingHomework_${sessionId}`, 'false');
-                sessionStorage.removeItem(`homeworkFiles_${sessionId}`);
-                sessionStorage.removeItem(`pendingHomework_${sessionId}`);
+    // Render homework view based on homework type
+    if (role === 'student' && isDoingHomework && pendingHomework) {
+        const onLeaveHomework = () => {
+            console.log('[LiveTutorialPage] 🔄 Student returning from homework to live session');
+            // Clear homework state
+            sessionStorage.setItem(`isDoingHomework_${sessionId}`, 'false');
+            sessionStorage.removeItem(`homeworkFiles_${sessionId}`);
+            sessionStorage.removeItem(`pendingHomework_${sessionId}`);
 
-                // Update React state to return to main session WITHOUT page reload
-                setIsDoingHomework(false);
-                setHomeworkFiles(null);
-                setPendingHomework(null);
+            // Update React state to return to main session WITHOUT page reload
+            setIsDoingHomework(false);
+            setHomeworkFiles(null);
+            setPendingHomework(null);
 
-                // Request current workspace state from server to resync
-                console.log('[LiveTutorialPage] 📡 Requesting workspace resync from teacher');
-                if (ws.current?.readyState === WebSocket.OPEN) {
-                    ws.current.send(JSON.stringify({ type: 'REQUEST_WORKSPACE_SYNC' }));
-                }
+            // Request current workspace state from server to resync
+            console.log('[LiveTutorialPage] 📡 Requesting workspace resync from teacher');
+            if (ws.current?.readyState === WebSocket.OPEN) {
+                ws.current.send(JSON.stringify({ type: 'REQUEST_WORKSPACE_SYNC' }));
+            }
 
-                console.log('[LiveTutorialPage] ✅ Returned to live session - WebSocket remains connected');
-                toast.success('Returned to classroom');
-            }}
-            initialFiles={homeworkFiles}
-            onFilesChange={setHomeworkFiles}
-            currentUserId={currentUserId}
-        />;
+            console.log('[LiveTutorialPage] ✅ Returned to live session - WebSocket remains connected');
+            toast.success('Returned to classroom');
+        };
+
+        // Render different components based on homework type
+        if (pendingHomework.homeworkType === 'leetcode') {
+            console.log('[LiveTutorialPage] Rendering LeetCode homework view');
+            return <LeetCodeHomeworkView
+                courseId={pendingHomework.courseId}
+                lessonId={pendingHomework.lessonId}
+                problemId={pendingHomework.problemId}
+                teacherSessionId={pendingHomework.teacherSessionId}
+                token={token}
+                onLeave={onLeaveHomework}
+                currentUserId={currentUserId}
+            />;
+        } else if (pendingHomework.homeworkType === 'external') {
+            console.log('[LiveTutorialPage] Rendering external homework view');
+            // TODO: Create EnhancedCourseHomeworkView component for external courses
+            toast.error('External homework rendering not yet implemented');
+            onLeaveHomework();
+        } else if (homeworkFiles) {
+            // Native homework with files
+            return <HomeworkView
+                lessonId={pendingHomework.lessonId}
+                teacherSessionId={pendingHomework.teacherSessionId}
+                token={token}
+                onLeave={onLeaveHomework}
+                initialFiles={homeworkFiles}
+                onFilesChange={setHomeworkFiles}
+                currentUserId={currentUserId}
+            />;
+        } else {
+            // Native homework without files loaded yet - this shouldn't happen
+            console.error('[LiveTutorialPage] Native homework missing files');
+            toast.error('Homework files not loaded');
+            onLeaveHomework();
+        }
     }
     
     return (
@@ -1420,10 +1551,10 @@ const LiveTutorialPage: React.FC = () => {
                     {/* Desktop: Student Actions */}
                     {role === 'student' && (
                         <>
-                            <Button size="sm" onClick={handleRaiseHand} className="hidden sm:flex bg-purple-600 hover:bg-purple-500">
+                            <Button size="sm" onClick={handleRaiseHand} className="hidden sm:flex bg-purple-600 hover:bg-purple-500 text-white">
                                 <Hand className="mr-2 h-4 w-4" /><span className="hidden lg:inline">Raise Hand</span>
                             </Button>
-                            <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} variant="outline" className="hidden sm:flex">
+                            <Button size="sm" onClick={() => setIsStudentChatOpen(prev => !prev)} variant="outline" className="hidden sm:flex text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white">
                                 <MessageCircle className="mr-2 h-4 w-4" /><span className="hidden lg:inline">Chat</span>
                             </Button>
                         </>
@@ -1432,14 +1563,14 @@ const LiveTutorialPage: React.FC = () => {
                     {/* Desktop: Teacher Actions */}
                     {role === 'teacher' && (
                         <>
-                            <Button size="sm" onClick={handleToggleFreeze} variant={isFrozen ? "destructive" : "outline"} className="hidden md:flex">
+                            <Button size="sm" onClick={handleToggleFreeze} variant={isFrozen ? "destructive" : "outline"} className={cn("hidden md:flex", !isFrozen && "text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white")}>
                                 <Lock className="mr-2 h-4 w-4" /><span className="hidden lg:inline">{isFrozen ? "Unfreeze" : "Freeze"}</span>
                             </Button>
-                            <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} variant="outline" className="hidden md:flex">
+                            <Button size="sm" onClick={() => sendWsMessage('TOGGLE_WHITEBOARD')} variant="outline" className="hidden md:flex text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white">
                                 <Brush className="mr-2 h-4 w-4" /><span className="hidden lg:inline">Whiteboard</span>
                             </Button>
                             {isWhiteboardVisible && (
-                                <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} variant="destructive" className="hidden md:flex">
+                                <Button size="sm" onClick={() => sendWsMessage('WHITEBOARD_CLEAR')} variant="destructive" className="hidden md:flex text-white">
                                     <Trash2 className="mr-2 h-4 w-4" /><span className="hidden lg:inline">Clear</span>
                                 </Button>
                             )}
@@ -1449,7 +1580,7 @@ const LiveTutorialPage: React.FC = () => {
                     {/* Mobile: Actions Dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="md:hidden">
+                            <Button variant="outline" size="sm" className="md:hidden text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white">
                                 <Menu className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -1489,18 +1620,18 @@ const LiveTutorialPage: React.FC = () => {
 
                     {/* Media Controls */}
                     <div className="flex items-center gap-1 border-l border-slate-600 pl-2 sm:pl-3">
-                        <Button size="sm" onClick={toggleMute} variant={isMuted ? "destructive" : "outline"}>
+                        <Button size="sm" onClick={toggleMute} variant={isMuted ? "destructive" : "outline"} className={cn(!isMuted && "text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white")}>
                             {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                         </Button>
-                        <Button size="sm" onClick={toggleCamera} variant={isCameraOff ? "destructive" : "outline"}>
+                        <Button size="sm" onClick={toggleCamera} variant={isCameraOff ? "destructive" : "outline"} className={cn(!isCameraOff && "text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white")}>
                             {isCameraOff ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
                         </Button>
                         
                         {/* Recording Controls - Teacher Only */}
                         {role === 'teacher' && (
                             <>
-                                <Button 
-                                    size="sm" 
+                                <Button
+                                    size="sm"
                                     onClick={() => {
                                         console.log(`[RECORDING] Recording button clicked - Current state: isRecording=${isRecording}, inProgress=${isRecordingOperationInProgress}`);
                                         if (isRecording) {
@@ -1510,7 +1641,7 @@ const LiveTutorialPage: React.FC = () => {
                                         }
                                     }}
                                     variant={isRecording ? "destructive" : "outline"}
-                                    className={isRecording ? "animate-pulse" : ""}
+                                    className={cn(isRecording ? "animate-pulse text-white" : "text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white")}
                                     disabled={isRecordingOperationInProgress}
                                 >
                                     {isRecordingOperationInProgress ? (
@@ -1521,10 +1652,10 @@ const LiveTutorialPage: React.FC = () => {
                                         <Circle className="h-4 w-4" />
                                     )}
                                 </Button>
-                                
+
                                 {/* Screen Share Button - Teacher Only */}
-                                <Button 
-                                    size="sm" 
+                                <Button
+                                    size="sm"
                                     onClick={() => {
                                         console.log(`[SCREEN SHARE] Screen share button clicked - Current state: isScreenSharing=${isScreenSharing}`);
                                         if (isScreenSharing) {
@@ -1534,7 +1665,7 @@ const LiveTutorialPage: React.FC = () => {
                                         }
                                     }}
                                     variant={isScreenSharing ? "default" : "outline"}
-                                    className={isScreenSharing ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                                    className={cn(isScreenSharing ? "bg-blue-600 hover:bg-blue-700 text-white" : "text-slate-200 border-slate-600 hover:bg-slate-700 hover:text-white")}
                                 >
                                     {isScreenSharing ? <MonitorOff className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
                                 </Button>
@@ -1612,7 +1743,7 @@ const LiveTutorialPage: React.FC = () => {
                             size="sm"
                             onClick={() => setViewingMode('teacher')}
                             variant="outline"
-                            className="border-cyan-500/30 hover:bg-cyan-500/10"
+                            className="text-slate-200 border-cyan-500/30 hover:bg-cyan-500/10 hover:text-white"
                         >
                             Back to My Workspace
                         </Button>
@@ -1630,6 +1761,107 @@ const LiveTutorialPage: React.FC = () => {
                                 {/* Code Editor Area */}
                                 <Panel defaultSize={isWhiteboardVisible ? 60 : 70} minSize={40}>
                                     <PanelGroup direction="horizontal" className="h-full">
+                                        {/* LeetCode Problem Description Panel - only show when viewing student's LeetCode workspace */}
+                                        {role === 'teacher' && viewingMode !== 'teacher' && displayedWorkspace.problemData && (() => {
+                                            console.log('[ProblemPanel] Rendering problem panel with data:', {
+                                                hasTitle: !!displayedWorkspace.problemData?.title,
+                                                hasDescription: !!displayedWorkspace.problemData?.description,
+                                                descriptionLength: displayedWorkspace.problemData?.description?.length,
+                                                hasExamples: !!displayedWorkspace.problemData?.examples,
+                                                examplesCount: displayedWorkspace.problemData?.examples?.length,
+                                                hasConstraints: !!displayedWorkspace.problemData?.constraints,
+                                                constraintsCount: displayedWorkspace.problemData?.constraints?.length,
+                                                difficulty: displayedWorkspace.problemData?.difficulty,
+                                                pattern: displayedWorkspace.problemData?.pattern
+                                            });
+                                            return true;
+                                        })() && (
+                                            <>
+                                                <Panel defaultSize={30} minSize={20} maxSize={40} className="bg-slate-950/30 border-r border-slate-700/30">
+                                                    <div className="h-full flex flex-col">
+                                                        {/* Header */}
+                                                        <div className="p-3 border-b border-slate-700/30 flex items-center justify-between">
+                                                            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Problem</h3>
+                                                            <div className="flex items-center gap-2">
+                                                                {displayedWorkspace.problemData.difficulty && (
+                                                                    <span className={cn(
+                                                                        'px-2 py-0.5 rounded text-xs font-medium',
+                                                                        displayedWorkspace.problemData.difficulty === 'easy' && 'text-green-500 bg-green-900/30',
+                                                                        displayedWorkspace.problemData.difficulty === 'medium' && 'text-yellow-500 bg-yellow-900/30',
+                                                                        displayedWorkspace.problemData.difficulty === 'hard' && 'text-red-500 bg-red-900/30'
+                                                                    )}>
+                                                                        {displayedWorkspace.problemData.difficulty.toUpperCase()}
+                                                                    </span>
+                                                                )}
+                                                                {displayedWorkspace.problemData.pattern && (
+                                                                    <span className="px-2 py-0.5 bg-blue-900/50 text-blue-200 rounded text-xs">
+                                                                        {displayedWorkspace.problemData.pattern}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Scrollable Content */}
+                                                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                                            {/* Title */}
+                                                            {displayedWorkspace.problemData.title && (
+                                                                <div>
+                                                                    <h4 className="text-lg font-semibold text-slate-100 mb-2">
+                                                                        {displayedWorkspace.problemData.title}
+                                                                    </h4>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Description */}
+                                                            {displayedWorkspace.problemData.description && (
+                                                                <div>
+                                                                    <h5 className="text-sm font-semibold text-slate-300 mb-2 uppercase tracking-wide">Description</h5>
+                                                                    <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">
+                                                                        {displayedWorkspace.problemData.description}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Examples */}
+                                                            {displayedWorkspace.problemData.examples && displayedWorkspace.problemData.examples.length > 0 && (
+                                                                <div>
+                                                                    <h5 className="text-sm font-semibold text-slate-300 mb-2 uppercase tracking-wide">Examples</h5>
+                                                                    {displayedWorkspace.problemData.examples.map((example: any, idx: number) => (
+                                                                        <div key={idx} className="mb-3 bg-slate-800/50 p-3 rounded border border-slate-700/50">
+                                                                            <div className="font-medium text-slate-200 mb-1 text-sm">Example {idx + 1}:</div>
+                                                                            <div className="font-mono text-xs text-slate-300 space-y-1">
+                                                                                <div><strong className="text-slate-400">Input:</strong> {example.input}</div>
+                                                                                <div><strong className="text-slate-400">Output:</strong> {example.output}</div>
+                                                                                {example.explanation && (
+                                                                                    <div className="mt-1 text-slate-400">
+                                                                                        <strong>Explanation:</strong> {example.explanation}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Constraints */}
+                                                            {displayedWorkspace.problemData.constraints && displayedWorkspace.problemData.constraints.length > 0 && (
+                                                                <div>
+                                                                    <h5 className="text-sm font-semibold text-slate-300 mb-2 uppercase tracking-wide">Constraints</h5>
+                                                                    <ul className="space-y-1 text-slate-300 text-sm">
+                                                                        {displayedWorkspace.problemData.constraints.map((constraint: string, idx: number) => (
+                                                                            <li key={idx} className="font-mono text-xs">• {constraint}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </Panel>
+
+                                                <PanelResizeHandle className="w-1 bg-slate-700/30 hover:bg-cyan-500/50" />
+                                            </>
+                                        )}
+
                                         {/* File Explorer */}
                                         <Panel defaultSize={20} minSize={15} className="bg-slate-950/30 border-r border-slate-700/30">
                                             <div className="p-3 border-b border-slate-700/30 flex items-center justify-between">

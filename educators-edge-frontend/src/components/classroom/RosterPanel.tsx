@@ -192,17 +192,25 @@ export const RosterPanel: React.FC<RosterPanelProps> = ({
 
                                         {/* Lesson Assignment Dropdown */}
                                         {assigningToStudentId === student.id && (
-                                            <div className="border-t border-slate-700 mt-2 pt-2 space-y-1">
+                                            <div className="border-t border-slate-700 mt-2 pt-2 space-y-1 max-h-64 overflow-y-auto">
                                                 {availableLessons.length > 0 ? (
                                                     availableLessons.map(lesson => (
-                                                        <Button 
-                                                            key={lesson.id} 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            className="w-full justify-start text-slate-300 hover:text-white" 
+                                                        <Button
+                                                            key={lesson.id}
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className={cn(
+                                                                "w-full justify-start text-slate-300 hover:text-white",
+                                                                lesson.isLeetCodeProblem && "bg-green-900/20 hover:bg-green-900/30 border-l-2 border-green-500"
+                                                            )}
                                                             onClick={() => handleAssignHomework(student.id, lesson.id)}
                                                         >
-                                                            {lesson.title}
+                                                            <span className="flex items-center gap-2">
+                                                                {lesson.isLeetCodeProblem && (
+                                                                    <span className="text-xs px-1.5 py-0.5 bg-green-600 text-white rounded">LC</span>
+                                                                )}
+                                                                <span className="truncate">{lesson.title}</span>
+                                                            </span>
                                                         </Button>
                                                     ))
                                                 ) : (

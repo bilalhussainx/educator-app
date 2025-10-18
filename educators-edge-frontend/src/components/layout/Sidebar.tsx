@@ -28,7 +28,8 @@ import {
     BookOpen,
     Edit3,
     FileText,
-    Brain
+    Brain,
+    Database
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
                 ...baseItems,
                 { path: '/courses/discover', icon: Compass, label: '🎓 Learn - Discover Courses' },
                 { path: '/courses/new', icon: PlusCircle, label: '📚 Create - New Course', teacher: true },
+                { path: '/admin/leetcode-enrichment', icon: Database, label: '🤖 LeetCode Enrichment', teacher: true },
                 { path: '/session-documents', icon: FileText, label: '📄 Manage - Session Documents' },
                 { path: '/ai-writing-assistant', icon: Brain, label: '🤖 AI Writing Assistant' },
                 { path: '/azure-vision-test', icon: Sparkles, label: '🔍 Azure Vision Testing Lab' },

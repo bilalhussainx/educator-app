@@ -21,8 +21,10 @@ import {
     BookOpen,
     Code2,
     CheckCircle,
-    Circle
+    Circle,
+    GraduationCap
 } from 'lucide-react';
+import PatternTeachingViewer from '../components/PatternTeachingViewer';
 
 interface Module {
     title: string;
@@ -218,20 +220,28 @@ const EnhancedCourseLessonsPage: React.FC = () => {
                         <Card key={moduleIndex} className="bg-slate-900/40 backdrop-blur-lg border border-slate-700/80">
                             <CardHeader>
                                 <div className="flex items-start justify-between">
-                                    <div>
+                                    <div className="flex-1">
                                         <CardTitle className="text-xl font-bold text-slate-100 mb-2">
                                             Module {moduleIndex + 1}: {module.title}
                                         </CardTitle>
                                         <p className="text-slate-400 mb-3">{module.description}</p>
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-2 mb-4">
                                             {module.core_patterns?.map((pattern, index) => (
-                                                <span 
-                                                    key={index} 
+                                                <span
+                                                    key={index}
                                                     className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-400/10 text-cyan-400 border border-cyan-400/20"
                                                 >
                                                     {pattern}
                                                 </span>
                                             ))}
+                                        </div>
+                                        {/* Pattern Teaching Button */}
+                                        <div className="mt-4">
+                                            <PatternTeachingViewer
+                                                courseId={courseId!}
+                                                moduleIndex={moduleIndex}
+                                                moduleName={module.title}
+                                            />
                                         </div>
                                     </div>
                                     <BookOpen className="h-6 w-6 text-cyan-400 mt-1" />

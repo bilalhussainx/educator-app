@@ -102,8 +102,8 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
         console.log('[DEBUG] existingSessionId:', existingSessionId);
         console.log('[DEBUG] Selected course from courses array:', courses.find(c => c.id === selectedCourseId));
 
-        // Use existing session ID if provided, otherwise generate new UUID
-        const sessionId = existingSessionId || crypto.randomUUID();
+        // Note: We generate a temporary UUID for the request, but will use the database-returned ID for navigation
+        const tempSessionId = crypto.randomUUID();
 
         // Handle document upload for essay editing sessions
         let uploadedDocumentId = null;
@@ -114,7 +114,7 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
                 // Create FormData to upload the document
                 const formData = new FormData();
                 formData.append('document', uploadedDocument);
-                formData.append('sessionId', sessionId);
+                formData.append('sessionId', tempSessionId);
                 formData.append('courseId', selectedCourseId);
                 formData.append('instructions', documentInstructions);
                 formData.append('teacherId', user.id.toString());
@@ -142,17 +142,22 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
             }
         }
 
-        // If using existing session, call /start endpoint to update session_mode in database
+        // Create or start session in database
+        let actualSessionId: string | number;
+
         if (existingSessionId) {
+            // If using existing session, call /start endpoint to update session_mode in database
             try {
                 console.log('[LiveSessionModal] Starting existing session:', existingSessionId, 'with mode:', sessionType === 'essay_editing' ? 'essay' : 'code');
                 const response = await apiClient.post(`/api/sessions/${existingSessionId}/start`, {
-                    mode: sessionType === 'essay_editing' ? 'essay' : 'code'
+                    mode: sessionType === 'essay_editing' ? 'essay' : 'code',
+                    courseId: selectedCourseId // Send courseId for notifications
                 });
 
                 if (response.data.success) {
                     console.log('[LiveSessionModal] ✅ Session started successfully via API');
                     toast.success(`${sessionType === 'essay_editing' ? 'Essay' : 'Code'} session started!`);
+                    actualSessionId = existingSessionId;
                 } else {
                     throw new Error(response.data.error || 'Failed to start session');
                 }
@@ -163,21 +168,48 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
                 setIsUploading(false);
                 return;
             }
+        } else {
+            // For new sessions, create the session in the database first
+            try {
+                console.log('[LiveSessionModal] Creating new session with mode:', sessionType === 'essay_editing' ? 'essay' : 'code');
+
+                const response = await apiClient.post('/api/sessions/create-live', {
+                    mode: sessionType === 'essay_editing' ? 'essay' : 'code',
+                    courseId: selectedCourseId,
+                    sessionType: 'live_tutorial',
+                    description: `Live ${sessionType === 'essay_editing' ? 'Essay Editing' : 'Code Tutorial'} Session`
+                });
+
+                if (response.data.success) {
+                    // Use the database-generated session ID
+                    actualSessionId = response.data.session.id;
+                    console.log('[LiveSessionModal] ✅ Live session created in database with ID:', actualSessionId);
+                    toast.success(`${sessionType === 'essay_editing' ? 'Essay' : 'Code'} session created!`);
+                } else {
+                    throw new Error(response.data.error || 'Failed to create session');
+                }
+            } catch (error: any) {
+                console.error('[LiveSessionModal] ❌ Error creating session:', error);
+                const errorMessage = error.response?.data?.error || error.message || 'Failed to create session';
+                toast.error(errorMessage);
+                setIsUploading(false);
+                return;
+            }
         }
 
         onClose(); // Close the modal before navigating
 
-        // Navigate based on session type
+        // Navigate based on session type using the actual session ID from database
         let navigationUrl = '';
         if (sessionType === 'essay_editing') {
             // Navigate to ScribeSessionPage for LIVE essay editing with teacher-led session features
             const documentParam = uploadedDocumentId ? uploadedDocumentId : (uploadedDocument ? 'true' : 'false');
-            navigationUrl = `/urgent-session/${sessionId}/essay?session=${sessionId}&mentor=teacher&type=live&document=${documentParam}&courseId=${selectedCourseId}`;
+            navigationUrl = `/urgent-session/${actualSessionId}/essay?session=${actualSessionId}&mentor=teacher&type=live&document=${documentParam}&courseId=${selectedCourseId}`;
         } else {
             // Navigate to LiveTutorialPage for coding tutorials (existing behavior)
             navigationUrl = selectedCourseId
-                ? `/session/${sessionId}?courseId=${selectedCourseId}&mode=coding`
-                : `/session/${sessionId}?mode=coding`;
+                ? `/session/${actualSessionId}?courseId=${selectedCourseId}&mode=coding`
+                : `/session/${actualSessionId}?mode=coding`;
         }
 
         console.log('[DEBUG] Navigating to:', navigationUrl);

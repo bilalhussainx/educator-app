@@ -88,7 +88,7 @@ const LeetCodeIDE: React.FC = () => {
     const [showSolution, setShowSolution] = useState(false);
     const [showHints, setShowHints] = useState(false);
     const [currentHint, setCurrentHint] = useState(0);
-    const [activeTab, setActiveTab] = useState<'description' | 'hints' | 'solution' | 'submissions'>('description');
+    const [activeTab, setActiveTab] = useState<'description' | 'testcases' | 'hints' | 'solution' | 'submissions'>('description');
     const [executionTime, setExecutionTime] = useState<number | null>(null);
     const [memoryUsage, setMemoryUsage] = useState<string | null>(null);
 
@@ -134,20 +134,102 @@ const LeetCodeIDE: React.FC = () => {
 
     const loadProblem = async () => {
         try {
+            const token = localStorage.getItem('authToken');
             let endpoint = '';
+
             if (courseId && lessonId) {
-                // Load from course lesson
-                endpoint = `/api/enhanced-courses/${courseId}/lessons/${lessonId}/problem`;
+                // Parse lessonId format: courseId-moduleIndex-lessonIndex
+                const lessonParts = lessonId.split('-');
+                const moduleIndex = lessonParts[lessonParts.length - 2] || '0';
+                const lessonIndex = lessonParts[lessonParts.length - 1] || '0';
+
+                console.log('📚 Loading course lesson:', { courseId, moduleIndex, lessonIndex });
+
+                // Load from course lesson using newEnhancedCourseController endpoint
+                endpoint = `${import.meta.env.VITE_API_URL}/api/enhanced-courses/${courseId}/lessons?moduleIndex=${moduleIndex}&lessonIndex=${lessonIndex}`;
             } else if (problemNumber) {
-                // Load specific problem
-                endpoint = `/api/leetcode/problem/${problemNumber}`;
+                // Load specific problem - THIS IS THE CORRECT ENDPOINT
+                endpoint = `${import.meta.env.VITE_API_URL}/api/leetcode/problems/${problemNumber}/ide`;
             }
 
-            const response = await fetch(endpoint);
-            const problemData = await response.json();
-            
-            setProblem(problemData);
-            setCode(problemData.starterCode[currentLanguage] || '// Start coding here...');
+            const response = await fetch(endpoint, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to load problem: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('🔍 Raw backend data:', data);
+
+            // The backend returns data in both root level and lesson object
+            // Prefer lesson object but fallback to root
+            const lessonData = data.lesson || {};
+
+            // Extract enriched fields - they can be in lesson or root level
+            const examples = lessonData.examples || data.examples || [];
+            const constraints = lessonData.constraints || data.constraints || [];
+            const hints = lessonData.hints || data.hints || [];
+            const testCases = lessonData.testCases || data.testCases || [];
+            const boilerplateCode = lessonData.boilerplateCode || data.boilerplateCode;
+
+            console.log('📊 Enriched data found:', {
+                examples: examples.length,
+                constraints: constraints.length,
+                hints: hints.length,
+                testCases: testCases.length,
+                hasBoilerplate: !!boilerplateCode,
+                boilerplateType: typeof boilerplateCode
+            });
+
+            // Ensure starterCode is always an object with all 3 languages
+            const fallbackCode = data.files?.[0]?.content || data.starterCode || '// Start coding here...';
+            const starterCode = {
+                javascript: (boilerplateCode?.javascript || fallbackCode || '// Start coding here...').toString(),
+                python: (boilerplateCode?.python || fallbackCode || '# Start coding here...').toString(),
+                java: (boilerplateCode?.java || fallbackCode || '// Start coding here...').toString()
+            };
+
+            console.log('🔧 Starter code prepared:', {
+                hasJavaScript: !!starterCode.javascript,
+                hasPython: !!starterCode.python,
+                hasJava: !!starterCode.java,
+                jsLength: starterCode.javascript.length
+            });
+
+            // Transform the data to match our Problem interface
+            const transformedProblem: Problem = {
+                id: lessonData.id || `leetcode-${problemNumber}`,
+                number: problemNumber || '0001',
+                title: lessonData.title || 'Problem',
+                description: lessonData.description || '',
+                difficulty: (lessonData.difficulty || 'medium') as 'easy' | 'medium' | 'hard',
+                pattern: lessonData.metadata?.topic || 'General',
+                examples: examples,
+                constraints: constraints,
+                hints: hints,
+                starterCode: starterCode,
+                solutions: {
+                    javascript: data.solution || '',
+                    python: data.solution || '',
+                    java: data.solution || ''
+                },
+                testCases: testCases
+            };
+
+            console.log('✅ Transformed problem with enriched data:', {
+                title: transformedProblem.title,
+                examples: transformedProblem.examples.length,
+                constraints: transformedProblem.constraints.length,
+                hints: transformedProblem.hints.length,
+                testCases: transformedProblem.testCases.length
+            });
+
+            setProblem(transformedProblem);
+            setCode(transformedProblem.starterCode[currentLanguage] || '// Start coding here...');
         } catch (error) {
             console.error('Failed to load problem:', error);
             // Fallback mock data for development
@@ -390,9 +472,13 @@ var twoSum = function(nums, target) {
         const startTime = Date.now();
         
         try {
-            const response = await fetch('/api/leetcode/run', {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/leetcode/run`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     code,
                     language: currentLanguage,
@@ -427,9 +513,13 @@ var twoSum = function(nums, target) {
         
         setIsRunning(true);
         try {
-            const response = await fetch('/api/leetcode/submit', {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/leetcode/submit`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
                     code,
                     language: currentLanguage,
@@ -513,7 +603,7 @@ var twoSum = function(nums, target) {
                 <div className="w-1/2 border-r border-slate-700 flex flex-col">
                     {/* Tab Navigation */}
                     <div className="flex border-b border-slate-700">
-                        {['description', 'hints', 'solution', 'submissions'].map(tab => (
+                        {['description', 'testcases', 'hints', 'solution', 'submissions'].map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab as any)}
@@ -523,7 +613,7 @@ var twoSum = function(nums, target) {
                                         : 'border-transparent text-slate-400 hover:text-slate-200'
                                 }`}
                             >
-                                {tab}
+                                {tab === 'testcases' ? 'Test Cases' : tab}
                             </button>
                         ))}
                     </div>
@@ -565,6 +655,39 @@ var twoSum = function(nums, target) {
                                         ))}
                                     </ul>
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'testcases' && (
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold">Test Cases</h3>
+                                {problem.testCases && problem.testCases.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {problem.testCases.map((testCase, idx) => (
+                                            <div key={idx} className="bg-slate-800 p-4 rounded">
+                                                <div className="font-medium text-blue-400 mb-2">
+                                                    Test Case {idx + 1}
+                                                    {testCase.hidden && <span className="ml-2 text-xs text-slate-500">(Hidden)</span>}
+                                                </div>
+                                                {!testCase.hidden && (
+                                                    <div className="font-mono text-sm space-y-1 text-slate-300">
+                                                        <div><span className="text-slate-400">Input:</span> {testCase.input}</div>
+                                                        <div><span className="text-slate-400">Expected Output:</span> {testCase.expected}</div>
+                                                    </div>
+                                                )}
+                                                {testCase.hidden && (
+                                                    <div className="text-sm text-slate-400">
+                                                        This test case will be used during submission but is hidden during practice.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-slate-400 text-center py-8">
+                                        No test cases available. You can still run and submit your code.
+                                    </div>
+                                )}
                             </div>
                         )}
 

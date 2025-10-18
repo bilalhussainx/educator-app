@@ -69,6 +69,7 @@ import TeacherProfile from './pages/TeacherProfile';
 import { ZenithTradeCommandCenter } from './pages/ZenithTradeCommandCenter';
 import LeetCodeCoursesPage from './pages/LeetCodeCoursesPage';
 import LeetCodeIDE from './pages/LeetCodeIDE';
+import LeetCodeEnrichmentDashboard from './pages/LeetCodeEnrichmentDashboard';
 import SolvedProblemsPage from './pages/SolvedProblemsPage';
 import EcosystemDashboard from './pages/EcosystemDashboard';
 import DiscoverPage from './pages/DiscoverPage';
@@ -77,6 +78,7 @@ import PortfolioPage from './pages/PortfolioPage';
 import VisualContextResumePage from './pages/VisualContextResumePage';
 import { FinancialRoute } from './components/route/FinancialRoute';
 import { LiveblocksProvider } from "@liveblocks/react";
+import { LiveSessionNotification } from './components/notifications/LiveSessionNotification';
 
 // --- Mixpanel Initialization ---
 const MIXPANEL_PROJECT_TOKEN = "ddb00402917fe523b477eafdf60f0580"; 
@@ -162,6 +164,9 @@ export default function App() {
 
   return (
     <LiveblocksProvider authEndpoint="http://localhost:10000/api/liveblocks/auth">
+      {/* Global Live Session Notification Component - only renders for students */}
+      <LiveSessionNotification user={user} />
+
       <Routes>
         {/* --- Public Routes (No Layout) --- */}
         <Route path="/login" element={<LoginPage setToken={setToken} setUser={setUser} />} />
@@ -203,6 +208,16 @@ export default function App() {
                 <Route path="/leetcode/ide/:problemNumber" element={<LeetCodeIDE />} />
                 <Route path="/leetcode/courses/:courseId/lessons/:lessonId" element={<LeetCodeIDE />} />
                 <Route path="/enhanced-courses/:courseId/lessons/:lessonId/leetcode" element={<LeetCodeIDE />} />
+
+                {/* LeetCode Enrichment Dashboard - Admin/Teacher Only */}
+                <Route
+                  path="/admin/leetcode-enrichment"
+                  element={
+                    <ProtectedRoute token={token} user={user} roles={['teacher', 'admin']}>
+                      <LeetCodeEnrichmentDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* Session Documents Route */}
                 <Route path="/session-documents" element={<SessionDocumentsPage />} />

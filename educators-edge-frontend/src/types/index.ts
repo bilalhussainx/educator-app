@@ -376,6 +376,15 @@ export interface UniversalWorkspace {
     language?: string;
     problemTitle?: string;
     problemId?: string;
+    problemDescription?: string;
+    problemExamples?: Array<{
+        input: string;
+        output: string;
+        explanation?: string;
+    }>;
+    problemConstraints?: string[];
+    difficulty?: 'easy' | 'medium' | 'hard';
+    pattern?: string;
     testResults?: Array<{
         passed: boolean;
         input: string;

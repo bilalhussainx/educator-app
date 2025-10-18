@@ -19,6 +19,18 @@ export interface LessonFile {
 export interface Workspace {
     files: CodeFile[];
     activeFileName: string;
+    problemData?: {
+        title?: string;
+        description?: string;
+        examples?: Array<{
+            input: string;
+            output: string;
+            explanation?: string;
+        }>;
+        constraints?: string[];
+        difficulty?: 'easy' | 'medium' | 'hard';
+        pattern?: string;
+    };
 }
 
 export interface StudentHomeworkState extends Workspace {
@@ -62,6 +74,15 @@ export interface UniversalWorkspace {
     language?: string;
     problemId?: string;
     problemTitle?: string;
+    problemDescription?: string;
+    problemExamples?: Array<{
+        input: string;
+        output: string;
+        explanation?: string;
+    }>;
+    problemConstraints?: string[];
+    difficulty?: 'easy' | 'medium' | 'hard';
+    pattern?: string;
     testResults?: TestResult[];
 
     // Common fields
