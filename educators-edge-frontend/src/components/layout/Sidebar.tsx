@@ -81,14 +81,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
         } else {
             return [
                 ...baseItems,
-                { path: '/courses/discover', icon: Compass, label: '🎓 Learn - Discover Courses' },
-                { path: '/ascent-ide', icon: Code, label: '🔨 Build - IDE Projects' },
+                // NEW ORDER: Trust Graph first, then LeetCode/Courses, then Sessions
+                { path: '/trust-graph', icon: Users, label: '🤝 Connect - Trust Graph' },
                 { path: '/leetcode', icon: Trophy, label: '🔨 Build - LeetCode' },
+                { path: '/courses/discover', icon: Compass, label: '🎓 Learn - Discover Courses' },
+                { path: '/sessions', icon: Calendar, label: '🤝 Connect - Sessions' },
+                { path: '/ascent-ide', icon: Code, label: '🔨 Build - IDE Projects' },
                 { path: '/session-documents', icon: FileText, label: '📄 Manage - Session Documents' },
                 { path: '/ai-writing-assistant', icon: Brain, label: '🤖 AI Writing Assistant' },
                 { path: '/trading-terminal', icon: Activity, label: '🔨 Build - Trading Terminal' },
-                { path: '/trust-graph', icon: Users, label: '🤝 Connect - Trust Graph' },
-                { path: '/sessions', icon: Calendar, label: '🤝 Connect - Mentorship' },
                 { path: '/solved-problems', icon: Sparkles, label: '🏆 Prove - Achievements' },
                 { path: '/talent-crucible', icon: Sparkles, label: '🏆 Prove - Certifications', premium: true },
             ];

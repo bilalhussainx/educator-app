@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Code, BookOpen, Clock, Users, Target, TrendingUp, Play, ChevronRight, Star, Filter, Search } from 'lucide-react';
+import { AISearchAgent } from '../components/AISearchAgent';
 
 interface LeetCodeCourse {
     id: string;
@@ -249,9 +250,12 @@ const LeetCodeCoursesPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* Courses Grid */}
+            {/* Main Content with AI Agent */}
             <div className="max-w-7xl mx-auto px-4 py-8">
-                {filteredCourses.length === 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* Courses Grid - Takes 3 columns */}
+                    <div className="lg:col-span-3">
+                        {filteredCourses.length === 0 ? (
                     <div className="text-center py-12">
                         <div className="text-gray-400 mb-4 text-6xl">📚</div>
                         <h3 className="text-xl font-medium text-gray-600 mb-2">No courses found</h3>
@@ -363,6 +367,15 @@ const LeetCodeCoursesPage: React.FC = () => {
                         ))}
                     </div>
                 )}
+                    </div>
+
+                    {/* AI Agent Sidebar - Takes 1 column */}
+                    <div className="lg:col-span-1">
+                        <div className="sticky top-4">
+                            <AISearchAgent isCompact={false} showGoals={true} />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Stats Footer */}

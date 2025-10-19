@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import {
     FileText,
     Briefcase,
@@ -14,7 +18,9 @@ import {
     GraduationCap,
     Building,
     ArrowRight,
-    Sparkles
+    Sparkles,
+    Upload,
+    File
 } from 'lucide-react';
 
 interface SessionOption {
@@ -32,6 +38,9 @@ interface SessionOption {
 
 const SessionTypeSelector: React.FC = () => {
     const navigate = useNavigate();
+    const [showUploadDialog, setShowUploadDialog] = useState(false);
+    const [essayFile, setEssayFile] = useState<File | null>(null);
+    const [essayTitle, setEssayTitle] = useState('');
 
     const sessionOptions: SessionOption[] = [
         {
@@ -86,7 +95,49 @@ const SessionTypeSelector: React.FC = () => {
 
     const handleSessionSelect = (option: SessionOption) => {
         console.log(`🚀 Starting ${option.title} session`);
-        navigate(option.route);
+
+        // For essay editor, show upload dialog first
+        if (option.id === 'essay') {
+            setShowUploadDialog(true);
+        } else {
+            navigate(option.route);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Check file type
+            const validTypes = ['.txt', '.doc', '.docx', '.pdf'];
+            const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+
+            if (!validTypes.includes(fileExtension)) {
+                toast.error('Please upload a valid document file (.txt, .doc, .docx, .pdf)');
+                return;
+            }
+
+            setEssayFile(file);
+            setEssayTitle(file.name.replace(/\.[^/.]+$/, '')); // Remove extension
+        }
+    };
+
+    const handleStartEssayEditor = () => {
+        if (!essayTitle.trim()) {
+            toast.error('Please enter an essay title');
+            return;
+        }
+
+        // Navigate to essay editor with title and file
+        const params = new URLSearchParams({
+            title: essayTitle,
+            ...(essayFile && { hasFile: 'true' })
+        });
+
+        navigate(`/essay-editor?${params.toString()}`);
+
+        // Close dialog
+        setShowUploadDialog(false);
+        toast.success('Opening essay editor...');
     };
 
     return (
@@ -265,6 +316,82 @@ const SessionTypeSelector: React.FC = () => {
                     </p>
                 </div>
             </div>
+
+            {/* Upload Dialog for Essay Editor */}
+            <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <PenTool className="w-5 h-5 text-purple-600" />
+                            Start Essay Editor
+                        </DialogTitle>
+                        <DialogDescription>
+                            Upload an existing essay or start from scratch
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        {/* Essay Title */}
+                        <div className="space-y-2">
+                            <Label htmlFor="essay-title">Essay Title *</Label>
+                            <Input
+                                id="essay-title"
+                                placeholder="e.g., My College Application Essay"
+                                value={essayTitle}
+                                onChange={(e) => setEssayTitle(e.target.value)}
+                            />
+                        </div>
+
+                        {/* File Upload */}
+                        <div className="space-y-2">
+                            <Label htmlFor="essay-file">Upload Essay (Optional)</Label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    id="essay-file"
+                                    type="file"
+                                    accept=".txt,.doc,.docx,.pdf"
+                                    onChange={handleFileChange}
+                                    className="cursor-pointer"
+                                />
+                            </div>
+                            {essayFile && (
+                                <div className="flex items-center gap-2 text-sm text-green-600">
+                                    <File className="w-4 h-4" />
+                                    <span>{essayFile.name}</span>
+                                </div>
+                            )}
+                            <p className="text-xs text-slate-500">
+                                Supported formats: .txt, .doc, .docx, .pdf
+                            </p>
+                        </div>
+
+                        {/* Info */}
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                            <p className="text-sm text-blue-700 dark:text-blue-300">
+                                💡 You can start with a blank document or upload an existing essay for AI-powered editing and feedback.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowUploadDialog(false)}
+                            className="flex-1"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleStartEssayEditor}
+                            disabled={!essayTitle.trim()}
+                            className="flex-1 bg-purple-600 hover:bg-purple-700"
+                        >
+                            <ArrowRight className="w-4 h-4 mr-2" />
+                            Open Editor
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

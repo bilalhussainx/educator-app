@@ -19,7 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ChevronLeft, Search, Users, BookOpen, XCircle } from 'lucide-react';
+import { ChevronLeft, Search, Users, BookOpen, XCircle, Sparkles, Zap } from 'lucide-react';
+import { AISearchAgent } from '../components/AISearchAgent';
+import { toast } from 'sonner';
 
 // --- Type definition for a public course ---
 interface PublicCourse extends Course {
@@ -48,6 +50,7 @@ const DiscoverCoursesPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showEnhanced, setShowEnhanced] = useState(true);
+    const [enhancingCourseId, setEnhancingCourseId] = useState<number | null>(null);
 
     // --- Enhanced Data Fetching Logic ---
     useEffect(() => {
@@ -102,6 +105,30 @@ const DiscoverCoursesPage: React.FC = () => {
     // Combine courses for display
     const displayCourses = showEnhanced ? filteredEnhancedCourses : filteredCourses;
     const totalCoursesCount = filteredCourses.length + filteredEnhancedCourses.length;
+
+    // Function to enhance a course using Claude Haiku API
+    const handleEnhanceCourse = async (courseId: number) => {
+        setEnhancingCourseId(courseId);
+        toast.info('Starting course enhancement with Claude Haiku...');
+
+        try {
+            const response = await apiClient.post(`/api/courses/${courseId}/enhance`, {
+                ai_model: 'claude-haiku'
+            });
+
+            toast.success('Course enhanced successfully! Refreshing list...');
+
+            // Refresh the courses list
+            const enhancedResponse = await apiClient.get('/api/enhanced-courses/discover');
+            setEnhancedCourses(enhancedResponse.data);
+            setShowEnhanced(true);
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.error || err.message || 'Failed to enhance course';
+            toast.error(`Enhancement failed: ${errorMessage}`);
+        } finally {
+            setEnhancingCourseId(null);
+        }
+    };
 
     const renderContent = () => {
         if (isLoading) {
@@ -179,16 +206,44 @@ const DiscoverCoursesPage: React.FC = () => {
                                             </>
                                         )}
                                     </div>
-                                    <Button 
-                                        className={`w-full font-bold ${
-                                            showEnhanced 
-                                                ? 'bg-gradient-to-r from-cyan-400 to-purple-400 hover:from-cyan-300 hover:to-purple-300 text-black' 
-                                                : 'bg-cyan-400 hover:bg-cyan-300 text-slate-900'
-                                        }`}
-                                        onClick={() => navigate(showEnhanced ? `/enhanced-courses/${course.id}` : `/courses/${course.id}/landing`)}
-                                    >
-                                        {showEnhanced ? 'Start AI Course' : 'Explore Blueprint'}
-                                    </Button>
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-2">
+                                        <Button
+                                            className={`flex-1 font-bold ${
+                                                showEnhanced
+                                                    ? 'bg-gradient-to-r from-cyan-400 to-purple-400 hover:from-cyan-300 hover:to-purple-300 text-black'
+                                                    : 'bg-cyan-400 hover:bg-cyan-300 text-slate-900'
+                                            }`}
+                                            onClick={() => navigate(showEnhanced ? `/enhanced-courses/${course.id}` : `/courses/${course.id}/landing`)}
+                                        >
+                                            {showEnhanced ? 'Start AI Course' : 'Explore Blueprint'}
+                                        </Button>
+
+                                        {/* Enhance Button for Traditional Courses */}
+                                        {!showEnhanced && (
+                                            <Button
+                                                variant="outline"
+                                                className="border-purple-500 text-purple-400 hover:bg-purple-500/20"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEnhanceCourse(course.id);
+                                                }}
+                                                disabled={enhancingCourseId === course.id}
+                                            >
+                                                {enhancingCourseId === course.id ? (
+                                                    <>
+                                                        <div className="animate-spin mr-2 h-4 w-4 border-2 border-purple-400 border-t-transparent rounded-full"></div>
+                                                        Enhancing...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="mr-2 h-4 w-4" />
+                                                        Enhance
+                                                    </>
+                                                )}
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </CardContent>
                         </GlassCard>
@@ -258,7 +313,20 @@ const DiscoverCoursesPage: React.FC = () => {
                     </div>
                 </header>
 
-                {renderContent()}
+                {/* Main Content with AI Agent */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* Courses Grid - Takes 3 columns */}
+                    <div className="lg:col-span-3">
+                        {renderContent()}
+                    </div>
+
+                    {/* AI Agent Sidebar - Takes 1 column */}
+                    <div className="lg:col-span-1">
+                        <div className="sticky top-4">
+                            <AISearchAgent isCompact={false} showGoals={true} />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

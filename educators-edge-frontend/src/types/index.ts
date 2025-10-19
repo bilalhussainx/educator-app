@@ -193,6 +193,10 @@ export interface LiveSession {
     sessionId: string;
     teacherName: string;
     courseName: string;
+    courseId?: string;
+    sessionType?: 'coding' | 'essay' | 'video' | 'general';
+    status?: 'active' | 'ended';
+    startedAt?: string;
 }
 
 // Type for the AI-powered alert object for teachers

@@ -49,6 +49,7 @@ import CleanResumeAssistant from './pages/CleanResumeAssistant';
 import AzureVisionTestPage from './pages/AzureVisionTestPage';
 import CssPdfResumePage from './pages/CssPdfResumePage';
 import SessionTypeSelector from './components/session/SessionTypeSelector';
+import EssayEditorPage from './pages/EssayEditorPage';
 import SessionDocumentsPage from './pages/SessionDocumentsPage';
 import TeacherSearchPage from './pages/TeacherSearchPage';
 import ProfileSetupPage from './pages/ProfileSetupPage';
@@ -241,7 +242,8 @@ export default function App() {
                 <Route path="/resume-pdf" element={<CssPdfResumePage />} />
                 <Route path="/azure-vision-test" element={<AzureVisionTestPage />} />
                 <Route path="/ai-writing-assistant" element={<SessionTypeSelector />} />
-                
+                <Route path="/essay-editor" element={<EssayEditorPage />} />
+
                 {/* Teacher/Profile Search Routes */}
                 <Route path="/teachers/search" element={<TeacherSearchPage />} />
                 <Route path="/profile/setup" element={<ProtectedRoute token={token} user={user}><ProfileSetupPage /></ProtectedRoute>} />

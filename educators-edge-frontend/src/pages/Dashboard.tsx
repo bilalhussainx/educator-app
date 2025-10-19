@@ -19,6 +19,7 @@ import { PortfolioWidget } from '../components/trade/PortfolioWidget'; // <-- 1.
 import TeacherNotifications from '../components/TeacherNotifications';
 import sessionWebSocketService from '../services/sessionWebSocketService';
 import { UserProgressWidget } from '../components/layout/UserProgressWidget';
+import { AISearchAgent } from '../components/AISearchAgent';
 
 // --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
@@ -208,21 +209,38 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             const unsubscribeSessionStarted = sessionWebSocketService.on('sessionStarted', (data) => {
                 console.log('Live session started:', data);
 
+                // Check if student is enrolled in this course
+                const enrolledCourses = courses as EnrolledCourse[];
+                const isEnrolled = !data.courseId || enrolledCourses.some(c => c.id.toString() === data.courseId);
+
+                if (!isEnrolled) {
+                    console.log('Student not enrolled in course, skipping notification');
+                    return;
+                }
+
                 // Add the new session to the live sessions list
                 const newSession: LiveSession = {
                     sessionId: data.sessionId,
                     courseName: data.courseName || 'Live Tutorial',
                     teacherName: data.teacherName || 'Teacher',
-                    status: 'active'
+                    courseId: data.courseId,
+                    sessionType: data.sessionType || 'coding',
+                    status: 'active',
+                    startedAt: new Date().toISOString()
                 };
 
                 setLiveSessions(current => [...current, newSession]);
 
+                // Determine redirect path based on session type
+                const redirectPath = data.sessionType === 'essay'
+                    ? `/dual-mode-session/${data.sessionId}`
+                    : `/session/${data.sessionId}`;
+
                 // Show notification
-                toast.success(`🎓 Live session "${newSession.courseName}" started by ${newSession.teacherName}!`, {
+                toast.success(`🎓 Live ${data.sessionType || 'coding'} session "${newSession.courseName}" started by ${newSession.teacherName}!`, {
                     action: {
                         label: "Join Now",
-                        onClick: () => navigate(`/session/${data.sessionId}`)
+                        onClick: () => navigate(redirectPath)
                     },
                     duration: 10000
                 });
@@ -232,12 +250,24 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             const unsubscribeEssaySessionStarted = sessionWebSocketService.on('essaySessionStarted', (data) => {
                 console.log('Essay session started:', data);
 
+                // Check if student is enrolled in this course
+                const enrolledCourses = courses as EnrolledCourse[];
+                const isEnrolled = !data.courseId || enrolledCourses.some(c => c.id.toString() === data.courseId);
+
+                if (!isEnrolled) {
+                    console.log('Student not enrolled in course, skipping essay notification');
+                    return;
+                }
+
                 // Add the new essay session to the live sessions list
                 const newEssaySession: LiveSession = {
                     sessionId: data.sessionId,
                     courseName: data.courseName || 'Essay Writing Session',
                     teacherName: data.teacherName || 'Teacher',
-                    status: 'active'
+                    courseId: data.courseId,
+                    sessionType: 'essay',
+                    status: 'active',
+                    startedAt: new Date().toISOString()
                 };
 
                 setLiveSessions(current => [...current, newEssaySession]);
@@ -647,6 +677,160 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             </div>
                         </div>
                     </header>
+
+                    {/* NEW TOP SECTION: Session/Teacher Card, Profile/Pricing, and AI Agent */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Left: Session/Teacher Card */}
+                        <GlassCard className="border-purple-500/50">
+                            <CardHeader>
+                                <CardTitle className="text-xl text-white flex items-center gap-2">
+                                    <Video className="h-5 w-5 text-purple-400" />
+                                    Session Teacher Card
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* Live Session Notifications */}
+                                {liveSessions.length > 0 && (
+                                    <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg p-4 border border-green-500/30 animate-pulse">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
+                                            <h4 className="text-sm font-semibold text-green-400">🔴 Live Session Active</h4>
+                                        </div>
+                                        {liveSessions.map((session) => (
+                                            <div key={session.sessionId} className="mb-2 last:mb-0">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <p className="text-white font-medium text-sm">{session.courseName}</p>
+                                                        <p className="text-xs text-slate-300 mt-1">
+                                                            By {session.teacherName} • {session.sessionType === 'essay' ? '📝 Essay' : '💻 Coding'}
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        className="bg-green-500 hover:bg-green-400 text-white text-xs px-3 py-1"
+                                                        onClick={() => {
+                                                            const path = session.sessionType === 'essay'
+                                                                ? `/dual-mode-session/${session.sessionId}`
+                                                                : `/session/${session.sessionId}`;
+                                                            navigate(path);
+                                                        }}
+                                                    >
+                                                        Join
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Course Section */}
+                                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h4 className="text-sm font-semibold text-slate-300">Course</h4>
+                                        <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded">Active</span>
+                                    </div>
+                                    {primaryCourse ? (
+                                        <p className="text-white font-medium">{primaryCourse.title}</p>
+                                    ) : (
+                                        <p className="text-slate-400 text-sm">No active course</p>
+                                    )}
+                                </div>
+
+                                {/* Teacher Profile Section */}
+                                <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
+                                    <h4 className="text-sm font-semibold text-slate-300 mb-3">My Teacher</h4>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                                            B
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-white font-medium">bilalhussain.v1</p>
+                                            <p className="text-xs text-slate-400">Computer Science Teacher</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* SAT Pricing */}
+                                <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-lg p-4 border border-orange-500/30">
+                                    <h4 className="text-sm font-semibold text-orange-400 mb-2">SAT Prep Pricing</h4>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-bold text-white">$0</span>
+                                        <span className="text-sm text-slate-400">/ 10 sessions</span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-1">Limited time offer</p>
+                                </div>
+                            </CardContent>
+                        </GlassCard>
+
+                        {/* Middle: My Profile Picture & Course Pricing with Trust Graph */}
+                        <GlassCard className="border-cyan-500/50">
+                            <CardHeader>
+                                <CardTitle className="text-xl text-white flex items-center gap-2">
+                                    <Users className="h-5 w-5 text-cyan-400" />
+                                    My Profile
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* Profile Picture */}
+                                <div className="flex flex-col items-center justify-center bg-slate-800/50 rounded-lg p-6 border border-slate-700/50">
+                                    <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-3">
+                                        {user?.username?.[0]?.toUpperCase() || 'S'}
+                                    </div>
+                                    <p className="text-white font-medium text-lg">{user?.username}</p>
+                                    <p className="text-xs text-slate-400">{user?.email}</p>
+                                    <div className="mt-3 flex items-center gap-2">
+                                        <span className="text-xs bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full">Student</span>
+                                        <span className="text-xs bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full">🔷 Pathfinder</span>
+                                    </div>
+                                </div>
+
+                                {/* Trust Graph Quick Access */}
+                                <div
+                                    className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-500/30 cursor-pointer hover:bg-purple-500/20 transition-all"
+                                    onClick={() => navigate('/trust-graph')}
+                                >
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="p-2 bg-purple-500/20 rounded-lg">
+                                            <Users className="h-5 w-5 text-purple-400" />
+                                        </div>
+                                        <h4 className="text-sm font-semibold text-purple-400">Trust Graph Network</h4>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-slate-300">Connections</span>
+                                            <span className="text-lg font-bold text-white">5</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-slate-300">Trust Score</span>
+                                            <span className="text-lg font-bold text-purple-400">⚡ 94</span>
+                                        </div>
+                                    </div>
+                                    <Button className="w-full mt-3 bg-purple-600 hover:bg-purple-500 text-white">
+                                        <Users className="h-4 w-4 mr-2" />
+                                        Open Trust Graph
+                                    </Button>
+                                </div>
+
+                                {/* Course Pricing */}
+                                <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-lg p-4 border border-orange-500/30">
+                                    <h4 className="text-sm font-semibold text-orange-400 mb-2">Course Pricing</h4>
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-slate-300">Session Rate</span>
+                                            <span className="text-lg font-bold text-white">$35</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-slate-300">SAT Prep</span>
+                                            <span className="text-lg font-bold text-white">$0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </GlassCard>
+
+                        {/* Right: AI Navigation Assistant */}
+                        <AISearchAgent />
+                    </div>
 
                     {/* Your Next Step - Personalized Guidance */}
                     <GlassCard className="border-cyan-500/50 hover:border-cyan-400">
