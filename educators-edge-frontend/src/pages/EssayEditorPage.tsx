@@ -44,10 +44,9 @@ const EssayEditorPage: React.FC = () => {
             >
                 <ModernEssayEditor
                     sessionId={roomId}
-                    isTeacher={false}
-                    currentUserId={user?.id || 'guest'}
-                    currentUsername={user?.username || 'Student'}
-                    essayTitle={essayTitle}
+                    userId={user?.id?.toString() || 'guest'}
+                    username={user?.username || 'Student'}
+                    userRole="student"
                 />
             </RoomProvider>
         </div>

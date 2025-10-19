@@ -157,9 +157,9 @@ interface AIFeedback {
 
 interface ModernEssayEditorProps {
     sessionId: string;
-    userId: string;
-    username: string;
-    userRole: 'teacher' | 'student';
+    userId?: string;
+    username?: string;
+    userRole?: 'teacher' | 'student';
     initialContent?: string;
     uploadedDocument?: {
         name: string;
@@ -169,35 +169,37 @@ interface ModernEssayEditorProps {
     } | null;
     onContentChange?: (content: string) => void;
     onCollaboratorsChange?: (collaborators: any[]) => void;
-    sendWsMessage: (type: string, payload: any) => void;
-    students: any[];
-    handsRaised: Set<string>;
-    onRaiseHand: () => void;
+    sendWsMessage?: (type: string, payload: any) => void;
+    students?: any[];
+    handsRaised?: Set<string>;
+    onRaiseHand?: () => void;
     onAssignHomework?: (assignment: any) => void;
-    onSave: (content: string) => void;
+    onSave?: (content: string) => void;
     reviewAnnotations?: any[];  // Array of review annotations to highlight in document
     activeAnnotationId?: string | null;  // Currently active annotation ID
     onAnnotationClick?: (id: string) => void;  // Callback when annotation is clicked
+    enableVideo?: boolean;  // Enable Agora video/audio for live sessions
 }
 
 function ModernEssayEditorInner({
     sessionId,
-    userId,
-    username,
-    userRole,
+    userId = 'guest',
+    username = 'Student',
+    userRole = 'student',
     initialContent = '',
     uploadedDocument,
     onContentChange,
     onCollaboratorsChange,
-    sendWsMessage,
-    students,
-    handsRaised,
-    onRaiseHand,
+    sendWsMessage = () => {}, // Default no-op function
+    students = [],
+    handsRaised = new Set(),
+    onRaiseHand = () => {},
     onAssignHomework,
-    onSave,
+    onSave = () => {},
     reviewAnnotations = [],
     activeAnnotationId = null,
     onAnnotationClick,
+    enableVideo = false, // Disabled by default for standalone use
 }: ModernEssayEditorProps) {
     const { user } = useUser();
     const others = useOthers();
@@ -494,6 +496,12 @@ function ModernEssayEditorInner({
 
     // --- AGORA INITIALIZATION ---
     useEffect(() => {
+        // Skip Agora initialization if video is not enabled (standalone mode)
+        if (!enableVideo) {
+            console.log('📝 Essay editor in standalone mode (video disabled)');
+            return;
+        }
+
         const initializeAgora = async () => {
             if (!sessionId || !userId) return;
 
@@ -697,7 +705,7 @@ function ModernEssayEditorInner({
                 agoraClient.current.leave();
             }
         };
-    }, [sessionId, userId]);
+    }, [sessionId, userId, enableVideo]);
 
     // Cleanup effect for editor and tippy instances
     useEffect(() => {

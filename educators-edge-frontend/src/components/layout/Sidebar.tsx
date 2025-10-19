@@ -29,7 +29,8 @@ import {
     Edit3,
     FileText,
     Brain,
-    Database
+    Database,
+    MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
                 { path: '/courses/discover', icon: Compass, label: '🎓 Learn - Discover Courses' },
                 { path: '/courses/new', icon: PlusCircle, label: '📚 Create - New Course', teacher: true },
                 { path: '/admin/leetcode-enrichment', icon: Database, label: '🤖 LeetCode Enrichment', teacher: true },
+                { path: '/messages', icon: MessageSquare, label: '💬 Messages' },
                 { path: '/session-documents', icon: FileText, label: '📄 Manage - Session Documents' },
                 { path: '/ai-writing-assistant', icon: Brain, label: '🤖 AI Writing Assistant' },
                 { path: '/azure-vision-test', icon: Sparkles, label: '🔍 Azure Vision Testing Lab' },
@@ -86,6 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
                 { path: '/leetcode', icon: Trophy, label: '🔨 Build - LeetCode' },
                 { path: '/courses/discover', icon: Compass, label: '🎓 Learn - Discover Courses' },
                 { path: '/sessions', icon: Calendar, label: '🤝 Connect - Sessions' },
+                { path: '/messages', icon: MessageSquare, label: '💬 Messages' },
                 { path: '/ascent-ide', icon: Code, label: '🔨 Build - IDE Projects' },
                 { path: '/session-documents', icon: FileText, label: '📄 Manage - Session Documents' },
                 { path: '/ai-writing-assistant', icon: Brain, label: '🤖 AI Writing Assistant' },

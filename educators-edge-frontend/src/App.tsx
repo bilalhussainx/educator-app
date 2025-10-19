@@ -68,9 +68,11 @@ import VideoSessionPage from './pages/VideoSessionPage';
 import SessionsPage from './pages/SessionsPage';
 import TeacherProfile from './pages/TeacherProfile';
 import { ZenithTradeCommandCenter } from './pages/ZenithTradeCommandCenter';
+import MessagesPage from './pages/MessagesPage';
 import LeetCodeCoursesPage from './pages/LeetCodeCoursesPage';
 import LeetCodeIDE from './pages/LeetCodeIDE';
 import LeetCodeEnrichmentDashboard from './pages/LeetCodeEnrichmentDashboard';
+import LeetCodeBrowser from './pages/LeetCodeBrowser';
 import SolvedProblemsPage from './pages/SolvedProblemsPage';
 import EcosystemDashboard from './pages/EcosystemDashboard';
 import TierProgressionPage from './pages/TierProgressionPage';
@@ -208,6 +210,7 @@ export default function App() {
                 {/* LeetCode System Routes */}
                 <Route path="/leetcode" element={<LeetCodeCoursesPage />} />
                 <Route path="/leetcode/courses" element={<LeetCodeCoursesPage />} />
+                <Route path="/leetcode/browse" element={<LeetCodeBrowser />} />
                 <Route path="/leetcode/ide/:problemNumber" element={<LeetCodeIDE />} />
                 <Route path="/leetcode/courses/:courseId/lessons/:lessonId" element={<LeetCodeIDE />} />
                 <Route path="/enhanced-courses/:courseId/lessons/:lessonId/leetcode" element={<LeetCodeIDE />} />
@@ -258,6 +261,7 @@ export default function App() {
                 <Route path="/session-management" element={<ProtectedRoute token={token} user={user}><SessionManagementPage /></ProtectedRoute>} />
                 <Route path="/student-sessions" element={<ProtectedRoute token={token} user={user}><StudentSessionsPage /></ProtectedRoute>} />
                 <Route path="/session-mailbox" element={<ProtectedRoute token={token} user={user}><SessionMailbox /></ProtectedRoute>} />
+                <Route path="/messages" element={<ProtectedRoute token={token} user={user}><MessagesPage /></ProtectedRoute>} />
                 <Route path="/trust-graph" element={<ProtectedRoute token={token} user={user}><TrustGraphPage /></ProtectedRoute>} />
                 <Route path="/trust-graph-simple" element={<ProtectedRoute token={token} user={user}><TrustGraphSimple /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute token={token} user={user}><AIChatPage /></ProtectedRoute>} />
