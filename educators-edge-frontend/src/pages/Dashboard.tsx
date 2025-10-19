@@ -18,6 +18,7 @@ import axios from 'axios'; // Import axios to check for specific error types
 import { PortfolioWidget } from '../components/trade/PortfolioWidget'; // <-- 1. IMPORT THE WIDGET
 import TeacherNotifications from '../components/TeacherNotifications';
 import sessionWebSocketService from '../services/sessionWebSocketService';
+import { UserProgressWidget } from '../components/layout/UserProgressWidget';
 
 // --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
@@ -607,7 +608,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 </div>
 
                 <div className="relative z-10 max-w-7xl mx-auto px-6 py-8 space-y-12">
-                    {/* Hero Header */}
+                    {/* Hero Header - Career Launchpad */}
                     <header className="text-center space-y-6">
                         <div className="relative">
                             <h1 className="text-6xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent">
@@ -616,22 +617,142 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-lg blur-xl opacity-30"></div>
                         </div>
                         <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                            Welcome to your definitive crucible, <span className="text-cyan-400 font-semibold">{user?.username}</span>.
-                            Today, you forge provable skills and expand your professional network.
+                            Welcome back, <span className="text-cyan-400 font-semibold">{user?.username}</span>.
+                            Transform your skills into career opportunities through our four-pillar development system.
                         </p>
 
-                        {/* Quick Action Bar */}
+                        {/* Tier & Progress Indicator */}
                         <div className="flex items-center justify-center gap-4 pt-4">
-                            <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full">
-                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                <span className="text-green-400 text-sm font-medium">12 Days Active</span>
+                            <div className="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500/10 border border-cyan-500/20 rounded-full backdrop-blur-sm">
+                                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                                <span className="text-cyan-400 text-sm font-medium">🔷 Pathfinder • Day 12 of your journey</span>
                             </div>
-                            <div className="flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full">
+                        </div>
+
+                        {/* Quick Stats Bar */}
+                        <div className="flex items-center justify-center gap-3 text-sm">
+                            <div className="flex items-center gap-1 text-slate-400">
                                 <Zap className="w-4 h-4 text-cyan-400" />
-                                <span className="text-cyan-400 text-sm font-medium">2450 XP This Week</span>
+                                <span>2,450 XP this week</span>
+                            </div>
+                            <span className="text-slate-600">•</span>
+                            <div className="flex items-center gap-1 text-slate-400">
+                                <span className="text-orange-400">🔥</span>
+                                <span>12-day streak</span>
+                            </div>
+                            <span className="text-slate-600">•</span>
+                            <div className="flex items-center gap-1 text-slate-400">
+                                <Trophy className="w-4 h-4 text-yellow-400" />
+                                <span>128 problems solved</span>
                             </div>
                         </div>
                     </header>
+
+                    {/* Your Next Step - Personalized Guidance */}
+                    <GlassCard className="border-cyan-500/50 hover:border-cyan-400">
+                        <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+                                    <ChevronsRight className="h-6 w-6 text-cyan-400" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-bold text-white mb-2">📍 Your Next Step</h3>
+                                    {primaryCourse ? (
+                                        <>
+                                            <p className="text-slate-300 mb-3">
+                                                Continue "{primaryCourse.title}" — {Math.round((primaryCourse.lessons_completed / primaryCourse.lesson_count) * 100)}% complete
+                                            </p>
+                                            <Button
+                                                className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold"
+                                                onClick={() => navigate(`/courses/${primaryCourse.id}/learn`)}
+                                            >
+                                                <Play className="mr-2 h-4 w-4" /> Jump Back In
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="text-slate-300 mb-3">
+                                                Start your learning journey with a course from our library
+                                            </p>
+                                            <Button
+                                                className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold"
+                                                onClick={() => navigate('/courses/discover')}
+                                            >
+                                                <BookOpen className="mr-2 h-4 w-4" /> Discover Courses
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </CardContent>
+                    </GlassCard>
+
+                    {/* Four Pillar Overview */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {/* LEARN Pillar */}
+                        <GlassCard
+                            className="border-cyan-500/30 hover:border-cyan-500/70 cursor-pointer transition-all"
+                            onClick={() => navigate('/courses/discover')}
+                        >
+                            <CardContent className="p-6 text-center">
+                                <div className="text-4xl mb-3">🎓</div>
+                                <h3 className="text-lg font-bold text-cyan-400 mb-2">LEARN</h3>
+                                <p className="text-2xl font-bold text-white mb-1">{enrolledCourses.length}</p>
+                                <p className="text-sm text-slate-400">Active Courses</p>
+                                <div className="mt-4 text-xs text-cyan-400 hover:text-cyan-300">
+                                    View Courses →
+                                </div>
+                            </CardContent>
+                        </GlassCard>
+
+                        {/* BUILD Pillar */}
+                        <GlassCard
+                            className="border-orange-500/30 hover:border-orange-500/70 cursor-pointer transition-all"
+                            onClick={() => navigate('/leetcode')}
+                        >
+                            <CardContent className="p-6 text-center">
+                                <div className="text-4xl mb-3">🔨</div>
+                                <h3 className="text-lg font-bold text-orange-400 mb-2">BUILD</h3>
+                                <p className="text-2xl font-bold text-white mb-1">128</p>
+                                <p className="text-sm text-slate-400">Problems Solved</p>
+                                <div className="mt-4 text-xs text-orange-400 hover:text-orange-300">
+                                    Practice Now →
+                                </div>
+                            </CardContent>
+                        </GlassCard>
+
+                        {/* CONNECT Pillar */}
+                        <GlassCard
+                            className="border-purple-500/30 hover:border-purple-500/70 cursor-pointer transition-all"
+                            onClick={() => navigate('/trust-graph')}
+                        >
+                            <CardContent className="p-6 text-center">
+                                <div className="text-4xl mb-3">🤝</div>
+                                <h3 className="text-lg font-bold text-purple-400 mb-2">CONNECT</h3>
+                                <p className="text-2xl font-bold text-white mb-1">5</p>
+                                <p className="text-sm text-slate-400">Mentors Connected</p>
+                                <div className="mt-4 text-xs text-purple-400 hover:text-purple-300">
+                                    Explore Network →
+                                </div>
+                            </CardContent>
+                        </GlassCard>
+
+                        {/* PROVE Pillar */}
+                        <GlassCard
+                            className="border-yellow-500/30 hover:border-yellow-500/70 cursor-pointer transition-all"
+                            onClick={() => navigate('/ecosystem-dashboard')}
+                        >
+                            <CardContent className="p-6 text-center">
+                                <div className="text-4xl mb-3">🏆</div>
+                                <h3 className="text-lg font-bold text-yellow-400 mb-2">PROVE</h3>
+                                <p className="text-2xl font-bold text-white mb-1">#127</p>
+                                <p className="text-sm text-slate-400">Global Rank</p>
+                                <div className="mt-4 text-xs text-yellow-400 hover:text-yellow-300">
+                                    View Rankings →
+                                </div>
+                            </CardContent>
+                        </GlassCard>
+                    </div>
 
                     {/* Stats Dashboard */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -1007,7 +1128,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
 
     return (
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto relative">
+            {/* User Progress Widget - Always visible in top-right */}
+            <UserProgressWidget user={user} />
+
             {user.role === 'teacher' ? renderTeacherDashboard() : renderStudentDashboard()}
         </div>
     );

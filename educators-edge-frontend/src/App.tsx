@@ -72,6 +72,8 @@ import LeetCodeIDE from './pages/LeetCodeIDE';
 import LeetCodeEnrichmentDashboard from './pages/LeetCodeEnrichmentDashboard';
 import SolvedProblemsPage from './pages/SolvedProblemsPage';
 import EcosystemDashboard from './pages/EcosystemDashboard';
+import TierProgressionPage from './pages/TierProgressionPage';
+import OnboardingPage from './pages/OnboardingPage';
 import DiscoverPage from './pages/DiscoverPage';
 import AnalysisPage from './pages/AnalysisPage';
 import PortfolioPage from './pages/PortfolioPage';
@@ -225,7 +227,9 @@ export default function App() {
                 {/* Submission Tracking Routes */}
                 <Route path="/solved-problems" element={<SolvedProblemsPage />} />
                 <Route path="/ecosystem-dashboard" element={<EcosystemDashboard />} />
-                
+                <Route path="/tier-progression" element={<TierProgressionPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
+
                 <Route path="/chapters/new" element={<CreateChapterPage />} /> {/* <-- 2. ADD THE NEW ROUTE */}
                 <Route path="/scribe/:documentId" element={<ScribeSessionPage />} />
                 <Route path="/live-session/:sessionId" element={<DualModeLiveSession />} />
