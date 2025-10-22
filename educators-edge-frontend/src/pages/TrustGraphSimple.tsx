@@ -1,5 +1,6 @@
 // Simplified Trust Graph - Clean, intuitive teacher-student interactions
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,13 @@ import {
     HandHeart,
     Users2,
     BarChart3,
-    Bot
+    Bot,
+    CalendarCheck,
+    ExternalLink,
+    CheckCircle2,
+    XCircle,
+    AlertCircle,
+    ArrowRight
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { toast } from 'sonner';
@@ -73,7 +80,8 @@ interface SessionRequest {
 }
 
 const TrustGraphSimple: React.FC = () => {
-    
+    const navigate = useNavigate();
+
     // State
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [connectedTeachers, setConnectedTeachers] = useState<Teacher[]>([]);
@@ -476,13 +484,13 @@ const TrustGraphSimple: React.FC = () => {
                         <Users className="h-4 w-4" />
                         Connected ({connectedTeachers.length})
                     </Button>
-                    <Button 
+                    <Button
                         variant={activeTab === 'requests' ? 'default' : 'outline'}
                         onClick={() => setActiveTab('requests')}
                         className="flex items-center gap-2"
                     >
-                        <Clock className="h-4 w-4" />
-                        My Requests ({myRequests.length})
+                        <CalendarCheck className="h-4 w-4" />
+                        My Sessions ({myRequests.length})
                     </Button>
                 </div>
 
@@ -534,39 +542,120 @@ const TrustGraphSimple: React.FC = () => {
 
                 {activeTab === 'requests' && (
                     <div className="space-y-4">
+                        {/* Session Hub Header */}
+                        <Card className="bg-gradient-to-r from-purple-900/20 via-pink-900/20 to-purple-900/20 border-purple-500/30">
+                            <CardContent className="p-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                            <CalendarCheck className="h-6 w-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-white">My Session Requests</h3>
+                                            <p className="text-sm text-slate-400">Track and manage your session bookings</p>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={() => navigate('/teacher/sessions')}
+                                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white"
+                                    >
+                                        Open Session Hub
+                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </div>
+
+                                {/* Quick Stats */}
+                                <div className="grid grid-cols-3 gap-4 mt-4">
+                                    <div className="bg-slate-900/50 rounded-lg p-3 border border-yellow-500/20">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <AlertCircle className="h-4 w-4 text-yellow-400" />
+                                            <span className="text-xs text-slate-400">Pending</span>
+                                        </div>
+                                        <div className="text-2xl font-bold text-yellow-400">
+                                            {myRequests.filter(r => r.status === 'pending').length}
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/50 rounded-lg p-3 border border-green-500/20">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <CheckCircle2 className="h-4 w-4 text-green-400" />
+                                            <span className="text-xs text-slate-400">Accepted</span>
+                                        </div>
+                                        <div className="text-2xl font-bold text-green-400">
+                                            {myRequests.filter(r => r.status === 'accepted').length}
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-500/20">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Clock className="h-4 w-4 text-slate-400" />
+                                            <span className="text-xs text-slate-400">Total</span>
+                                        </div>
+                                        <div className="text-2xl font-bold text-white">
+                                            {myRequests.length}
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Session Request Cards */}
                         {myRequests.map(request => (
-                            <Card key={request.id} className="bg-slate-900/40 border-slate-700">
+                            <Card key={request.id} className="bg-slate-900/40 border-slate-700 hover:border-slate-600 transition-all duration-300 group">
                                 <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <Avatar className="h-10 w-10">
+                                            <Avatar className="h-10 w-10 ring-2 ring-slate-700 group-hover:ring-purple-500/50 transition-all">
                                                 <AvatarFallback className="bg-slate-700 text-white">
                                                     {request.teacher?.display_name?.charAt(0) || '?'}
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <h4 className="font-medium text-white">{request.teacher?.display_name}</h4>
+                                                <h4 className="font-medium text-white group-hover:text-purple-300 transition-colors">
+                                                    {request.teacher?.display_name}
+                                                </h4>
                                                 <p className="text-sm text-slate-400">{request.session_type} session</p>
                                             </div>
                                         </div>
-                                        <Badge 
-                                            className={cn(
-                                                request.status === 'pending' && "bg-yellow-500/20 text-yellow-300",
-                                                request.status === 'accepted' && "bg-green-500/20 text-green-300",
-                                                request.status === 'declined' && "bg-red-500/20 text-red-300"
-                                            )}
-                                        >
-                                            {request.status}
-                                        </Badge>
+                                        <div className="flex items-center gap-2">
+                                            <Badge
+                                                className={cn(
+                                                    "font-medium",
+                                                    request.status === 'pending' && "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+                                                    request.status === 'accepted' && "bg-green-500/20 text-green-300 border-green-500/30",
+                                                    request.status === 'declined' && "bg-red-500/20 text-red-300 border-red-500/30",
+                                                    request.status === 'completed' && "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                                )}
+                                            >
+                                                {request.status === 'pending' && <AlertCircle className="h-3 w-3 mr-1" />}
+                                                {request.status === 'accepted' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                                                {request.status === 'declined' && <XCircle className="h-3 w-3 mr-1" />}
+                                                {request.status}
+                                            </Badge>
+                                        </div>
                                     </div>
                                     <p className="text-sm text-slate-300 mt-2 line-clamp-2">{request.description}</p>
+                                    {request.created_at && (
+                                        <p className="text-xs text-slate-500 mt-2">
+                                            <Clock className="h-3 w-3 inline mr-1" />
+                                            Requested {new Date(request.created_at).toLocaleDateString()}
+                                        </p>
+                                    )}
                                 </CardContent>
                             </Card>
                         ))}
                         {myRequests.length === 0 && (
                             <div className="text-center text-slate-400 py-12">
-                                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p>No session requests yet</p>
+                                <div className="bg-slate-900/40 rounded-full h-20 w-20 mx-auto mb-4 flex items-center justify-center">
+                                    <Clock className="h-10 w-10 opacity-50" />
+                                </div>
+                                <p className="text-lg font-medium mb-2">No session requests yet</p>
+                                <p className="text-sm text-slate-500 mb-4">Start by requesting a session from a teacher</p>
+                                <Button
+                                    onClick={() => setActiveTab('discover')}
+                                    variant="outline"
+                                    className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10"
+                                >
+                                    Discover Teachers
+                                </Button>
                             </div>
                         )}
                     </div>

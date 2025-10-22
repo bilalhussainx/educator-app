@@ -46,7 +46,6 @@ import EssaySessionPage from './pages/EssaySessionPage';
 import UrgentEssaySessionPage from './pages/UrgentEssaySessionPage';
 import ModernResumeOptimizationPage from './pages/ModernResumeOptimizationPage';
 import CleanResumeAssistant from './pages/CleanResumeAssistant';
-import AzureVisionTestPage from './pages/AzureVisionTestPage';
 import CssPdfResumePage from './pages/CssPdfResumePage';
 import SessionTypeSelector from './components/session/SessionTypeSelector';
 import EssayEditorPage from './pages/EssayEditorPage';
@@ -59,6 +58,8 @@ import TalentCruciblePage from './pages/TalentCruciblePage';
 import SessionManagementPage from './pages/SessionManagementPage';
 import StudentSessionsPage from './pages/StudentSessionsPage';
 import SessionMailbox from './pages/SessionMailbox';
+import TeacherSessionManagementPage from './pages/TeacherSessionManagementPage';
+import TeacherSessionHub from './pages/TeacherSessionHub';
 import TrustGraphPage from './pages/TrustGraphPage';
 import AIChatPage from './pages/AIChatPage';
 import TradingTerminalPage from './pages/TradingTerminalPage';
@@ -67,6 +68,7 @@ import SessionCalendarPage from './pages/SessionCalendarPage';
 import VideoSessionPage from './pages/VideoSessionPage';
 import SessionsPage from './pages/SessionsPage';
 import TeacherProfile from './pages/TeacherProfile';
+import TeacherProfilePage from './pages/TeacherProfilePage';
 import { ZenithTradeCommandCenter } from './pages/ZenithTradeCommandCenter';
 import MessagesPage from './pages/MessagesPage';
 import LeetCodeCoursesPage from './pages/LeetCodeCoursesPage';
@@ -243,7 +245,6 @@ export default function App() {
                 <Route path="/resume-assistant" element={<CleanResumeAssistant />} />
                 <Route path="/resume-coach" element={<VisualContextResumePage />} />
                 <Route path="/resume-pdf" element={<CssPdfResumePage />} />
-                <Route path="/azure-vision-test" element={<AzureVisionTestPage />} />
                 <Route path="/ai-writing-assistant" element={<SessionTypeSelector />} />
                 <Route path="/essay-editor" element={<EssayEditorPage />} />
 
@@ -259,11 +260,14 @@ export default function App() {
                 <Route path="/sessions" element={<ProtectedRoute token={token} user={user}><SessionsPage /></ProtectedRoute>} />
                 <Route path="/sessions/calendar" element={<ProtectedRoute token={token} user={user}><SessionCalendarPage /></ProtectedRoute>} />
                 <Route path="/session-management" element={<ProtectedRoute token={token} user={user}><SessionManagementPage /></ProtectedRoute>} />
+                <Route path="/teacher/sessions" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><TeacherSessionHub /></ProtectedRoute>} />
+                <Route path="/teacher/session-requests" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><TeacherSessionManagementPage /></ProtectedRoute>} />
                 <Route path="/student-sessions" element={<ProtectedRoute token={token} user={user}><StudentSessionsPage /></ProtectedRoute>} />
                 <Route path="/session-mailbox" element={<ProtectedRoute token={token} user={user}><SessionMailbox /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute token={token} user={user}><MessagesPage /></ProtectedRoute>} />
                 <Route path="/trust-graph" element={<ProtectedRoute token={token} user={user}><TrustGraphPage /></ProtectedRoute>} />
                 <Route path="/trust-graph-simple" element={<ProtectedRoute token={token} user={user}><TrustGraphSimple /></ProtectedRoute>} />
+                <Route path="/teacher/:userId" element={<ProtectedRoute token={token} user={user}><TeacherProfilePage /></ProtectedRoute>} />
                 <Route path="/ai-chat" element={<ProtectedRoute token={token} user={user}><AIChatPage /></ProtectedRoute>} />
                 <Route path="/trade" element={<ProtectedRoute token={token} user={user}><TradingTerminalPage /></ProtectedRoute>} />
                 <Route path="/video-session/:sessionId" element={<ProtectedRoute token={token} user={user}><VideoSessionPage /></ProtectedRoute>} />

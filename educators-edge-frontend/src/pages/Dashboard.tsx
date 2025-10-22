@@ -20,6 +20,7 @@ import TeacherNotifications from '../components/TeacherNotifications';
 import sessionWebSocketService from '../services/sessionWebSocketService';
 import { UserProgressWidget } from '../components/layout/UserProgressWidget';
 import { AISearchAgent } from '../components/AISearchAgent';
+import { IntelligentNavigationCompanion } from '../components/ai/IntelligentNavigationCompanion';
 
 // --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
@@ -170,6 +171,29 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 navigate('/login');
                 return;
             }
+
+            // Check if teacher needs to complete profile setup
+            if (user.role === 'teacher') {
+                try {
+                    const profileResponse = await apiClient.get('/api/profile/check');
+                    const hasCompletedProfile = profileResponse.data?.profile_completed;
+
+                    if (!hasCompletedProfile) {
+                        toast.info('👋 Welcome! Let\'s set up your teacher profile first.');
+                        navigate('/profile/setup');
+                        return;
+                    }
+                } catch (err) {
+                    // If endpoint doesn't exist or profile not found, assume profile needs setup
+                    const profileCompleted = localStorage.getItem(`profile_completed_${user.id}`);
+                    if (!profileCompleted) {
+                        toast.info('👋 Welcome! Let\'s set up your teacher profile first.');
+                        navigate('/profile/setup');
+                        return;
+                    }
+                }
+            }
+
             setIsLoading(true);
             try {
                 const coursesEndpoint = user.role === 'teacher' ? '/api/courses' : '/api/students/my-courses';
@@ -233,7 +257,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
                 // Determine redirect path based on session type
                 const redirectPath = data.sessionType === 'essay'
-                    ? `/dual-mode-session/${data.sessionId}`
+                    ? `/live-session/${data.sessionId}`
                     : `/session/${data.sessionId}`;
 
                 // Show notification
@@ -276,7 +300,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                 toast.success(`📝 Essay writing session "${newEssaySession.courseName}" started by ${newEssaySession.teacherName}!`, {
                     action: {
                         label: "Join Essay Session",
-                        onClick: () => navigate(`/dual-mode-session/${data.sessionId}`)
+                        onClick: () => navigate(`/live-session/${data.sessionId}`)
                     },
                     duration: 10000
                 });
@@ -414,41 +438,48 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                     {/* Stats Dashboard */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                         <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Session Management Landing */}
-                            <div className="group relative cursor-pointer" onClick={() => navigate('/sessions')}>
-                                <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
-                                <div className="relative bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:border-cyan-500/50 transition-all duration-300">
+                            {/* Session Hub - New Professional Interface */}
+                            <div className="group relative cursor-pointer" onClick={() => navigate('/teacher/sessions')}>
+                                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
+                                <div className="relative bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-300">
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-lg border border-cyan-500/30">
-                                                <Calendar className="h-6 w-6 text-cyan-400" />
+                                            <div className="p-2 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-500/30">
+                                                <Calendar className="h-6 w-6 text-purple-400" />
                                             </div>
                                             <div>
-                                                <p className="text-xl font-bold text-white">Sessions</p>
-                                                <p className="text-xs text-slate-400">Manage & Schedule</p>
+                                                <p className="text-xl font-bold text-white">Session Hub</p>
+                                                <p className="text-xs text-slate-400">Professional Management</p>
                                             </div>
                                         </div>
-                                        <div className="text-cyan-400 opacity-60">
-                                            <ChevronsRight className="h-5 w-5" />
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs font-medium">3 Pending</span>
+                                            <div className="text-purple-400 opacity-60">
+                                                <ChevronsRight className="h-5 w-5" />
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div className="bg-slate-800/50 rounded-lg p-3 mb-3 border border-slate-700/50">
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                            <p className="text-sm font-medium text-white">Next Session</p>
+                                            <p className="text-sm font-medium text-white">Today's Sessions</p>
                                         </div>
-                                        <p className="text-xs text-slate-400 mb-2">React Advanced Concepts</p>
-                                        <p className="text-xs text-slate-300">Today, 3:00 PM</p>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Live</span>
-                                            <span className="text-xs text-slate-500">5 students</span>
+                                        <div className="space-y-1">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-slate-300">2:00 PM - Sarah Johnson</span>
+                                                <span className="text-green-400">Ready</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-slate-300">4:30 PM - Mike Chen</span>
+                                                <span className="text-yellow-400">Prepare</span>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center justify-between text-xs">
-                                        <span className="text-slate-400">3 pending requests</span>
-                                        <span className="text-cyan-400 font-medium">Manage →</span>
+                                        <span className="text-slate-400">7 this week • $420 earned</span>
+                                        <span className="text-purple-400 font-medium">Open Hub →</span>
                                     </div>
                                 </div>
                             </div>
@@ -678,8 +709,57 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                         </div>
                     </header>
 
-                    {/* NEW TOP SECTION: Session/Teacher Card, Profile/Pricing, and AI Agent */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* AI NAVIGATION COMPANION - Main Featured Card */}
+                    <div className="relative group">
+                        {/* Animated glow effect */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-3xl blur-2xl opacity-30 group-hover:opacity-50 transition duration-500 animate-pulse"></div>
+
+                        {/* Main AI Card */}
+                        <div className="relative">
+                            <IntelligentNavigationCompanion user={user} className="min-h-[600px]" />
+                        </div>
+                    </div>
+
+                    {/* Live Sessions Card - Show if there are active sessions */}
+                    {liveSessions.length > 0 && (
+                        <GlassCard className="border-green-500/50">
+                            <CardHeader>
+                                <CardTitle className="text-xl text-white flex items-center gap-2">
+                                    <Video className="h-5 w-5 text-green-400 animate-pulse" />
+                                    🔴 Live Sessions Active
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {liveSessions.map((session) => (
+                                    <div key={session.sessionId} className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg p-4 border border-green-500/30">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1">
+                                                <p className="text-white font-medium">{session.courseName}</p>
+                                                <p className="text-sm text-slate-300 mt-1">
+                                                    By {session.teacherName} • {session.sessionType === 'essay' ? '📝 Essay' : '💻 Coding'}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                className="bg-green-500 hover:bg-green-400 text-white"
+                                                onClick={() => {
+                                                    const path = session.sessionType === 'essay'
+                                                        ? `/live-session/${session.sessionId}`
+                                                        : `/session/${session.sessionId}`;
+                                                    navigate(path);
+                                                }}
+                                            >
+                                                Join Now
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </GlassCard>
+                    )}
+
+                    {/* PLACEHOLDER FOR REMOVAL - This will be replaced */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{display: 'none'}}>
                         {/* Left: Session/Teacher Card */}
                         <GlassCard className="border-purple-500/50">
                             <CardHeader>
@@ -710,7 +790,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                                         className="bg-green-500 hover:bg-green-400 text-white text-xs px-3 py-1"
                                                         onClick={() => {
                                                             const path = session.sessionType === 'essay'
-                                                                ? `/dual-mode-session/${session.sessionId}`
+                                                                ? `/live-session/${session.sessionId}`
                                                                 : `/session/${session.sessionId}`;
                                                             navigate(path);
                                                         }}
@@ -830,7 +910,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
                         {/* Right: AI Navigation Assistant */}
                         <AISearchAgent />
-                    </div>
+                    </div> {/* End of hidden 3-card section */}
 
                     {/* Your Next Step - Personalized Guidance */}
                     <GlassCard className="border-cyan-500/50 hover:border-cyan-400">

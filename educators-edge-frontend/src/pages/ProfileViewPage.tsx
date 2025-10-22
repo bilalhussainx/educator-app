@@ -226,10 +226,12 @@ const ProfileViewPage: React.FC = () => {
                                         </div>
                                         
                                         <div className="flex items-center gap-4 text-slate-400">
-                                            <div className={`flex items-center gap-2 ${getAvailabilityColor(profile.availability_status).split(' ')[0]}`}>
-                                                <span className={`w-3 h-3 rounded-full ${getAvailabilityColor(profile.availability_status).split(' ')[1]}`}></span>
-                                                {profile.availability_status.charAt(0).toUpperCase() + profile.availability_status.slice(1)}
-                                            </div>
+                                            {profile.availability_status && (
+                                                <div className={`flex items-center gap-2 ${getAvailabilityColor(profile.availability_status).split(' ')[0]}`}>
+                                                    <span className={`w-3 h-3 rounded-full ${getAvailabilityColor(profile.availability_status).split(' ')[1]}`}></span>
+                                                    {profile.availability_status.charAt(0).toUpperCase() + profile.availability_status.slice(1)}
+                                                </div>
+                                            )}
                                             {profile.location && (
                                                 <div className="flex items-center gap-1">
                                                     <MapPin className="h-4 w-4" />

@@ -30,7 +30,8 @@ import {
     FileText,
     Brain,
     Database,
-    MessageSquare
+    MessageSquare,
+    CalendarCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -72,12 +73,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
                 { path: '/courses/new', icon: PlusCircle, label: '📚 Create - New Course', teacher: true },
                 { path: '/admin/leetcode-enrichment', icon: Database, label: '🤖 LeetCode Enrichment', teacher: true },
                 { path: '/messages', icon: MessageSquare, label: '💬 Messages' },
+                { path: '/teacher/sessions', icon: CalendarCheck, label: '📅 Session Hub', teacher: true },
                 { path: '/session-documents', icon: FileText, label: '📄 Manage - Session Documents' },
                 { path: '/ai-writing-assistant', icon: Brain, label: '🤖 AI Writing Assistant' },
-                { path: '/azure-vision-test', icon: Sparkles, label: '🔍 Azure Vision Testing Lab' },
                 { path: '/trading-terminal', icon: Activity, label: '🔨 Build - Trading Terminal' },
                 { path: '/trust-graph', icon: Users, label: '🤝 Connect - Trust Graph' },
-                { path: '/sessions', icon: Calendar, label: '🤝 Connect - Sessions' },
                 { path: '/solved-problems', icon: Sparkles, label: '🏆 Prove - Achievements' },
             ];
         } else {
@@ -87,7 +87,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
                 { path: '/trust-graph', icon: Users, label: '🤝 Connect - Trust Graph' },
                 { path: '/leetcode', icon: Trophy, label: '🔨 Build - LeetCode' },
                 { path: '/courses/discover', icon: Compass, label: '🎓 Learn - Discover Courses' },
-                { path: '/sessions', icon: Calendar, label: '🤝 Connect - Sessions' },
                 { path: '/messages', icon: MessageSquare, label: '💬 Messages' },
                 { path: '/ascent-ide', icon: Code, label: '🔨 Build - IDE Projects' },
                 { path: '/session-documents', icon: FileText, label: '📄 Manage - Session Documents' },

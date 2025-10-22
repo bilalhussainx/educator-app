@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import AccomplishmentsShowcase from '../components/portfolio/AccomplishmentsShowcase';
 import PortfolioShowcase from '../components/portfolio/PortfolioShowcase';
+import EnhancedSessionBooking from '../components/EnhancedSessionBooking';
 import {
     User,
     GraduationCap,
@@ -64,6 +66,7 @@ const PublicTeacherProfile: React.FC = () => {
     const [profile, setProfile] = useState<PublicTeacherProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showContactModal, setShowContactModal] = useState(false);
+    const [showBookingModal, setShowBookingModal] = useState(false);
 
     useEffect(() => {
         if (teacherId) {
@@ -113,11 +116,7 @@ const PublicTeacherProfile: React.FC = () => {
     };
 
     const handleBookSession = () => {
-        if (profile?.calendly_url) {
-            window.open(profile.calendly_url, '_blank');
-        } else {
-            toast.error('Booking unavailable for this teacher');
-        }
+        setShowBookingModal(true);
     };
 
     const handleContactTeacher = () => {
@@ -422,6 +421,33 @@ const PublicTeacherProfile: React.FC = () => {
                 <AccomplishmentsShowcase teacherId={profile.id} isOwnProfile={false} />
                 <PortfolioShowcase teacherId={profile.id} isOwnProfile={false} />
             </div>
+
+            {/* Enhanced Session Booking Modal */}
+            <Dialog open={showBookingModal} onOpenChange={setShowBookingModal}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <EnhancedSessionBooking
+                        teacher={{
+                            id: profile.id,
+                            username: profile.username,
+                            display_name: profile.display_name,
+                            bio: profile.bio,
+                            calendly_url: profile.calendly_url,
+                            session_rate_min_usd: 25,
+                            session_rate_max_usd: profile.hourly_rate_usd || 100,
+                            average_rating: profile.average_rating,
+                            total_reviews: 0,
+                            total_sessions: profile.total_sessions,
+                            years_experience: profile.years_experience
+                        }}
+                        onBookingComplete={(data) => {
+                            console.log('Booking completed:', data);
+                            setShowBookingModal(false);
+                            toast.success('Session request sent successfully!');
+                        }}
+                        onCancel={() => setShowBookingModal(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

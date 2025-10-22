@@ -252,6 +252,11 @@ const ProfileSetupPage: React.FC = () => {
             }
 
             setSuccess(true);
+
+            // Mark profile as completed in localStorage for faster first-load detection
+            const userId = localStorage.getItem('user_id') || 'current_user';
+            localStorage.setItem(`profile_completed_${userId}`, 'true');
+
             setTimeout(() => {
                 navigate('/dashboard');
             }, 2000);

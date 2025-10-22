@@ -1,3 +1,11 @@
+/**
+ * ================================================================
+ * LEETCODE BROWSER - TOP 0.1% UI/UX DESIGN
+ * ================================================================
+ * Beautiful problem discovery with intelligent search, filters, and navigation
+ * Features: Advanced search, pattern grouping, difficulty filtering, progress tracking
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,10 +25,19 @@ import {
     Trophy,
     Target,
     Hash,
-    Tag
+    Tag,
+    Sparkles,
+    BookOpen,
+    Flame,
+    Star,
+    ArrowUpCircle,
+    BarChart3,
+    Grid3x3,
+    List
 } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface LeetCodeProblem {
     problem_number: number;
@@ -42,6 +59,7 @@ const LeetCodeBrowser: React.FC = () => {
     const [patternFilter, setPatternFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'solved' | 'unsolved'>('all');
     const [patterns, setPatterns] = useState<string[]>([]);
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
     useEffect(() => {
         fetchProblems();
@@ -55,7 +73,7 @@ const LeetCodeBrowser: React.FC = () => {
         try {
             setLoading(true);
 
-            // Fetch all LeetCode problems from the enriched database
+            // Fetch all LeetCode problems from the backend
             const response = await apiClient.get('/api/leetcode/problems/all');
 
             if (response.data.success) {
@@ -76,7 +94,7 @@ const LeetCodeBrowser: React.FC = () => {
             }
         } catch (error) {
             console.error('Error fetching problems:', error);
-            toast.error('Failed to load problems, using default list');
+            toast.error('Failed to load problems from server, using fallback list');
             generateDefaultProblems();
         } finally {
             setLoading(false);
@@ -84,7 +102,7 @@ const LeetCodeBrowser: React.FC = () => {
     };
 
     const generateDefaultProblems = () => {
-        // Generate a comprehensive list of popular LeetCode problems
+        // Comprehensive list of popular LeetCode problems
         const defaultProblems: LeetCodeProblem[] = [
             // Arrays & Hashing
             { problem_number: 1, title: 'Two Sum', difficulty: 'easy', pattern: 'Arrays & Hashing' },
@@ -208,19 +226,35 @@ const LeetCodeBrowser: React.FC = () => {
     };
 
     const handleProblemClick = (problemNumber: number) => {
-        navigate(`/leetcode/ide/${problemNumber}`);
+        // Format problem number with leading zeros (e.g., 0001, 0020, 0100)
+        const formattedNumber = problemNumber.toString().padStart(4, '0');
+        console.log(`🔗 Navigating to problem: ${formattedNumber} (${problemNumber})`);
+        navigate(`/leetcode/ide/${formattedNumber}`);
     };
 
     const getDifficultyColor = (difficulty: string) => {
         switch (difficulty) {
             case 'easy':
-                return 'bg-green-500/20 text-green-400 border-green-500/50';
+                return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50';
             case 'medium':
-                return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50';
+                return 'bg-amber-500/20 text-amber-400 border-amber-500/50';
             case 'hard':
-                return 'bg-red-500/20 text-red-400 border-red-500/50';
+                return 'bg-rose-500/20 text-rose-400 border-rose-500/50';
             default:
                 return 'bg-slate-500/20 text-slate-400 border-slate-500/50';
+        }
+    };
+
+    const getDifficultyIcon = (difficulty: string) => {
+        switch (difficulty) {
+            case 'easy':
+                return <Zap className="h-4 w-4" />;
+            case 'medium':
+                return <TrendingUp className="h-4 w-4" />;
+            case 'hard':
+                return <Flame className="h-4 w-4" />;
+            default:
+                return <Code className="h-4 w-4" />;
         }
     };
 
@@ -230,194 +264,273 @@ const LeetCodeBrowser: React.FC = () => {
         const easy = problems.filter(p => p.difficulty === 'easy').length;
         const medium = problems.filter(p => p.difficulty === 'medium').length;
         const hard = problems.filter(p => p.difficulty === 'hard').length;
+        const solveRate = total > 0 ? Math.round((solved / total) * 100) : 0;
 
-        return { total, solved, easy, medium, hard };
+        return { total, solved, easy, medium, hard, solveRate };
     };
 
     const stats = getStats();
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white flex items-center justify-center">
                 <div className="text-center">
-                    <Code className="h-16 w-16 text-cyan-400 animate-pulse mx-auto mb-4" />
-                    <p className="text-xl">Loading LeetCode Problems...</p>
+                    <div className="relative">
+                        <Code className="h-20 w-20 text-cyan-400 animate-pulse mx-auto mb-6" />
+                        <div className="absolute inset-0 bg-cyan-400/20 blur-3xl rounded-full animate-pulse"></div>
+                    </div>
+                    <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                        Loading Problems
+                    </h2>
+                    <p className="text-slate-400">Fetching latest LeetCode challenges...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                            LeetCode Problem Browser
-                        </h1>
-                        <p className="text-slate-400 mt-2">
-                            Browse and solve {stats.total} coding problems across {patterns.length} patterns
-                        </p>
+        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            </div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-12 space-y-8">
+                {/* Hero Header */}
+                <div className="text-center space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full mb-4">
+                        <Sparkles className="h-4 w-4 text-cyan-400" />
+                        <span className="text-sm text-cyan-400 font-medium">Problem Discovery Hub</span>
                     </div>
-                    <Button
-                        onClick={() => navigate('/leetcode/courses')}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                    >
-                        <Trophy className="h-4 w-4 mr-2" />
-                        View Courses
-                    </Button>
+                    <h1 className="text-5xl md:text-6xl font-black tracking-tight bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+                        LeetCode Arena
+                    </h1>
+                    <p className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto">
+                        Master coding interviews with {stats.total} curated problems across {patterns.length} patterns
+                    </p>
                 </div>
 
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <Card className="bg-slate-900 border-slate-800">
+                {/* Stats Dashboard */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {/* Total */}
+                    <Card className="bg-slate-900/40 backdrop-blur-xl border-slate-700/50 hover:border-cyan-500/50 transition-all group">
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <Target className="h-8 w-8 text-cyan-400" />
+                                <div className="p-2.5 bg-cyan-500/10 rounded-lg border border-cyan-500/20 group-hover:scale-110 transition-transform">
+                                    <Target className="h-5 w-5 text-cyan-400" />
+                                </div>
                                 <div>
-                                    <p className="text-2xl font-bold">{stats.total}</p>
-                                    <p className="text-sm text-slate-400">Total Problems</p>
+                                    <p className="text-2xl font-bold text-white">{stats.total}</p>
+                                    <p className="text-xs text-slate-400">Total</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-slate-900 border-slate-800">
+                    {/* Solved */}
+                    <Card className="bg-slate-900/40 backdrop-blur-xl border-slate-700/50 hover:border-green-500/50 transition-all group">
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <CheckCircle className="h-8 w-8 text-green-400" />
+                                <div className="p-2.5 bg-green-500/10 rounded-lg border border-green-500/20 group-hover:scale-110 transition-transform">
+                                    <CheckCircle className="h-5 w-5 text-green-400" />
+                                </div>
                                 <div>
-                                    <p className="text-2xl font-bold">{stats.solved}</p>
-                                    <p className="text-sm text-slate-400">Solved</p>
+                                    <p className="text-2xl font-bold text-white">{stats.solved}</p>
+                                    <p className="text-xs text-slate-400">Solved</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-slate-900 border-green-900/50">
+                    {/* Solve Rate */}
+                    <Card className="bg-slate-900/40 backdrop-blur-xl border-slate-700/50 hover:border-purple-500/50 transition-all group">
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <Zap className="h-8 w-8 text-green-400" />
+                                <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20 group-hover:scale-110 transition-transform">
+                                    <BarChart3 className="h-5 w-5 text-purple-400" />
+                                </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-green-400">{stats.easy}</p>
-                                    <p className="text-sm text-slate-400">Easy</p>
+                                    <p className="text-2xl font-bold text-white">{stats.solveRate}%</p>
+                                    <p className="text-xs text-slate-400">Rate</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-slate-900 border-yellow-900/50">
+                    {/* Easy */}
+                    <Card className="bg-slate-900/40 backdrop-blur-xl border-emerald-900/50 hover:border-emerald-500/50 transition-all group">
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <TrendingUp className="h-8 w-8 text-yellow-400" />
+                                <div className="p-2.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                                    <Zap className="h-5 w-5 text-emerald-400" />
+                                </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-yellow-400">{stats.medium}</p>
-                                    <p className="text-sm text-slate-400">Medium</p>
+                                    <p className="text-2xl font-bold text-emerald-400">{stats.easy}</p>
+                                    <p className="text-xs text-slate-400">Easy</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-slate-900 border-red-900/50">
+                    {/* Medium */}
+                    <Card className="bg-slate-900/40 backdrop-blur-xl border-amber-900/50 hover:border-amber-500/50 transition-all group">
                         <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                                <Trophy className="h-8 w-8 text-red-400" />
+                                <div className="p-2.5 bg-amber-500/10 rounded-lg border border-amber-500/20 group-hover:scale-110 transition-transform">
+                                    <TrendingUp className="h-5 w-5 text-amber-400" />
+                                </div>
                                 <div>
-                                    <p className="text-2xl font-bold text-red-400">{stats.hard}</p>
-                                    <p className="text-sm text-slate-400">Hard</p>
+                                    <p className="text-2xl font-bold text-amber-400">{stats.medium}</p>
+                                    <p className="text-xs text-slate-400">Medium</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Hard */}
+                    <Card className="bg-slate-900/40 backdrop-blur-xl border-rose-900/50 hover:border-rose-500/50 transition-all group">
+                        <CardContent className="p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-rose-500/10 rounded-lg border border-rose-500/20 group-hover:scale-110 transition-transform">
+                                    <Flame className="h-5 w-5 text-rose-400" />
+                                </div>
+                                <div>
+                                    <p className="text-2xl font-bold text-rose-400">{stats.hard}</p>
+                                    <p className="text-xs text-slate-400">Hard</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Filters */}
-                <Card className="bg-slate-900 border-slate-800">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Filter className="h-5 w-5" />
-                            Filters
-                        </CardTitle>
+                {/* Filters Card */}
+                <Card className="bg-slate-900/40 backdrop-blur-xl border-slate-700/50">
+                    <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Filter className="h-5 w-5 text-cyan-400" />
+                                <CardTitle className="text-xl">Filters & Search</CardTitle>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    variant={viewMode === 'list' ? 'default' : 'outline'}
+                                    onClick={() => setViewMode('list')}
+                                    className="h-9 w-9 p-0"
+                                >
+                                    <List className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                                    onClick={() => setViewMode('grid')}
+                                    className="h-9 w-9 p-0"
+                                >
+                                    <Grid3x3 className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Search */}
+                        {/* Search Bar */}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
                                 placeholder="Search by title, number, or pattern..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 bg-slate-800 border-slate-700 text-white"
+                                className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                             />
                         </div>
 
                         {/* Filter Buttons */}
-                        <div className="flex flex-wrap gap-4">
-                            {/* Difficulty */}
+                        <div className="flex flex-wrap gap-3">
+                            {/* Difficulty Filters */}
                             <div className="flex gap-2">
                                 <Button
                                     size="sm"
                                     variant={difficultyFilter === 'all' ? 'default' : 'outline'}
                                     onClick={() => setDifficultyFilter('all')}
+                                    className="bg-slate-700 hover:bg-slate-600"
                                 >
-                                    All
+                                    All Levels
                                 </Button>
                                 <Button
                                     size="sm"
                                     variant={difficultyFilter === 'easy' ? 'default' : 'outline'}
                                     onClick={() => setDifficultyFilter('easy')}
-                                    className="border-green-500/50 text-green-400"
+                                    className={cn(
+                                        difficultyFilter === 'easy'
+                                            ? 'bg-emerald-500 hover:bg-emerald-600'
+                                            : 'border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10'
+                                    )}
                                 >
+                                    <Zap className="h-3 w-3 mr-1" />
                                     Easy
                                 </Button>
                                 <Button
                                     size="sm"
                                     variant={difficultyFilter === 'medium' ? 'default' : 'outline'}
                                     onClick={() => setDifficultyFilter('medium')}
-                                    className="border-yellow-500/50 text-yellow-400"
+                                    className={cn(
+                                        difficultyFilter === 'medium'
+                                            ? 'bg-amber-500 hover:bg-amber-600'
+                                            : 'border-amber-500/50 text-amber-400 hover:bg-amber-500/10'
+                                    )}
                                 >
+                                    <TrendingUp className="h-3 w-3 mr-1" />
                                     Medium
                                 </Button>
                                 <Button
                                     size="sm"
                                     variant={difficultyFilter === 'hard' ? 'default' : 'outline'}
                                     onClick={() => setDifficultyFilter('hard')}
-                                    className="border-red-500/50 text-red-400"
+                                    className={cn(
+                                        difficultyFilter === 'hard'
+                                            ? 'bg-rose-500 hover:bg-rose-600'
+                                            : 'border-rose-500/50 text-rose-400 hover:bg-rose-500/10'
+                                    )}
                                 >
+                                    <Flame className="h-3 w-3 mr-1" />
                                     Hard
                                 </Button>
                             </div>
 
-                            {/* Pattern */}
-                            <div className="flex-1">
+                            {/* Pattern Dropdown */}
+                            <div className="flex-1 min-w-[200px]">
                                 <select
                                     value={patternFilter}
                                     onChange={(e) => setPatternFilter(e.target.value)}
-                                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-md text-white text-sm"
+                                    className="w-full px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-md text-white text-sm focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                                 >
-                                    <option value="all">All Patterns</option>
+                                    <option value="all">All Patterns ({patterns.length})</option>
                                     {patterns.map(pattern => (
                                         <option key={pattern} value={pattern}>{pattern}</option>
                                     ))}
                                 </select>
                             </div>
 
-                            {/* Status */}
+                            {/* Status Filters */}
                             <div className="flex gap-2">
                                 <Button
                                     size="sm"
                                     variant={statusFilter === 'all' ? 'default' : 'outline'}
                                     onClick={() => setStatusFilter('all')}
                                 >
-                                    All
+                                    All Status
                                 </Button>
                                 <Button
                                     size="sm"
                                     variant={statusFilter === 'solved' ? 'default' : 'outline'}
                                     onClick={() => setStatusFilter('solved')}
-                                    className="border-cyan-500/50 text-cyan-400"
+                                    className={cn(
+                                        statusFilter === 'solved'
+                                            ? 'bg-cyan-500 hover:bg-cyan-600'
+                                            : 'border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/10'
+                                    )}
                                 >
+                                    <CheckCircle className="h-3 w-3 mr-1" />
                                     Solved
                                 </Button>
                                 <Button
@@ -425,36 +538,80 @@ const LeetCodeBrowser: React.FC = () => {
                                     variant={statusFilter === 'unsolved' ? 'default' : 'outline'}
                                     onClick={() => setStatusFilter('unsolved')}
                                 >
+                                    <Circle className="h-3 w-3 mr-1" />
                                     Unsolved
                                 </Button>
                             </div>
                         </div>
+
+                        {/* Active Filters Summary */}
+                        {(searchQuery || difficultyFilter !== 'all' || patternFilter !== 'all' || statusFilter !== 'all') && (
+                            <div className="flex items-center gap-2 pt-2 border-t border-slate-700/50">
+                                <span className="text-sm text-slate-400">Active filters:</span>
+                                {searchQuery && (
+                                    <Badge variant="secondary" className="bg-slate-700">
+                                        Search: "{searchQuery}"
+                                    </Badge>
+                                )}
+                                {difficultyFilter !== 'all' && (
+                                    <Badge className={getDifficultyColor(difficultyFilter)}>
+                                        {difficultyFilter}
+                                    </Badge>
+                                )}
+                                {patternFilter !== 'all' && (
+                                    <Badge variant="secondary" className="bg-purple-500/20 text-purple-400">
+                                        {patternFilter}
+                                    </Badge>
+                                )}
+                                {statusFilter !== 'all' && (
+                                    <Badge variant="secondary" className="bg-cyan-500/20 text-cyan-400">
+                                        {statusFilter}
+                                    </Badge>
+                                )}
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setDifficultyFilter('all');
+                                        setPatternFilter('all');
+                                        setStatusFilter('all');
+                                    }}
+                                    className="ml-auto text-xs"
+                                >
+                                    Clear all
+                                </Button>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Problems List */}
-                <Card className="bg-slate-900 border-slate-800">
+                {/* Problems List/Grid */}
+                <Card className="bg-slate-900/40 backdrop-blur-xl border-slate-700/50">
                     <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                            <span>Problems ({filteredProblems.length})</span>
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-xl">
+                                Problems <span className="text-cyan-400">({filteredProblems.length})</span>
+                            </CardTitle>
                             {filteredProblems.length === 0 && searchQuery && (
-                                <span className="text-sm font-normal text-slate-400">
+                                <span className="text-sm text-slate-400">
                                     No results found
                                 </span>
                             )}
-                        </CardTitle>
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <ScrollArea className="h-[600px] pr-4">
-                            <div className="space-y-2">
-                                {filteredProblems.map((problem) => (
-                                    <div
-                                        key={problem.problem_number}
-                                        onClick={() => handleProblemClick(problem.problem_number)}
-                                        className="group cursor-pointer p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500/50 rounded-lg transition-all"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4 flex-1">
+                        <ScrollArea className="h-[700px] pr-4">
+                            {viewMode === 'list' ? (
+                                // List View
+                                <div className="space-y-2">
+                                    {filteredProblems.map((problem) => (
+                                        <div
+                                            key={problem.problem_number}
+                                            onClick={() => handleProblemClick(problem.problem_number)}
+                                            className="group cursor-pointer p-4 bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/50 hover:border-cyan-500/50 rounded-xl transition-all duration-200 hover:scale-[1.01]"
+                                        >
+                                            <div className="flex items-center justify-between gap-4">
                                                 {/* Status Icon */}
                                                 {problem.is_solved ? (
                                                     <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
@@ -465,10 +622,12 @@ const LeetCodeBrowser: React.FC = () => {
                                                 {/* Problem Number */}
                                                 <div className="flex items-center gap-2">
                                                     <Hash className="h-4 w-4 text-slate-500" />
-                                                    <span className="text-slate-400 font-mono">{problem.problem_number}</span>
+                                                    <span className="text-slate-400 font-mono font-semibold min-w-[60px]">
+                                                        {problem.problem_number.toString().padStart(4, '0')}
+                                                    </span>
                                                 </div>
 
-                                                {/* Title */}
+                                                {/* Title & Pattern */}
                                                 <div className="flex-1 min-w-0">
                                                     <h3 className="font-semibold text-white group-hover:text-cyan-400 transition-colors truncate">
                                                         {problem.title}
@@ -482,35 +641,89 @@ const LeetCodeBrowser: React.FC = () => {
                                                 </div>
 
                                                 {/* Difficulty Badge */}
-                                                <Badge className={getDifficultyColor(problem.difficulty)}>
+                                                <Badge className={cn(getDifficultyColor(problem.difficulty), 'flex items-center gap-1.5')}>
+                                                    {getDifficultyIcon(problem.difficulty)}
                                                     {problem.difficulty}
                                                 </Badge>
 
                                                 {/* Arrow */}
-                                                <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 transition-colors flex-shrink-0" />
+                                                <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
-
-                                {filteredProblems.length === 0 && !searchQuery && (
-                                    <div className="text-center py-12">
-                                        <Code className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-                                        <p className="text-slate-400">No problems match your filters</p>
-                                        <Button
-                                            onClick={() => {
-                                                setDifficultyFilter('all');
-                                                setPatternFilter('all');
-                                                setStatusFilter('all');
-                                            }}
-                                            className="mt-4"
-                                            variant="outline"
+                                    ))}
+                                </div>
+                            ) : (
+                                // Grid View
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {filteredProblems.map((problem) => (
+                                        <div
+                                            key={problem.problem_number}
+                                            onClick={() => handleProblemClick(problem.problem_number)}
+                                            className="group cursor-pointer p-5 bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/50 hover:border-cyan-500/50 rounded-xl transition-all duration-200 hover:scale-[1.02]"
                                         >
-                                            Clear Filters
-                                        </Button>
+                                            {/* Status & Number */}
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Hash className="h-4 w-4 text-slate-500" />
+                                                    <span className="text-sm text-slate-400 font-mono font-semibold">
+                                                        {problem.problem_number.toString().padStart(4, '0')}
+                                                    </span>
+                                                </div>
+                                                {problem.is_solved ? (
+                                                    <CheckCircle className="h-5 w-5 text-green-400" />
+                                                ) : (
+                                                    <Circle className="h-5 w-5 text-slate-600" />
+                                                )}
+                                            </div>
+
+                                            {/* Title */}
+                                            <h3 className="font-semibold text-white group-hover:text-cyan-400 transition-colors mb-3 line-clamp-2 min-h-[48px]">
+                                                {problem.title}
+                                            </h3>
+
+                                            {/* Pattern & Difficulty */}
+                                            <div className="flex items-center justify-between mt-auto">
+                                                {problem.pattern && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Tag className="h-3 w-3 text-slate-500" />
+                                                        <span className="text-xs text-slate-500 truncate">
+                                                            {problem.pattern.split(' ')[0]}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <Badge className={cn(getDifficultyColor(problem.difficulty), 'flex items-center gap-1 ml-auto')}>
+                                                    {getDifficultyIcon(problem.difficulty)}
+                                                    <span className="text-xs">{problem.difficulty[0].toUpperCase()}</span>
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Empty State */}
+                            {filteredProblems.length === 0 && (
+                                <div className="text-center py-16">
+                                    <div className="relative inline-block mb-6">
+                                        <Code className="h-20 w-20 text-slate-600 mx-auto" />
+                                        <div className="absolute inset-0 bg-slate-600/20 blur-2xl rounded-full"></div>
                                     </div>
-                                )}
-                            </div>
+                                    <h3 className="text-xl font-bold text-white mb-2">No problems found</h3>
+                                    <p className="text-slate-400 mb-6">Try adjusting your filters or search query</p>
+                                    <Button
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setDifficultyFilter('all');
+                                            setPatternFilter('all');
+                                            setStatusFilter('all');
+                                        }}
+                                        className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                                    >
+                                        <ArrowUpCircle className="h-4 w-4 mr-2" />
+                                        Clear All Filters
+                                    </Button>
+                                </div>
+                            )}
                         </ScrollArea>
                     </CardContent>
                 </Card>

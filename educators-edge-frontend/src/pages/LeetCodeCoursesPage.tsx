@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Code, BookOpen, Clock, Users, Target, TrendingUp, Play, ChevronRight, Star, Filter, Search } from 'lucide-react';
-import { AISearchAgent } from '../components/AISearchAgent';
 
 interface LeetCodeCourse {
     id: string;
@@ -220,16 +219,16 @@ const LeetCodeCoursesPage: React.FC = () => {
                             placeholder="Search courses..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                         />
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                         <Filter className="w-5 h-5 text-gray-400" />
                         <select
                             value={filter}
                             onChange={(e) => setFilter(e.target.value as any)}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                         >
                             <option value="all">All Difficulties</option>
                             <option value="easy">Easy</option>
@@ -237,25 +236,30 @@ const LeetCodeCoursesPage: React.FC = () => {
                             <option value="hard">Hard</option>
                         </select>
                     </div>
-                    
+
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as any)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                     >
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
                         <option value="problems">Most Problems</option>
                     </select>
+
+                    <button
+                        onClick={() => navigate('/leetcode/browse')}
+                        className="ml-auto px-6 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 flex items-center gap-2 font-medium shadow-lg"
+                    >
+                        <Target className="w-5 h-5" />
+                        Browse All Problems
+                    </button>
                 </div>
             </div>
 
-            {/* Main Content with AI Agent */}
+            {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    {/* Courses Grid - Takes 3 columns */}
-                    <div className="lg:col-span-3">
-                        {filteredCourses.length === 0 ? (
+                {filteredCourses.length === 0 ? (
                     <div className="text-center py-12">
                         <div className="text-gray-400 mb-4 text-6xl">📚</div>
                         <h3 className="text-xl font-medium text-gray-600 mb-2">No courses found</h3>
@@ -268,7 +272,7 @@ const LeetCodeCoursesPage: React.FC = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredCourses.map(course => (
                             <div key={course.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200">
                                 {/* Course Header */}
@@ -367,15 +371,6 @@ const LeetCodeCoursesPage: React.FC = () => {
                         ))}
                     </div>
                 )}
-                    </div>
-
-                    {/* AI Agent Sidebar - Takes 1 column */}
-                    <div className="lg:col-span-1">
-                        <div className="sticky top-4">
-                            <AISearchAgent isCompact={false} showGoals={true} />
-                        </div>
-                    </div>
-                </div>
             </div>
 
             {/* Stats Footer */}

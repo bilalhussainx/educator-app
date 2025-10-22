@@ -733,10 +733,10 @@ const TrustGraphPage: React.FC = () => {
                             ) : (
                                 /* Regular User Buttons */
                                 <div className="flex gap-2">
-                                    <Button 
-                                        size="sm" 
-                                        variant="outline" 
-                                        onClick={() => navigate(`/profile/${user.id}`)}
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => navigate(`/teacher/${user.id}`)}
                                         className="flex-1 border-slate-500 text-white bg-slate-800/50 hover:bg-slate-700 hover:border-slate-400 font-medium transition-all duration-200"
                                     >
                                         <Eye className="h-3 w-3 mr-1" />
