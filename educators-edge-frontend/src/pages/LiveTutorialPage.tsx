@@ -46,6 +46,7 @@ import {
 import { UserRole, ViewingMode, CodeFile, LessonFile, Student, Lesson, StudentHomeworkState, HomeworkAssignment, UniversalWorkspace } from '../types';
 import apiClient from '../services/apiClient';
 import { getWebSocketUrl } from '../config/websocket';
+import { useSessionEndHandler } from '../hooks/useSessionEndHandler';
 
 // --- Type Definitions and Helpers ---
 interface Message { from: string; text: string; timestamp: string; }
@@ -366,7 +367,20 @@ const LiveTutorialPage: React.FC = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
     const token = localStorage.getItem('authToken');
-    
+
+    // Handle session end events - auto-redirect when teacher ends session
+    useSessionEndHandler({
+        sessionId: sessionId || '',
+        redirectPath: '/sessions',
+        onSessionEnd: (data) => {
+            console.log('[LiveTutorialPage] Session ended:', data);
+            toast.error('Session has been ended by the teacher', {
+                description: 'Redirecting to sessions page...',
+                duration: 3000
+            });
+        }
+    });
+
     // Extract parameters from URL
     const urlParams = new URLSearchParams(window.location.search);
     const courseId = urlParams.get('courseId');

@@ -35,6 +35,7 @@ import apiClient from '../services/apiClient';
 import { toast } from 'sonner';
 import { io, Socket } from 'socket.io-client';
 import { LiveSessionModal } from '../components/modals/LiveSessionModal';
+import { sessionOrchestrator, canJoinSession } from '../services/sessionOrchestrator';
 
 interface SessionRequest {
     id: string | number;  // Support both UUID and integer
@@ -124,6 +125,52 @@ const SessionsPage: React.FC = () => {
 
             socketConnection.on('connect_error', (error) => {
                 console.error('[Socket.IO] ❌ Connection error:', error);
+            });
+
+            // Listen for session acceptance notifications
+            socketConnection.on('session:accepted', (data) => {
+                console.log('[Socket.IO] =====================================');
+                console.log('[Socket.IO] ✅ SESSION ACCEPTED EVENT RECEIVED!');
+                console.log('[Socket.IO] Session ID:', data.sessionId);
+                console.log('[Socket.IO] Full data:', data);
+                console.log('[Socket.IO] =====================================');
+
+                // Show notification
+                toast.success('🎉 Session Request Accepted!', {
+                    description: data.message || 'Your teacher has accepted your session request',
+                    duration: 10000
+                });
+
+                // Refresh to get the new session
+                setTimeout(() => fetchData(), 500);
+            });
+
+            // Listen for session:created events (from notification handler)
+            socketConnection.on('session:created', (data) => {
+                console.log('[Socket.IO] =====================================');
+                console.log('[Socket.IO] 🚀 SESSION CREATED EVENT RECEIVED!');
+                console.log('[Socket.IO] Session ID:', data.sessionId);
+                console.log('[Socket.IO] Mode:', data.mode);
+                console.log('[Socket.IO] Full data:', data);
+                console.log('[Socket.IO] =====================================');
+
+                // Determine route based on mode
+                const editorUrl = data.joinUrl || (data.mode === 'essay'
+                    ? `/urgent-session/${data.sessionId}/essay?session=${data.sessionId}&mentor=teacher&type=live&role=student`
+                    : `/session/${data.sessionId}`);
+
+                // Show notification with join button
+                toast.success('🎉 Session Started!', {
+                    description: data.message || 'Teacher has started the session',
+                    action: {
+                        label: 'Join Now',
+                        onClick: () => navigate(editorUrl)
+                    },
+                    duration: 15000
+                });
+
+                // Refresh to ensure we have latest data
+                setTimeout(() => fetchData(), 500);
             });
 
             socketConnection.on('session_started', (data) => {
@@ -279,7 +326,6 @@ const SessionsPage: React.FC = () => {
         console.log('[SessionsPage] ==================== JOIN SESSION ====================');
         console.log('[SessionsPage] Full session object:', session);
         console.log('[SessionsPage] Session ID:', session.id);
-        console.log('[SessionsPage] Session type:', session.session_type);
         console.log('[SessionsPage] Session mode:', session.session_mode);
         console.log('[SessionsPage] Session status:', session.status);
         console.log('[SessionsPage] User role:', session.user_role_in_session);
@@ -291,67 +337,56 @@ const SessionsPage: React.FC = () => {
             return;
         }
 
-        const sessionMode = session.session_mode;
-        const sessionType = session.session_type;
+        if (!user) {
+            toast.error('User not authenticated');
+            return;
+        }
+
         const isTeacher = session.user_role_in_session === 'mentor';
-        const isActive = session.status === 'active';
+        const userRole = isTeacher ? 'teacher' : 'student';
 
-        // Check if session is in a joinable state
-        if (session.status === 'completed') {
-            toast.warning('This session has already ended');
-            return;
-        }
-
-        if (session.status === 'cancelled') {
-            toast.error('This session has been cancelled');
-            return;
-        }
-
-        // PRIORITY 1: If teacher and session not started yet (no mode set), show modal to choose mode
-        if (isTeacher && !sessionMode) {
+        // If teacher and session not started yet (no mode set), show modal to choose mode
+        if (isTeacher && !session.session_mode) {
             console.log('[SessionsPage] ✅ Teacher needs to choose mode - opening LiveSessionModal');
-            console.log('[SessionsPage] Reason: No session_mode set yet');
             setSelectedSessionForStart(session);
             setShowLiveSessionModal(true);
             return;
         }
 
-        // PRIORITY 2: Route based on session_mode if set (teacher already chose)
-        if (sessionMode === 'essay') {
-            console.log('[SessionsPage] ➡️ Routing to Essay Editor (session_mode=essay)');
-            const roleParam = isTeacher ? 'teacher' : 'student';
-            navigate(`/urgent-session/${session.id}/essay?session=${session.id}&mentor=teacher&type=live&role=${roleParam}`);
-            toast.success('Joining Essay Session...');
-            console.log('[SessionsPage] =========================================');
+        // Validate session can be joined using the orchestrator's validation
+        const validation = canJoinSession({
+            id: session.id,
+            student_id: session.student_id,
+            mentor_id: session.mentor_id,
+            session_mode: session.session_mode,
+            session_type: session.session_type,
+            status: session.status as any,
+            description: session.description
+        });
+
+        if (!validation.canJoin) {
+            toast.error(validation.reason || 'Cannot join this session');
+            console.error('[SessionsPage] ❌ Cannot join:', validation.reason);
             return;
         }
 
-        if (sessionMode === 'code') {
-            console.log('[SessionsPage] ➡️ Routing to Code Editor (session_mode=code)');
-            navigate(`/session/${session.id}`);
-            toast.success('Joining Code Session...');
-            console.log('[SessionsPage] =========================================');
-            return;
-        }
+        // Use SessionOrchestrator for unified, synchronized navigation
+        console.log('[SessionsPage] ✅ Using SessionOrchestrator to navigate');
+        sessionOrchestrator.navigateToSession({
+            session: {
+                id: session.id,
+                student_id: session.student_id,
+                mentor_id: session.mentor_id,
+                session_mode: session.session_mode,
+                session_type: session.session_type,
+                status: session.status as any,
+                description: session.description
+            },
+            userRole,
+            userId: user.id,
+            username: user.username
+        }, navigate);
 
-        // PRIORITY 3: Fallback to session_type for legacy sessions or specific types
-        console.log('[SessionsPage] No session_mode set, using session_type fallback');
-
-        if (sessionType === 'video_call' || sessionType === 'mentoring' || sessionType === 'counseling') {
-            console.log('[SessionsPage] ➡️ Routing to Video Session');
-            navigate(`/video-session/${session.id}`);
-            toast.success('Launching Video Call...');
-        } else if (sessionType === 'essay_editing' || sessionType === 'essay') {
-            console.log('[SessionsPage] ➡️ Routing to Essay Editor (legacy)');
-            const roleParam = isTeacher ? 'teacher' : 'student';
-            navigate(`/urgent-session/${session.id}/essay?session=${session.id}&mentor=teacher&type=live&role=${roleParam}`);
-            toast.success('Joining Essay Session...');
-        } else {
-            // Default to Code Editor for tutoring, coding, and unknown types
-            console.log('[SessionsPage] ➡️ Routing to Code Editor (default)');
-            navigate(`/session/${session.id}`);
-            toast.success('Joining Code Session...');
-        }
         console.log('[SessionsPage] =========================================');
     };
 

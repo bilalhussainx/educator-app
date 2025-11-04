@@ -424,7 +424,7 @@ const PublicTeacherProfile: React.FC = () => {
 
             {/* Enhanced Session Booking Modal */}
             <Dialog open={showBookingModal} onOpenChange={setShowBookingModal}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-4">
                     <EnhancedSessionBooking
                         teacher={{
                             id: profile.id,

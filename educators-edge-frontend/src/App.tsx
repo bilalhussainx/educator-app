@@ -23,6 +23,8 @@ import CourseEditorPage from './pages/CourseEditorPage.tsx';
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import LandingPage from './pages/LandingPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 import Dashboard from './pages/Dashboard';
 import LiveTutorialPage from './pages/LiveTutorialPage';
 import CreateLessonPage from './pages/CreateLessonPage';
@@ -46,6 +48,9 @@ import EssaySessionPage from './pages/EssaySessionPage';
 import UrgentEssaySessionPage from './pages/UrgentEssaySessionPage';
 import ModernResumeOptimizationPage from './pages/ModernResumeOptimizationPage';
 import CleanResumeAssistant from './pages/CleanResumeAssistant';
+import ReferralDashboard from './pages/ReferralDashboard';
+import TeacherEarningsDashboard from './pages/TeacherEarningsDashboard';
+import TeacherMarketplace from './pages/TeacherMarketplace';
 import CssPdfResumePage from './pages/CssPdfResumePage';
 import SessionTypeSelector from './components/session/SessionTypeSelector';
 import EssayEditorPage from './pages/EssayEditorPage';
@@ -83,6 +88,7 @@ import DiscoverPage from './pages/DiscoverPage';
 import AnalysisPage from './pages/AnalysisPage';
 import PortfolioPage from './pages/PortfolioPage';
 import VisualContextResumePage from './pages/VisualContextResumePage';
+import DeveloperPortfolio3D from './pages/DeveloperPortfolio3D';
 import { FinancialRoute } from './components/route/FinancialRoute';
 import { LiveblocksProvider } from "@liveblocks/react";
 import { LiveSessionNotification } from './components/notifications/LiveSessionNotification';
@@ -176,8 +182,11 @@ export default function App() {
 
       <Routes>
         {/* --- Public Routes (No Layout) --- */}
-        <Route path="/login" element={<LoginPage setToken={setToken} setUser={setUser} />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/" element={!token ? <LandingPage /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={!token ? <LoginPage setToken={setToken} setUser={setUser} /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/register" element={!token ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage setToken={setToken} setUser={setUser} />} />
+        <Route path="/portfolio" element={<DeveloperPortfolio3D />} />
 
         {/* --- Protected Routes (Wrapped in AppLayout) --- */}
         {/* This wildcard route matches any path for logged-in users */}
@@ -250,6 +259,7 @@ export default function App() {
 
                 {/* Teacher/Profile Search Routes */}
                 <Route path="/teachers/search" element={<TeacherSearchPage />} />
+                <Route path="/teachers/marketplace" element={<ProtectedRoute token={token} user={user}><TeacherMarketplace /></ProtectedRoute>} />
                 <Route path="/profile/setup" element={<ProtectedRoute token={token} user={user}><ProfileSetupPage /></ProtectedRoute>} />
                 <Route path="/profile/:profileId" element={<ProfileViewPage />} />
                 <Route path="/profiles/search" element={<ProfileSearchPage />} />
@@ -265,6 +275,8 @@ export default function App() {
                 <Route path="/student-sessions" element={<ProtectedRoute token={token} user={user}><StudentSessionsPage /></ProtectedRoute>} />
                 <Route path="/session-mailbox" element={<ProtectedRoute token={token} user={user}><SessionMailbox /></ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute token={token} user={user}><MessagesPage /></ProtectedRoute>} />
+                <Route path="/referrals" element={<ProtectedRoute token={token} user={user}><ReferralDashboard /></ProtectedRoute>} />
+                <Route path="/teacher/earnings" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><TeacherEarningsDashboard /></ProtectedRoute>} />
                 <Route path="/trust-graph" element={<ProtectedRoute token={token} user={user}><TrustGraphPage /></ProtectedRoute>} />
                 <Route path="/trust-graph-simple" element={<ProtectedRoute token={token} user={user}><TrustGraphSimple /></ProtectedRoute>} />
                 <Route path="/teacher/:userId" element={<ProtectedRoute token={token} user={user}><TeacherProfilePage /></ProtectedRoute>} />

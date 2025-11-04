@@ -254,8 +254,20 @@ const ProfileSetupPage: React.FC = () => {
             setSuccess(true);
 
             // Mark profile as completed in localStorage for faster first-load detection
-            const userId = localStorage.getItem('user_id') || 'current_user';
-            localStorage.setItem(`profile_completed_${userId}`, 'true');
+            // Get user ID from auth token
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                try {
+                    const { jwtDecode } = await import('jwt-decode');
+                    const decoded: any = jwtDecode(token);
+                    const userId = decoded?.user?.id;
+                    if (userId) {
+                        localStorage.setItem(`profile_completed_${userId}`, 'true');
+                    }
+                } catch (err) {
+                    console.error('Error decoding token:', err);
+                }
+            }
 
             setTimeout(() => {
                 navigate('/dashboard');

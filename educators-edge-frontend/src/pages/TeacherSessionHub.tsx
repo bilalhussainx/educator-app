@@ -38,6 +38,7 @@ import {
 import { toast } from 'sonner';
 import apiClient from '../services/apiClient';
 import { format, addDays, startOfWeek, endOfWeek, isSameDay, isToday, isTomorrow, isPast, isFuture, parseISO } from 'date-fns';
+import { sessionOrchestrator } from '../services/sessionOrchestrator';
 
 interface SessionRequest {
     id: string;
@@ -81,6 +82,26 @@ export const TeacherSessionHub: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // Get current user from token
+    const getCurrentUser = () => {
+        const token = localStorage.getItem('authToken');
+        if (!token) return null;
+        try {
+            const payload = token.split('.')[1];
+            const decoded = JSON.parse(atob(payload));
+            return {
+                id: decoded.userId || decoded.id,
+                username: decoded.username,
+                role: decoded.role
+            };
+        } catch (error) {
+            console.error('[TeacherSessionHub] Failed to parse token:', error);
+            return null;
+        }
+    };
+
+    const currentUser = getCurrentUser();
+
     // State management
     const [sessionRequests, setSessionRequests] = useState<SessionRequest[]>([]);
     const [scheduledSessions, setScheduledSessions] = useState<ScheduledSession[]>([]);
@@ -91,11 +112,14 @@ export const TeacherSessionHub: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [showScheduleDialog, setShowScheduleDialog] = useState(false);
     const [showSessionDetailDialog, setShowSessionDetailDialog] = useState(false);
+    const [showQuickStartDialog, setShowQuickStartDialog] = useState(false);
+    const [selectedRequestForStart, setSelectedRequestForStart] = useState<SessionRequest | null>(null);
     const [scheduleForm, setScheduleForm] = useState({
         date: '',
         time: '',
         message: '',
-        meetingLink: ''
+        meetingLink: '',
+        sessionMode: 'code' as 'code' | 'essay'
     });
 
     // Filter states
@@ -227,12 +251,179 @@ export const TeacherSessionHub: React.FC = () => {
             if (response.data.success) {
                 toast.success('Session scheduled successfully!');
                 setShowScheduleDialog(false);
-                setScheduleForm({ date: '', time: '', message: '', meetingLink: '' });
+                setScheduleForm({ date: '', time: '', message: '', meetingLink: '', sessionMode: 'code' });
                 loadData();
             }
         } catch (error: any) {
             console.error('Schedule session error:', error);
             toast.error(error.response?.data?.message || error.response?.data?.error || 'Failed to schedule session');
+        }
+    };
+
+    const handleAcceptAndStartNow = async (request: SessionRequest, sessionMode: 'code' | 'essay') => {
+        try {
+            console.log('[ACCEPT_START] Starting flow for request:', request.id, 'mode:', sessionMode, 'status:', request.status);
+
+            let sessionId: number;
+
+            // Check if request is already accepted
+            if (request.status === 'accepted') {
+                console.log('[ACCEPT_START] Request already accepted, finding existing session');
+
+                // Find the existing session
+                const sessionsResponse = await apiClient.get('/api/sessions/scheduled');
+
+                if (!sessionsResponse.data.success) {
+                    toast.error('Failed to get sessions');
+                    return;
+                }
+
+                // Find matching session for this student
+                const session = sessionsResponse.data.sessions.find(
+                    (s: any) => s.student_id === request.requester_id
+                );
+
+                if (!session) {
+                    console.error('[ACCEPT_START] No session found for accepted request');
+                    toast.error('Session not found. Please try accepting the request again.');
+                    return;
+                }
+
+                sessionId = session.id;
+                console.log('[ACCEPT_START] Found existing session ID:', sessionId);
+
+            } else {
+                // Request is pending, accept it and create session
+                console.log('[ACCEPT_START] Accepting pending request');
+
+                const acceptResponse = await apiClient.post(
+                    `/api/sessions/requests/${request.id}/respond`,
+                    {
+                        action: 'accept',
+                        scheduledTime: new Date().toISOString()
+                    }
+                );
+
+                console.log('[ACCEPT_START] Accept response:', acceptResponse.data);
+
+                if (!acceptResponse.data.success || !acceptResponse.data.session) {
+                    console.error('[ACCEPT_START] Failed - no session in response');
+                    toast.error('Failed to accept request');
+                    return;
+                }
+
+                sessionId = acceptResponse.data.session.id;
+                console.log('[ACCEPT_START] Session created with ID:', sessionId);
+                console.log('[ACCEPT_START] Full session object:', acceptResponse.data.session);
+            }
+
+            // Add a small delay to ensure database transaction is committed
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Step 2: Start the session immediately
+            console.log('[ACCEPT_START] Starting session:', sessionId, 'type:', typeof sessionId);
+            const startResponse = await apiClient.post(
+                `/api/sessions/${sessionId}/start`,
+                { mode: sessionMode }
+            );
+
+            console.log('[ACCEPT_START] Start response:', startResponse.data);
+
+            if (!startResponse.data.success) {
+                console.error('[ACCEPT_START] Failed to start session');
+                toast.error('Session created but failed to start');
+                return;
+            }
+
+            toast.success(`Session started! Redirecting to ${sessionMode === 'code' ? 'Code Editor' : 'Essay Editor'}...`);
+
+            // Step 3: Use SessionOrchestrator for unified navigation
+            if (!currentUser) {
+                toast.error('User not authenticated');
+                return;
+            }
+
+            console.log('[ACCEPT_START] Using SessionOrchestrator to navigate');
+            sessionOrchestrator.navigateToSession({
+                session: {
+                    id: sessionId,
+                    student_id: request.requester_id,
+                    mentor_id: currentUser.id,
+                    session_mode: sessionMode,
+                    status: 'active',
+                    session_type: request.session_type,
+                    description: request.description
+                },
+                userRole: 'teacher',
+                userId: currentUser.id,
+                username: currentUser.username
+            }, navigate);
+
+        } catch (error: any) {
+            console.error('[ACCEPT_START] Error:', error);
+            console.error('[ACCEPT_START] Error response:', error.response?.data);
+            toast.error(error.response?.data?.message || error.response?.data?.error || 'Failed to start session');
+        }
+    };
+
+    const handleStartExistingSession = async (request: SessionRequest, sessionMode: 'code' | 'essay') => {
+        try {
+            // Find the session ID from the request
+            const sessionsResponse = await apiClient.get('/api/sessions/scheduled');
+
+            if (!sessionsResponse.data.success) {
+                toast.error('Failed to get session details');
+                return;
+            }
+
+            // Find matching session
+            const session = sessionsResponse.data.sessions.find(
+                (s: any) => s.student_id === request.requester_id
+            );
+
+            if (!session) {
+                toast.error('Session not found');
+                return;
+            }
+
+            // Start the session
+            const startResponse = await apiClient.post(
+                `/api/sessions/${session.id}/start`,
+                { mode: sessionMode }
+            );
+
+            if (!startResponse.data.success) {
+                toast.error('Failed to start session');
+                return;
+            }
+
+            toast.success(`Session started! Redirecting to ${sessionMode === 'code' ? 'Code Editor' : 'Essay Editor'}...`);
+
+            // Use SessionOrchestrator for unified navigation
+            if (!currentUser) {
+                toast.error('User not authenticated');
+                return;
+            }
+
+            console.log('[START_EXISTING] Using SessionOrchestrator to navigate');
+            sessionOrchestrator.navigateToSession({
+                session: {
+                    id: session.id,
+                    student_id: session.student_id,
+                    mentor_id: currentUser.id,
+                    session_mode: sessionMode,
+                    status: 'active',
+                    session_type: session.session_type,
+                    description: session.notes || ''
+                },
+                userRole: 'teacher',
+                userId: currentUser.id,
+                username: currentUser.username
+            }, navigate);
+
+        } catch (error: any) {
+            console.error('Start session error:', error);
+            toast.error(error.response?.data?.message || 'Failed to start session');
         }
     };
 
@@ -387,6 +578,8 @@ export const TeacherSessionHub: React.FC = () => {
                         acceptedRequests={acceptedRequests}
                         onAccept={handleAcceptRequest}
                         onDecline={handleDeclineRequest}
+                        onAcceptAndStartNow={handleAcceptAndStartNow}
+                        onStartExistingSession={handleStartExistingSession}
                         getStatusBadge={getStatusBadge}
                         getTimeUntil={getTimeUntil}
                         searchQuery={searchQuery}
@@ -453,7 +646,7 @@ export const TeacherSessionHub: React.FC = () => {
 };
 
 // Inbox View Component
-const InboxView = ({ requests, pendingRequests, acceptedRequests, onAccept, onDecline, getStatusBadge, getTimeUntil, searchQuery, setSearchQuery, filterStatus, setFilterStatus, filterType, setFilterType, isLoading }: any) => (
+const InboxView = ({ requests, pendingRequests, acceptedRequests, onAccept, onDecline, onAcceptAndStartNow, onStartExistingSession, getStatusBadge, getTimeUntil, searchQuery, setSearchQuery, filterStatus, setFilterStatus, filterType, setFilterType, isLoading }: any) => (
     <div className="grid grid-cols-12 gap-6">
         {/* Filters Sidebar */}
         <div className="col-span-3 space-y-4">
@@ -561,6 +754,7 @@ const InboxView = ({ requests, pendingRequests, acceptedRequests, onAccept, onDe
                                 request={request}
                                 onAccept={onAccept}
                                 onDecline={onDecline}
+                                onStartNow={(req: SessionRequest, mode: 'code' | 'essay') => onAcceptAndStartNow(req, mode)}
                                 getStatusBadge={getStatusBadge}
                                 getTimeUntil={getTimeUntil}
                             />
@@ -575,9 +769,10 @@ const InboxView = ({ requests, pendingRequests, acceptedRequests, onAccept, onDe
                             request={request}
                             onAccept={onAccept}
                             onDecline={onDecline}
+                            onStartNow={(req: SessionRequest, mode: 'code' | 'essay') => onStartExistingSession(req, mode)}
                             getStatusBadge={getStatusBadge}
                             getTimeUntil={getTimeUntil}
-                            hideActions
+                            hideActions={false}
                         />
                     ))}
                 </TabsContent>
@@ -589,9 +784,14 @@ const InboxView = ({ requests, pendingRequests, acceptedRequests, onAccept, onDe
                             request={request}
                             onAccept={onAccept}
                             onDecline={onDecline}
+                            onStartNow={(req: SessionRequest, mode: 'code' | 'essay') =>
+                                request.status === 'pending'
+                                    ? onAcceptAndStartNow(req, mode)
+                                    : onStartExistingSession(req, mode)
+                            }
                             getStatusBadge={getStatusBadge}
                             getTimeUntil={getTimeUntil}
-                            hideActions={request.status !== 'pending'}
+                            hideActions={false}
                         />
                     ))}
                 </TabsContent>
@@ -601,113 +801,252 @@ const InboxView = ({ requests, pendingRequests, acceptedRequests, onAccept, onDe
 );
 
 // Request Card Component
-const RequestCard = ({ request, onAccept, onDecline, getStatusBadge, getTimeUntil, hideActions = false }: any) => (
-    <Card className="bg-slate-900/50 border-slate-700 hover:border-purple-500/50 transition-all duration-300 group">
-        <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-                {/* Student Avatar */}
-                <Avatar className="h-14 w-14 border-2 border-purple-500/30">
-                    <AvatarImage src={request.student_avatar} />
-                    <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-bold">
-                        {(request.student_display_name || request.student_username || 'S')[0]}
-                    </AvatarFallback>
-                </Avatar>
+const RequestCard = ({ request, onAccept, onDecline, onStartNow, getStatusBadge, getTimeUntil, hideActions = false }: any) => {
+    const navigate = useNavigate();
+    const [showModeSelector, setShowModeSelector] = useState(false);
+    const [selectedMode, setSelectedMode] = useState<'code' | 'essay'>('code');
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-3">
-                        <div>
-                            <h3 className="font-semibold text-lg group-hover:text-purple-400 transition-colors">
-                                {request.student_display_name || request.student_username}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">
-                                    {request.session_type.replace('_', ' ')}
-                                </Badge>
-                                <Badge className={cn("text-xs", getStatusBadge(request.status))}>
-                                    {request.status}
-                                </Badge>
-                                {request.booking_method === 'calendly' && (
-                                    <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/30">
-                                        <CalendarIcon className="h-3 w-3 mr-1" />
-                                        Calendly
+    return (
+        <Card className="bg-slate-900/50 border-slate-700 hover:border-purple-500/50 transition-all duration-300 group">
+            <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                    {/* Student Avatar */}
+                    <Avatar className="h-14 w-14 border-2 border-purple-500/30">
+                        <AvatarImage src={request.student_avatar} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-bold">
+                            {(request.student_display_name || request.student_username || 'S')[0]}
+                        </AvatarFallback>
+                    </Avatar>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-3">
+                            <div>
+                                <h3 className="font-semibold text-lg group-hover:text-purple-400 transition-colors">
+                                    {request.student_display_name || request.student_username}
+                                </h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="text-xs">
+                                        {request.session_type.replace('_', ' ')}
                                     </Badge>
+                                    <Badge className={cn("text-xs", getStatusBadge(request.status))}>
+                                        {request.status}
+                                    </Badge>
+                                    {request.booking_method === 'calendly' && (
+                                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400 border-green-500/30">
+                                            <CalendarIcon className="h-3 w-3 mr-1" />
+                                            Calendly
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="text-right">
+                                {request.chosen_rate_usd ? (
+                                    <div className="text-2xl font-bold text-green-400">
+                                        ${request.chosen_rate_usd}
+                                    </div>
+                                ) : request.chosen_rate_z_credits ? (
+                                    <div className="text-2xl font-bold text-purple-400">
+                                        {request.chosen_rate_z_credits} <Zap className="inline h-5 w-5" />
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-slate-400">Free session</div>
                                 )}
+                                <div className="text-xs text-slate-500">{request.duration_minutes || 60} min</div>
                             </div>
                         </div>
 
-                        <div className="text-right">
-                            {request.chosen_rate_usd ? (
-                                <div className="text-2xl font-bold text-green-400">
-                                    ${request.chosen_rate_usd}
+                        {/* Message */}
+                        {request.student_message && (
+                            <div className="bg-slate-800/50 rounded-lg p-3 mb-3 border border-slate-700/50">
+                                <div className="flex items-start gap-2">
+                                    <MessageSquare className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                                    <p className="text-sm text-slate-300 line-clamp-2">{request.student_message}</p>
                                 </div>
-                            ) : request.chosen_rate_z_credits ? (
-                                <div className="text-2xl font-bold text-purple-400">
-                                    {request.chosen_rate_z_credits} <Zap className="inline h-5 w-5" />
+                            </div>
+                        )}
+
+                        {/* Details */}
+                        <div className="flex items-center gap-4 text-xs text-slate-400 mb-3">
+                            <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span className="font-medium">
+                                    {request.preferred_datetime
+                                        ? format(parseISO(request.preferred_datetime), 'MMM d, h:mm a')
+                                        : 'Flexible timing'
+                                    }
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <CalendarIcon className="h-3 w-3" />
+                                Requested {format(parseISO(request.created_at), 'MMM d')}
+                            </div>
+                            {request.scheduled_time && (
+                                <div className="flex items-center gap-1 text-green-400 font-medium">
+                                    <CalendarCheck className="h-3 w-3" />
+                                    {getTimeUntil(request.scheduled_time)}
                                 </div>
-                            ) : (
-                                <div className="text-sm text-slate-400">Free session</div>
                             )}
-                            <div className="text-xs text-slate-500">{request.duration_minutes} min</div>
                         </div>
-                    </div>
 
-                    {/* Message */}
-                    {request.student_message && (
-                        <div className="bg-slate-800/50 rounded-lg p-3 mb-3 border border-slate-700/50">
-                            <div className="flex items-start gap-2">
-                                <MessageSquare className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                                <p className="text-sm text-slate-300 line-clamp-2">{request.student_message}</p>
+                        {/* Actions */}
+                        {!hideActions && request.status === 'pending' && !showModeSelector && (
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={() => setShowModeSelector(true)}
+                                    className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                                >
+                                    <Zap className="h-4 w-4 mr-2" />
+                                    Accept & Start Now
+                                </Button>
+                                <Button
+                                    onClick={() => onAccept(request)}
+                                    variant="outline"
+                                    className="flex-1 border-green-500/30 text-green-400 hover:bg-green-500/10"
+                                >
+                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                    Accept & Schedule Later
+                                </Button>
+                                <Button
+                                    onClick={() => onDecline(request.id)}
+                                    variant="outline"
+                                    className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Decline
+                                </Button>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Details */}
-                    <div className="flex items-center gap-4 text-xs text-slate-400">
-                        <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {request.preferred_datetime
-                                ? format(parseISO(request.preferred_datetime), 'MMM d, h:mm a')
-                                : 'Flexible timing'
-                            }
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <CalendarIcon className="h-3 w-3" />
-                            Requested {format(parseISO(request.created_at), 'MMM d')}
-                        </div>
-                        {request.scheduled_time && (
-                            <div className="flex items-center gap-1 text-green-400 font-medium">
-                                <CalendarCheck className="h-3 w-3" />
-                                {getTimeUntil(request.scheduled_time)}
+                        {/* Mode Selector */}
+                        {!hideActions && request.status === 'pending' && showModeSelector && (
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => setSelectedMode('code')}
+                                        variant={selectedMode === 'code' ? 'default' : 'outline'}
+                                        className={cn(
+                                            "flex-1",
+                                            selectedMode === 'code'
+                                                ? "bg-blue-600 hover:bg-blue-700"
+                                                : "border-slate-600 text-slate-300"
+                                        )}
+                                    >
+                                        <Video className="h-4 w-4 mr-2" />
+                                        Coding Session
+                                    </Button>
+                                    <Button
+                                        onClick={() => setSelectedMode('essay')}
+                                        variant={selectedMode === 'essay' ? 'default' : 'outline'}
+                                        className={cn(
+                                            "flex-1",
+                                            selectedMode === 'essay'
+                                                ? "bg-purple-600 hover:bg-purple-700"
+                                                : "border-slate-600 text-slate-300"
+                                        )}
+                                    >
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Essay Session
+                                    </Button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => {
+                                            onStartNow(request, selectedMode);
+                                            setShowModeSelector(false);
+                                        }}
+                                        className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                                    >
+                                        <PlayCircle className="h-4 w-4 mr-2" />
+                                        Start {selectedMode === 'code' ? 'Coding' : 'Essay'} Session Now
+                                    </Button>
+                                    <Button
+                                        onClick={() => setShowModeSelector(false)}
+                                        variant="outline"
+                                        className="border-slate-600 text-slate-300"
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Start Session for Accepted Requests */}
+                        {!hideActions && request.status === 'accepted' && !showModeSelector && (
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={() => setShowModeSelector(true)}
+                                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                                >
+                                    <PlayCircle className="h-4 w-4 mr-2" />
+                                    Start Session
+                                </Button>
+                            </div>
+                        )}
+
+                        {/* Mode Selector for Accepted Sessions */}
+                        {!hideActions && request.status === 'accepted' && showModeSelector && (
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => setSelectedMode('code')}
+                                        variant={selectedMode === 'code' ? 'default' : 'outline'}
+                                        className={cn(
+                                            "flex-1",
+                                            selectedMode === 'code'
+                                                ? "bg-blue-600 hover:bg-blue-700"
+                                                : "border-slate-600 text-slate-300"
+                                        )}
+                                    >
+                                        <Video className="h-4 w-4 mr-2" />
+                                        Coding Session
+                                    </Button>
+                                    <Button
+                                        onClick={() => setSelectedMode('essay')}
+                                        variant={selectedMode === 'essay' ? 'default' : 'outline'}
+                                        className={cn(
+                                            "flex-1",
+                                            selectedMode === 'essay'
+                                                ? "bg-purple-600 hover:bg-purple-700"
+                                                : "border-slate-600 text-slate-300"
+                                        )}
+                                    >
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Essay Session
+                                    </Button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={async () => {
+                                            const navigate = (path: string) => window.location.href = path;
+                                            // Call a prop function to start existing session
+                                            if (onStartNow) {
+                                                onStartNow(request, selectedMode);
+                                            }
+                                            setShowModeSelector(false);
+                                        }}
+                                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                                    >
+                                        <PlayCircle className="h-4 w-4 mr-2" />
+                                        Start {selectedMode === 'code' ? 'Coding' : 'Essay'} Session
+                                    </Button>
+                                    <Button
+                                        onClick={() => setShowModeSelector(false)}
+                                        variant="outline"
+                                        className="border-slate-600 text-slate-300"
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
                             </div>
                         )}
                     </div>
-
-                    {/* Actions */}
-                    {!hideActions && request.status === 'pending' && (
-                        <div className="flex gap-2 mt-4">
-                            <Button
-                                onClick={() => onAccept(request)}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                            >
-                                <CheckCircle2 className="h-4 w-4 mr-2" />
-                                Accept & Schedule
-                            </Button>
-                            <Button
-                                onClick={() => onDecline(request.id)}
-                                variant="outline"
-                                className="border-red-500/30 text-red-400 hover:bg-red-500/10"
-                            >
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Decline
-                            </Button>
-                        </div>
-                    )}
                 </div>
-            </div>
-        </CardContent>
-    </Card>
-);
+            </CardContent>
+        </Card>
+    );
+};
 
 // Schedule Dialog Component
 const ScheduleDialog = ({ open, onOpenChange, request, scheduleForm, setScheduleForm, onSchedule }: any) => {

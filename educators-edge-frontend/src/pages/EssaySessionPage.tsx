@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import ModernEssayEditor from '../components/classroom/ModernEssayEditor';
 import { RoomProvider } from '@/lib/liveblocks';
-import sessionWebSocketService from '../services/sessionWebSocketService';
 import apiClient from '../services/apiClient';
 import { toast } from 'sonner';
 
@@ -107,16 +106,9 @@ const EssaySessionPage: React.FC = () => {
         }
     }, [sessionId, searchParams]);
 
-    // Initialize WebSocket connection
-    useEffect(() => {
-        if (decodedToken && sessionId && token) {
-            const userId = decodedToken.user?.id || decodedToken.userId || '';
-            if (!sessionWebSocketService.connectionStatus) {
-                sessionWebSocketService.connect(userId, token, sessionId);
-                console.log('✅ WebSocket connecting with sessionId:', sessionId);
-            }
-        }
-    }, [decodedToken, sessionId, token]);
+    // NOTE: WebSocket connection disabled for essay sessions
+    // Essay sessions use Liveblocks (RoomProvider) for real-time collaboration
+    // sessionWebSocketService is only needed for coding sessions
 
     // Redirect to login if no valid token
     useEffect(() => {
@@ -126,13 +118,11 @@ const EssaySessionPage: React.FC = () => {
         }
     }, [decodedToken, sessionId, navigate]);
 
-    // WebSocket send message function
+    // WebSocket send message function (disabled for essay sessions - using Liveblocks instead)
     const sendWsMessage = useCallback((type: string, payload: any) => {
-        if (sessionWebSocketService.connectionStatus) {
-            sessionWebSocketService.send(type, payload);
-        } else {
-            console.warn('WebSocket service not connected. Message not sent:', { type, payload });
-        }
+        console.log('📝 Essay session message (handled by Liveblocks):', { type, payload });
+        // Essay sessions use Liveblocks for real-time messaging
+        // This function is kept for compatibility but doesn't send via WebSocket
     }, []);
 
     // Event handlers

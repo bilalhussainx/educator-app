@@ -126,6 +126,32 @@ export const LiveSessionNotification: React.FC<LiveSessionNotificationProps> = (
             }
         });
 
+        // Listen for session acceptance notifications
+        newSocket.on('session:accepted', (notification: any) => {
+            console.log('[Live Session Notifications] ✅ Session accepted notification:', notification);
+
+            // Show toast notification
+            toast.success(
+                <div className="flex flex-col gap-1">
+                    <div className="font-semibold text-sm">Session Request Accepted!</div>
+                    <div className="text-xs">{notification.message}</div>
+                </div>,
+                {
+                    duration: 8000,
+                    position: 'top-right'
+                }
+            );
+
+            // Play notification sound (optional)
+            try {
+                const audio = new Audio('/notification.mp3');
+                audio.volume = 0.5;
+                audio.play().catch(err => console.log('Audio play failed:', err));
+            } catch (err) {
+                // Ignore audio errors
+            }
+        });
+
         // Listen for live session creation
         newSocket.on('session:created', (notification: SessionNotification) => {
             console.log('[Live Session Notifications] 🔔 Received notification:', notification);

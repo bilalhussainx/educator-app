@@ -5,6 +5,7 @@ import sessionWebSocketService from '../services/sessionWebSocketService';
 import apiClient from '../services/apiClient';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useSessionEndHandler } from '../hooks/useSessionEndHandler';
 
 // Enhanced UI Components
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,19 @@ const UrgentEssaySessionPage: React.FC = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+
+    // Handle session end events - auto-redirect when teacher ends session
+    useSessionEndHandler({
+        sessionId: sessionId || '',
+        redirectPath: '/sessions',
+        onSessionEnd: (data) => {
+            console.log('[UrgentEssaySessionPage] Session ended:', data);
+            toast.error('Session has been ended by the teacher', {
+                description: 'Redirecting to sessions page...',
+                duration: 3000
+            });
+        }
+    });
 
     // Core state
     const [students] = useState<any[]>([]);

@@ -21,6 +21,7 @@ import sessionWebSocketService from '../services/sessionWebSocketService';
 import { UserProgressWidget } from '../components/layout/UserProgressWidget';
 import { AISearchAgent } from '../components/AISearchAgent';
 import { IntelligentNavigationCompanion } from '../components/ai/IntelligentNavigationCompanion';
+import { QuickAccessCards } from '../components/dashboard/QuickAccessCards';
 
 // --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
@@ -595,6 +596,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                         </div>
                     </div>
 
+                    {/* Quick Access Navigation Cards */}
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                            🚀 Quick Access
+                        </h2>
+                        <QuickAccessCards userRole="teacher" />
+                    </div>
+
                     {/* Notifications & Quick Actions */}
                     <div className="space-y-8">
                         <StuckPointNotifications />
@@ -708,6 +717,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             </div>
                         </div>
                     </header>
+
+                    {/* Quick Access Navigation Cards */}
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                            🚀 Quick Access
+                        </h2>
+                        <QuickAccessCards userRole="student" />
+                    </div>
 
                     {/* AI NAVIGATION COMPANION - Main Featured Card */}
                     <div className="relative group">

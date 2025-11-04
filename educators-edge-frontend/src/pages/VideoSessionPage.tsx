@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
 import apiClient from '../services/apiClient';
 import AgoraRTC, { IAgoraRTCClient, IAgoraRTCRemoteUser, ILocalVideoTrack, ILocalAudioTrack } from 'agora-rtc-sdk-ng';
+import { useSessionEndHandler } from '../hooks/useSessionEndHandler';
 
 interface SessionInfo {
     id: number;
@@ -50,7 +51,20 @@ interface ChatMessage {
 const VideoSessionPage: React.FC = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
-    
+
+    // Handle session end events - auto-redirect when teacher ends session
+    useSessionEndHandler({
+        sessionId: sessionId || '',
+        redirectPath: '/sessions',
+        onSessionEnd: (data) => {
+            console.log('[VideoSessionPage] Session ended:', data);
+            toast.error('Session has been ended by the teacher', {
+                description: 'Redirecting to sessions page...',
+                duration: 3000
+            });
+        }
+    });
+
     // Session data
     const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
     const [loading, setLoading] = useState(true);
