@@ -1418,55 +1418,25 @@ const DeveloperPortfolio3D: React.FC = () => {
             </button>
 
             <h2 className="text-3xl font-bold text-cyan-400 mb-2 text-center">Bilal Hussain</h2>
-            <p className="text-center text-cyan-300 mb-6">Toronto, Ontario, M9L 2C5 | 437-907-1483 | bilalhussain.v12@gmail.com</p>
+            <p className="text-center text-cyan-300 mb-2">Toronto, Ontario, M9L 2C5 | 437-907-1483 | bilalhussain.v12@gmail.com</p>
+            <div className="text-center mb-6 space-x-4">
+              <a href="https://github.com/bilalhussainx" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline text-sm">GitHub</a>
+              <a href="https://www.linkedin.com/in/bilal-hussain-921a04126/" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline text-sm">LinkedIn</a>
+            </div>
 
             <div className="space-y-6 text-gray-200">
               <div>
-                <p className="leading-relaxed text-center">Harvard Computer Science graduate and Full-Stack Developer with expertise in React, Python, Node.js, and PostgreSQL. Proven ability to architect scalable applications, integrate AI services, and lead technical teams.</p>
+                <p className="leading-relaxed text-center">Harvard Computer Science graduate and Full-Stack Developer with expertise in building scalable, real-time applications using React, Python, and Node.js. Proven track record of architecting end-to-end solutions, leading technical teams, and delivering production systems serving 100+ users.</p>
               </div>
 
               <div>
                 <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-cyan-400/30 pb-2">Technical Skills</h3>
-                <p className="mb-2"><strong className="text-cyan-400">Languages:</strong> Python, JavaScript, TypeScript, SQL, Java</p>
-                <p className="mb-2"><strong className="text-cyan-400">Frontend:</strong> React, Next.js, Tailwind CSS, Monaco Editor</p>
-                <p className="mb-2"><strong className="text-cyan-400">Backend:</strong> Node.js, Express, Django, Flask, RESTful APIs, WebSockets</p>
+                <p className="mb-2"><strong className="text-cyan-400">Languages:</strong> Python, JavaScript, TypeScript, SQL, HTML5/CSS3, Java, Go</p>
+                <p className="mb-2"><strong className="text-cyan-400">Frontend:</strong> React, Next.js, TypeScript, Tailwind CSS, Vite, Monaco Editor, Radix UI</p>
+                <p className="mb-2"><strong className="text-cyan-400">Backend:</strong> Node.js, Express.js, Django, Flask, FastAPI, RESTful APIs, WebSockets</p>
                 <p className="mb-2"><strong className="text-cyan-400">Databases:</strong> PostgreSQL, MongoDB, Redis</p>
-                <p className="mb-2"><strong className="text-cyan-400">DevOps:</strong> Docker, Git, Azure, Vercel</p>
-                <p className="mb-2"><strong className="text-cyan-400">AI/ML:</strong> Claude API, OpenAI, Google Gemini, Prompt Engineering</p>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-cyan-400/30 pb-2">Professional Experience</h3>
-
-                <div className="mb-4">
-                  <h4 className="text-lg font-semibold text-cyan-200">Milton Academy, Milton, MA — Computer Science Instructor & Technical Lead</h4>
-                  <p className="text-sm italic text-cyan-400/70 mb-2">Aug 2022 - Aug 2024</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
-                    <li>Architected 3-part CS curriculum for 100+ students in Python, JavaScript, and web development, increasing advanced enrollment by 40%</li>
-                    <li>Developed Python-based administrative tool automating student progress tracking, reducing faculty workload by 5+ hours/week</li>
-                    <li>Mentored students through code reviews and guided full-stack capstone project development</li>
-                  </ul>
-                </div>
-
-                <div className="mb-4">
-                  <h4 className="text-lg font-semibold text-cyan-200">Healthynox (Remote), Boston, MA — Lead Software Engineer</h4>
-                  <p className="text-sm italic text-cyan-400/70 mb-2">Jan 2020 - Mar 2021</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
-                    <li>Architected patient data management platform using Django (Python) backend and React frontend with secure PostgreSQL schema</li>
-                    <li>Built internal dashboard consolidating 5+ data sources, reducing manual reporting time by 10+ hours weekly</li>
-                    <li>Mentored team of 3 junior engineers, establishing Git workflow, code review standards, and agile best practices</li>
-                  </ul>
-                </div>
-
-                <div className="mb-4">
-                  <h4 className="text-lg font-semibold text-cyan-200">Harvard Graduate School of Design, Cambridge, MA — IT Coordinator</h4>
-                  <p className="text-sm italic text-cyan-400/70 mb-2">Aug 2017 - Aug 2019</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
-                    <li>Provided high-level technical support for 200+ users across macOS and Windows environments</li>
-                    <li>Managed Microsoft 365 systems including SharePoint, Active Directory, and Exchange</li>
-                    <li>Implemented IT documentation system reducing issue resolution time by 25%</li>
-                  </ul>
-                </div>
+                <p className="mb-2"><strong className="text-cyan-400">DevOps & Tools:</strong> Docker, Git, Azure Blob Storage, Vercel, Agora RTC SDK</p>
+                <p className="mb-2"><strong className="text-cyan-400">AI/ML:</strong> Claude API, OpenAI API, Google Gemini, Prompt Engineering, AI Integration</p>
               </div>
 
               <div>
@@ -1474,39 +1444,91 @@ const DeveloperPortfolio3D: React.FC = () => {
 
                 <div className="mb-4">
                   <h4 className="text-lg font-semibold text-cyan-200">Educators Edge - Full-Stack Learning Management Platform</h4>
+                  <p className="text-sm italic text-cyan-400/70 mb-1">Lead Developer | React, Node.js, PostgreSQL, WebSockets, AI Integration</p>
                   <p className="text-sm mb-2">
                     <a href="https://educator-app.vercel.app" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">Live Demo</a> |
                     <a href="https://github.com/bilalhussainx/educator-app" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline ml-2">GitHub</a>
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
-                    <li>Architected comprehensive LMS with real-time video, collaborative coding, and AI-powered features serving 100+ users</li>
-                    <li><strong>Backend:</strong> Node.js/Express API with 50+ endpoints, WebSocket routing, PostgreSQL, Redis queues, Azure Blob Storage</li>
-                    <li><strong>Frontend:</strong> React/TypeScript SPA with Monaco Editor, Agora RTC video streaming, XTerm.js terminal, Tailwind CSS</li>
-                    <li><strong>AI Integration:</strong> Claude, Gemini, and OpenAI APIs for curriculum generation, code analysis, and writing assistance</li>
-                    <li><strong>Features:</strong> Live sessions, interactive IDE, 390+ LeetCode problems, session booking, messaging, referral system</li>
+                    <li>Architected and developed a comprehensive LMS enabling real-time video instruction, collaborative coding environments, and AI-powered course generation for 100+ educators and students</li>
+                    <li><strong>Backend:</strong> Built scalable Node.js/Express API with 50+ RESTful endpoints, WebSocket real-time communication, PostgreSQL database design, Redis task queues (BullMQ), and Azure Blob Storage integration</li>
+                    <li><strong>Frontend:</strong> Engineered responsive React/TypeScript SPA with Vite, Tailwind CSS, Monaco code editor, XTerm.js terminal emulation, and Agora RTC video streaming SDK</li>
+                    <li><strong>AI Features:</strong> Integrated Google Gemini and Claude APIs for automated curriculum generation, AI writing assistance, resume optimization, and intelligent code execution analysis</li>
+                    <li><strong>Real-Time Systems:</strong> Implemented WebSocket routing architecture for live session presence, collaborative editing, and instant messaging across distributed connections</li>
+                    <li><strong>Authentication & Security:</strong> Designed JWT-based auth with Passport.js, role-based access control (teacher/student), and secure session management</li>
+                    <li><strong>Key Features:</strong> Live video sessions, interactive coding IDE, LeetCode problem integration with 390+ enriched problems, session booking system, referral program, and earnings dashboard</li>
                   </ul>
                 </div>
 
                 <div className="mb-4">
-                  <h4 className="text-lg font-semibold text-cyan-200">SynergyPost.ca - Multi-Agent AI Platform</h4>
+                  <h4 className="text-lg font-semibold text-cyan-200">SynergyPost.ca - Multi-Agent AI Content Platform</h4>
                   <p className="text-sm mb-2">
-                    <a href="https://synergypost.ca" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">Live Demo</a>
+                    <a href="https://synergypost.ca" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">Live Demo</a> |
+                    <a href="https://github.com/bilalhussainx/synergypost" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline ml-2">GitHub</a>
                   </p>
                   <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
-                    <li>Developed AI workflow platform with Python FastAPI backend and React frontend using Google Vertex AI</li>
-                    <li>Implemented agent coordination system for parallel content generation with quality control</li>
+                    <li>Developed a full-stack multi-agent AI workflow for automated content creation, demonstrating advanced prompt engineering and API orchestration</li>
+                    <li>Built Python FastAPI backend with React frontend, integrating Google Vertex AI for intelligent content generation and processing</li>
                   </ul>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-cyan-400/30 pb-2">Education</h3>
-                <p><strong className="text-cyan-400">Harvard College, Cambridge, USA</strong> — Bachelor of Arts in Computer Science | May 2022</p>
+                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-cyan-400/30 pb-2">Professional Experience</h3>
+
+                <div className="mb-4">
+                  <h4 className="text-lg font-semibold text-cyan-200">Milton Academy, Milton, MA — Computer Science Instructor & Technical Lead</h4>
+                  <p className="text-sm italic text-cyan-400/70 mb-2">August 2022 - August 2024</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                    <li>Architected and delivered a comprehensive 3-part CS curriculum for 100+ students, focusing on Python, JavaScript, and web development fundamentals with hands-on AI and game development projects</li>
+                    <li>Mentored students through code reviews and guided development of full-stack capstone projects, resulting in 40% increase in advanced CS course enrollment</li>
+                    <li>Developed and deployed a Python-based administrative tool to automate student progress tracking and curriculum management, reducing faculty administrative workload by 5+ hours per week</li>
+                  </ul>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="text-lg font-semibold text-cyan-200">Healthynox (Remote Startup), Boston, MA — Lead Software Engineer</h4>
+                  <p className="text-sm italic text-cyan-400/70 mb-2">January 2020 - March 2021</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                    <li>Architected and led the end-to-end development of a patient data management platform, utilizing Python (Django) for backend API and React for the user interface</li>
+                    <li>Designed and implemented a secure PostgreSQL database schema for handling sensitive patient information with HIPAA compliance considerations</li>
+                    <li>Built critical internal dashboard consolidating data from 5+ sources, reducing manual reporting time for operations team by 10+ hours weekly</li>
+                    <li>Mentored a team of 3 junior engineers, establishing best practices for Git workflow, code reviews, and agile development processes</li>
+                  </ul>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="text-lg font-semibold text-cyan-200">The Harvard Lampoon, Cambridge, MA — Advertisement & Finance Board</h4>
+                  <p className="text-sm italic text-cyan-400/70 mb-2">September 2019 - May 2022</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                    <li>Generated $14,000 in new revenue over 5 months by leading full sales cycle including web scraping for lead generation, cold-calling executives, and securing event sponsorships</li>
+                    <li>Developed Python automation scripts for prospect research and outreach tracking</li>
+                  </ul>
+                </div>
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-cyan-400/30 pb-2">Additional</h3>
-                <p><strong className="text-cyan-400">Languages:</strong> English (Native), Urdu (Fluent)</p>
+                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-cyan-400/30 pb-2">Technical Highlights</h3>
+                <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                  <li><strong className="text-cyan-400">Full-Stack Architecture:</strong> Designed and deployed production-grade applications with React frontends, Node.js/Django backends, and PostgreSQL databases</li>
+                  <li><strong className="text-cyan-400">Real-Time Systems:</strong> Implemented WebSocket-based live collaboration, video streaming, and instant messaging features</li>
+                  <li><strong className="text-cyan-400">AI Integration:</strong> Built AI-powered features using Claude, OpenAI, and Gemini APIs for content generation, code analysis, and intelligent assistance</li>
+                  <li><strong className="text-cyan-400">Database Design:</strong> Created complex relational schemas with PostgreSQL for multi-tenant applications with role-based access control</li>
+                  <li><strong className="text-cyan-400">DevOps:</strong> Containerized applications with Docker, deployed to cloud platforms (Vercel, Azure), and managed CI/CD pipelines</li>
+                  <li><strong className="text-cyan-400">Code Quality:</strong> Established TypeScript strict mode, ESLint configurations, and comprehensive error handling across 20,000+ lines of code</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-cyan-400/30 pb-2">Education</h3>
+                <p><strong className="text-cyan-400">Harvard College, Cambridge, USA</strong> — Bachelor of Arts in Computer Science</p>
+                <p className="text-sm italic text-cyan-400/70">August 2016 - May 2022</p>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold text-cyan-300 mb-3 border-b border-cyan-400/30 pb-2">Additional Information</h3>
+                <p className="mb-1"><strong className="text-cyan-400">Languages:</strong> English (Native), Urdu (Fluent)</p>
+                <p className="mb-1"><strong className="text-cyan-400">Interests:</strong> EdTech Innovation, AI/ML Applications, Open Source Contribution</p>
                 <p><strong className="text-cyan-400">Availability:</strong> Immediately available for full-time positions</p>
               </div>
             </div>
