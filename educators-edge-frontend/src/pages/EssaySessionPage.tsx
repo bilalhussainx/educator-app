@@ -197,6 +197,7 @@ const EssaySessionPage: React.FC = () => {
                     handsRaised={handsRaised}
                     onRaiseHand={handleRaiseHand}
                     onSave={handleSave}
+                    enableVideo={true}
                 />
             </RoomProvider>
         </div>

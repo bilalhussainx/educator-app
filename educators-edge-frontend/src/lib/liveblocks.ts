@@ -5,8 +5,12 @@ import { createLiveblocksContext, createRoomContext } from "@liveblocks/react";
 const client = createClient({
   // Use auth endpoint for proper authentication with token
   authEndpoint: async (room) => {
+    console.log('[Liveblocks] 🔐 AUTH REQUEST STARTED');
+    console.log('[Liveblocks] Room:', room);
+
     // Get the JWT token from localStorage (using the correct key 'authToken')
     const token = localStorage.getItem('authToken');
+    console.log('[Liveblocks] Has authToken:', !!token, 'Length:', token?.length || 0);
 
     if (!token) {
       // For development/testing, use the dev token fallback if no real token exists
@@ -20,7 +24,8 @@ const client = createClient({
         timestamp: new Date().toISOString()
       });
 
-      const response = await fetch("http://localhost:10000/api/liveblocks/auth", {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:10000';
+      const response = await fetch(`${API_URL}/api/liveblocks/auth`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${devToken}`,
@@ -32,10 +37,14 @@ const client = createClient({
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Liveblocks] ❌ Dev auth failed:', response.status, errorText);
         throw new Error(`Development authentication failed: ${response.status} ${response.statusText}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('[Liveblocks] ✅ Dev auth SUCCESS');
+      return result;
     }
 
     console.log('🔄 Liveblocks Frontend Auth Request:', {
@@ -44,7 +53,8 @@ const client = createClient({
       timestamp: new Date().toISOString()
     });
 
-    const response = await fetch("http://localhost:10000/api/liveblocks/auth", {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:10000';
+    const response = await fetch(`${API_URL}/api/liveblocks/auth`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -56,10 +66,14 @@ const client = createClient({
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Liveblocks] ❌ Auth failed:', response.status, errorText);
       throw new Error(`Authentication failed: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('[Liveblocks] ✅ Auth SUCCESS');
+    return result;
   },
 
   // Throttle updates to avoid too many API calls
