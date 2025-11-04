@@ -26,6 +26,7 @@ const DeveloperPortfolio3D: React.FC = () => {
   const [currentImageName, setCurrentImageName] = useState<string>('');
   const [currentBillboardIndex, setCurrentBillboardIndex] = useState(0);
   const [totalBillboards, setTotalBillboards] = useState(9);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Video configuration - ONE video per building
   const videoItem = { type: 'video', src: '/assets/portfolio/app-demo.mp4', name: 'App Demo Video' };
@@ -1307,8 +1308,16 @@ const DeveloperPortfolio3D: React.FC = () => {
       {/* Canvas */}
       <canvas ref={canvasRef} className="fixed inset-0 z-[1]" />
 
-      {/* Enhanced Navigation Banner */}
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[150] pointer-events-none">
+      {/* Mobile Menu Toggle Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-[200] w-12 h-12 bg-gradient-to-br from-cyan-900/95 to-blue-900/95 backdrop-blur-md rounded-lg border-2 border-cyan-400/50 flex items-center justify-center pointer-events-auto shadow-lg"
+      >
+        <span className="text-cyan-300 text-2xl">{isMobileMenuOpen ? '✕' : '☰'}</span>
+      </button>
+
+      {/* Enhanced Navigation Banner - Desktop only, mobile moved below */}
+      <div className="hidden lg:block fixed top-4 left-1/2 transform -translate-x-1/2 z-[150] pointer-events-none">
         <div className="bg-gradient-to-r from-cyan-900/95 via-blue-900/95 to-purple-900/95 backdrop-blur-md px-8 py-4 rounded-2xl border-2 border-cyan-400/50 shadow-2xl">
           <p className="text-cyan-300 text-sm text-center font-semibold">
             🏙️ Times Square Portfolio • App Showcase for Fun & Demonstration 🏙️
@@ -1321,8 +1330,22 @@ const DeveloperPortfolio3D: React.FC = () => {
         </div>
       </div>
 
-      {/* UI Overlay */}
-      <nav className="fixed top-0 left-0 w-72 h-screen bg-gradient-to-b from-black/95 via-blue-950/95 to-cyan-900/95 backdrop-blur-md p-6 flex flex-col justify-between border-r-2 border-cyan-400/30 shadow-2xl z-[100] pointer-events-auto">
+      {/* Mobile Banner - Positioned below hamburger menu */}
+      <div className="lg:hidden fixed top-20 left-4 right-4 z-[150] pointer-events-none">
+        <div className="bg-gradient-to-r from-cyan-900/95 via-blue-900/95 to-purple-900/95 backdrop-blur-md px-4 py-3 rounded-xl border-2 border-cyan-400/50 shadow-2xl">
+          <p className="text-cyan-300 text-xs text-center font-semibold">
+            🏙️ Times Square Portfolio
+          </p>
+          <p className="text-cyan-400/80 text-[10px] text-center mt-1">
+            Tap billboards • Swipe to rotate
+          </p>
+        </div>
+      </div>
+
+      {/* UI Overlay - Sidebar (Desktop: always visible, Mobile: toggle) */}
+      <nav className={`fixed top-0 left-0 w-full sm:w-80 lg:w-72 h-screen bg-gradient-to-b from-black/95 via-blue-950/95 to-cyan-900/95 backdrop-blur-md p-6 flex flex-col justify-between border-r-2 border-cyan-400/30 shadow-2xl z-[190] pointer-events-auto transition-transform duration-300 ${
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         <div>
           <h1 className="text-3xl font-bold text-cyan-400 mb-2 drop-shadow-lg">Bilal Hussain</h1>
           <p className="text-cyan-200 text-sm mb-8">Full-Stack Developer</p>
@@ -1384,25 +1407,25 @@ const DeveloperPortfolio3D: React.FC = () => {
         </div>
       </nav>
 
-      {/* Billboard Navigation & Counter */}
-      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[150] pointer-events-auto">
-        <div className="flex items-center gap-4 bg-gradient-to-r from-cyan-900/95 via-blue-900/95 to-purple-900/95 backdrop-blur-md px-6 py-3 rounded-full border-2 border-cyan-400/50 shadow-2xl">
+      {/* Billboard Navigation & Counter - Mobile responsive */}
+      <div className="fixed bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-[150] pointer-events-auto px-4">
+        <div className="flex items-center gap-2 sm:gap-4 bg-gradient-to-r from-cyan-900/95 via-blue-900/95 to-purple-900/95 backdrop-blur-md px-3 sm:px-6 py-2 sm:py-3 rounded-full border-2 border-cyan-400/50 shadow-2xl">
           <button
             onClick={() => {
               const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
               window.dispatchEvent(event);
             }}
-            className="w-10 h-10 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded-full flex items-center justify-center transition-all hover:scale-110"
+            className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded-full flex items-center justify-center transition-all hover:scale-110"
             title="Previous Billboard (←)"
           >
-            <span className="text-cyan-300 text-xl">←</span>
+            <span className="text-cyan-300 text-lg sm:text-xl">←</span>
           </button>
 
-          <div className="text-center px-4">
-            <p className="text-cyan-400 text-sm font-semibold">
+          <div className="text-center px-2 sm:px-4">
+            <p className="text-cyan-400 text-xs sm:text-sm font-semibold whitespace-nowrap">
               Billboard {currentBillboardIndex + 1} / {totalBillboards}
             </p>
-            <p className="text-cyan-300/70 text-xs mt-0.5">Use ←→ or click to navigate</p>
+            <p className="text-cyan-300/70 text-[10px] sm:text-xs mt-0.5 hidden sm:block">Use ←→ or click to navigate</p>
           </div>
 
           <button
@@ -1410,17 +1433,17 @@ const DeveloperPortfolio3D: React.FC = () => {
               const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
               window.dispatchEvent(event);
             }}
-            className="w-10 h-10 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded-full flex items-center justify-center transition-all hover:scale-110"
+            className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500/20 hover:bg-cyan-500/40 border border-cyan-400/50 rounded-full flex items-center justify-center transition-all hover:scale-110"
             title="Next Billboard (→)"
           >
-            <span className="text-cyan-300 text-xl">→</span>
+            <span className="text-cyan-300 text-lg sm:text-xl">→</span>
           </button>
         </div>
       </div>
 
-      {/* Floating Zoom In Button */}
+      {/* Floating Zoom In Button - Mobile responsive */}
       {showZoomButton && !showResume && selectedImage && (
-        <div className="fixed bottom-24 right-8 z-[150] pointer-events-auto">
+        <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-8 z-[150] pointer-events-auto">
           <button
             onClick={() => {
               setShowZoomButton(false);
@@ -1428,46 +1451,46 @@ const DeveloperPortfolio3D: React.FC = () => {
               const modal = document.getElementById('image-modal');
               if (modal) modal.style.display = 'flex';
             }}
-            className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-full shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-cyan-400 animate-pulse"
+            className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-full shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-cyan-400 animate-pulse"
           >
-            <span className="text-2xl">🔍</span>
-            <span className="font-semibold text-lg">View Full Size</span>
+            <span className="text-xl sm:text-2xl">🔍</span>
+            <span className="font-semibold text-sm sm:text-lg whitespace-nowrap">View Full</span>
           </button>
           <button
             onClick={() => setShowZoomButton(false)}
-            className="absolute -top-2 -right-2 w-8 h-8 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-sm flex items-center justify-center transition-all shadow-lg"
+            className="absolute -top-2 -right-2 w-7 h-7 sm:w-8 sm:h-8 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-sm flex items-center justify-center transition-all shadow-lg"
           >
             ×
           </button>
         </div>
       )}
 
-      {/* Image Modal - Futuristic Billboard View */}
+      {/* Image Modal - Futuristic Billboard View - Mobile responsive */}
       <div
         id="image-modal"
-        className="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-sm pointer-events-auto"
+        className="fixed inset-0 z-[250] hidden items-center justify-center bg-black/90 backdrop-blur-sm pointer-events-auto p-2 sm:p-4"
         onClick={() => {
           const modal = document.getElementById('image-modal');
           if (modal) modal.style.display = 'none';
         }}
       >
-        <div className="relative max-w-7xl max-h-[95vh] p-4" onClick={(e) => e.stopPropagation()}>
+        <div className="relative w-full max-w-7xl max-h-[95vh] p-2 sm:p-4" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => {
               const modal = document.getElementById('image-modal');
               if (modal) modal.style.display = 'none';
             }}
-            className="absolute -top-4 -right-4 w-12 h-12 bg-red-500/90 hover:bg-red-600 text-white rounded-full text-2xl flex items-center justify-center transition-all z-10 shadow-lg"
+            className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 w-10 h-10 sm:w-12 sm:h-12 bg-red-500/90 hover:bg-red-600 text-white rounded-full text-xl sm:text-2xl flex items-center justify-center transition-all z-10 shadow-lg"
           >
             ×
           </button>
           {selectedImage && (
-            <div className="bg-gradient-to-b from-gray-900 via-blue-950 to-cyan-950 border-4 border-cyan-400/50 rounded-xl overflow-hidden shadow-2xl">
-              <div className="bg-gradient-to-r from-cyan-900 to-blue-950 px-6 py-4 border-b-2 border-cyan-400/30">
-                <h3 className="text-2xl font-bold text-cyan-400">📺 {currentImageName}</h3>
-                <p className="text-cyan-300/70 text-sm mt-1">Times Square Billboard View</p>
+            <div className="bg-gradient-to-b from-gray-900 via-blue-950 to-cyan-950 border-2 sm:border-4 border-cyan-400/50 rounded-lg sm:rounded-xl overflow-hidden shadow-2xl">
+              <div className="bg-gradient-to-r from-cyan-900 to-blue-950 px-3 sm:px-6 py-2 sm:py-4 border-b-2 border-cyan-400/30">
+                <h3 className="text-lg sm:text-2xl font-bold text-cyan-400 truncate">📺 {currentImageName}</h3>
+                <p className="text-cyan-300/70 text-xs sm:text-sm mt-1">Times Square Billboard View</p>
               </div>
-              <div className="p-4 flex items-center justify-center bg-black/50">
+              <div className="p-2 sm:p-4 flex items-center justify-center bg-black/50">
                 {selectedImage.endsWith('.mp4') || selectedImage.endsWith('.webm') || selectedImage.endsWith('.mov') ? (
                   <video
                     src={selectedImage}
@@ -1475,7 +1498,7 @@ const DeveloperPortfolio3D: React.FC = () => {
                     autoPlay
                     loop
                     muted
-                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                    className="max-w-full max-h-[70vh] sm:max-h-[80vh] object-contain rounded-lg shadow-2xl"
                   >
                     Your browser does not support the video tag.
                   </video>
@@ -1483,7 +1506,7 @@ const DeveloperPortfolio3D: React.FC = () => {
                   <img
                     src={selectedImage}
                     alt={currentImageName}
-                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                    className="max-w-full max-h-[70vh] sm:max-h-[80vh] object-contain rounded-lg shadow-2xl"
                   />
                 )}
               </div>
@@ -1492,19 +1515,19 @@ const DeveloperPortfolio3D: React.FC = () => {
         </div>
       </div>
 
-      {/* Resume Modal */}
+      {/* Resume Modal - Mobile responsive */}
       {showResume && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto" onClick={() => setShowResume(false)}>
-          <div className="bg-gradient-to-b from-gray-900 via-blue-950 to-cyan-950 border-2 border-cyan-400/40 rounded-xl p-8 max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto p-2 sm:p-4" onClick={() => setShowResume(false)}>
+          <div className="bg-gradient-to-b from-gray-900 via-blue-950 to-cyan-950 border-2 border-cyan-400/40 rounded-lg sm:rounded-xl p-4 sm:p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setShowResume(false)}
-              className="absolute top-4 right-4 w-10 h-10 bg-red-500/20 border-2 border-red-400/50 rounded-full text-red-300 hover:bg-red-500/40 transition-all text-2xl flex items-center justify-center"
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 bg-red-500/20 border-2 border-red-400/50 rounded-full text-red-300 hover:bg-red-500/40 transition-all text-xl sm:text-2xl flex items-center justify-center"
             >
               ×
             </button>
 
-            <h2 className="text-3xl font-bold text-cyan-400 mb-2 text-center">Bilal Hussain</h2>
-            <p className="text-center text-cyan-300 mb-2">Toronto, Ontario, M9L 2C5 | 437-907-1483 | bilalhussain.v12@gmail.com</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2 text-center pr-10 sm:pr-0">Bilal Hussain</h2>
+            <p className="text-center text-cyan-300 mb-2 text-xs sm:text-base px-2">Toronto, Ontario | 437-907-1483 | bilalhussain.v12@gmail.com</p>
             <div className="text-center mb-6 space-x-4">
               <a href="https://github.com/bilalhussainx" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline text-sm">GitHub</a>
               <a href="https://www.linkedin.com/in/bilal-hussain-921a04126/" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline text-sm">LinkedIn</a>
