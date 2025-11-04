@@ -47,6 +47,9 @@ const DeveloperPortfolio3D: React.FC = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
 
+    // Detect mobile device for performance optimization
+    const isMobile = window.innerWidth < 768;
+
     // Scene Setup - Times Square Futuristic City
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x0a0a1a, 10, 150); // Lighter fog for city atmosphere
@@ -61,13 +64,16 @@ const DeveloperPortfolio3D: React.FC = () => {
 
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
-      antialias: true,
-      alpha: true
+      antialias: !isMobile, // Disable antialiasing on mobile
+      alpha: true,
+      powerPreference: 'high-performance' // Prioritize performance
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2 for performance
+    renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2)); // Lower pixel ratio on mobile
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled = !isMobile; // Disable shadows on mobile
+    if (!isMobile) {
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.5; // Increased for brighter billboards
 
@@ -104,8 +110,8 @@ const DeveloperPortfolio3D: React.FC = () => {
     // Times Square night sky background
     scene.background = new THREE.Color(0x0a0a1a);
 
-    // Neon light particles (city atmosphere) - reduced for faster load
-    const particleCount = 400;
+    // Neon light particles (city atmosphere) - reduced for mobile
+    const particleCount = isMobile ? 100 : 400;
     const particles = new THREE.BufferGeometry();
     const particlePositions: number[] = [];
     const particleColors: number[] = [];
@@ -706,8 +712,9 @@ const DeveloperPortfolio3D: React.FC = () => {
     const cars: THREE.Group[] = [];
     const carColors = [0xff0000, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffffff, 0x000000];
 
-    // Create 8 cars (reduced for faster load)
-    for (let i = 0; i < 8; i++) {
+    // Create cars (reduced on mobile for performance)
+    const carCount = isMobile ? 3 : 8;
+    for (let i = 0; i < carCount; i++) {
       const car = new THREE.Group();
 
       // Car body
@@ -871,8 +878,9 @@ const DeveloperPortfolio3D: React.FC = () => {
     const people: THREE.Group[] = [];
     const crowdColors = [0xff6b6b, 0x4ecdc4, 0x45b7d1, 0xf7dc6f, 0xbb8fce, 0x85c1e2, 0xf8b500];
 
-    // Create 20 people walking around (reduced for faster load)
-    for (let i = 0; i < 20; i++) {
+    // Create people walking around (reduced on mobile for performance)
+    const peopleCount = isMobile ? 5 : 20;
+    for (let i = 0; i < peopleCount; i++) {
       const person = new THREE.Group();
 
       // Body (capsule-like)
@@ -1308,6 +1316,14 @@ const DeveloperPortfolio3D: React.FC = () => {
       {/* Canvas */}
       <canvas ref={canvasRef} className="fixed inset-0 z-[1]" />
 
+      {/* Backdrop overlay for mobile menu - click to close */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[240] pointer-events-auto"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Mobile Menu Toggle Button - Only visible when menu is closed */}
       {!isMobileMenuOpen && (
         <div className="lg:hidden fixed top-4 left-4 z-[200]">
@@ -1373,7 +1389,10 @@ const DeveloperPortfolio3D: React.FC = () => {
 
           <div className="space-y-3">
             <button
-              onClick={() => setShowResume(true)}
+              onClick={() => {
+                setShowResume(true);
+                setIsMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 border border-cyan-400/30 rounded-lg text-cyan-200 hover:bg-cyan-400/20 hover:border-cyan-400/60 transition-all hover:translate-x-1"
             >
               <span className="text-xl">📄</span>
@@ -1384,6 +1403,7 @@ const DeveloperPortfolio3D: React.FC = () => {
               href="https://educator-app.vercel.app"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 border border-cyan-400/30 rounded-lg text-cyan-200 hover:bg-cyan-400/20 hover:border-cyan-400/60 transition-all hover:translate-x-1"
             >
               <span className="text-xl">🌐</span>
@@ -1394,6 +1414,7 @@ const DeveloperPortfolio3D: React.FC = () => {
               href="https://github.com/bilalhussainx"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 border border-cyan-400/30 rounded-lg text-cyan-200 hover:bg-cyan-400/20 hover:border-cyan-400/60 transition-all hover:translate-x-1"
             >
               <span className="text-xl">💻</span>
@@ -1404,6 +1425,7 @@ const DeveloperPortfolio3D: React.FC = () => {
               href="https://www.linkedin.com/in/bilal-hussain-921a04126/"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 border border-cyan-400/30 rounded-lg text-cyan-200 hover:bg-cyan-400/20 hover:border-cyan-400/60 transition-all hover:translate-x-1"
             >
               <span className="text-xl">🔗</span>
@@ -1412,6 +1434,7 @@ const DeveloperPortfolio3D: React.FC = () => {
 
             <a
               href="/login"
+              onClick={() => setIsMobileMenuOpen(false)}
               className="w-full flex items-center gap-3 px-4 py-3 bg-white/5 border border-cyan-400/30 rounded-lg text-cyan-200 hover:bg-cyan-400/20 hover:border-cyan-400/60 transition-all hover:translate-x-1"
             >
               <span className="text-xl">🏠</span>
