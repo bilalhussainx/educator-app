@@ -20,7 +20,7 @@ declare global {
 const DeveloperPortfolio3D: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [showResume, setShowResume] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Start with no loading screen
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showZoomButton, setShowZoomButton] = useState(false);
   const [currentImageName, setCurrentImageName] = useState<string>('');
@@ -78,8 +78,8 @@ const DeveloperPortfolio3D: React.FC = () => {
     const directionalLight = new THREE.DirectionalLight(0x88ccff, 2.0);
     directionalLight.position.set(50, 80, 50);
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.mapSize.width = 1024; // Reduced for better performance
+    directionalLight.shadow.mapSize.height = 1024;
     scene.add(directionalLight);
 
     // Additional fill light
@@ -103,8 +103,8 @@ const DeveloperPortfolio3D: React.FC = () => {
     // Times Square night sky background
     scene.background = new THREE.Color(0x0a0a1a);
 
-    // Neon light particles (city atmosphere)
-    const particleCount = 800;
+    // Neon light particles (city atmosphere) - reduced for faster load
+    const particleCount = 400;
     const particles = new THREE.BufferGeometry();
     const particlePositions: number[] = [];
     const particleColors: number[] = [];
@@ -389,11 +389,13 @@ const DeveloperPortfolio3D: React.FC = () => {
     video.playsInline = true;
     video.autoplay = true;
     video.crossOrigin = 'anonymous';
-    video.preload = 'auto';
+    video.preload = 'metadata'; // Load only metadata first for faster initial load
     video.playbackRate = 1.0;
 
-    // Start playing immediately
-    video.play().catch((e) => console.warn('Video autoplay blocked:', e));
+    // Start playing when ready (deferred to not block initial load)
+    setTimeout(() => {
+      video.play().catch((e) => console.warn('Video autoplay blocked:', e));
+    }, 100);
 
     // Create video texture with optimized settings
     const videoTexture = new THREE.VideoTexture(video);
@@ -703,8 +705,8 @@ const DeveloperPortfolio3D: React.FC = () => {
     const cars: THREE.Group[] = [];
     const carColors = [0xff0000, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xffffff, 0x000000];
 
-    // Create 15 cars
-    for (let i = 0; i < 15; i++) {
+    // Create 8 cars (reduced for faster load)
+    for (let i = 0; i < 8; i++) {
       const car = new THREE.Group();
 
       // Car body
@@ -868,8 +870,8 @@ const DeveloperPortfolio3D: React.FC = () => {
     const people: THREE.Group[] = [];
     const crowdColors = [0xff6b6b, 0x4ecdc4, 0x45b7d1, 0xf7dc6f, 0xbb8fce, 0x85c1e2, 0xf8b500];
 
-    // Create 50 people walking around
-    for (let i = 0; i < 50; i++) {
+    // Create 20 people walking around (reduced for faster load)
+    for (let i = 0; i < 20; i++) {
       const person = new THREE.Group();
 
       // Body (capsule-like)
@@ -1277,8 +1279,8 @@ const DeveloperPortfolio3D: React.FC = () => {
 
     animate();
 
-    // Hide loading after 1 second
-    setTimeout(() => setIsLoading(false), 1000);
+    // Hide loading immediately after scene is set up
+    setIsLoading(false);
 
     // Cleanup
     return () => {
