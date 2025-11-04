@@ -27,17 +27,20 @@ const DeveloperPortfolio3D: React.FC = () => {
   const [currentBillboardIndex, setCurrentBillboardIndex] = useState(0);
   const [totalBillboards, setTotalBillboards] = useState(9);
 
-  // Portfolio images configuration - All your images
+  // Video configuration - ONE video per building
+  const videoItem = { type: 'video', src: '/assets/portfolio/app-demo.mp4', name: 'App Demo Video' };
+
+  // Portfolio images - Will be shown on 3 sides of each building
   const portfolioImages = [
-    '/assets/portfolio/dashboard1.jpg',
-    '/assets/portfolio/educators-edge-dashboard.jpg',
-    '/assets/portfolio/Essay.jpg',
-    '/assets/portfolio/Leetcode-course.jpg',
-    '/assets/portfolio/leetcode-enrichment.jpg',
-    '/assets/portfolio/leetcode-ide.jpg',
-    '/assets/portfolio/synergypost.jpg',
-    '/assets/portfolio/trustgraph.jpg',
-    '/assets/portfolio/writing.jpg'
+    { type: 'image', src: '/assets/portfolio/dashboard1.jpg', name: 'Dashboard' },
+    { type: 'image', src: '/assets/portfolio/educators-edge-dashboard.jpg', name: 'Educators Edge' },
+    { type: 'image', src: '/assets/portfolio/Essay.jpg', name: 'Essay Editor' },
+    { type: 'image', src: '/assets/portfolio/Leetcode-course.jpg', name: 'LeetCode Course' },
+    { type: 'image', src: '/assets/portfolio/leetcode-enrichment.jpg', name: 'LeetCode Enrichment' },
+    { type: 'image', src: '/assets/portfolio/leetcode-ide.jpg', name: 'LeetCode IDE' },
+    { type: 'image', src: '/assets/portfolio/synergypost.jpg', name: 'SynergyPost' },
+    { type: 'image', src: '/assets/portfolio/trustgraph.jpg', name: 'TrustGraph' },
+    { type: 'image', src: '/assets/portfolio/writing.jpg', name: 'Writing Tool' }
   ];
 
   useEffect(() => {
@@ -371,8 +374,36 @@ const DeveloperPortfolio3D: React.FC = () => {
 
     // Billboard Portfolio System - 4 BILLBOARDS PER BUILDING
     const portfolioPlanes: THREE.Mesh[] = [];
+    const videoTextures: THREE.VideoTexture[] = []; // Store video textures for animation loop
     const textureLoader = new THREE.TextureLoader();
     let billboardCounter = 0;
+
+    // VIDEO CACHE: Create one video element (will be reused on all buildings)
+    const videoCache = new Map<string, { video: HTMLVideoElement; texture: THREE.VideoTexture }>();
+
+    // Pre-create the single video element
+    const video = document.createElement('video');
+    video.src = videoItem.src;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.crossOrigin = 'anonymous';
+    video.preload = 'auto';
+    video.playbackRate = 1.0;
+
+    // Start playing immediately
+    video.play().catch((e) => console.warn('Video autoplay blocked:', e));
+
+    // Create video texture with optimized settings
+    const videoTexture = new THREE.VideoTexture(video);
+    videoTexture.minFilter = THREE.LinearFilter; // Faster than LinearMipmapLinear for video
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.format = THREE.RGBFormat; // Faster format
+    videoTexture.generateMipmaps = false; // Don't generate mipmaps for video (performance)
+
+    videoTextures.push(videoTexture);
+    videoCache.set(videoItem.src, { video, texture: videoTexture });
 
     // Create 4 billboards per building (front, right, back, left)
     buildings.forEach((building, buildingIndex) => {
@@ -387,103 +418,136 @@ const DeveloperPortfolio3D: React.FC = () => {
       ];
 
       sides.forEach((side, sideIndex) => {
-        // Get random image from portfolio (reuse images)
-        const imageIndex = (buildingIndex * 4 + sideIndex) % portfolioImages.length;
-        const imagePath = portfolioImages[imageIndex];
+        // Assign video to first side (front), images to other 3 sides
+        let item;
+        if (sideIndex === 0) {
+          // Front side: video
+          item = videoItem;
+        } else {
+          // Other 3 sides: images (cycling through portfolioImages)
+          const imageIndex = (buildingIndex * 3 + (sideIndex - 1)) % portfolioImages.length;
+          item = portfolioImages[imageIndex];
+        }
+        const itemPath = item.src;
+        const itemName = item.name;
 
-        textureLoader.load(
-          imagePath,
-          (texture) => {
-            // MAXIMUM QUALITY TEXTURE SETTINGS
+        // Function to create billboard with texture
+        const createBillboard = (texture: THREE.Texture | THREE.VideoTexture) => {
+          // TEXTURE SETTINGS (optimized differently for images vs videos)
+          if (texture instanceof THREE.VideoTexture) {
+            // Video textures: already optimized in cache creation
+            texture.encoding = THREE.sRGBEncoding;
+          } else {
+            // Image textures: maximum quality
             texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
             texture.minFilter = THREE.LinearMipmapLinearFilter;
             texture.magFilter = THREE.LinearFilter;
             texture.generateMipmaps = true;
             texture.encoding = THREE.sRGBEncoding;
+          }
 
-            // Large, prominent billboard
-            const billboardWidth = side.name === 'front' || side.name === 'back'
-              ? Math.min(config.width * 0.75, 14)
-              : Math.min(config.depth * 0.75, 14);
-            const billboardHeight = billboardWidth * 0.6;
+          // Large, prominent billboard
+          const billboardWidth = side.name === 'front' || side.name === 'back'
+            ? Math.min(config.width * 0.75, 14)
+            : Math.min(config.depth * 0.75, 14);
+          const billboardHeight = billboardWidth * 0.6;
 
-            // ULTRA-BRIGHT glowing frame border
-            const frameGeometry = new THREE.PlaneGeometry(billboardWidth + 1, billboardHeight + 1);
-            const frameMaterial = new THREE.MeshStandardMaterial({
-              color: 0x00ffff,
-              emissive: 0x00ffff,
-              emissiveIntensity: 2.0, // Much brighter frame
-              transparent: true,
-              opacity: 0.95,
-              toneMapped: false // Maximum brightness
-            });
-            const frame = new THREE.Mesh(frameGeometry, frameMaterial);
-            frame.userData = { clickable: true, imagePath, index: billboardCounter, buildingIndex, side: side.name };
-            frame.name = `billboard-frame-${billboardCounter}`;
+          // ULTRA-BRIGHT glowing frame border
+          const frameGeometry = new THREE.PlaneGeometry(billboardWidth + 1, billboardHeight + 1);
+          const frameMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00ffff,
+            emissive: 0x00ffff,
+            emissiveIntensity: 2.0, // Much brighter frame
+            transparent: true,
+            opacity: 0.95,
+            toneMapped: false // Maximum brightness
+          });
+          const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+          frame.userData = { clickable: true, imagePath: itemPath, index: billboardCounter, buildingIndex, side: side.name, itemName };
+          frame.name = `billboard-frame-${billboardCounter}`;
 
-            // Main billboard with ULTRA-BRIGHT settings + HIGH CONTRAST
-            const billboardGeometry = new THREE.PlaneGeometry(billboardWidth, billboardHeight);
-            const billboardMaterial = new THREE.MeshStandardMaterial({
-              map: texture,
-              side: THREE.DoubleSide,
-              emissive: 0xffffff,
-              emissiveMap: texture,
-              emissiveIntensity: 1.3, // Increased brightness
-              metalness: 0,
-              roughness: 0.02, // Even smoother for sharper look
-              transparent: false,
-              toneMapped: false // Bypass tone mapping for maximum brightness
-            });
+          // Main billboard with ULTRA-BRIGHT settings + HIGH CONTRAST
+          const billboardGeometry = new THREE.PlaneGeometry(billboardWidth, billboardHeight);
+          const billboardMaterial = new THREE.MeshStandardMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            emissive: 0xffffff,
+            emissiveMap: texture,
+            emissiveIntensity: 1.3, // Increased brightness
+            metalness: 0,
+            roughness: 0.02, // Even smoother for sharper look
+            transparent: false,
+            toneMapped: false // Bypass tone mapping for maximum brightness
+          });
 
-            const billboard = new THREE.Mesh(billboardGeometry, billboardMaterial);
-            billboard.position.z = 0.1;
-            billboard.userData = { clickable: true, imagePath, index: billboardCounter, buildingIndex, side: side.name };
-            billboard.name = `billboard-${billboardCounter}`;
+          const billboard = new THREE.Mesh(billboardGeometry, billboardMaterial);
+          billboard.position.z = 0.1;
+          billboard.userData = { clickable: true, imagePath: itemPath, index: billboardCounter, buildingIndex, side: side.name, itemName };
+          billboard.name = `billboard-${billboardCounter}`;
 
-            // Group billboard + frame
-            const billboardGroup = new THREE.Group();
-            billboardGroup.add(frame);
-            billboardGroup.add(billboard);
+          // Group billboard + frame
+          const billboardGroup = new THREE.Group();
+          billboardGroup.add(frame);
+          billboardGroup.add(billboard);
 
-            // Position on building face
-            const billboardHeight_pos = config.height * 0.55;
-            billboardGroup.position.set(side.position[0], billboardHeight_pos + side.position[1], side.position[2]);
-            billboardGroup.rotation.set(side.rotation[0], side.rotation[1], side.rotation[2]);
-            billboardGroup.userData = { clickable: true, imagePath, index: billboardCounter, buildingIndex, side: side.name };
-            billboardGroup.name = `billboard-group-${billboardCounter}`;
+          // Position on building face
+          const billboardHeight_pos = config.height * 0.55;
+          billboardGroup.position.set(side.position[0], billboardHeight_pos + side.position[1], side.position[2]);
+          billboardGroup.rotation.set(side.rotation[0], side.rotation[1], side.rotation[2]);
+          billboardGroup.userData = { clickable: true, imagePath: itemPath, index: billboardCounter, buildingIndex, side: side.name, itemName };
+          billboardGroup.name = `billboard-group-${billboardCounter}`;
 
-            building.add(billboardGroup);
-            billboardGroups.push(billboardGroup);
-            portfolioPlanes.push(billboard);
+          building.add(billboardGroup);
+          billboardGroups.push(billboardGroup);
+          portfolioPlanes.push(billboard);
 
-            // Dedicated ULTRA-BRIGHT spotlight for each billboard
-            const billboardSpotlight = new THREE.SpotLight(0xffffff, 4.0); // Increased intensity
-            const spotOffset = side.name === 'front' ? [0, 8, 12] :
-                              side.name === 'right' ? [12, 8, 0] :
-                              side.name === 'back' ? [0, 8, -12] :
-                              [-12, 8, 0];
+          // Dedicated ULTRA-BRIGHT spotlight for each billboard
+          const billboardSpotlight = new THREE.SpotLight(0xffffff, 4.0); // Increased intensity
+          const spotOffset = side.name === 'front' ? [0, 8, 12] :
+                            side.name === 'right' ? [12, 8, 0] :
+                            side.name === 'back' ? [0, 8, -12] :
+                            [-12, 8, 0];
 
-            billboardSpotlight.position.set(
-              side.position[0] + spotOffset[0],
-              billboardHeight_pos + spotOffset[1],
-              side.position[2] + spotOffset[2]
-            );
-            billboardSpotlight.target.position.set(side.position[0], billboardHeight_pos, side.position[2]);
-            billboardSpotlight.angle = Math.PI / 5; // Wider angle
-            billboardSpotlight.penumbra = 0.2; // Sharper edges
-            billboardSpotlight.distance = 40;
-            billboardSpotlight.decay = 1.5;
-            building.add(billboardSpotlight);
-            building.add(billboardSpotlight.target);
+          billboardSpotlight.position.set(
+            side.position[0] + spotOffset[0],
+            billboardHeight_pos + spotOffset[1],
+            side.position[2] + spotOffset[2]
+          );
+          billboardSpotlight.target.position.set(side.position[0], billboardHeight_pos, side.position[2]);
+          billboardSpotlight.angle = Math.PI / 5; // Wider angle
+          billboardSpotlight.penumbra = 0.2; // Sharper edges
+          billboardSpotlight.distance = 40;
+          billboardSpotlight.decay = 1.5;
+          building.add(billboardSpotlight);
+          building.add(billboardSpotlight.target);
 
-            billboardCounter++;
-          },
-          undefined,
-          (error) => {
-            console.error(`Failed to load ${imagePath}:`, error);
+          billboardCounter++;
+        };
+
+        // Handle video or image
+        if (item.type === 'video') {
+          // Use cached video texture (already created above)
+          const cachedVideo = videoCache.get(itemPath);
+          if (cachedVideo) {
+            createBillboard(cachedVideo.texture);
+          } else {
+            console.error(`Video not found in cache: ${itemPath}`);
             billboardCounter++;
           }
-        );
+        } else {
+          // Handle image
+          textureLoader.load(
+            itemPath,
+            (texture) => {
+              createBillboard(texture);
+            },
+            undefined,
+            (error) => {
+              console.error(`Failed to load image ${itemPath}:`, error);
+              billboardCounter++;
+            }
+          );
+        }
       });
     });
 
@@ -1123,6 +1187,13 @@ const DeveloperPortfolio3D: React.FC = () => {
 
       if (controls) controls.update();
 
+      // Update video textures (for playing videos on billboards)
+      videoTextures.forEach((videoTexture) => {
+        if (videoTexture.image && videoTexture.image.readyState >= videoTexture.image.HAVE_CURRENT_DATA) {
+          videoTexture.needsUpdate = true;
+        }
+      });
+
       // Gentle particle drift
       particleSystem.rotation.y += 0.0003;
 
@@ -1395,11 +1466,24 @@ const DeveloperPortfolio3D: React.FC = () => {
                 <p className="text-cyan-300/70 text-sm mt-1">Times Square Billboard View</p>
               </div>
               <div className="p-4 flex items-center justify-center bg-black/50">
-                <img
-                  src={selectedImage}
-                  alt={currentImageName}
-                  className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-                />
+                {selectedImage.endsWith('.mp4') || selectedImage.endsWith('.webm') || selectedImage.endsWith('.mov') ? (
+                  <video
+                    src={selectedImage}
+                    controls
+                    autoPlay
+                    loop
+                    muted
+                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <img
+                    src={selectedImage}
+                    alt={currentImageName}
+                    className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                  />
+                )}
               </div>
             </div>
           )}
