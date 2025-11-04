@@ -154,7 +154,14 @@ export const LiveSessionNotification: React.FC<LiveSessionNotificationProps> = (
 
         // Listen for live session creation
         newSocket.on('session:created', (notification: SessionNotification) => {
-            console.log('[Live Session Notifications] 🔔 Received notification:', notification);
+            console.log('[Live Session Notifications] ========================================');
+            console.log('[Live Session Notifications] 🔔 STUDENT RECEIVED NOTIFICATION');
+            console.log('[Live Session Notifications] Session ID:', notification.sessionId);
+            console.log('[Live Session Notifications] Mode:', notification.mode);
+            console.log('[Live Session Notifications] Join URL:', notification.joinUrl);
+            console.log('[Live Session Notifications] Liveblocks Room ID will be: essay-' + notification.sessionId);
+            console.log('[Live Session Notifications] Full notification:', notification);
+            console.log('[Live Session Notifications] ========================================');
 
             // Add to notifications list
             setNotifications(prev => [notification, ...prev]);
@@ -174,6 +181,8 @@ export const LiveSessionNotification: React.FC<LiveSessionNotificationProps> = (
                     <Button
                         size="sm"
                         onClick={() => {
+                            console.log('[Live Session Notifications] 🚀 STUDENT JOINING SESSION');
+                            console.log('[Live Session Notifications] Navigating to:', notification.joinUrl);
                             navigate(notification.joinUrl);
                             toast.dismiss();
                         }}

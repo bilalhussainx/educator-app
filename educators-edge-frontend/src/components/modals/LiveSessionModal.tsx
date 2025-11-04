@@ -205,6 +205,15 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
             // Navigate to ScribeSessionPage for LIVE essay editing with teacher-led session features
             const documentParam = uploadedDocumentId ? uploadedDocumentId : (uploadedDocument ? 'true' : 'false');
             navigationUrl = `/urgent-session/${actualSessionId}/essay?session=${actualSessionId}&mentor=teacher&type=live&document=${documentParam}&courseId=${selectedCourseId}`;
+            console.log('[LiveSessionModal] ========================================');
+            console.log('[LiveSessionModal] TEACHER NAVIGATION FOR ESSAY SESSION');
+            console.log('[LiveSessionModal] Actual Session ID:', actualSessionId);
+            console.log('[LiveSessionModal] Session ID Type:', typeof actualSessionId);
+            console.log('[LiveSessionModal] Course ID:', selectedCourseId);
+            console.log('[LiveSessionModal] Document Param:', documentParam);
+            console.log('[LiveSessionModal] Full URL:', navigationUrl);
+            console.log('[LiveSessionModal] Liveblocks Room ID will be: essay-' + actualSessionId);
+            console.log('[LiveSessionModal] ========================================');
         } else {
             // Navigate to LiveTutorialPage for coding tutorials (existing behavior)
             navigationUrl = selectedCourseId
@@ -212,7 +221,7 @@ export const LiveSessionModal: React.FC<LiveSessionModalProps> = ({ user, isOpen
                 : `/session/${actualSessionId}?mode=coding`;
         }
 
-        console.log('[DEBUG] Navigating to:', navigationUrl);
+        console.log('[LiveSessionModal] Navigating to:', navigationUrl);
         navigate(navigationUrl);
     };
     

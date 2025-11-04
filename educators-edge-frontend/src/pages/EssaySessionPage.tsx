@@ -165,6 +165,16 @@ const EssaySessionPage: React.FC = () => {
     const userRole = decodedToken.user?.role || decodedToken.role || 'student';
     const roomId = `essay-${sessionId}`;
 
+    console.log('[EssaySessionPage] ========================================');
+    console.log('[EssaySessionPage] LOADING ESSAY EDITOR');
+    console.log('[EssaySessionPage] Session ID from URL:', sessionId);
+    console.log('[EssaySessionPage] User ID:', userId);
+    console.log('[EssaySessionPage] Username:', username);
+    console.log('[EssaySessionPage] User Role:', userRole);
+    console.log('[EssaySessionPage] Liveblocks Room ID:', roomId);
+    console.log('[EssaySessionPage] Full URL:', window.location.href);
+    console.log('[EssaySessionPage] ========================================');
+
     return (
         <div className="w-full h-screen">
             <RoomProvider

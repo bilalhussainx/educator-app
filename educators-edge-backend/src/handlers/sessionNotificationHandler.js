@@ -102,12 +102,19 @@ class SessionNotificationHandler {
         try {
             const { courseId, sessionId, teacherId, teacherName, title, mode } = sessionData;
 
+            console.log('[Session Notifications] ========================================');
+            console.log('[Session Notifications] BROADCAST SESSION CREATED');
+            console.log('[Session Notifications] Session Data:', JSON.stringify(sessionData, null, 2));
+            console.log('[Session Notifications] ========================================');
+
             if (!courseId) {
-                console.warn('[Session Notifications] No courseId provided, skipping broadcast');
+                console.warn('[Session Notifications] ❌ No courseId provided, skipping broadcast');
+                console.warn('[Session Notifications] Full sessionData:', sessionData);
                 return;
             }
 
-            console.log(`[Session Notifications] Broadcasting session creation for course: ${courseId}`);
+            console.log(`[Session Notifications] 📡 Broadcasting session creation for course: ${courseId}`);
+            console.log(`[Session Notifications] Session ID: ${sessionId}, Mode: ${mode}, Teacher: ${teacherName}`);
 
             // Get all enrolled students for this course
             // Try enhanced_course_enrollments first, fallback to enrollments
@@ -275,6 +282,124 @@ class SessionNotificationHandler {
 
         console.log(`[Session Notifications] Sent ${notificationsSent} notifications to ${studentIds.length} students`);
         return notificationsSent;
+    }
+
+    /**
+     * Notify a single student about session acceptance
+     * Used for direct teacher-student sessions (no course required)
+     */
+    async notifyStudentSessionAccepted(studentId, sessionData) {
+        try {
+            const { sessionId, teacherId, teacherName, scheduledTime, sessionType, description } = sessionData;
+
+            console.log(`[Session Notifications] Notifying student ${studentId} about accepted session ${sessionId}`);
+
+            const notification = {
+                type: 'session_accepted',
+                sessionId,
+                teacherId,
+                teacherName,
+                scheduledTime,
+                sessionType,
+                description: description || 'Session',
+                timestamp: new Date().toISOString(),
+                message: `${teacherName} has accepted your session request! ${scheduledTime ? 'Scheduled for ' + new Date(scheduledTime).toLocaleString() : 'They will start it soon.'}`,
+                priority: 'high'
+            };
+
+            // Send to student's connected sockets
+            const socketIds = this.userSocketMap.get(studentId);
+            let notificationsSent = 0;
+
+            if (socketIds && socketIds.size > 0) {
+                socketIds.forEach(socketId => {
+                    const socket = this.io.sockets.sockets.get(socketId);
+                    if (socket) {
+                        socket.emit('session:accepted', notification);
+                        notificationsSent++;
+                    }
+                });
+                console.log(`[Session Notifications] ✅ Sent acceptance notification to student ${studentId} (${notificationsSent} connections)`);
+            } else {
+                console.log(`[Session Notifications] ⏭️  Student ${studentId} not connected`);
+            }
+
+            return { success: true, notificationsSent };
+
+        } catch (error) {
+            console.error('[Session Notifications] ❌ Error notifying student about acceptance:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Notify a single student when teacher starts a direct session
+     * Used when there's no course (direct student-teacher session)
+     */
+    async notifyStudentSessionStarted(studentId, sessionData) {
+        try {
+            const { sessionId, teacherId, teacherName, mode, sessionType, description } = sessionData;
+
+            console.log(`[Session Notifications] Notifying student ${studentId} about started session ${sessionId}`);
+
+            const joinUrl = mode === 'essay'
+                ? `/urgent-session/${sessionId}/essay?session=${sessionId}&mentor=teacher&type=live&role=student`
+                : `/session/${sessionId}`;
+
+            const notification = {
+                type: 'session_started_direct',
+                sessionId,
+                teacherId,
+                teacherName,
+                mode: mode || 'code',
+                sessionType,
+                description: description || 'Session',
+                timestamp: new Date().toISOString(),
+                message: `${teacherName} has started your ${mode === 'essay' ? 'essay editing' : 'coding'} session!`,
+                joinUrl,
+                priority: 'high'
+            };
+
+            // Store in active sessions for this student
+            this.activeSessions.set(sessionId, {
+                ...notification,
+                studentId,
+                isDirect: true
+            });
+
+            // Send to student's connected sockets
+            const socketIds = this.userSocketMap.get(studentId);
+            let notificationsSent = 0;
+
+            if (socketIds && socketIds.size > 0) {
+                socketIds.forEach(socketId => {
+                    const socket = this.io.sockets.sockets.get(socketId);
+                    if (socket) {
+                        socket.emit('session:created', notification);
+                        notificationsSent++;
+                    }
+                });
+                console.log(`[Session Notifications] ✅ Sent session start notification to student ${studentId} (${notificationsSent} connections)`);
+            } else {
+                console.log(`[Session Notifications] ⏭️  Student ${studentId} not connected`);
+            }
+
+            // Also emit via general session_started event for backward compatibility
+            this.io.emit('session_started', {
+                sessionId,
+                sessionMode: mode,
+                sessionType,
+                studentId,
+                mentorId: teacherId,
+                message: notification.message
+            });
+
+            return { success: true, notificationsSent };
+
+        } catch (error) {
+            console.error('[Session Notifications] ❌ Error notifying student about session start:', error);
+            return { success: false, error: error.message };
+        }
     }
 
     /**
