@@ -1308,26 +1308,26 @@ const DeveloperPortfolio3D: React.FC = () => {
       {/* Canvas */}
       <canvas ref={canvasRef} className="fixed inset-0 z-[1]" />
 
-      {/* Mobile Menu Toggle Button - Shows RESUME */}
-      <div className="lg:hidden fixed top-4 left-4 z-[200]">
-        <button
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="px-4 py-2.5 bg-gradient-to-br from-cyan-900/95 to-blue-900/95 backdrop-blur-md rounded-lg border-2 border-cyan-400/50 flex items-center justify-center pointer-events-auto shadow-lg hover:from-cyan-800/95 hover:to-blue-800/95 transition-all"
-        >
-          <span className="text-cyan-300 text-sm font-bold tracking-wider">
-            {isMobileMenuOpen ? '✕ CLOSE' : '☰ MENU'}
-          </span>
-        </button>
+      {/* Mobile Menu Toggle Button - Only visible when menu is closed */}
+      {!isMobileMenuOpen && (
+        <div className="lg:hidden fixed top-4 left-4 z-[200]">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="px-4 py-2.5 bg-gradient-to-br from-cyan-900/95 to-blue-900/95 backdrop-blur-md rounded-lg border-2 border-cyan-400/50 flex items-center justify-center pointer-events-auto shadow-lg hover:from-cyan-800/95 hover:to-blue-800/95 transition-all"
+          >
+            <span className="text-cyan-300 text-sm font-bold tracking-wider">
+              ☰ MENU
+            </span>
+          </button>
 
-        {/* Indicator for new users - only show when menu is closed */}
-        {!isMobileMenuOpen && (
+          {/* Indicator for new users */}
           <div className="absolute -bottom-8 left-0 right-0 flex items-center justify-center pointer-events-none">
             <div className="bg-cyan-500/90 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-lg animate-pulse whitespace-nowrap">
               📄 Tap for Resume
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Enhanced Navigation Banner - Desktop only, mobile moved below */}
       <div className="hidden lg:block fixed top-4 left-1/2 transform -translate-x-1/2 z-[150] pointer-events-none">
@@ -1356,10 +1356,18 @@ const DeveloperPortfolio3D: React.FC = () => {
       </div>
 
       {/* UI Overlay - Sidebar (Desktop: always visible, Mobile: toggle) */}
-      <nav className={`fixed top-0 left-0 w-full sm:w-80 lg:w-72 h-screen bg-gradient-to-b from-black/95 via-blue-950/95 to-cyan-900/95 backdrop-blur-md p-6 flex flex-col justify-between border-r-2 border-cyan-400/30 shadow-2xl z-[190] pointer-events-auto transition-transform duration-300 ${
+      <nav className={`fixed top-0 left-0 w-full sm:w-80 lg:w-72 h-screen bg-gradient-to-b from-black/95 via-blue-950/95 to-cyan-900/95 backdrop-blur-md p-6 flex flex-col justify-between border-r-2 border-cyan-400/30 shadow-2xl z-[250] pointer-events-auto transition-transform duration-300 ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         <div>
+          {/* Close button for mobile - inside sidebar */}
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="lg:hidden absolute top-4 right-4 w-10 h-10 bg-red-500/20 border-2 border-red-400/50 rounded-full text-red-300 hover:bg-red-500/40 transition-all text-2xl flex items-center justify-center"
+          >
+            ×
+          </button>
+
           <h1 className="text-3xl font-bold text-cyan-400 mb-2 drop-shadow-lg">Bilal Hussain</h1>
           <p className="text-cyan-200 text-sm mb-8">Full-Stack Developer</p>
 
