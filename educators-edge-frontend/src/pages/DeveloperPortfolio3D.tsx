@@ -1375,16 +1375,21 @@ const DeveloperPortfolio3D: React.FC = () => {
       <nav className={`fixed top-0 left-0 w-full sm:w-80 lg:w-72 h-screen bg-gradient-to-b from-black/95 via-blue-950/95 to-cyan-900/95 backdrop-blur-md p-6 flex flex-col justify-between border-r-2 border-cyan-400/30 shadow-2xl z-[250] pointer-events-auto transition-transform duration-300 ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
-        <div>
+        <div className="relative">
           {/* Close button for mobile - inside sidebar */}
           <button
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="lg:hidden absolute top-4 right-4 w-10 h-10 bg-red-500/20 border-2 border-red-400/50 rounded-full text-red-300 hover:bg-red-500/40 transition-all text-2xl flex items-center justify-center"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsMobileMenuOpen(false);
+            }}
+            className="lg:hidden absolute top-0 right-0 w-10 h-10 bg-red-500/90 hover:bg-red-600 border-2 border-red-400/80 rounded-full text-white hover:text-white transition-all text-2xl flex items-center justify-center shadow-lg z-[300] cursor-pointer"
+            style={{ pointerEvents: 'auto' }}
           >
             ×
           </button>
 
-          <h1 className="text-3xl font-bold text-cyan-400 mb-2 drop-shadow-lg">Bilal Hussain</h1>
+          <h1 className="text-3xl font-bold text-cyan-400 mb-2 drop-shadow-lg pr-12">Bilal Hussain</h1>
           <p className="text-cyan-200 text-sm mb-8">Full-Stack Developer</p>
 
           <div className="space-y-3">
