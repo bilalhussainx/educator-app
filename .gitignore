@@ -74,6 +74,9 @@ dist
 # Gatsby files
 .cache/
 public
+# BUT allow frontend public assets
+!educators-edge-frontend/public/
+!educators-edge-frontend/public/**
 
 # Storybook build outputs
 .out
