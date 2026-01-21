@@ -32,6 +32,10 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       }
+    },
+    // Permissive CSP for development
+    headers: {
+      'Content-Security-Policy': "script-src * 'unsafe-inline' 'unsafe-eval'; default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;"
     }
   },
 })

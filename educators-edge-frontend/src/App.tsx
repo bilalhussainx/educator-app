@@ -92,6 +92,9 @@ import DeveloperPortfolio3D from './pages/DeveloperPortfolio3D';
 import { FinancialRoute } from './components/route/FinancialRoute';
 import { LiveblocksProvider } from "@liveblocks/react";
 import { LiveSessionNotification } from './components/notifications/LiveSessionNotification';
+import { EssayGenerator, EssayView, EssayList } from './pages/EssayGenerator';
+import EssayCollabPage from './pages/EssayCollabPage';
+import EssayCollabSessionsPage from './pages/EssayCollabSessionsPage';
 
 // --- Mixpanel Initialization ---
 const MIXPANEL_PROJECT_TOKEN = "ddb00402917fe523b477eafdf60f0580"; 
@@ -256,6 +259,15 @@ export default function App() {
                 <Route path="/resume-pdf" element={<CssPdfResumePage />} />
                 <Route path="/ai-writing-assistant" element={<SessionTypeSelector />} />
                 <Route path="/essay-editor" element={<EssayEditorPage />} />
+
+                {/* Essay Mentor AI Routes */}
+                <Route path="/essay-generator" element={<ProtectedRoute token={token} user={user}><EssayGenerator /></ProtectedRoute>} />
+                <Route path="/essays" element={<ProtectedRoute token={token} user={user}><EssayList /></ProtectedRoute>} />
+                <Route path="/essays/:essayId" element={<ProtectedRoute token={token} user={user}><EssayView /></ProtectedRoute>} />
+
+                {/* Essay Collaboration (Multi-Agent) Routes */}
+                <Route path="/essay-collab" element={<ProtectedRoute token={token} user={user} roles={['teacher']}><EssayCollabSessionsPage /></ProtectedRoute>} />
+                <Route path="/essay-collab/:sessionId" element={<ProtectedRoute token={token} user={user}><EssayCollabPage /></ProtectedRoute>} />
 
                 {/* Teacher/Profile Search Routes */}
                 <Route path="/teachers/search" element={<TeacherSearchPage />} />

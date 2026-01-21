@@ -60,8 +60,10 @@ class SessionWebSocketService {
                 console.log('Session WebSocket disconnected:', event.code, event.reason);
                 this.isConnected = false;
                 this.emit('connection', { status: 'disconnected' });
-                
-                if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+
+                // Don't reconnect if server rejected due to missing session ID (4001)
+                // or if it was a clean disconnect (1000)
+                if (event.code !== 1000 && event.code !== 4001 && this.reconnectAttempts < this.maxReconnectAttempts) {
                     this.scheduleReconnect();
                 }
             };

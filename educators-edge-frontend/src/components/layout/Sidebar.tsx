@@ -13,6 +13,7 @@ import { User } from '@/types/index.ts';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LiveSessionModal } from '../modals/LiveSessionModal';
+import { EssayCollabModal } from '../modals/EssayCollabModal';
 import {
     Home,
     Compass,
@@ -31,7 +32,8 @@ import {
     Brain,
     Database,
     MessageSquare,
-    CalendarCheck
+    CalendarCheck,
+    PenTool
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -52,6 +54,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
 
     // State to control the Live Session modal's visibility
     const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
+    // State to control the Essay Collab modal's visibility
+    const [isEssayCollabModalOpen, setIsEssayCollabModalOpen] = useState(false);
 
     const handleLogout = () => {
         // This logic is now centralized in the sidebar
@@ -104,10 +108,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
         <>
             {/* The LiveSessionModal is rendered here but is hidden by default.
                 It's part of the sidebar's structure because the sidebar controls it. */}
-            <LiveSessionModal 
-                user={user} 
-                isOpen={isSessionModalOpen} 
-                onClose={() => setIsSessionModalOpen(false)} 
+            <LiveSessionModal
+                user={user}
+                isOpen={isSessionModalOpen}
+                onClose={() => setIsSessionModalOpen(false)}
+            />
+            <EssayCollabModal
+                user={user}
+                isOpen={isEssayCollabModalOpen}
+                onClose={() => setIsEssayCollabModalOpen(false)}
             />
             
             <aside className="relative z-20 flex h-screen w-16 flex-col items-center border-r border-slate-800 bg-slate-950/40 backdrop-blur-xl py-4">
@@ -161,6 +170,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, setUser }) => {
                             </TooltipTrigger>
                             <TooltipContent side="right" className="bg-slate-800 border-slate-700 text-white">
                                 <p>Live Session</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* AI Essay Collaboration Button */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setIsEssayCollabModalOpen(true)}
+                                    className="h-10 w-10 p-0 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-purple-300 relative"
+                                >
+                                    <PenTool className="h-5 w-5" />
+                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="bg-slate-800 border-slate-700 text-white">
+                                <p>{user?.role === 'teacher' ? '✨ AI Essay Collab' : '📝 Join Essay Session'}</p>
                             </TooltipContent>
                         </Tooltip>
                     </nav>

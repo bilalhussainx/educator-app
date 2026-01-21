@@ -1,0 +1,344 @@
+/**
+ * Essay Generator Styles
+ */
+
+.essay-generator {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.essay-generator-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.essay-generator-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+}
+
+.essay-generator-header .subtitle {
+  font-size: 1.125rem;
+  color: #718096;
+  margin-bottom: 1.5rem;
+}
+
+/* Quota Info */
+.quota-info {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.quota-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+}
+
+.quota-badge.quota-exceeded {
+  background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+}
+
+.quota-label {
+  opacity: 0.9;
+}
+
+.quota-value {
+  font-weight: 700;
+}
+
+/* Error Banner */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #fff5f5;
+  border: 1px solid #fc8181;
+  border-radius: 0.5rem;
+  margin-bottom: 2rem;
+  color: #c53030;
+}
+
+.error-icon {
+  font-size: 1.5rem;
+}
+
+.error-message {
+  flex: 1;
+  font-weight: 500;
+}
+
+.error-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #c53030;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+/* Generation Progress */
+.generation-progress {
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-card {
+  text-align: center;
+  padding: 3rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+}
+
+.progress-spinner {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 2rem;
+  border: 4px solid #e2e8f0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.progress-card h2 {
+  font-size: 1.75rem;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+}
+
+.progress-status {
+  font-size: 1.125rem;
+  color: #667eea;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.progress-detail {
+  color: #718096;
+  margin-bottom: 1rem;
+}
+
+.agent-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.agent-list li {
+  padding: 0.5rem 0;
+  color: #4a5568;
+  font-size: 0.875rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 1.5rem 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-time {
+  font-size: 0.875rem;
+  color: #a0aec0;
+}
+
+/* Essay Form */
+.essay-form {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 2rem;
+}
+
+.form-section {
+  margin-bottom: 2.5rem;
+}
+
+.form-section h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: 0.5rem;
+}
+
+.section-subtitle {
+  color: #718096;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.required {
+  color: #f56565;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled,
+.form-group select:disabled {
+  background: #f7fafc;
+  cursor: not-allowed;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-hint {
+  display: block;
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-top: 0.25rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: white;
+  color: #4a5568;
+  border: 2px solid #e2e8f0;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+/* Upgrade Prompt */
+.upgrade-prompt {
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+  color: white;
+  border-radius: 0.5rem;
+  margin-top: 2rem;
+}
+
+.upgrade-prompt p {
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.btn-upgrade {
+  background: white;
+  color: #c53030;
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-upgrade:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}

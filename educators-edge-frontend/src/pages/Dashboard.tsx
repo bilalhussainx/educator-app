@@ -22,6 +22,7 @@ import { UserProgressWidget } from '../components/layout/UserProgressWidget';
 import { AISearchAgent } from '../components/AISearchAgent';
 import { IntelligentNavigationCompanion } from '../components/ai/IntelligentNavigationCompanion';
 import { QuickAccessCards } from '../components/dashboard/QuickAccessCards';
+import { ConversationalEssayGenerator } from '../components/essay/ConversationalEssayGenerator';
 
 // --- Reusable UI Components ---
 const GlassCard: React.FC<React.ComponentProps<typeof Card>> = ({ className, ...props }) => (
@@ -717,6 +718,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                             </div>
                         </div>
                     </header>
+
+                    {/* Essay Generator - ChatGPT Style */}
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                            ✨ EssayMentor AI - College Essay Generator
+                        </h2>
+                        <ConversationalEssayGenerator />
+                    </div>
 
                     {/* Quick Access Navigation Cards */}
                     <div className="space-y-6">

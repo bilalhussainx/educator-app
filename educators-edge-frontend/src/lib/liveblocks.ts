@@ -111,14 +111,37 @@ export const {
 } = createLiveblocksContext(client);
 
 
-// Room context for collaborative features
+// Room context for collaborative features - this is the main context to use
+const roomContext = createRoomContext<Presence, Storage, UserMeta, RoomEvent>(client);
+
 export const {
   RoomProvider,
-  suspense: {
-    useUser,
-    useUsers,
-  },
-} = createRoomContext<Presence, Storage, UserMeta, RoomEvent>(client);
+} = roomContext;
+
+// Export Room-level suspense hooks (use these inside RoomProvider)
+export const {
+  useRoom: useRoomSuspense,
+  useMyPresence: useRoomMyPresence,
+  useUpdateMyPresence: useRoomUpdateMyPresence,
+  useSelf: useRoomSelf,
+  useOthers: useRoomOthers,
+  useOthersMapped: useRoomOthersMapped,
+  useOthersConnectionIds: useRoomOthersConnectionIds,
+  useOther: useRoomOther,
+  useBroadcastEvent: useRoomBroadcastEvent,
+  useEventListener: useRoomEventListener,
+  useErrorListener: useRoomErrorListener,
+  useStorage: useRoomStorage,
+  useBatch: useRoomBatch,
+  useHistory: useRoomHistory,
+  useUndo: useRoomUndo,
+  useRedo: useRoomRedo,
+  useCanUndo: useRoomCanUndo,
+  useCanRedo: useRoomCanRedo,
+  useMutation: useRoomMutation,
+  useStatus: useRoomStatus,
+  useLostConnectionListener: useRoomLostConnectionListener,
+} = roomContext.suspense;
 
 // Export the client
 export { client };

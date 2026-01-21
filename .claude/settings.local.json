@@ -36,7 +36,10 @@
       "Bash(curl:*)",
       "Bash(dir:*)",
       "Bash(ping:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(ls:*)",
+      "Bash(mongod:*)",
+      "Bash(grep:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Users\\Bilal\\Downloads\\educator-app"
