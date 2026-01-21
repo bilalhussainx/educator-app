@@ -6,6 +6,7 @@ const initializeLiveTutorialHandler = require('../handlers/liveTutorialHandler')
 const initializeSimulationHandler = require('../handlers/simulationHandler');   // The new handler we will create
 const terminalHandler = require('../../services/websocketTerminalHandler'); // Terminal handler (singleton)
 const { initializeSessionNotificationHandler } = require('../handlers/sessionNotificationHandler'); // Session notifications
+const { initializeEssayCollabHandler } = require('../../services/essayCollabWebSocket'); // Essay collaboration handler
 
 function initializeWebSocketRouting(httpServer) {
     // Create separate WebSocket servers for different paths
@@ -77,6 +78,9 @@ function initializeWebSocketRouting(httpServer) {
 
     // Initialize session notification handler with Socket.IO
     initializeSessionNotificationHandler(io);
+
+    // Initialize essay collaboration handler with Socket.IO
+    initializeEssayCollabHandler(io);
 
     // Initialize terminal handler (handle connections directly)
     terminalWss.on('connection', (ws, req) => {

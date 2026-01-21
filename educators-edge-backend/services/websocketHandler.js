@@ -81,8 +81,6 @@ function getStudents(session) {
 // --- Main WebSocket Initializer ---
 function initializeWebSocket(wss) {
     wss.on('connection', async (ws, req) => {
-        console.log('[WS DEBUG] New connection attempt');
-        
         const urlParams = new URLSearchParams(req.url.split('?')[1]);
         const sessionId = urlParams.get('sessionId');
         const token = urlParams.get('token');
@@ -90,7 +88,7 @@ function initializeWebSocket(wss) {
         const lessonId = urlParams.get('lessonId');
 
         if (!sessionId || !token) {
-            console.log('[WS ERROR] Missing sessionId or token');
+            // Silently close connections without required params (reduces log spam)
             return ws.close(4001, "Session ID and token are required");
         }
 

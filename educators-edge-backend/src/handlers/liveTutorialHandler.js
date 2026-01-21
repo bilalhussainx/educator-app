@@ -99,27 +99,19 @@ function getStudents(session) {
 // --- Main WebSocket Initializer ---
 function initializeWebSocket(wss) {
     wss.on('connection', async (ws, req) => {
-        console.log('[WS DEBUG] New connection attempt');
-        console.log('[WS DEBUG] req.url:', req.url);
-
         const urlParams = new URLSearchParams(req.url.split('?')[1]);
         const sessionId = urlParams.get('sessionId');
         const token = urlParams.get('token');
         const teacherSessionId = urlParams.get('teacherSessionId');
         const lessonId = urlParams.get('lessonId');
 
-        console.log('[WS DEBUG] Parsed params:', {
-            hasSessionId: !!sessionId,
-            hasToken: !!token,
-            hasTeacherSessionId: !!teacherSessionId,
-            hasLessonId: !!lessonId
-        });
-
+        // Silently reject connections without required params (reduces log spam)
         if (!sessionId || !token) {
-            console.log('[WS ERROR] Missing sessionId or token');
-            console.log('[WS ERROR] URL was:', req.url);
             return ws.close(4001, "Session ID and token are required");
         }
+
+        // Only log valid connection attempts
+        console.log('[WS] Valid connection attempt for session:', sessionId);
 
         let user;
         try {

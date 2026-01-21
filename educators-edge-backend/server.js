@@ -4,6 +4,18 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const mongoose = require('mongoose');
+
+// MongoDB Connection for Essay Storage
+mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/educators-edge')
+  .then(() => {
+    console.log('✅ MongoDB connected successfully for Essay storage');
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
+    console.log('⚠️  Essay generation will not work without MongoDB connection');
+    console.log('💡 Install MongoDB: https://www.mongodb.com/try/download/community');
+  });
 const authRoutes = require('./routes/authRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const initializeWebSocketRouting = require('./src/services/websocketRouter'); // Import the new router
@@ -45,6 +57,8 @@ const enhancedAICommentRoutes = require('./routes/enhancedAICommentRoutes'); // 
 const smartPromptRoutes = require('./routes/smartPromptRoutes'); // <-- SMART PROMPT AI COMMENT ROUTES
 const comprehensiveAICoachRoutes = require('./routes/comprehensiveAICoachRoutes'); // <-- COMPREHENSIVE AI WRITING COACH ROUTES
 const geminiAssistantRoutes = require('./routes/geminiAssistantRoutes'); // <-- GEMINI-STYLE WRITING ASSISTANT ROUTES
+const essayRoutes = require('./routes/essay.routes'); // <-- ESSAY MENTOR AI INTEGRATION ROUTES
+const essayCollabRoutes = require('./routes/essayCollaboration.routes'); // <-- ESSAY COLLABORATION MULTI-AGENT ROUTES
 
 //...
 const app = express();
@@ -151,6 +165,8 @@ app.use('/api/ai-comments', enhancedAICommentRoutes); // <-- REGISTER ENHANCED A
 app.use('/api/ai/smart-prompts', smartPromptRoutes); // <-- REGISTER SMART PROMPT AI COMMENT ROUTES
 app.use('/api/ai-coach', comprehensiveAICoachRoutes); // <-- REGISTER COMPREHENSIVE AI WRITING COACH ROUTES
 app.use('/api/gemini-assistant', geminiAssistantRoutes); // <-- REGISTER GEMINI-STYLE WRITING ASSISTANT ROUTES
+app.use('/api/essays', essayRoutes); // <-- REGISTER ESSAY MENTOR AI INTEGRATION ROUTES
+app.use('/api/essay-collab', essayCollabRoutes); // <-- REGISTER ESSAY COLLABORATION MULTI-AGENT ROUTES
 
 const server = http.createServer(app); // Create an HTTP server from your Express app
 
