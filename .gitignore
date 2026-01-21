@@ -116,3 +116,111 @@ temp_deploys/
 
 # Exclude freeCodeCamp directory (large external repo)
 freeCodeCamp/
+
+# AI Service outputs
+outputs/
+ai-outputs/
+
+# Python cache (AI services)
+ai-services/**/__pycache__/
+ai-services/**/*.pyc
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Python virtual environment
+venv/
+.venv/
+ENV/
+env/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Claude Code temporary files
+tmpclaude-*/
+nul
+
+# Local development files
+*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Log files
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Test coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Build artifacts
+dist/
+build/
+*.tgz
+
+# Deployment packages
+*.zip
+!backend-deploy.zip
+backend-deploy-v2.zip
+
+# Credentials and secrets (NEVER commit these)
+credentials.json
+*.pem
+*.key
+*.crt
+secrets/
+
+# Large binary files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.pdf
+!docs/**/*.pdf
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+*.tmp
+
+# Package manager locks (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+
+# AWS and cloud config
+.elasticbeanstalk/
+.aws/
+
+# Docker
+docker-compose.override.yml
