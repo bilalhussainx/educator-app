@@ -14,6 +14,23 @@
 
 ---
 
+## 👀 For Recruiters & Technical Interviewers
+
+**Looking to evaluate my skills? Start here:**
+
+1. **AI/ML Skills**: See [EssayMentor technical deep-dive](link) - 6-agent LangGraph system
+2. **Full-Stack Skills**: Review [architecture section](#architecture) - React + Node.js + PostgreSQL
+3. **Code Quality**: Browse [backend services](./educators-edge-backend/services/) - 74 well-organized files
+4. **Real-time Systems**: Check [WebSocket implementation](./educators-edge-backend/services/websocket*)
+5. **Deployment**: Live demo at [https://educator-app.vercel.app](https://educator-app.vercel.app)
+
+**Quick Stats:**
+- 90+ React pages
+- 74 backend services  
+- 6 AI multi-agent systems
+- 15+ API integrations
+- Production-deployed
+
 ## 🎯 Overview
 
 CoreZenith transforms traditional education with AI-powered tools that provide personalized, intelligent assistance while maintaining human oversight through our human-in-loop feedback system.
